@@ -5,7 +5,7 @@ from __future__ import annotations
 import pytest
 
 import flagquantum as fq
-from tools.docs_source_of_truth import capability_api_is_available
+from tools.docs.docs_source_of_truth import capability_api_is_available
 
 pytestmark = pytest.mark.unit
 

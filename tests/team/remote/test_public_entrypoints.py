@@ -2,10 +2,12 @@
 
 import pytest
 
-import flagquantum.remote.compute as remote_compute
-from flagquantum.remote.compute import JiudingClient, JiudingCredentials
-from flagquantum.remote.compute.jiuding import JiudingClient as JiudingImplementation
-from flagquantum.remote.compute.jiuding import (
+import flagquantum.compute.remote.compute as remote_compute
+from flagquantum.compute.remote.compute import JiudingClient, JiudingCredentials
+from flagquantum.compute.remote.compute.jiuding import (
+    JiudingClient as JiudingImplementation,
+)
+from flagquantum.compute.remote.compute.jiuding import (
     JiudingCredentials as JiudingCredentialsImplementation,
 )
 

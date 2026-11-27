@@ -117,7 +117,7 @@ absence of host execution.
 | Source | Establishes | Does not establish |
 | --- | --- | --- |
 | `tests/unit/test_platform_runtime.py` | CPU lifecycle, CUDA discovery fakes, FlagOS lazy/public API adaptation, no vendor-name classification | Real CUDA/FlagOS/domestic execution |
-| `flagquantum/compute/cpu_target_capabilities.py` | Injected CPU device/count/memory/precision projection, independent identity/scope, TTL/evidence propagation, missing-fact blockers | CUDA/FlagOS/QPU discovery, requirements/fallback, performance/hardware claims |
+| `flagquantum/compute/local/cpu_target_capabilities.py` | Injected CPU device/count/memory/precision projection, independent identity/scope, TTL/evidence propagation, missing-fact blockers | CUDA/FlagOS/QPU discovery, requirements/fallback, performance/hardware claims |
 | `tests/team/compute/test_cpu_target_capabilities.py` | Source/evidence round trips, unavailable/missing/negative probes, TTL/scope, unchanged defaults | Hardware capability; fake probes are not hardware evidence |
 | `cuda_target_capabilities.py` + `probe_cuda_target_capabilities.py` | Workload-bound snapshots after real single-card probes, statevector, numerical/gradient checks | No hidden CPU fallback, multicard/multinode, communication, performance, domestic compute |
 | `artifacts/cuda_target_capabilities_a800_jp17{1,2}_20260906.json` | Comparable observable PyTorch CUDA complex128 evidence on one A800 per node; equivalent contracts/metrics after replacement | Certification or other devices/versions/workloads |
@@ -128,7 +128,7 @@ absence of host execution.
 | `artifacts/flagos_statevector_capacity_f5_a800_20260827.json` | Scoped 32-qubit complex128 single/replicated OOM versus eight-rank completion | General/backward/optimizer capacity, domestic hardware, production scalability |
 | `artifacts/flagos_transport_observability_f6_a800_20260827.json` | Single-node four-collective logical-device results for two complex dtypes | Inner transport, no host staging, performance, multinode |
 | `artifacts/split_real_imag_*_a800_*.json` | Specified A800 CUDA/FlagOS-on-CUDA P0–P5 development paths | General FP64 equivalence, all gates/optimizers, convergence, domestic/production capability |
-| `tools/validate_domestic_single_card.py` | Strict attestation/P0–P5/no-fallback candidate acceptance | Existing domestic-card evidence; candidate success is not hardware certification |
+| `tools/validation/validate_domestic_single_card.py` | Strict attestation/P0–P5/no-fallback candidate acceptance | Existing domestic-card evidence; candidate success is not hardware certification |
 
 `a800-node-0` and `a800-node-1` are NVIDIA A800 nodes. Session availability or
 transient runs cannot replace reviewed checked-in artifacts with digests/revisions.
@@ -137,7 +137,7 @@ or FlagOS evidence.
 
 ## Narrow CPU Adapter Implementation
 
-`flagquantum.compute.cpu_target_capabilities` is the first implementation slice.
+`flagquantum.compute.local.cpu_target_capabilities` is the first implementation slice.
 Callers inject `CPUCapabilityProbe`; `observe()` returns `CPUCapabilityObservation`.
 They also supply independent target ID, provider version, target revision,
 environment ID, probe `source_ref`, and static `target_class_source_ref`.

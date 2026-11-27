@@ -13,8 +13,8 @@ from examples.algorithms.fermion_active_space_training import (
     illustrative_problem,
 )
 from flagquantum.algorithms.chemistry import uccsd_ansatz
-from flagquantum.algorithms.chemistry_domain.active_space import select_active_space
-from flagquantum.algorithms.chemistry_domain.problem import fermion_hamiltonian
+from flagquantum.algorithms.chemistry.models.active_space import select_active_space
+from flagquantum.algorithms.chemistry.models.problem import fermion_hamiltonian
 from flagquantum.algorithms.fermion.encoding import encode_fermion
 from flagquantum.algorithms.fermion.observables import to_observable
 from tests.unit.fermion.oracles import fock_matrix

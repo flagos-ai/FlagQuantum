@@ -10,7 +10,7 @@ from examples.synthesis.compare_states import compare_states
 from examples.synthesis.functions.qft.comparisons.circuit import fourier_matrix
 from flagquantum import synth
 from flagquantum.compiler._construction.frontend.python import _QuantumFunction
-from flagquantum.compiler._hybrid.verifier import HybridVerificationError
+from flagquantum.compiler.frontends._structured.verifier import HybridVerificationError
 from flagquantum.errors import PlanningError
 from tests.team.compiler.test_construction_python_program import program_definition
 

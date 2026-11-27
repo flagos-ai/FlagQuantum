@@ -244,13 +244,13 @@ $ python -m pytest tests/test_gradient_api.py -q
 $ python -m pytest tests/integration/test_gradient_modes.py -q
 11 passed
 
-$ python tools/public_api_snapshot.py
+$ python tools/architecture/public_api_snapshot.py
 public API migration baseline passed
 
-$ python tools/check_capability_maturity.py
+$ python tools/validation/check_capability_maturity.py
 capability maturity matrix passed
 
-$ python tools/docs_source_of_truth.py --check
+$ python tools/docs/docs_source_of_truth.py --check
 documentation source-of-truth check passed
 ```
 

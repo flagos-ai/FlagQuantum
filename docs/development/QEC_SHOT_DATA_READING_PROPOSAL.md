@@ -211,16 +211,16 @@ rerun to prepare this proposal.
 Planned commands (not executed for this proposal):
 
 ```bash
-python tools/check_team_scope.py --team integration --files <the 28 listed paths>
+python tools/architecture/check_team_scope.py --team integration --files <the 28 listed paths>
 python -m pytest tests/qec/test_shot_data_reading.py -q
 python -m pytest tests/team/simulation/test_shot_data_reading_conformance.py -q
 python -m ruff check <changed Python paths>
 python -m black --check <changed Python paths>
 python -m mypy --strict <changed Python paths>
-python tools/ci_tier.py pr-default
-python tools/ci_tier.py pr-runtime
+python tools/ci/ci_tier.py pr-default
+python tools/ci/ci_tier.py pr-runtime
 FQ_BUILD_EMBEDDED_STIM=1 MAX_JOBS=2 python -m build --sdist --wheel --no-isolation
-python tools/verify_embedded_stabilizer_install.py
+python tools/validation/verify_embedded_stabilizer_install.py
 python examples/qec/shot_file_decoding.py
 ```
 
@@ -256,8 +256,8 @@ change is part of this package.
 18. `tests/team/simulation/test_shot_data_reading_conformance.py`
 19. `tests/api_contract/test_public_docstring_examples.py`
 20. `tests/unit/test_qec_installed_profiles.py`
-21. `tools/qec_installed_smoke.py`
-22. `tools/verify_embedded_stabilizer_install.py`
+21. `tools/release/qec_installed_smoke.py`
+22. `tools/validation/verify_embedded_stabilizer_install.py`
 23. `examples/qec/shot_file_decoding.py`
 24. `examples/README.md`
 25. `capability-maturity.toml`

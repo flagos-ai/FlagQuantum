@@ -7,16 +7,16 @@ import pytest
 import torch
 
 import flagquantum as fq
-from flagquantum.lindblad import LindbladPlan
-from flagquantum.lindblad import _plan as plan_module
+from flagquantum.runtime.evolution import LindbladPlan
+from flagquantum.runtime.evolution import _plan as plan_module
 from flagquantum.simulation import (
     EvolutionValidationError,
     amplitude_damping,
     evolve_density_matrix,
     plan_density_matrix_evolution,
 )
-from flagquantum.simulation import lindblad as lindblad_module
-from flagquantum.simulation import lindblad_integrators as integrators_module
+from flagquantum.simulation.dynamics import integrators as integrators_module
+from flagquantum.simulation.dynamics import lindblad as lindblad_module
 from flagquantum.simulation.matrix_free_linear_solve import gmres
 
 pytestmark = pytest.mark.unit

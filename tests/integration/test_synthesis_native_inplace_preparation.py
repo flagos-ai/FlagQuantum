@@ -8,7 +8,7 @@ import torch
 import flagquantum as fq
 from examples.synthesis.compare_states import compare_states
 from flagquantum import synth
-from flagquantum.compiler._hybrid.verifier import HybridVerificationError
+from flagquantum.compiler.frontends._structured.verifier import HybridVerificationError
 from flagquantum.errors import PlanningError
 from tests.integration.test_synthesis_native_exact_numbers import definition
 
@@ -184,7 +184,7 @@ def test_operation_and_memory_budget_refuse() -> None:
 
 def test_public_exports_preserve_single_implementation_identity() -> None:
     from flagquantum.compiler._construction import program_types
-    from flagquantum.services import synthesis
+    from flagquantum.synth import _workflow as synthesis
 
     for name in ("inplace_prepare_amplitudes", "inplace_prepare_state"):
         assert (

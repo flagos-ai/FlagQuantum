@@ -107,7 +107,7 @@ def test_reversible_3q_cpu_falls_back_without_importing_kernel(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     monkeypatch.setenv("FQ_TRITON_REVERSIBLE_3Q", "1")
-    module = "flagquantum.kernels.triton.statevector_reversible_3q"
+    module = "flagquantum.simulation.kernels.triton.statevector_reversible_3q"
     sys.modules.pop(module, None)
     state = torch.randn(1, 1 << 20, dtype=torch.complex64)
 

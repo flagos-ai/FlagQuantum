@@ -8,8 +8,8 @@ import torch
 
 import flagquantum as fq
 from flagquantum import synth
-from flagquantum.services.synthesis import _synthesize
-from tools.validate_qmod_knapsack import BLOBS, FIXTURES, validate
+from flagquantum.synth._workflow import _synthesize
+from tools.validation.validate_qmod_knapsack import BLOBS, FIXTURES, validate
 
 pytestmark = pytest.mark.integration
 

@@ -45,7 +45,7 @@ training call, not from an in-memory optimizer. It does not simulate host loss.
 
 For the optional reserved A800 pair, manually dispatch Scheduled hardware with
 `run_mps_training_series=true` and the other campaign inputs false. Its existing
-`tools/run_mps_capacity_series.py --training-series` supervisor stages an exact
+`tools/validation/run_mps_capacity_series.py --training-series` supervisor stages an exact
 clean commit, checks transport, records hardware/topology, serializes accelerator
 reservations, bounds workers, retains diagnostics and measures worlds 1/2/4/8/16.
 Sixteen ranks use two nodes. The one-rank measurement uses the same distributed

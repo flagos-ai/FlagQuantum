@@ -7,12 +7,13 @@ from functools import lru_cache
 
 import torch
 
-from ...kernels.catalog import (
+from flagquantum.simulation.kernels.catalog import (
     KernelImplementation,
     KernelMatchResult,
     KernelRequest,
     match_kernel_implementations,
 )
+
 from ..kernel_dispatch import _require_cataloged_kernel
 from .site_kernels import (
     _record_mps_sampling_collapse_fallback,
@@ -124,7 +125,7 @@ def _apply_cataloged_mps_sampling_collapse(
         device_type=site.device.type,
         dtype=str(site.dtype).removeprefix("torch."),
     )
-    from ...kernels.triton.mps_sampling_collapse import (
+    from flagquantum.simulation.kernels.triton.mps_sampling_collapse import (
         fused_mps_sampling_collapse,
     )
 

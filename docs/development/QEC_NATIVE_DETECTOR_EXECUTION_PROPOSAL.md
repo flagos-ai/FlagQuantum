@@ -221,7 +221,7 @@ Planned commands after approval:
 python -m pytest -q tests/qec/test_native_detector_execution.py tests/unit/test_compiled_measurement_sampler_contract.py
 python -m pytest -q tests/team/simulation/test_native_detector_execution_conformance.py tests/api_contract/test_public_docstring_examples.py tests/unit/test_qec_installed_profiles.py
 python -m examples.qec.native_detector_sampling
-python -I tools/verify_embedded_stabilizer_install.py
+python -I tools/validation/verify_embedded_stabilizer_install.py
 ```
 
 No command above was executed for the proposed feature. A separately approved
@@ -246,8 +246,8 @@ experiments. This advances FTS-04/R03/R08; it does not close FTS-02, R04 or M2.
 14. `tests/team/simulation/test_native_detector_execution_conformance.py`
 15. `tests/api_contract/test_public_docstring_examples.py`
 16. `tests/unit/test_qec_installed_profiles.py`
-17. `tools/qec_installed_smoke.py`
-18. `tools/verify_embedded_stabilizer_install.py`
+17. `tools/release/qec_installed_smoke.py`
+18. `tools/validation/verify_embedded_stabilizer_install.py`
 19. `examples/qec/native_detector_sampling.py`
 20. `examples/README.md`
 21. `docs/reference/API.md`

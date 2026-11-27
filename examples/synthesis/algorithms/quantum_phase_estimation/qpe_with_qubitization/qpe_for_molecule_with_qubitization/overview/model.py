@@ -9,12 +9,16 @@ from examples.synthesis.algorithms.quantum_phase_estimation.qpe_with_qubitizatio
     PROBABILITIES,
     SELECTOR_PHASES,
 )
-from flagquantum.algorithms.chemistry_domain.problem import (
+from flagquantum.algorithms.chemistry.models.problem import (
     fermion_hamiltonian,
     from_native_molecule,
 )
-from flagquantum.algorithms.molecular import create_molecular_hamiltonian
-from flagquantum.observables.fermion import FermionOperator, FermionTerm, jordan_wigner
+from flagquantum.algorithms.chemistry.molecular import create_molecular_hamiltonian
+from flagquantum.core.operators.fermion import (
+    FermionOperator,
+    FermionTerm,
+    jordan_wigner,
+)
 
 GEOMETRY = (("H", (0.0, 0.0, 0.0)), ("H", (0.0, 0.0, 0.735)))
 SPIN_BLOCKED = (0, 2, 1, 3)

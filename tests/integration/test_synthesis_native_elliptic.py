@@ -21,7 +21,7 @@ from examples.synthesis.algorithms.number_theory_and_cryptography.elliptic_curve
 )
 from flagquantum import synth
 from flagquantum.compiler import ResourceEstimate
-from flagquantum.compiler._hybrid.verifier import HybridVerificationError
+from flagquantum.compiler.frontends._structured.verifier import HybridVerificationError
 from flagquantum.errors import PlanningError
 from flagquantum.synth import (
     Output,

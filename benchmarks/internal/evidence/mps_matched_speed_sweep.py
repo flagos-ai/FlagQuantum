@@ -46,14 +46,14 @@ REPOSITORY_ROOT = Path(
 if str(REPOSITORY_ROOT) not in sys.path:
     sys.path.insert(0, str(REPOSITORY_ROOT))
 
-from tools.sanitize_public_evidence import sanitize_text  # noqa: E402
+from tools.release.sanitize_public_evidence import sanitize_text  # noqa: E402
 
 
 def public_ranks(gathered: Sequence[object]) -> list[object]:
     """Return the per-rank records as this repository may publish them.
 
     The records land under ``benchmarks/results``, which the repository publishes
-    without infrastructure identity, and ``tools.sanitize_public_evidence`` is the
+    without infrastructure identity, and ``tools.release.sanitize_public_evidence`` is the
     check that enforces that over the committed bytes. Applying the same redaction
     here means a run of this probe is publishable as written rather than needing a
     rewrite before it can be committed, and it keeps the definition of what may be

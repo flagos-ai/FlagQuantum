@@ -11,7 +11,8 @@ from os import PathLike
 from pathlib import Path
 from typing import Any, cast
 
-from ..remote.qpu import DeploymentResult
+from flagquantum.compute.remote.qpu import DeploymentResult
+
 from ._atomic import write_once
 from .candidate import TwinCandidateDecision, _matches_canonical_payload
 from .candidate_submission import TwinCandidateSubmission

@@ -10,11 +10,11 @@ from pathlib import Path
 
 import pytest
 
-from tools.evidence_provenance import ProvenanceUnavailableError
+from tools.release.evidence_provenance import ProvenanceUnavailableError
 
 pytestmark = pytest.mark.unit
 _ROOT = Path(__file__).resolve().parents[3]
-_SCRIPT = _ROOT / "tools" / "probe_cuda_multinode_tn.py"
+_SCRIPT = _ROOT / "tools" / "validation/probe_cuda_multinode_tn.py"
 _SPEC = importlib.util.spec_from_file_location("cuda_multinode_tn_probe", _SCRIPT)
 assert _SPEC is not None and _SPEC.loader is not None
 _MODULE = importlib.util.module_from_spec(_SPEC)

@@ -132,7 +132,8 @@ def test_the_angle_readback_retains_small_exported_parameters(
         circuit_template,
     )
     from flagquantum.compiler import CouplingMap
-    from flagquantum.deployment import CloudBackendProfile, create_deployment_package
+    from flagquantum.compute.remote.packages import CloudBackendProfile
+    from flagquantum.runtime.planner.deployment import create_deployment_package
 
     parameters = [3.1416854858398438, -3.141693115234375, small_angle]
     circuit = circuit_template().bind_parameters(

@@ -12,8 +12,8 @@ from flagquantum.runtime.observability.evidence import (
     create_evidence_artifact,
     verify_evidence_artifact,
 )
-from tools.seal_runtime_evidence import _rank_devices
-from tools.seal_runtime_evidence import main as seal_main
+from tools.release.seal_runtime_evidence import _rank_devices
+from tools.release.seal_runtime_evidence import main as seal_main
 
 pytestmark = pytest.mark.unit
 
@@ -41,7 +41,7 @@ def test_declared_rank_devices_must_cover_every_rank():
 
 def test_undeclared_rank_devices_still_map_ranks_positionally(monkeypatch):
     monkeypatch.setattr(
-        "tools.seal_runtime_evidence._output",
+        "tools.release.seal_runtime_evidence._output",
         lambda command: "GPU-aaa\nGPU-bbb\nGPU-ccc\n",
     )
 
@@ -56,7 +56,7 @@ def test_undeclared_rank_devices_still_map_ranks_positionally(monkeypatch):
 
 def test_undeclared_rank_devices_fail_closed_when_the_host_is_too_small(monkeypatch):
     monkeypatch.setattr(
-        "tools.seal_runtime_evidence._output", lambda command: "GPU-aaa\n"
+        "tools.release.seal_runtime_evidence._output", lambda command: "GPU-aaa\n"
     )
 
     with pytest.raises(SystemExit, match="requested world size 4, detected 1 GPUs"):
@@ -332,7 +332,9 @@ def test_runtime_sealer_accepts_a_declared_inventory_from_a_second_host(
     """
 
     monkeypatch.setenv("FQ_EVIDENCE_SIGNING_KEY", KEY.decode())
-    monkeypatch.setattr("tools.seal_runtime_evidence._output", lambda command: "a" * 40)
+    monkeypatch.setattr(
+        "tools.release.seal_runtime_evidence._output", lambda command: "a" * 40
+    )
     measurements = tmp_path / "measurements.json"
     measurements.write_text(
         json.dumps(dict(_measured_payload(), world_size=2)), encoding="utf-8"

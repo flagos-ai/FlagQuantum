@@ -10,7 +10,7 @@ from dataclasses import dataclass, field
 from types import MappingProxyType
 from typing import NoReturn
 
-from ..._hybrid.model import (
+from flagquantum.compiler.frontends._structured.model import (
     INDEX,
     Block,
     HybridProgram,
@@ -20,7 +20,11 @@ from ..._hybrid.model import (
     Value,
     ValueId,
 )
-from ..._hybrid.verifier import Diagnostic, HybridVerificationError
+from flagquantum.compiler.frontends._structured.verifier import (
+    Diagnostic,
+    HybridVerificationError,
+)
+
 from ..analysis.ranges import bitwise_width, unsigned_width
 from ..verification.profile import _positive_integer, uint_type, verify_construction
 

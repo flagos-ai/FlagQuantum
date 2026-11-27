@@ -8,12 +8,13 @@ from functools import lru_cache
 
 import torch
 
-from ...kernels.catalog import (
+from flagquantum.simulation.kernels.catalog import (
     KernelImplementation,
     KernelMatchResult,
     KernelRequest,
     match_kernel_implementations,
 )
+
 from ..kernel_dispatch import _require_cataloged_kernel
 from ..numerics.complex_arithmetic import complex_mul
 
@@ -206,7 +207,9 @@ def _apply_cataloged_diagonal_matrix(
         device_type=state.device.type,
         dtype=str(state.dtype).removeprefix("torch."),
     )
-    from ...kernels.triton.statevector_diagonal import apply_complex64_local_diagonal
+    from flagquantum.simulation.kernels.triton.statevector_diagonal import (
+        apply_complex64_local_diagonal,
+    )
 
     diagonal = torch.diagonal(matrix, dim1=-2, dim2=-1)
     return apply_complex64_local_diagonal(

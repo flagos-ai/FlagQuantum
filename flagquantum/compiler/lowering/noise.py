@@ -6,13 +6,11 @@ from collections.abc import Mapping, Sequence
 from dataclasses import replace
 from typing import Any
 
+from flagquantum.core.noise import NoiseModel
+from flagquantum.core.noise_profile import DeviceNoiseProfile
+from flagquantum.core.operators.channels import KrausChannel, thermal_relaxation_channel
+
 from ...core.ir import CircuitIR, Instruction, ensure_circuit_ir
-from ...noise import (
-    DeviceNoiseProfile,
-    KrausChannel,
-    NoiseModel,
-    thermal_relaxation_channel,
-)
 
 
 def _encode_channel_instruction(

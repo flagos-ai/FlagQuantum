@@ -36,7 +36,7 @@ recompute the checksum, so SHA-256 is not described as a signature.
    dispatch strictly by schema. V2 requires SHA-256 integrity with no signature;
    v1 continues to require a valid HMAC and a nonempty supplied key. A v1
    artifact is never silently treated as authenticated without its key.
-5. Allow `tools/seal_runtime_evidence.py` and the hardware preflight to produce
+5. Allow `tools/release/seal_runtime_evidence.py` and the hardware preflight to produce
    v2 without an environment key. A configured key remains an explicit route
    to v1. Update release readers to recognize v2 and verify its checksum and
    the same scientific acceptance conditions.

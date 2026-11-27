@@ -5,13 +5,12 @@ from collections.abc import Iterable
 import pytest
 import torch
 
-from flagquantum.algorithms import (
-    Hamiltonian,
-    HamiltonianTerm,
+from flagquantum.algorithms.optimization.vqe import (
     OptimizerFactory,
     run_adapt_vqe,
     run_vqe,
 )
+from flagquantum.algorithms.primitives.hamiltonian import Hamiltonian, HamiltonianTerm
 from flagquantum.circuit import Circuit
 
 pytestmark = pytest.mark.unit

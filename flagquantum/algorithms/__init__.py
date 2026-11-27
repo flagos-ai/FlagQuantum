@@ -1,5 +1,148 @@
 """Quantum algorithms and hybrid optimization workflows."""
 
+from flagquantum.algorithms.chemistry.molecular import (
+    MAX_FCI_DETERMINANTS,
+    MOLECULAR_ASSUMPTIONS,
+    MOLECULAR_LIMITATIONS,
+    HartreeFockSolution,
+    MolecularHamiltonian,
+    create_molecular_hamiltonian,
+    exact_ground_state_energy,
+    fold_frozen_core,
+    molecular_orbital_integrals,
+    restricted_hartree_fock,
+    second_quantized_hamiltonian,
+)
+from flagquantum.algorithms.chemistry.molecular.integrals import (
+    ATOMIC_NUMBERS,
+    BASIS_SETS,
+    BOHR_RADIUS,
+    AtomicOrbital,
+    MolecularGeometry,
+    MolecularIntegrals,
+    molecular_integrals,
+)
+from flagquantum.algorithms.error_mitigation.cdr import (
+    CDR_ASSUMPTIONS,
+    CDR_LIMITATIONS,
+    CDR_SNAP_OPCODES,
+    CdrResult,
+    CliffordFit,
+    CliffordTrainingPoint,
+    CliffordVariant,
+    clifford_variants,
+    run_cdr,
+)
+from flagquantum.algorithms.error_mitigation.folding import (
+    FOLD_NOISE_SCHEMA,
+    FOLDING_ASSUMPTIONS,
+    FOLDING_PLACEMENTS,
+    FOLDING_SCHEMA,
+    FOLDING_STRATEGIES,
+    FoldingPlan,
+    FoldNoiseAmplification,
+    fold_noise_amplification,
+    fold_program,
+)
+from flagquantum.algorithms.error_mitigation.pec import (
+    PauliTwirlDecomposition,
+    PecLocation,
+    PecResult,
+    pauli_twirl_decomposition,
+    run_pec,
+)
+from flagquantum.algorithms.error_mitigation.readout import (
+    MAX_CORRELATED_BLOCK_QUBITS,
+    NORMALIZATION_TOLERANCE,
+    READOUT_MITIGATION_ASSUMPTIONS,
+    READOUT_MITIGATION_LIMITATIONS,
+    READOUT_MITIGATION_SCHEMA,
+    SINGULAR_VALUE_FLOOR,
+    ReadoutBlock,
+    ReadoutMitigationPlan,
+    ReadoutMitigationResult,
+    plan_readout_mitigation,
+    run_readout_mitigation,
+    run_readout_mitigation_counts,
+)
+from flagquantum.algorithms.many_body.hva import (
+    heisenberg_hva,
+    heisenberg_hva_parameter_count,
+)
+from flagquantum.algorithms.many_body.spin import (
+    heisenberg_chain_hamiltonian,
+    transverse_field_ising,
+    zz_chain_hamiltonian,
+)
+from flagquantum.algorithms.many_body.trotter import (
+    TROTTER_ORDERS,
+    pauli_exponential_circuit,
+    trotter_circuit,
+)
+from flagquantum.algorithms.optimization.qaoa import (
+    QAOA_ASSUMPTIONS,
+    QAOA_LIMITATIONS,
+    QAOAResult,
+    maxcut_hamiltonian,
+    maxcut_objective,
+    run_qaoa,
+)
+from flagquantum.algorithms.optimization.qaoa_circuits import qaoa_circuit, qaoa_loss
+from flagquantum.algorithms.optimization.solvers import (
+    Ansatz,
+    VQESolver,
+    vqe_objective,
+)
+from flagquantum.algorithms.optimization.vqe import (
+    AdaptVQEIteration,
+    AdaptVQEResult,
+    LayerwiseVQEResult,
+    OptimizerFactory,
+    VQEResult,
+    run_adapt_vqe,
+    run_hybrid_vqe,
+    run_layerwise_vqe,
+    run_vqe,
+    vqe_loss,
+)
+from flagquantum.algorithms.optimizers.cobyla import (
+    COBYLA_ASSUMPTIONS,
+    COBYLA_LIMITATIONS,
+    CobylaOptimizer,
+    CobylaResult,
+)
+from flagquantum.algorithms.optimizers.nelder_mead import (
+    NELDER_MEAD_ASSUMPTIONS,
+    NELDER_MEAD_LIMITATIONS,
+    NelderMeadOptimizer,
+    NelderMeadResult,
+)
+from flagquantum.algorithms.optimizers.spsa import (
+    SPSA_ASSUMPTIONS,
+    SPSA_LIMITATIONS,
+    SPSAOptimizer,
+    SPSAResult,
+)
+from flagquantum.algorithms.primitives.ansatz import (
+    hardware_efficient_ansatz,
+    hardware_efficient_parameter_count,
+)
+from flagquantum.algorithms.primitives.arithmetic import (
+    AdderQubits,
+    adder_circuit,
+    adder_qubits,
+)
+from flagquantum.algorithms.primitives.hamiltonian import (
+    Hamiltonian,
+    HamiltonianTerm,
+    pauli_term,
+)
+from flagquantum.algorithms.quantum_ml.encoding import (
+    amplitude_encode,
+    angular_encode,
+    append_angular_encode,
+)
+
 from . import amplitude_estimation as amplitude_estimation
 from . import arithmetic as arithmetic
 from . import cdr as cdr
@@ -27,22 +170,6 @@ from . import spsa as spsa
 from . import svd as svd
 from . import trotter as trotter
 from . import variational as variational
-from .arithmetic import (
-    AdderQubits,
-    adder_circuit,
-    adder_qubits,
-)
-from .cdr import (
-    CDR_ASSUMPTIONS,
-    CDR_LIMITATIONS,
-    CDR_SNAP_OPCODES,
-    CdrResult,
-    CliffordFit,
-    CliffordTrainingPoint,
-    CliffordVariant,
-    clifford_variants,
-    run_cdr,
-)
 from .chemistry import (
     UCCSDExcitations,
     coupler_hardware_efficient_ansatz,
@@ -54,50 +181,6 @@ from .chemistry import (
     uccsd_excitations,
     uccsd_factors,
 )
-from .chemistry_integrals import (
-    ATOMIC_NUMBERS,
-    BASIS_SETS,
-    BOHR_RADIUS,
-    AtomicOrbital,
-    MolecularGeometry,
-    MolecularIntegrals,
-    molecular_integrals,
-)
-from .cobyla import (
-    COBYLA_ASSUMPTIONS,
-    COBYLA_LIMITATIONS,
-    CobylaOptimizer,
-    CobylaResult,
-)
-from .core import (
-    AdaptVQEIteration,
-    AdaptVQEResult,
-    Hamiltonian,
-    HamiltonianTerm,
-    LayerwiseVQEResult,
-    OptimizerFactory,
-    VQEResult,
-    hardware_efficient_ansatz,
-    hardware_efficient_parameter_count,
-    heisenberg_chain_hamiltonian,
-    heisenberg_hva,
-    heisenberg_hva_parameter_count,
-    pauli_term,
-    qaoa_circuit,
-    qaoa_loss,
-    run_adapt_vqe,
-    run_hybrid_vqe,
-    run_layerwise_vqe,
-    run_vqe,
-    transverse_field_ising,
-    vqe_loss,
-    zz_chain_hamiltonian,
-)
-from .data_encoding import (
-    amplitude_encode,
-    angular_encode,
-    append_angular_encode,
-)
 from .error_mitigation import (
     ExtrapolationFit,
     ZneMeasurement,
@@ -107,17 +190,6 @@ from .error_mitigation import (
     run_zne,
     scale_noise_model,
 )
-from .folding import (
-    FOLD_NOISE_SCHEMA,
-    FOLDING_ASSUMPTIONS,
-    FOLDING_PLACEMENTS,
-    FOLDING_SCHEMA,
-    FOLDING_STRATEGIES,
-    FoldingPlan,
-    FoldNoiseAmplification,
-    fold_noise_amplification,
-    fold_program,
-)
 from .logical_resources import (
     LOGICAL_RESOURCE_BASIS,
     SURFACE_CODE_MODEL,
@@ -125,75 +197,11 @@ from .logical_resources import (
     estimate_logical_resources,
     surface_code_qubits_per_logical,
 )
-from .molecular import (
-    MAX_FCI_DETERMINANTS,
-    MOLECULAR_ASSUMPTIONS,
-    MOLECULAR_LIMITATIONS,
-    HartreeFockSolution,
-    MolecularHamiltonian,
-    create_molecular_hamiltonian,
-    exact_ground_state_energy,
-    fold_frozen_core,
-    molecular_orbital_integrals,
-    restricted_hartree_fock,
-    second_quantized_hamiltonian,
-)
-from .nelder_mead import (
-    NELDER_MEAD_ASSUMPTIONS,
-    NELDER_MEAD_LIMITATIONS,
-    NelderMeadOptimizer,
-    NelderMeadResult,
-)
 from .optimization import (
     HybridOptimizationResult,
     OptimizationRecord,
     OptimizationStage,
     optimize_hybrid,
-)
-from .pec import (
-    PauliTwirlDecomposition,
-    PecLocation,
-    PecResult,
-    pauli_twirl_decomposition,
-    run_pec,
-)
-from .readout_mitigation import (
-    MAX_CORRELATED_BLOCK_QUBITS,
-    NORMALIZATION_TOLERANCE,
-    READOUT_MITIGATION_ASSUMPTIONS,
-    READOUT_MITIGATION_LIMITATIONS,
-    READOUT_MITIGATION_SCHEMA,
-    SINGULAR_VALUE_FLOOR,
-    ReadoutBlock,
-    ReadoutMitigationPlan,
-    ReadoutMitigationResult,
-    plan_readout_mitigation,
-    run_readout_mitigation,
-    run_readout_mitigation_counts,
-)
-from .solvers import (
-    Ansatz,
-    VQESolver,
-    vqe_objective,
-)
-from .spsa import (
-    SPSA_ASSUMPTIONS,
-    SPSA_LIMITATIONS,
-    SPSAOptimizer,
-    SPSAResult,
-)
-from .trotter import (
-    TROTTER_ORDERS,
-    pauli_exponential_circuit,
-    trotter_circuit,
-)
-from .variational import (
-    QAOA_ASSUMPTIONS,
-    QAOA_LIMITATIONS,
-    QAOAResult,
-    maxcut_hamiltonian,
-    maxcut_objective,
-    run_qaoa,
 )
 
 __all__ = [

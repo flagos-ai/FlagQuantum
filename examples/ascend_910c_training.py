@@ -37,7 +37,7 @@ def train_rotation(
     import torch
 
     import flagquantum as fq
-    from flagquantum.algorithms import pauli_term
+    from flagquantum.algorithms.primitives.hamiltonian import pauli_term
 
     torch.set_float32_matmul_precision("highest")
     circuit = fq.Circuit(2).ry(0, fq.Parameter("theta")).cx(0, 1)

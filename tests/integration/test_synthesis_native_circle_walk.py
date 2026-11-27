@@ -14,10 +14,10 @@ from examples.synthesis.tutorials.advanced_tutorials.discrete_quantum_walk.compa
     reference_circuit,
 )
 from flagquantum import synth
-from flagquantum.compiler._hybrid.verifier import HybridVerificationError
+from flagquantum.compiler.frontends._structured.verifier import HybridVerificationError
 from flagquantum.errors import PlanningError
 from tests.integration.test_synthesis_native_exact_numbers import definition
-from tools.synthesis_catalog import Case, load_catalog
+from tools.docs.synthesis_catalog import Case, load_catalog
 
 pytestmark = pytest.mark.integration
 ROOT = Path(__file__).resolve().parents[2]

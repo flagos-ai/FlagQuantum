@@ -29,7 +29,7 @@ import torch
 
 import flagquantum as fq
 import flagquantum.observables as observables
-from flagquantum.core.operator_schema import OPERATOR_SCHEMAS, get_operator_schema
+from flagquantum.core.operators.schema import OPERATOR_SCHEMAS, get_operator_schema
 from flagquantum.errors import CapabilityError, FlagQuantumError, ValidationError
 from flagquantum.simulation.stabilizer import (
     CLIFFORD_GATE_NAMES,

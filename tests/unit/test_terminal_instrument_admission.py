@@ -12,8 +12,8 @@ import torch
 
 import flagquantum as fq
 import flagquantum.runtime as runtime
-from flagquantum.runtime.result import MeasurementResult
-from tools import public_api_snapshot
+from flagquantum.runtime.results import MeasurementResult
+from tools.architecture import public_api_snapshot
 
 pytestmark = pytest.mark.unit
 

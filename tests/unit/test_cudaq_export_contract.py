@@ -4,7 +4,7 @@ from pathlib import Path
 
 import pytest
 
-from tools.check_cudaq_export_contract import contract_errors, load_toml
+from tools.validation.check_cudaq_export_contract import contract_errors, load_toml
 
 pytestmark = pytest.mark.unit
 ROOT = Path(__file__).resolve().parents[2]
@@ -55,7 +55,7 @@ def test_contract_rejects_incomplete_opcode_partition() -> None:
 
 def test_ci_checks_contract_and_real_sdk_lane() -> None:
     workflow = (ROOT / ".github" / "workflows" / "ci.yml").read_text(encoding="utf-8")
-    assert "python tools/check_cudaq_export_contract.py" in workflow
+    assert "python tools/validation/check_cudaq_export_contract.py" in workflow
     assert "cudaq-optional:" in workflow
     assert 'OPTIONAL_VERSIONS: "0.15.1 0.16.0.post1"' in workflow
     assert "for version in ${OPTIONAL_VERSIONS}" in workflow

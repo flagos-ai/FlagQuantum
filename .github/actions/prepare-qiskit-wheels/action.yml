@@ -24,7 +24,7 @@ runs:
         # never seed index metadata or suppress live version discovery.
         if [ "$RUNNER_ENVIRONMENT" = self-hosted ] && [ -d "$public_cache/pip-http/http-v2" ]; then
           cache="${PIP_CACHE_DIR:-${XDG_CACHE_HOME:-$HOME/.cache}/pip}"
-          "$resolver" tools/ci_pip_wheel_cache.py "$public_cache/pip-http" "$cache"
+          "$resolver" tools/ci/ci_pip_wheel_cache.py "$public_cache/pip-http" "$cache"
         fi
         requirements=("qiskit[qasm3-import]==${QISKIT_VERSION}" 'qiskit-aer==0.17.*' 'sympy>=1.13,<2')
         index="${PIP_INDEX_URL:-https://pypi.org/simple}"

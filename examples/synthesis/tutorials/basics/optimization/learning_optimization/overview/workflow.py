@@ -7,7 +7,10 @@ import torch
 
 import flagquantum as fq
 from flagquantum import synth
-from flagquantum.algorithms import NelderMeadOptimizer, NelderMeadResult
+from flagquantum.algorithms.optimizers.nelder_mead import (
+    NelderMeadOptimizer,
+    NelderMeadResult,
+)
 
 from .program import build_program
 

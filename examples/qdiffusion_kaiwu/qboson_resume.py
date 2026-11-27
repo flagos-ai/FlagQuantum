@@ -36,7 +36,7 @@ from examples.qdiffusion_kaiwu.verify_environment_lock import (
     SHA256,
     verify_environment_lock,
 )
-from flagquantum.remote.kaiwu import (
+from flagquantum.compute.remote.kaiwu import (
     KaiwuCredentials,
     KaiwuSDKClient,
     KaiwuTaskClient,

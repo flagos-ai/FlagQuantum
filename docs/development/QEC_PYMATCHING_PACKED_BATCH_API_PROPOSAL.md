@@ -65,7 +65,7 @@ its own consumer-unchanged replacement test and explicit API proposal.
    using controlled fake SDK buffers, plus existing available-profile assertions.
    The existing integration file has a module-level importorskip, so pure cases
    must not be placed there. Preserve that guard and original test selection.
-8. tools/qec_installed_smoke.py — mandatory packed example in PyMatching/both
+8. tools/release/qec_installed_smoke.py — mandatory packed example in PyMatching/both
    wheel and sdist profiles, leaving all original sample/report cells intact.
 
 ## Proposed user code and expected output
@@ -103,9 +103,9 @@ this review. Future implementation acceptance commands:
 ```sh
 python -m pytest -q tests/unit/test_qec_installed_profiles.py tests/qec/test_pymatching_batch.py tests/qec/test_adapters_pymatching.py tests/qec/test_independent_batch_decoding.py
 python tools/check_dependency_policy.py
-python -m ruff check flagquantum/qec/adapters/pymatching.py tests/qec/test_pymatching_batch.py tests/unit/test_qec_installed_profiles.py tools/qec_installed_smoke.py
-python -m black --check flagquantum/qec/adapters/pymatching.py tests/qec/test_pymatching_batch.py tests/unit/test_qec_installed_profiles.py tools/qec_installed_smoke.py
-python -m mypy --strict --explicit-package-bases --follow-imports=silent flagquantum/qec/adapters/pymatching.py tests/qec/test_pymatching_batch.py tests/unit/test_qec_installed_profiles.py tools/qec_installed_smoke.py
+python -m ruff check flagquantum/qec/adapters/pymatching.py tests/qec/test_pymatching_batch.py tests/unit/test_qec_installed_profiles.py tools/release/qec_installed_smoke.py
+python -m black --check flagquantum/qec/adapters/pymatching.py tests/qec/test_pymatching_batch.py tests/unit/test_qec_installed_profiles.py tools/release/qec_installed_smoke.py
+python -m mypy --strict --explicit-package-bases --follow-imports=silent flagquantum/qec/adapters/pymatching.py tests/qec/test_pymatching_batch.py tests/unit/test_qec_installed_profiles.py tools/release/qec_installed_smoke.py
 ```
 
 Use the repository-required pinned quality versions and supported Python matrix;

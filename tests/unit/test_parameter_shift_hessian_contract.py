@@ -4,7 +4,7 @@
 own the behaviour of ``fq.gradient``; ``tests/test_native_circuit.py`` owns the
 batch profile. This file owns
 ``contracts/parameter-shift-hessian-contract.toml`` and
-``tools/check_parameter_shift_hessian_contract.py``, and asks one question of
+``tools/validation/check_parameter_shift_hessian_contract.py``, and asks one question of
 them -- is the second-order route still the first-order rule read twice, or has a
 second table of coefficients grown next to it?
 
@@ -19,7 +19,7 @@ and is therefore the only route here that is independent rather than merely
 consistent.
 
 The final section asks whether the gate is wired into CI and
-``tools/pre_push.py`` at all.
+``tools/ci/pre_push.py`` at all.
 """
 
 from __future__ import annotations
@@ -50,7 +50,7 @@ ROOT = Path(__file__).resolve().parents[2]
 CONTRACT = ROOT / "contracts" / "parameter-shift-hessian-contract.toml"
 IMPLEMENTATION = ROOT / "flagquantum" / "gradients.py"
 
-_GATE_PATH = ROOT / "tools" / "check_parameter_shift_hessian_contract.py"
+_GATE_PATH = ROOT / "tools" / "validation/check_parameter_shift_hessian_contract.py"
 _GATE_SPEC = importlib.util.spec_from_file_location(
     "check_parameter_shift_hessian_contract", _GATE_PATH
 )
@@ -503,7 +503,7 @@ def test_a_loss_that_is_not_a_scalar_is_refused_by_both_entry_points() -> None:
 
 
 # --------------------------------------------------------------------------------------
-# The gate: `tools/check_parameter_shift_hessian_contract.py`
+# The gate: `tools/validation/check_parameter_shift_hessian_contract.py`
 # --------------------------------------------------------------------------------------
 #
 # The tests above ask whether the contract is true of the code. This section asks
@@ -519,9 +519,11 @@ def test_the_gate_runs_in_ci_and_before_push() -> None:
     """A gate that no workflow invokes is a script, not a gate."""
 
     workflow = (ROOT / ".github/workflows/ci.yml").read_text(encoding="utf-8")
-    assert "python tools/check_parameter_shift_hessian_contract.py" in workflow
-    pre_push = (ROOT / "tools/pre_push.py").read_text(encoding="utf-8")
-    assert '"tools/check_parameter_shift_hessian_contract.py"' in pre_push
+    assert (
+        "python tools/validation/check_parameter_shift_hessian_contract.py" in workflow
+    )
+    pre_push = (ROOT / "tools/ci/pre_push.py").read_text(encoding="utf-8")
+    assert '"tools/validation/check_parameter_shift_hessian_contract.py"' in pre_push
 
 
 def test_the_gate_reports_what_it_measured() -> None:

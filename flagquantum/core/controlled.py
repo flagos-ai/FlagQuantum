@@ -49,14 +49,15 @@ import math
 from collections.abc import Mapping, Sequence
 from typing import Any
 
-from .ir import Instruction
-from .operator_schema import (
+from flagquantum.core.operators.schema import (
     CONTROL_PARTNERS,
     MAX_LADDER_LEVEL,
     OperatorSchema,
     control_ladder_level,
     get_operator_schema,
 )
+
+from .ir import Instruction
 
 __all__ = ["controlled_instructions"]
 

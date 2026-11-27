@@ -1309,7 +1309,7 @@ parity-check matrices, [dem/text.py](dem/text.py) for the stim text reader,
 
 ```bash
 python -m pytest tests/qec -q
-python tools/check_architecture.py
+python tools/architecture/check_architecture.py
 ```
 
 Check syndrome histories, correction actions, and final logical outcomes for

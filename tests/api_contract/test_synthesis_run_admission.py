@@ -12,7 +12,7 @@ import flagquantum as fq
 from examples.synthesis.tutorials.getting_started.trial.main import pressure
 from flagquantum import synth
 from flagquantum.runtime.execution_plan import ExecutionPlan
-from flagquantum.runtime.result import ExecutionResult
+from flagquantum.runtime.results import ExecutionResult
 
 pytestmark = pytest.mark.integration
 OVERRIDES = (
@@ -171,3 +171,31 @@ def test_changed_product_is_rejected_before_existing_runtime_dispatch(
     monkeypatch.setattr(execution, "run", forbidden)
     with pytest.raises(ValueError, match="circuit changed"):
         fq.run(program)
+
+
+def test_canonical_factory_runs_without_loading_the_historical_services_module() -> (
+    None
+):
+    code = """
+import sys
+import flagquantum as fq
+from flagquantum import synth
+from examples.synthesis.tutorials.getting_started.trial.main import polynomial
+program = synth.synthesize(
+    polynomial,
+    inputs={"x": synth.UInt(1), "y": synth.UInt(1)},
+    input_state=synth.InputState.basis(x=1, y=0),
+)
+assert "flagquantum.services.synthesis" not in sys.modules
+result = fq.run(program)
+assert dict(program.probabilities(result, registers=("x", "y", "result"))) == {(1, 0, 1): 1.0}
+assert "flagquantum.services.synthesis" not in sys.modules
+"""
+    subprocess.run(
+        [sys.executable, "-c", code],
+        cwd=Path(__file__).resolve().parents[2],
+        check=True,
+        capture_output=True,
+        text=True,
+        timeout=60,
+    )

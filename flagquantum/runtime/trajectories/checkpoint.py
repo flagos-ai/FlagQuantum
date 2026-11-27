@@ -11,8 +11,9 @@ from typing import Any
 
 import torch
 
+from flagquantum.runtime.results.trajectories import TrajectoryFailure
+
 from .ownership import owned_trajectory_ids
-from .result import TrajectoryFailure
 from .statistics import TensorWelford
 
 TRAJECTORY_CHECKPOINT_VERSION = "flagquantum_trajectory_checkpoint_v1"

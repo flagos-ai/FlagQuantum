@@ -28,8 +28,9 @@ from typing import Any
 
 import torch
 
+from flagquantum.core.operators.schema import OPERATOR_SCHEMAS
+
 from .ir import ensure_circuit_ir
-from .operator_schema import OPERATOR_SCHEMAS
 
 # The displacement one probe moves a parameter by. It is not a shift rule's
 # displacement: it only has to move the angle far enough that the probe

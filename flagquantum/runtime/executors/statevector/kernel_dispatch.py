@@ -7,8 +7,12 @@ from dataclasses import dataclass, field, replace
 from functools import lru_cache
 from typing import Any
 
-from ....kernels.catalog import KernelRequest, match_kernel_implementations
-from ....kernels.provenance import triton_compiler_provenance
+from flagquantum.simulation.kernels.catalog import (
+    KernelRequest,
+    match_kernel_implementations,
+)
+from flagquantum.simulation.kernels.provenance import triton_compiler_provenance
+
 from .environment import mode
 
 

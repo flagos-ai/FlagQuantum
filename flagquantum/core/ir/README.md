@@ -51,7 +51,7 @@ control-flow graph.
 
 Only `flagquantum/core/` and the standard library. The package must not import
 Compiler, Runtime, Simulation, Compute, Remote, ecosystem adapters, or any vendor
-SDK. `tools/check_architecture.py` enforces this.
+SDK. `tools/architecture/check_architecture.py` enforces this.
 
 ## Public entry points
 
@@ -90,7 +90,7 @@ code, raise it, declare it, and let the gate confirm both directions.
 ```bash
 python tools/check_multi_level_ir_contract.py
 python -m pytest tests/unit/test_multi_level_ir_contract.py -q
-python tools/ci_tier.py pr-runtime
+python tools/ci/ci_tier.py pr-runtime
 ```
 
 `tools/check_multi_level_ir_contract.py` fails if a declared code is never

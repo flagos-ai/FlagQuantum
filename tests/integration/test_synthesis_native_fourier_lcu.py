@@ -20,7 +20,7 @@ from examples.synthesis.tutorials.basics.quantum_primitives.linear_combination_o
 )
 from flagquantum import synth
 from flagquantum.compiler import ResourceEstimate
-from flagquantum.compiler._hybrid.verifier import HybridVerificationError
+from flagquantum.compiler.frontends._structured.verifier import HybridVerificationError
 from flagquantum.errors import PlanningError
 
 pytestmark = pytest.mark.integration

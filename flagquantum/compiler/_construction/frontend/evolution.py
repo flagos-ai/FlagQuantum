@@ -7,8 +7,9 @@ import math
 from dataclasses import dataclass
 from typing import TYPE_CHECKING
 
-from ....observables import Observable, _PauliTerm
-from ..._hybrid.model import Value
+from flagquantum.compiler.frontends._structured.model import Value
+from flagquantum.core.operators.observable import Observable, _PauliTerm
+
 from ...lowering import _pauli_products, _pauli_schedule
 from ..semantics.pauli_rotation import Support
 from ..verification.register_profile import register_width

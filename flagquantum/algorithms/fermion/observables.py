@@ -2,8 +2,8 @@
 
 from __future__ import annotations
 
-from ...core.algebra.pauli import PauliOperator
-from ...observables import I, Observable, X, Y, Z
+from flagquantum.core.operators.observable import I, Observable, X, Y, Z
+from flagquantum.core.operators.pauli import PauliOperator
 
 
 def to_observable(operator: PauliOperator, *, atol: float = 1e-10) -> Observable:

@@ -10,7 +10,7 @@ from flagquantum.compiler._construction.verification.profile import (
     uint_type,
     verify_construction,
 )
-from flagquantum.compiler._hybrid.model import (
+from flagquantum.compiler.frontends._structured.model import (
     INDEX,
     Block,
     HybridProgram,
@@ -20,7 +20,7 @@ from flagquantum.compiler._hybrid.model import (
     Value,
     ValueId,
 )
-from flagquantum.compiler._hybrid.verifier import (
+from flagquantum.compiler.frontends._structured.verifier import (
     HybridVerificationError,
     verify_program,
 )
@@ -399,7 +399,7 @@ def test_malformed_function_structure_fails_closed(case: str) -> None:
 
 
 def test_raw_quantum_type_and_constant_obey_safety_width() -> None:
-    from flagquantum.compiler._hybrid.model import IRType
+    from flagquantum.compiler.frontends._structured.model import IRType
 
     forged = Value(ValueId("main", 0), IRType("quantum.uint", (True,)))
     main = function("main", (forged,), (Operation("qint.return", (forged,)),))

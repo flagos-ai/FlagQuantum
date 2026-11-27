@@ -220,9 +220,9 @@ alone that no amplitude store existed, in the same way that
       `release_gate_allowed = false`.
 - [x] `docs/public_api_v1.json`, `IR_VERSION`, and every serialized schema
       version are unchanged apart from the added enum value.
-- [x] `python tools/ci_tier.py pr-runtime` passes.
+- [x] `python tools/ci/ci_tier.py pr-runtime` passes.
       Measured: `1195 passed, 53 skipped, 5505 deselected in 138.56s`.
-- [x] `python tools/ci_tier.py pr-default` passes everything this change can
+- [x] `python tools/ci/ci_tier.py pr-default` passes everything this change can
       affect. Measured: `1 failed, 4666 passed, 186 skipped, 1900 deselected in
       109.83s`. The single failure is
       `tests/unit/test_native_cpu_adjoint.py::test_compact_cx_runtime_threshold_and_rollback`,

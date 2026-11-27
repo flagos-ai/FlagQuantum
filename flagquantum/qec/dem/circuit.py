@@ -86,7 +86,7 @@ from typing import TYPE_CHECKING, Any
 import torch
 
 from flagquantum.core.ir import CircuitIR, Instruction, ensure_circuit_ir
-from flagquantum.core.operator_schema import canonical_opcode
+from flagquantum.core.operators.schema import canonical_opcode
 from flagquantum.qec.dem.alternatives import fault_groups
 
 if TYPE_CHECKING:  # pragma: no cover - imported for typing only

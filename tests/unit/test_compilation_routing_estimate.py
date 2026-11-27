@@ -263,7 +263,7 @@ def test_the_automatic_choice_is_always_accepted_by_deployment() -> None:
     candidate set without the deployment contract accepting its plan.
     """
 
-    from flagquantum.deployment.routing_evidence import (
+    from flagquantum.compiler.artifacts.routing_evidence import (
         DeploymentRoutingEvidenceError,
         validate_deployment_routing_plan,
     )

@@ -1,6 +1,6 @@
 """A recorded evidence revision must be obtainable, or say why it is not.
 
-Only six validators asked `tools/evidence_provenance.py` whether a recorded
+Only six validators asked `tools/release/evidence_provenance.py` whether a recorded
 revision names a real commit, and each one had its artifact path written into it.
 An artifact that no validator named was never asked, so nineteen artifacts under
 `artifacts/` recorded revisions this repository does not contain and thirteen of
@@ -47,7 +47,7 @@ try:
 except ModuleNotFoundError:  # pragma: no cover - Python 3.10 compatibility
     import tomli as tomllib  # type: ignore[no-redef]
 
-from tools.check_evidence_revisions import (
+from tools.release.check_evidence_revisions import (
     CITATION_ROOTS,
     DECLARATIONS,
     EVIDENCE_ROOTS,
@@ -62,7 +62,7 @@ from tools.check_evidence_revisions import (
     recorded_revisions,
     revision_field_names,
 )
-from tools.evidence_provenance import (
+from tools.release.evidence_provenance import (
     ORIGIN_PRODUCING_HOST_HISTORY,
     SUPPORTED_REVISION_ORIGINS,
     ProvenanceUnavailableError,
@@ -529,7 +529,7 @@ def test_declared_revision_no_ref_reaches_passes(repository: Path) -> None:
 
 def test_origin_stated_inside_the_artifact_accounts_for_it(repository: Path) -> None:
     # Red before this change: the artifact disclosed why its pin is not obtainable
-    # here, `tools/evidence_provenance.py` read that disclosure, and this gate
+    # here, `tools/release/evidence_provenance.py` read that disclosure, and this gate
     # ignored it and demanded a row in the table anyway -- two records of one fact,
     # neither aware of the other. Six checked-in artifacts state their own origin,
     # so the disagreement was reachable on real evidence.
@@ -989,7 +989,7 @@ def test_an_unsupported_origin_beside_the_shortened_field_fails(
     repository: Path,
 ) -> None:
     # `repository_history` is the artifact-side default in
-    # `tools/evidence_provenance.py`, and it is the one origin that cannot be stated:
+    # `tools/release/evidence_provenance.py`, and it is the one origin that cannot be stated:
     # a revision from this repository's history resolves, so a value that does not
     # resolve is not one. The two vocabularies overlap in `producing_host_history`
     # only, and the check reads the gate's vocabulary.
@@ -1402,7 +1402,7 @@ def test_checked_in_artifacts_state_origins_the_gate_reads() -> None:
     # gate over it.
     #
     # The vocabulary is asserted too: an origin written inside an artifact is read by
-    # `tools/evidence_provenance.py` as well, so it must be one that module supports.
+    # `tools/release/evidence_provenance.py` as well, so it must be one that module supports.
     # `producing_host_history` is the only value the two vocabularies share, and the
     # only one any checked-in artifact states.
     stated: list[tuple[str, str, str]] = []

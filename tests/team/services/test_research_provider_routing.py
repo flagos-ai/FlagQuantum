@@ -4,16 +4,23 @@ from dataclasses import dataclass
 
 import pytest
 
+from flagquantum.algorithms.optimization import (
+    _research_execution as research_execution,
+)
+from flagquantum.algorithms.optimization._research_providers import (
+    ResearchProviderAvailability,
+)
+from flagquantum.algorithms.optimization.ground_state import (
+    GroundStateVQEResult,
+    run_ground_state_vqe,
+)
 from flagquantum.services import (
     GroundStateVQERequest,
     PauliSum,
     PauliSumTerm,
     execute_research_capability,
-    research_execution,
     validate_research_evidence,
 )
-from flagquantum.services.ground_state import GroundStateVQEResult, run_ground_state_vqe
-from flagquantum.services.research_providers import ResearchProviderAvailability
 
 pytestmark = pytest.mark.unit
 

@@ -10,9 +10,7 @@ try:
 except ModuleNotFoundError:  # pragma: no cover - Python 3.10 compatibility
     import tomli as tomllib
 
-from tools.check_dependency_policy import policy_errors
-from tools.check_import_time import sample_imports
-from tools.check_repository_hygiene import (
+from tools.architecture.check_repository_hygiene import (
     DEFAULT_MAX_FILE_BYTES,
     DEFAULT_MAX_RESULT_BYTES,
     DEFAULT_MAX_RESULT_FILES,
@@ -23,7 +21,9 @@ from tools.check_repository_hygiene import (
     repository_metrics,
     violations,
 )
-from tools.fetch_example_assets import verify_asset
+from tools.check_dependency_policy import policy_errors
+from tools.docs.fetch_example_assets import verify_asset
+from tools.validation.check_import_time import sample_imports
 from tools.verify_distribution_artifacts import _forbidden
 
 pytestmark = pytest.mark.unit
@@ -52,7 +52,7 @@ def test_generated_evidence_budgets_remain_strict() -> None:
 def test_general_growth_is_advisory_while_artifacts_remain_rejected(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]
 ) -> None:
-    import tools.check_repository_hygiene as hygiene
+    import tools.architecture.check_repository_hygiene as hygiene
 
     source = tmp_path / "code.py"
     source.write_text("print('hello')\n")
@@ -90,7 +90,7 @@ def test_general_growth_is_advisory_while_artifacts_remain_rejected(
 def test_artifact_and_large_file_rejections_survive_policy_change(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch, name: str
 ) -> None:
-    import tools.check_repository_hygiene as hygiene
+    import tools.architecture.check_repository_hygiene as hygiene
 
     artifact = tmp_path / name
     artifact.parent.mkdir(parents=True, exist_ok=True)

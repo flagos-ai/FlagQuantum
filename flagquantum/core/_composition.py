@@ -40,11 +40,16 @@ from typing import Any
 
 import torch
 
+from flagquantum.core.operators.schema import (
+    get_operator_schema,
+    inverse_operator,
+    power_operator,
+)
+
 from ..errors import CapabilityError
 from .classical_control import is_classical_control_instruction
 from .controlled import controlled_instructions
 from .ir import Instruction
-from .operator_schema import get_operator_schema, inverse_operator, power_operator
 
 
 def _is_finite_unitary(matrix: torch.Tensor) -> bool:

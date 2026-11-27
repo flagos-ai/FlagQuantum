@@ -1,0 +1,447 @@
+#!/usr/bin/env python3
+"""Run the CPU-safe checks that should block a FlagQuantum push.
+
+The hook reuses checked-in pre-commit hooks and CI tiers. It intentionally
+leaves clean-environment version matrices, package installation, supply-chain
+audits, and accelerator jobs to GitHub Actions.
+"""
+
+from __future__ import annotations
+
+import sys as _entry_sys
+from pathlib import Path as _EntryPath
+
+if __package__ in (None, ""):
+    _entry_sys.path.insert(0, str(_EntryPath(__file__).resolve().parents[2]))
+
+
+import argparse
+import os
+import shutil
+import subprocess
+import sys
+import tempfile
+from collections.abc import Sequence
+from dataclasses import dataclass
+from pathlib import Path
+
+Command = tuple[str, ...]
+
+
+@dataclass(frozen=True)
+class Check:
+    name: str
+    command: Command
+
+
+def environment_executable(python_executable: str, name: str) -> str:
+    python_path = Path(python_executable)
+    if python_path.is_absolute():
+        candidate = python_path.with_name(name)
+        if candidate.is_file():
+            return str(candidate)
+    return name
+
+
+def checks(python_executable: str) -> tuple[Check, ...]:
+    pre_commit = environment_executable(python_executable, "pre-commit")
+    mypy = environment_executable(python_executable, "mypy")
+    return (
+        Check(
+            "pre-commit",
+            (
+                pre_commit,
+                "run",
+                "--all-files",
+                "--hook-stage",
+                "pre-commit",
+                "--show-diff-on-failure",
+            ),
+        ),
+        Check(
+            "strict type check of the whole package",
+            # Target 3.12 because numpy's bundled stubs use PEP 695 ``type``
+            # statements, which mypy only parses at 3.12. A developer
+            # environment installs numpy through the jax extra, so leaving the
+            # target at pyproject's 3.10 fails before any file is checked.
+            (
+                mypy,
+                "--strict",
+                "--python-version",
+                "3.12",
+                "--ignore-missing-imports",
+                "flagquantum",
+            ),
+        ),
+        Check(
+            "strict type check of the CI tooling",
+            (
+                mypy,
+                "--strict",
+                "--python-version",
+                "3.12",
+                "--ignore-missing-imports",
+                "--follow-imports",
+                "skip",
+                "tools/ci/ci_tier.py",
+                "tools/release/check_evidence_retention.py",
+            ),
+        ),
+        Check(
+            "capability maturity",
+            (python_executable, "tools/validation/check_capability_maturity.py"),
+        ),
+        Check(
+            "dependency policy",
+            (python_executable, "tools/check_dependency_policy.py"),
+        ),
+        Check(
+            "Amazon Braket circuit interoperability contract",
+            (python_executable, "tools/validation/check_braket_interop_contract.py"),
+        ),
+        Check(
+            "Cirq interoperability contract",
+            (python_executable, "tools/check_cirq_interop_contract.py"),
+        ),
+        Check(
+            "CUDA-Q export contract",
+            (python_executable, "tools/validation/check_cudaq_export_contract.py"),
+        ),
+        Check(
+            "Qiskit interoperability contract",
+            (python_executable, "tools/validation/check_qiskit_interop_contract.py"),
+        ),
+        Check(
+            "PennyLane interoperability contract",
+            (python_executable, "tools/validation/check_pennylane_interop_contract.py"),
+        ),
+        Check(
+            "interoperability capability-gap matrix",
+            (
+                python_executable,
+                "tools/validation/check_interop_capability_gap_matrix.py",
+            ),
+        ),
+        Check(
+            "construction-time composition contract",
+            (
+                python_executable,
+                "tools/validation/check_circuit_composition_contract.py",
+            ),
+        ),
+        Check(
+            "density-matrix output contract",
+            (
+                python_executable,
+                "tools/validation/check_density_matrix_output_contract.py",
+            ),
+        ),
+        Check(
+            "von Neumann entropy output contract",
+            (python_executable, "tools/validation/check_vn_entropy_output_contract.py"),
+        ),
+        Check(
+            "batch parameter-shift coverage contract",
+            (
+                python_executable,
+                "tools/validation/check_parameter_shift_coverage_contract.py",
+            ),
+        ),
+        Check(
+            "parameter-shift Hessian contract",
+            (
+                python_executable,
+                "tools/validation/check_parameter_shift_hessian_contract.py",
+            ),
+        ),
+        Check(
+            "opcode gradient exactness contract",
+            (python_executable, "tools/validation/check_opcode_gradient_exactness.py"),
+        ),
+        Check(
+            "gradient method and execution mode matrix",
+            (python_executable, "tools/validation/check_gradient_methods_contract.py"),
+        ),
+        Check(
+            "native gradients contract",
+            (python_executable, "tools/validation/check_native_gradients_contract.py"),
+        ),
+        Check(
+            "metric tensor contract",
+            (python_executable, "tools/validation/check_metric_tensor_contract.py"),
+        ),
+        Check(
+            "primitives admission contract",
+            (
+                python_executable,
+                "tools/validation/check_primitives_admission_contract.py",
+            ),
+        ),
+        Check(
+            "construction-layer acceptance contract",
+            (
+                python_executable,
+                "tools/validation/check_construction_acceptance_contract.py",
+            ),
+        ),
+        Check(
+            "OpenQASM import contract",
+            (python_executable, "tools/validation/check_openqasm_import_contract.py"),
+        ),
+        Check(
+            "internal multi-level IR contract",
+            (python_executable, "tools/check_multi_level_ir_contract.py"),
+        ),
+        Check(
+            "realtime messaging contract",
+            (
+                python_executable,
+                "tools/validation/check_realtime_messaging_contract.py",
+            ),
+        ),
+        Check(
+            "qubit vocabulary ledgers",
+            (python_executable, "tools/architecture/check_qubit_vocabulary.py"),
+        ),
+        Check(
+            "Double-Single FP32 contract",
+            (python_executable, "tools/validation/check_double_single_contract.py"),
+        ),
+        Check(
+            "split real/imag statevector P0 contract",
+            (python_executable, "tools/validation/check_split_real_imag_contract.py"),
+        ),
+        Check(
+            "split real/imag statevector P1 contract",
+            (
+                python_executable,
+                "tools/validation/check_split_real_imag_p1_contract.py",
+            ),
+        ),
+        Check(
+            "split real/imag P1 A800 reference evidence",
+            (
+                python_executable,
+                "tools/validation/validate_split_real_imag_training_evidence.py",
+            ),
+        ),
+        Check(
+            "split real/imag statevector P2 precision contract",
+            (
+                python_executable,
+                "tools/validation/check_split_real_imag_p2_precision_contract.py",
+            ),
+        ),
+        Check(
+            "split real/imag P2 A800 reference evidence",
+            (
+                python_executable,
+                "tools/validation/validate_split_real_imag_precision_evidence.py",
+            ),
+        ),
+        Check(
+            "split real/imag statevector P3 Double-Single contract",
+            (
+                python_executable,
+                "tools/validation/check_split_real_imag_p3_double_single_contract.py",
+            ),
+        ),
+        Check(
+            "split real/imag P3 A800 reference evidence",
+            (
+                python_executable,
+                "tools/validation/validate_split_real_imag_double_single_evidence.py",
+            ),
+        ),
+        Check(
+            "split real/imag statevector P4 device Double-Single contract",
+            (
+                python_executable,
+                "tools/validation/check_split_real_imag_p4_device_double_single_contract.py",
+            ),
+        ),
+        Check(
+            "split real/imag P4 A800 reference evidence",
+            (
+                python_executable,
+                "tools/validation/validate_split_real_imag_device_double_single_evidence.py",
+            ),
+        ),
+        Check(
+            "split real/imag statevector P5 autograd/optimizer contract",
+            (
+                python_executable,
+                "tools/validation/check_split_real_imag_p5_autograd_optimizer_contract.py",
+            ),
+        ),
+        Check(
+            "split real/imag P5 optimizer A800 reference evidence",
+            (
+                python_executable,
+                "tools/validation/validate_split_real_imag_optimizer_evidence.py",
+            ),
+        ),
+        Check(
+            "domestic single-card certification contract",
+            (
+                python_executable,
+                "tools/validation/check_domestic_single_card_contract.py",
+            ),
+        ),
+        Check(
+            "required-check contract",
+            (python_executable, "tools/ci/validate_required_checks.py"),
+        ),
+        Check(
+            # This gate reads checked-in evidence and the git object database, so it
+            # runs anywhere the repository is, and it is the only reader of the
+            # revisions a benchmark artifact records. A change that replaces an
+            # artifact's recorded revision and leaves `evidence-revision-origins.toml`
+            # naming the old one passes every other check in this list, so the one
+            # place it can be caught before the branch is published is here.
+            "evidence revision provenance",
+            (python_executable, "tools/release/check_evidence_revisions.py"),
+        ),
+        Check(
+            # The ledger is the only enumerated record of the plan's rows, and the
+            # plan itself lives outside this repository. Nothing else reads it: the
+            # generated parity matrix is a different document about capabilities,
+            # and no gate walks `contracts/` looking for unregistered ledgers. A
+            # defect in it -- a row that disappears, a row that silently becomes
+            # done, a gate tier no lane runs -- is caught only here, and only
+            # before the branch is published.
+            "parity plan row ledger",
+            (python_executable, "tools/architecture/parity_plan_ledger.py", "--check"),
+        ),
+        Check(
+            "multi-team ownership policy",
+            (python_executable, "tools/architecture/check_team_scope.py", "--validate"),
+        ),
+        Check(
+            "ownership of every path this branch changes",
+            # `--validate` above only reads the policy; it never resolves a
+            # path, so a change that adds a file no rule covers passes it. This
+            # step is the local half of the CI classification step, and it
+            # fails closed: `origin/main` is the base every ordinary branch is
+            # cut from, and an unfetched or renamed remote reports that the base
+            # revision could not be resolved rather than reading as a pass.
+            (
+                python_executable,
+                "tools/architecture/check_team_scope.py",
+                "--require-classified",
+                "--base",
+                "origin/main",
+            ),
+        ),
+        Check(
+            "retention metadata for new benchmark evidence",
+            (
+                python_executable,
+                "tools/release/check_evidence_retention.py",
+                "--base",
+                "origin/main",
+            ),
+        ),
+        Check(
+            "lazy import budget",
+            (python_executable, "tools/validation/check_import_time.py"),
+        ),
+        Check(
+            "smoke and unit tier",
+            (python_executable, "tools/ci/ci_tier.py", "pr-default"),
+        ),
+        Check(
+            "runtime integration tier",
+            (python_executable, "tools/ci/ci_tier.py", "pr-runtime"),
+        ),
+        Check(
+            "distributed CPU and release-contract tier",
+            (python_executable, "tools/ci/ci_tier.py", "pr-distributed"),
+        ),
+    )
+
+
+def run_checks(
+    selected: Sequence[Check],
+    *,
+    root: Path,
+    dry_run: bool,
+    python_executable: str | None = None,
+) -> int:
+    environment = os.environ.copy()
+    environment.setdefault(
+        "BLACK_CACHE_DIR",
+        str(Path(tempfile.gettempdir()) / "flagquantum-black-cache"),
+    )
+    if python_executable:
+        # Prepend the directory that holds the interpreter as invoked.
+        # Resolving the path first would follow a virtual environment's
+        # ``python`` symlink into the base interpreter's ``bin``, put that
+        # directory first on ``PATH``, and shadow the environment's own console
+        # scripts. A bare command name has no directory of its own, so it is
+        # left to the ambient ``PATH`` rather than resolving to the working
+        # directory.
+        python_bin = Path(python_executable).parent
+        if python_bin.name:
+            environment["PATH"] = os.pathsep.join(
+                (str(python_bin), environment.get("PATH", ""))
+            )
+    for index, check in enumerate(selected, start=1):
+        rendered = " ".join(check.command)
+        print(
+            f"\n[{index}/{len(selected)}] {check.name}\n+ {rendered}",
+            flush=True,
+        )
+        if dry_run:
+            continue
+        executable = check.command[0]
+        if shutil.which(executable, path=environment["PATH"]) is None:
+            print(
+                f"error: required executable is not installed: {executable}",
+                file=sys.stderr,
+            )
+            return 127
+        result = subprocess.run(
+            check.command,
+            cwd=root,
+            check=False,
+            env=environment,
+        )
+        if result.returncode != 0:
+            print(
+                f"\npre-push blocked by: {check.name}",
+                file=sys.stderr,
+            )
+            return result.returncode
+    print("\nFlagQuantum pre-push gate passed.", flush=True)
+    return 0
+
+
+def parse_args(argv: Sequence[str]) -> argparse.Namespace:
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument(
+        "--dry-run",
+        action="store_true",
+        help="Print the gate without executing commands.",
+    )
+    parser.add_argument(
+        "--python",
+        default=sys.executable,
+        help="Python executable used by checked-in CI tools.",
+    )
+    return parser.parse_args(argv)
+
+
+def main(argv: Sequence[str] | None = None) -> int:
+    args = parse_args(sys.argv[1:] if argv is None else argv)
+    root = Path(__file__).resolve().parents[2]
+    return run_checks(
+        checks(args.python),
+        root=root,
+        dry_run=args.dry_run,
+        python_executable=args.python,
+    )
+
+
+if __name__ == "__main__":
+    raise SystemExit(main())

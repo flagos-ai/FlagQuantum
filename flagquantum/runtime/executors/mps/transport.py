@@ -11,7 +11,7 @@ from collections.abc import Callable, Sequence
 import torch
 import torch.distributed as dist
 
-from ....compute import get_platform_runtime
+from flagquantum.compute.local import get_platform_runtime
 
 
 def _p2p_timeout() -> datetime.timedelta:

@@ -73,7 +73,7 @@ on a circuit built from one.
 
 **The register parameter is spelled ``qubits``, and the older primitives are not.** This
 package is migrating every public parameter named after the retired vocabulary to its
-qubit-named spelling, and ``tools/check_qubit_vocabulary.py`` fails closed when a new
+qubit-named spelling, and ``tools/architecture/check_qubit_vocabulary.py`` fails closed when a new
 public parameter grows the ledger -- correctly, because a migration that admits new debt
 never finishes. So a module landing now lands on the target vocabulary rather than on the
 one being retired, and a seam between the two spellings inside this package is the seam of

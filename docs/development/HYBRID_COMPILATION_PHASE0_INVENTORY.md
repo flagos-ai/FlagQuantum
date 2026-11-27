@@ -155,7 +155,7 @@ The migration deliberately collapses the old layer stack:
 flagquantum/compiler/_hybrid/README.md
 flagquantum/compiler/_hybrid/__init__.py
 flagquantum/compiler/_hybrid/model.py
-flagquantum/compiler/_hybrid/schemas.py
+flagquantum/compiler/frontends/_structured/schemas.py
 flagquantum/compiler/_hybrid/verifier.py
 tests/hybrid_compiler/test_program_ir.py
 tests/hybrid_compiler/test_verifier.py

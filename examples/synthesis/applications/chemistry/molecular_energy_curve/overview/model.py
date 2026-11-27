@@ -4,13 +4,13 @@ from dataclasses import dataclass
 
 import torch
 
-from flagquantum.algorithms.chemistry_domain.problem import (
+from flagquantum.algorithms.chemistry.models.problem import (
     fermion_hamiltonian,
     from_native_molecule,
 )
+from flagquantum.algorithms.chemistry.molecular import create_molecular_hamiltonian
 from flagquantum.algorithms.fermion.encoding import encode_fermion
 from flagquantum.algorithms.fermion.numerics import pauli_matrix
-from flagquantum.algorithms.molecular import create_molecular_hamiltonian
 
 DTYPE = torch.float64
 SECTOR = (0b0011, 0b1100)

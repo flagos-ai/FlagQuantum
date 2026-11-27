@@ -9,12 +9,12 @@ from examples.qdiffusion_kaiwu.qboson_optimization_probe import (
     EXPECTED_KAIWU_ARTIFACT_SHA256,
     run_optimization_probe,
 )
-from flagquantum.remote.kaiwu import (
+from flagquantum.compute.remote.kaiwu import (
     KaiwuTaskReceipt,
     KaiwuTaskResult,
     new_receipt,
 )
-from flagquantum.remote.kaiwu.contracts import FrozenIsingMatrix, KaiwuTaskMode
+from flagquantum.compute.remote.kaiwu.contracts import FrozenIsingMatrix, KaiwuTaskMode
 
 pytestmark = pytest.mark.unit
 

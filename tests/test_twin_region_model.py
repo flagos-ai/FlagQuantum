@@ -8,12 +8,13 @@ import pytest
 
 import flagquantum as fq
 from examples.remote import quafu_twin_region_validation
-from flagquantum.noise import NoiseModel, bit_flip_channel
-from flagquantum.remote.qpu import (
+from flagquantum.compute.remote.qpu import (
     DeploymentResult,
     ProviderTaskHandle,
     build_result_metadata,
 )
+from flagquantum.core.noise import NoiseModel
+from flagquantum.core.operators.channels import bit_flip_channel
 
 pytestmark = pytest.mark.integration
 

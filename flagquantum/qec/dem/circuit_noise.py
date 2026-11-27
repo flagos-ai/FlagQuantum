@@ -5,9 +5,15 @@ from __future__ import annotations
 import math
 from dataclasses import dataclass
 
+from flagquantum.core.noise import NoiseModel
+from flagquantum.core.operators.channels import (
+    KrausChannel,
+    bit_flip_channel,
+    phase_flip_channel,
+)
+
 from ...core.ir import CircuitIR
 from ...errors import CapabilityError
-from ...noise import KrausChannel, NoiseModel, bit_flip_channel, phase_flip_channel
 from ..circuits.memory import MemoryCircuit
 from ..execution.signatures import (
     _gate_product_signatures,

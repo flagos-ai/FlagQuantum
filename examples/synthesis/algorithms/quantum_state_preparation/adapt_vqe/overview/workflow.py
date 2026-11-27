@@ -4,7 +4,7 @@ from dataclasses import dataclass
 
 import torch
 
-from flagquantum.algorithms.nelder_mead import NelderMeadOptimizer
+from flagquantum.algorithms.optimizers.nelder_mead import NelderMeadOptimizer
 from flagquantum.compiler import ResourceEstimate
 
 from .model import INNER_BUDGET, OUTER_BUDGET, POOL, TOLERANCE, Model

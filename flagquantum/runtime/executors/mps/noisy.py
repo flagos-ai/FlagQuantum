@@ -7,8 +7,9 @@ from typing import Any
 
 import torch
 
+from flagquantum.runtime.results.trajectories import MPSMonteCarloResult
+
 from ...trajectories import mps as trajectory_runtime
-from ...trajectories.result import MPSMonteCarloResult
 
 
 def run_noisy_mps_trajectory(

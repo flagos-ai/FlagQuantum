@@ -8,14 +8,14 @@ import torch
 
 import flagquantum as fq
 from flagquantum.algorithms.chemistry import uccsd_ansatz
-from flagquantum.algorithms.chemistry_domain.active_space import select_active_space
-from flagquantum.algorithms.chemistry_domain.problem import (
+from flagquantum.algorithms.chemistry.models.active_space import select_active_space
+from flagquantum.algorithms.chemistry.models.problem import (
     MolecularProblem,
     fermion_hamiltonian,
 )
 from flagquantum.algorithms.fermion.encoding import encode_fermion
 from flagquantum.algorithms.fermion.observables import to_observable
-from flagquantum.observables import Observable
+from flagquantum.core.operators.observable import Observable
 
 
 def illustrative_problem() -> MolecularProblem:

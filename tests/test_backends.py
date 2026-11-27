@@ -10,7 +10,7 @@ import flagquantum.noise as fqn
 import flagquantum.noise as noise
 import flagquantum.runtime as fqr
 import flagquantum.runtime.execution as execution
-from flagquantum.algorithms import Hamiltonian
+from flagquantum.algorithms.primitives.hamiltonian import Hamiltonian
 from flagquantum.compiler import CouplingMap
 from flagquantum.runtime.backend_registry import (
     BackendCapabilities,

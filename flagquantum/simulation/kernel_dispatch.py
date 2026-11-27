@@ -7,7 +7,7 @@ from collections.abc import Sequence
 
 import torch
 
-from ..kernels.catalog import (
+from flagquantum.simulation.kernels.catalog import (
     KERNEL_DEVICES,
     KernelImplementation,
     KernelMatchResult,

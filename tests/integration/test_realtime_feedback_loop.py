@@ -14,7 +14,7 @@ import pytest
 
 from examples.realtime.device_call import majority_decode
 from examples.realtime.feedback_loop import SCHEMA, feedback_step, run_shot
-from flagquantum import realtime as rt
+from flagquantum.compute import realtime as rt
 
 pytestmark = pytest.mark.integration
 

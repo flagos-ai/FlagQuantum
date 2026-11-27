@@ -14,13 +14,13 @@ from flagquantum.compiler.operator_lowering import DEFAULT_LOWERING_REGISTRY
 from flagquantum.compiler.qcis import emit_qcis
 from flagquantum.compiler.qir import emit_qir
 from flagquantum.core.ir import CircuitIR, Instruction
-from flagquantum.core.operator_schema import OPERATOR_SCHEMAS
-from flagquantum.noise import (
+from flagquantum.core.operators.channels import (
     amplitude_damping_channel,
     bit_flip_channel,
     depolarizing_channel,
     phase_flip_channel,
 )
+from flagquantum.core.operators.schema import OPERATOR_SCHEMAS
 from flagquantum.runtime.executors.jax import run_jax_sharded_statevector
 from flagquantum.simulation.density_matrix import density_matrix_from_ir
 

@@ -7,6 +7,11 @@ from typing import Any
 
 import torch
 
+from flagquantum.simulation.statevector.cx_adjoint import (
+    apply_cpu_compact_cx_adjoint_segment,
+    apply_cpu_cx_adjoint_index,
+)
+
 from ....core.ir import Instruction
 from ....simulation.native_cpu import (
     fused_cx_rotation_segment_adjoint,
@@ -17,10 +22,6 @@ from ....simulation.native_cpu import (
     native_cpu_rotation_tile_qubits,
     native_cpu_shared_rotation_gradient_available,
     native_cpu_terminal_adjoint_no_restore_available,
-)
-from .reverse_adjoint_cx import (
-    apply_cpu_compact_cx_adjoint_segment,
-    apply_cpu_cx_adjoint_index,
 )
 from .reverse_adjoint_kernels import _cpu_direct_adjoint_gate_enabled
 from .reverse_observable import materialize_pending_observable_adjoint

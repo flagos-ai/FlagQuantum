@@ -134,8 +134,8 @@ After reviewing this PR, inspect the repository-scoped label plan with the
 existing authenticated `gh` CLI and Python 3.10 or later:
 
 ```bash
-python tools/configure_a100_entry_pool.py
-python tools/configure_a100_entry_pool.py --apply
+python tools/validation/configure_a100_entry_pool.py
+python tools/validation/configure_a100_entry_pool.py --apply
 ```
 
 Both reserved registrations must be online and idle. The default command only

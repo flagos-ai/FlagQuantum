@@ -13,7 +13,7 @@ import torch
 import flagquantum as fq
 from flagquantum import synth
 from flagquantum.compiler._construction.frontend.python import _QuantumFunction
-from flagquantum.compiler._hybrid.verifier import HybridVerificationError
+from flagquantum.compiler.frontends._structured.verifier import HybridVerificationError
 from flagquantum.synth import (
     PHASE,
     RZ,
@@ -32,7 +32,7 @@ from flagquantum.synth import (
     prepare_state,
     qfunc,
 )
-from tools.synthesis_catalog import ROOT
+from tools.docs.synthesis_catalog import ROOT
 
 pytestmark = pytest.mark.integration
 NATIVE_COMPARISONS = sorted(
@@ -224,7 +224,7 @@ def test_additive_exports_follow_the_separate_unreleased_contract() -> None:
         signature = expanded.get(name, signature)
         assert name in synth.__all__
         if name == "X":
-            from flagquantum.observables import X as OBSERVABLE_X
+            from flagquantum.core.operators.observable import X as OBSERVABLE_X
 
             assert fq.X is OBSERVABLE_X
             assert id(fq.X) != id(synth.X)

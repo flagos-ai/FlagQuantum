@@ -22,10 +22,10 @@ from examples.synthesis.applications.finance.autocallable_options.quantum_autoca
     predicate_bounds,
 )
 from flagquantum import synth
-from flagquantum.compiler._hybrid.verifier import HybridVerificationError
+from flagquantum.compiler.frontends._structured.verifier import HybridVerificationError
 from flagquantum.compiler.resource_estimation import ResourceEstimate
 from flagquantum.errors import PlanningError
-from flagquantum.services.synthesis import _synthesize
+from flagquantum.synth._workflow import _synthesize
 from tests.integration.test_synthesis_native_exact_numbers import definition
 
 pytestmark = pytest.mark.integration

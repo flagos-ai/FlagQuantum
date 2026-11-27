@@ -9,13 +9,13 @@ from itertools import product
 from types import ModuleType
 from typing import TYPE_CHECKING, SupportsIndex
 
-from ..core.algebra.pauli import PauliOperator, PauliTerm, count, scalar
-from ..observables.fermion import (
+from flagquantum.core.operators.fermion import (
     FermionOperator,
     FermionTerm,
     annihilate,
     create,
 )
+from flagquantum.core.operators.pauli import PauliOperator, PauliTerm, count, scalar
 
 if TYPE_CHECKING:
     from openfermion import FermionOperator as OpenFermionOperator

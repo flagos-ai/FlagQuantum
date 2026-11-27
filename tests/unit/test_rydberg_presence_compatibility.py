@@ -157,7 +157,7 @@ def test_production_sampled_source_and_reader_are_not_pretended() -> None:
     assert callable(RydbergProgram.measure_presence)
     payload = json.loads(json.loads(CAPTURE.read_text())["plans"]["single_atom_native"])
     payload["version"] = "1.8"
-    from flagquantum.lindblad._plan import _identity
+    from flagquantum.runtime.evolution._plan import _identity
 
     payload["identity"] = _identity(payload)
     with pytest.raises(SerializationError):
@@ -165,7 +165,7 @@ def test_production_sampled_source_and_reader_are_not_pretended() -> None:
 
 
 def test_sampled_plan_is_a_production_artifact_and_seals_rng() -> None:
-    from flagquantum.lindblad._plan import _identity
+    from flagquantum.runtime.evolution._plan import _identity
 
     source = _single().measure_presence("a", at=0.5, efficiency=0.8)
     plan = fql.plan(

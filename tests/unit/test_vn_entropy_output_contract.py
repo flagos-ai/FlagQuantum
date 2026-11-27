@@ -32,7 +32,7 @@ CONTRACT_PATH = ROOT / "contracts" / "vn-entropy-output-contract.toml"
 
 
 def _load_gate() -> Any:
-    """Import ``tools/check_vn_entropy_output_contract.py`` by path.
+    """Import ``tools/validation/check_vn_entropy_output_contract.py`` by path.
 
     The checker is a script rather than an importable package member, so loading it by path is
     what keeps this test measuring the file the CI step runs.
@@ -40,7 +40,7 @@ def _load_gate() -> Any:
 
     spec = importlib.util.spec_from_file_location(
         "check_vn_entropy_output_contract",
-        ROOT / "tools" / "check_vn_entropy_output_contract.py",
+        ROOT / "tools" / "validation/check_vn_entropy_output_contract.py",
     )
     assert spec is not None and spec.loader is not None
     module = importlib.util.module_from_spec(spec)

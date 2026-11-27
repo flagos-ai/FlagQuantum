@@ -17,7 +17,7 @@ from __future__ import annotations
 
 import flagquantum as fq
 import flagquantum.deployment as fqd
-from flagquantum.remote.qpu import (
+from flagquantum.compute.remote.qpu import (
     IonQProvider,
     IQMProvider,
     QuantinuumProvider,

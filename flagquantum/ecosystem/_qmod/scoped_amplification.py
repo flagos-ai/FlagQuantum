@@ -5,11 +5,7 @@ from __future__ import annotations
 import math
 from typing import TYPE_CHECKING
 
-from ...compiler._construction.semantics.clean_unitary_proof import (
-    verify_zero_preparation,
-)
-from ...compiler._construction.verification.register_profile import register_type
-from ...compiler._hybrid.model import (
+from flagquantum.compiler.frontends._structured.model import (
     QUANTUM_EFFECT,
     Block,
     HybridProgram,
@@ -18,6 +14,11 @@ from ...compiler._hybrid.model import (
     Value,
     ValueId,
 )
+
+from ...compiler._construction.semantics.clean_unitary_proof import (
+    verify_zero_preparation,
+)
+from ...compiler._construction.verification.register_profile import register_type
 from .amplification import exact_rotation
 from .callback_arrays import capture_effects
 from .masked_selection import emit_selected

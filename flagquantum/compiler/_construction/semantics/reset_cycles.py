@@ -2,7 +2,14 @@
 
 from dataclasses import replace
 
-from ..._hybrid.model import Block, HybridProgram, Operation, Region, Value, ValueId
+from flagquantum.compiler.frontends._structured.model import (
+    Block,
+    HybridProgram,
+    Operation,
+    Region,
+    Value,
+    ValueId,
+)
 
 
 def reset_cycle_template(

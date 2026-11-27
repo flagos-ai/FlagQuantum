@@ -11,14 +11,16 @@ from typing import TYPE_CHECKING, Any
 
 import torch
 
+from flagquantum.core.operators.schema import get_operator_schema
+
 from ..core.ir import CircuitIR, Instruction, ensure_circuit_ir
-from ..core.operator_schema import get_operator_schema
 from ..core.parameters import ParameterExpression, bind_parameter_value
 from ..errors import ExecutionError
 
 if TYPE_CHECKING:
+    from flagquantum.runtime.training.module import Module
+
     from ..circuit import Circuit
-    from .module import Module
 
 
 def _reset_builder_capture(owner: Module) -> None:

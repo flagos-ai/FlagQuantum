@@ -16,7 +16,7 @@ from typing import Any
 
 import torch
 
-from flagquantum.kernels.provenance import triton_compiler_provenance
+from flagquantum.simulation.kernels.provenance import triton_compiler_provenance
 
 RUN_SCHEMA = "flagquantum.kernel_benchmark_run.statevector_rx_rz_sequence_dispatch.v1"
 EVIDENCE_SCHEMA = "flagquantum.kernel_benchmark.statevector_rx_rz_sequence_dispatch.v1"
@@ -99,7 +99,7 @@ def _case(
     repeats: int,
     group_size: int,
 ) -> dict[str, object]:
-    from flagquantum.kernels.triton.single_qubit_loop import repeated_rx_rz
+    from flagquantum.simulation.kernels.triton.single_qubit_loop import repeated_rx_rz
 
     generator = torch.Generator(device="cuda").manual_seed(seed)
     state = torch.randn(

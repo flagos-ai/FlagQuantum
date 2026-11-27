@@ -2,7 +2,7 @@ from pathlib import Path
 
 import pytest
 
-from tools.check_docs_links import heading_slugs, violations
+from tools.docs.check_docs_links import heading_slugs, violations
 
 pytestmark = pytest.mark.unit
 

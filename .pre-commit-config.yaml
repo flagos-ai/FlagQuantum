@@ -21,51 +21,51 @@ repos:
     hooks:
       - id: english-repository-content
         name: English repository content
-        entry: python tools/check_repository_language.py
+        entry: python tools/architecture/check_repository_language.py
         language: system
       - id: architecture-boundaries
         name: architecture boundaries
-        entry: python tools/check_architecture.py
+        entry: python tools/architecture/check_architecture.py
         language: system
         pass_filenames: false
       - id: repository-hygiene
         name: repository hygiene
-        entry: python tools/check_repository_hygiene.py
+        entry: python tools/architecture/check_repository_hygiene.py
         language: system
         pass_filenames: false
       - id: operator-manifest
         name: operator manifest
-        entry: python -m tools.operator_manifest --check
+        entry: python -m tools.docs.operator_manifest --check
         language: system
         pass_filenames: false
       - id: runtime-contract-schema
         name: runtime contract schema
-        entry: python -m tools.runtime_contract_schema --check
+        entry: python -m tools.release.runtime_contract_schema --check
         language: system
         pass_filenames: false
       - id: documentation-source-of-truth
         name: documentation source of truth
-        entry: python -m tools.docs_source_of_truth --check
+        entry: python -m tools.docs.docs_source_of_truth --check
         language: system
         pass_filenames: false
       - id: documentation-links
         name: documentation links and anchors
-        entry: python tools/check_docs_links.py
+        entry: python tools/docs/check_docs_links.py
         language: system
         pass_filenames: false
       - id: public-api-baseline
         name: public API migration baseline
-        entry: python -m tools.public_api_snapshot
+        entry: python -m tools.architecture.public_api_snapshot
         language: system
         pass_filenames: false
       - id: legacy-root-api-usage
         name: legacy root API usage
-        entry: python tools/check_legacy_root_api_usage.py
+        entry: python tools/architecture/check_legacy_root_api_usage.py
         language: system
         pass_filenames: false
       - id: correctness-certification
         name: correctness certification matrix
-        entry: python -m tools.correctness_certification --check
+        entry: python -m tools.validation.correctness_certification --check
         language: system
         pass_filenames: false
       - id: ruff
@@ -74,8 +74,8 @@ repos:
         # here. CI's quality job installs `.[dev]` and then runs whatever ruff
         # that resolved, so a `ruff-pre-commit` revision was an unbound second
         # version of the same tool: the retired `v0.12.7` pin reported RUF012 on
-        # `flagquantum/compute/pytorch.py`, which the installed ruff does not,
-        # and it blocked every push through `tools/pre_push.py` from the day
+        # `flagquantum/compute/local/pytorch.py`, which the installed ruff does not,
+        # and it blocked every push through `tools/ci/pre_push.py` from the day
         # that file changed. `black-production-surface` below delegates the same
         # way for the same reason.
         entry: ruff check --force-exclude
@@ -104,13 +104,13 @@ repos:
         entry: >-
           mypy --strict --python-version 3.12 --ignore-missing-imports
           --follow-imports skip
-          tools/ci_tier.py
+          tools/ci/ci_tier.py
         language: system
         pass_filenames: false
         files: ^tools/.*\.py$
       - id: pre-push-ci
         name: FlagQuantum CPU pre-push gate
-        entry: python tools/pre_push.py
+        entry: python tools/ci/pre_push.py
         language: system
         pass_filenames: false
         stages: [pre-push]

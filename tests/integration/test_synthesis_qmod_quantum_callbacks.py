@@ -5,7 +5,7 @@ import torch
 
 import flagquantum as fq
 from flagquantum import synth
-from tools.validate_qmod_quantum_callbacks import FIXTURES, validate
+from tools.validation.validate_qmod_quantum_callbacks import FIXTURES, validate
 
 pytestmark = pytest.mark.integration
 

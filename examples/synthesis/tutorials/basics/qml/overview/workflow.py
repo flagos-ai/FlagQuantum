@@ -9,7 +9,10 @@ from matplotlib.figure import Figure
 import flagquantum as fq
 from examples.synthesis.tutorials.basics.qml.main import main as classifier
 from flagquantum import synth
-from flagquantum.algorithms import NelderMeadOptimizer, NelderMeadResult
+from flagquantum.algorithms.optimizers.nelder_mead import (
+    NelderMeadOptimizer,
+    NelderMeadResult,
+)
 from flagquantum.synth import Output, QBit, U, allocate, qfunc
 
 

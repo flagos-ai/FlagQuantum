@@ -5,7 +5,7 @@ from unittest.mock import Mock
 import pytest
 import torch
 
-from flagquantum.compute import PlatformDevice
+from flagquantum.compute.local import PlatformDevice
 from flagquantum.runtime.executors.tensor_network import execution
 from flagquantum.runtime.planner.tn_calibration import build_tn_working_set_calibration
 from flagquantum.simulation.tensor_network.models import (

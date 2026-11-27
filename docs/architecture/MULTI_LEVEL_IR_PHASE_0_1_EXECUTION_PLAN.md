@@ -446,12 +446,12 @@ Every PR/commit includes:
 Minimum checks:
 
 ```bash
-python tools/public_api_snapshot.py
-python tools/check_architecture.py
-python tools/check_repository_hygiene.py
-python tools/docs_source_of_truth.py --check
+python tools/architecture/public_api_snapshot.py
+python tools/architecture/check_architecture.py
+python tools/architecture/check_repository_hygiene.py
+python tools/docs/docs_source_of_truth.py --check
 python -m pytest tests/internal_ir -q
-python tools/ci_tier.py pr-default
+python tools/ci/ci_tier.py pr-default
 ```
 
 Run `pr-runtime` for existing compiler/runtime adaptations. Run `pr-distributed`

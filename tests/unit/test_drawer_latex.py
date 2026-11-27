@@ -13,7 +13,7 @@ import torch
 
 import flagquantum as fq
 from flagquantum.core.ir import CircuitIR, Instruction, MeasurementNode, ObservableNode
-from flagquantum.core.operator_schema import OPERATOR_SCHEMAS
+from flagquantum.core.operators.schema import OPERATOR_SCHEMAS
 from flagquantum.drawer import LatexFigure, draw, draw_hybrid, draw_latex
 
 pytestmark = pytest.mark.unit

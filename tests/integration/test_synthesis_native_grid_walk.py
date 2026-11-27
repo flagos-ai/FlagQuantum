@@ -18,7 +18,7 @@ from examples.synthesis.tutorials.advanced_tutorials.discrete_quantum_walk_2d.di
 )
 from flagquantum import synth
 from flagquantum.compiler import ResourceEstimate
-from flagquantum.compiler._hybrid.verifier import HybridVerificationError
+from flagquantum.compiler.frontends._structured.verifier import HybridVerificationError
 from flagquantum.errors import PlanningError
 
 pytestmark = pytest.mark.integration

@@ -38,6 +38,11 @@ Examples driven by the root-level `fq` alias use:
 
 These examples do not use that alias:
 
+The workshop support scripts use their lesson-specific interfaces: `cloud_lesson.py`,
+`compare.py`, `jiuding_job.py`, `jiuding_paths.py`, `verify_inline_plots.py`,
+`verify_local.py`, `verify_notebooks.py`, and `workshop_startup.py` in
+`workshops/flagos2026/scripts/`.
+
 - [`qec/toric_distance_acceptance.py`](qec/toric_distance_acceptance.py)
   checks both logical observables of a periodic square Toric code using original
   noisy shots, a strict undecomposed DEM, Stim 1.16.0 reference mechanisms and

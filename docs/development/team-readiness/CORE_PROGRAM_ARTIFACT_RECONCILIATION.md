@@ -53,7 +53,7 @@ shared contract.
 
 ## 2. Protected Boundaries and Sources
 
-`team-ownership.toml` explicitly protects `flagquantum/core/_artifacts.py`.
+`config/team-ownership.toml` explicitly protects `flagquantum/core/_artifacts.py`.
 The original reconciliation added only this document and
 `tests/team/core/test_program_artifact_reconciliation.py`. It did not change that
 implementation, public exports, `contracts/`, ADRs, or Compiler, Runtime,

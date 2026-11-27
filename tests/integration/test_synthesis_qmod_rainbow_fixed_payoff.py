@@ -14,7 +14,7 @@ import torch
 import flagquantum as fq
 from flagquantum import synth
 from flagquantum.ecosystem import InteropConversionError
-from flagquantum.services.synthesis import _synthesize
+from flagquantum.synth._workflow import _synthesize
 
 DTYPE = torch.complex128
 pytestmark = pytest.mark.integration

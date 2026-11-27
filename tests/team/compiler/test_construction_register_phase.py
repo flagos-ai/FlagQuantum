@@ -18,7 +18,7 @@ from flagquantum.compiler._construction.scheduling.target import PHASE_BASIS, Ta
 from flagquantum.compiler._construction.verification.register_profile import (
     verify_register_program,
 )
-from flagquantum.compiler._hybrid.model import (
+from flagquantum.compiler.frontends._structured.model import (
     INDEX,
     Block,
     HybridProgram,
@@ -26,7 +26,7 @@ from flagquantum.compiler._hybrid.model import (
     Region,
     Value,
 )
-from flagquantum.compiler._hybrid.verifier import HybridVerificationError
+from flagquantum.compiler.frontends._structured.verifier import HybridVerificationError
 from flagquantum.compiler.topology.coupling import CouplingMap
 from tests.register_program_cases import Registers
 from tools.synthesis_compiler_examples.register_phase.main import phase_composition

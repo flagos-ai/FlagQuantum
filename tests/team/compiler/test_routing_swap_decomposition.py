@@ -7,9 +7,10 @@ import torch
 
 from flagquantum.compiler._construction.scheduling.target import Target, compile_target
 from flagquantum.compiler.basis_conversion import convert_basis
-from flagquantum.compiler.layout import _routing_swap_phases, remove_layout_restore
+from flagquantum.compiler.layout import remove_layout_restore
 from flagquantum.compiler.pipeline import compile
 from flagquantum.compiler.topology.coupling import CouplingMap
+from flagquantum.compiler.topology.layout import _routing_swap_phases
 from flagquantum.core.ir import CircuitIR, Instruction
 from flagquantum.simulation.unitary import get_unitary
 

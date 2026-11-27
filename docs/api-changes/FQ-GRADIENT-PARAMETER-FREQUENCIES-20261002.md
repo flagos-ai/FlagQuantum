@@ -157,7 +157,7 @@ path and makes the schema's numbers depend on a floating-point decomposition.
   `False` by derivation.
 - **`operator_manifest.json` gains a key.** The generated file is a documented
   artifact with `schema_version`, so the regeneration is part of this change and
-  `tools/operator_manifest.py --check` fails until it is regenerated.
+  `tools/docs/operator_manifest.py --check` fails until it is regenerated.
 - **`parameter_shift_rule` is added to `flagquantum.core`'s namespace**, not to
   `flagquantum`'s. `fq.__all__` is unchanged.
 - **`batched_parameter_shift_gradient` is unchanged.** It still supports only
@@ -218,7 +218,7 @@ path and makes the schema's numbers depend on a floating-point decomposition.
    declaration_](FQ-GRADIENT-BATCHED-SHIFT-PROFILE-20261020.md) measured this and
    left the lists in place. The guess in this question was right: they are a
    kernel-capability question, `SPLIT_REAL_IMAG_PARAMETER_SHIFT_GATES` is already
-   read by `tools/check_split_real_imag_p1_contract.py`, and `P4_PARAMETER_GATES`
+   read by `tools/validation/check_split_real_imag_p1_contract.py`, and `P4_PARAMETER_GATES`
    is a subset of what the derivation admits. This question is **expired,
    superseded by measurement** rather than resolved.
 2. **Which eigenvalues does `CRX`'s generator actually have?** The declared
@@ -245,7 +245,7 @@ path and makes the schema's numbers depend on a floating-point decomposition.
 
 - Owning domain: `core` for the schema declaration, with `verification` for the
   conformance test that compares every opcode against autograd.
-  `python tools/check_team_scope.py --team core --files
+  `python tools/architecture/check_team_scope.py --team core --files
   flagquantum/core/operator_schema.py flagquantum/core/__init__.py
   flagquantum/gradients.py tests/unit/test_operator_schema.py
   tests/test_native_circuit.py docs/operator_manifest.json` passes.

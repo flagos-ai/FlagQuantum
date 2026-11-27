@@ -10,7 +10,7 @@ import flagquantum as fq
 from flagquantum import _api, synth
 from flagquantum.ecosystem import InteropConversionError
 from flagquantum.errors import PlanningError
-from flagquantum.services._synthesis_registers import synthesize_registers
+from flagquantum.synth._program import synthesize_registers
 from tests.register_program_cases import tutorial_program
 from tests.synthesis_workflow_helpers import check_state
 from tools.synthesis_import_examples.qmod_const.main import SOURCE

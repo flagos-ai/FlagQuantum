@@ -4,7 +4,7 @@ import pytest
 import torch
 
 import flagquantum as fq
-from flagquantum.algorithms import Hamiltonian, pauli_term
+from flagquantum.algorithms.primitives.hamiltonian import Hamiltonian, pauli_term
 from flagquantum.runtime.parallel import plan_hybrid_parallel
 
 pytestmark = pytest.mark.unit

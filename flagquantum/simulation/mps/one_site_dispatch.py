@@ -4,12 +4,13 @@ from __future__ import annotations
 
 import torch
 
-from ...kernels.catalog import (
+from flagquantum.simulation.kernels.catalog import (
     KernelImplementation,
     KernelMatchResult,
     KernelRequest,
     match_kernel_implementations,
 )
+
 from ..kernel_dispatch import _opt_in_environment_flag, _require_cataloged_kernel
 from ..real_imag_kernels import complex_einsum_pair
 
@@ -79,7 +80,7 @@ def _apply_cataloged_mps_one_site(
         device_type=tensor.device.type,
         dtype=str(tensor.dtype).removeprefix("torch."),
     )
-    from ...kernels.triton.mps_one_site import fused_mps_one_site
+    from flagquantum.simulation.kernels.triton.mps_one_site import fused_mps_one_site
 
     return fused_mps_one_site(tensor, gate)
 

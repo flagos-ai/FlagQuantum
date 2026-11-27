@@ -20,7 +20,7 @@ from flagquantum.compiler._construction.scheduling.selection import (
 from flagquantum.ecosystem import InteropConversionError
 from flagquantum.ecosystem._qmod.adapter import SUPPORTED_SOURCE_VERSION, parse_qmod
 from flagquantum.errors import PlanningError
-from flagquantum.services._synthesis_registers import synthesize_registers
+from flagquantum.synth._program import synthesize_registers
 from tests.integration.test_construction_register_execution import _check
 from tests.register_program_cases import Registers
 from tests.synthesis_workflow_helpers import check_state

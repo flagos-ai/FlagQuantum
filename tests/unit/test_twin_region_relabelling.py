@@ -20,14 +20,13 @@ from dataclasses import replace
 import pytest
 
 import flagquantum as fq
-from flagquantum.noise import (
+from flagquantum.core.noise import NoiseModel, ReadoutError
+from flagquantum.core.noise_profile import (
     DeviceNoiseProfile,
     GateDuration,
-    NoiseModel,
     QubitNoiseCalibration,
-    ReadoutError,
-    bit_flip_channel,
 )
+from flagquantum.core.operators.channels import bit_flip_channel
 from flagquantum.twin import QPUDigitalTwin, TwinCircuitSupport
 
 pytestmark = pytest.mark.unit

@@ -27,7 +27,7 @@ def test_native_import_and_measurement_with_upstream_blocked() -> None:
             to_openfermion_fermion, to_openfermion_qubit,
         )
         from flagquantum.observables.fermion import FermionOperator, number, jordan_wigner
-        from flagquantum.core.algebra.pauli import PauliOperator
+        from flagquantum.core.operators.pauli import PauliOperator
         circuit = fq.Circuit(2).x(0)
         value = fq.run(circuit, outputs=[fq.expectation(jordan_wigner(number(0), n_modes=2))])
         assert float(value.expectation().reshape(-1)[0]) == 1

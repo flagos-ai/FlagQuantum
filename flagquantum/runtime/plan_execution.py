@@ -11,9 +11,11 @@ from typing import Any, cast
 
 import torch
 
-from ..compute.cpu_target_capabilities import (
+from flagquantum.compute.local.cpu_target_capabilities import (
     probe_local_cpu_target_capabilities,
 )
+from flagquantum.runtime.results import ExecutionResult
+
 from ..core.ir import CircuitIR, MeasurementNode
 from ..core.runtime_config import RuntimeConfig
 from ..core.target_capabilities import (
@@ -40,7 +42,6 @@ from .execution_plan_contract import (
     has_runtime_inputs_extension,
 )
 from .measurements import validate_measurements
-from .result import ExecutionResult
 from .target_capability_matching import (
     CandidateProvenance,
     RouteIntent,

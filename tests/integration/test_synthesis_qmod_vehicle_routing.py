@@ -12,7 +12,7 @@ import pytest
 import torch
 
 import flagquantum as fq
-from flagquantum.services.synthesis import _synthesize
+from flagquantum.synth._workflow import _synthesize
 
 pytestmark = pytest.mark.integration
 _FIXTURES = Path(__file__).resolve().parents[1] / "fixtures/classiq_qmod"

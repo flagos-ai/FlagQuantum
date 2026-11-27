@@ -58,7 +58,7 @@ outside (0, 0.5) are refused. No arbitrary-channel or circuit-noise support foll
 python -m pytest tests/qec/test_neural_predecoder.py -q
 python -m pytest tests/qec tests/api_contract/test_experimental_namespace_contract.py \
   tests/api_contract/test_qec_retirement_contract.py -q
-python tools/ci_tier.py pr-default
+python tools/ci/ci_tier.py pr-default
 ```
 
 Seven behavioral tests exercise local logical contribution plus residual decoding,

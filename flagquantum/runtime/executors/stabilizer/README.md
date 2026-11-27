@@ -30,7 +30,7 @@ instructions belongs to
 [`flagquantum/compiler/noise.py`](../../../compiler/noise.py); it is called from
 the dispatcher named above rather than reimplemented, and not from this package,
 whose subdirectory is deliberately absent from the Runtime-to-Compiler allow list
-in `architecture.toml`. The engine is selected explicitly with
+in `config/architecture.toml`. The engine is selected explicitly with
 `fq.ExecutionOptions(mode="stabilizer")`; automatic selection never chooses it.
 
 ## Change the owning stage

@@ -13,7 +13,7 @@ from flagquantum import synth
 from flagquantum.compiler import ResourceEstimate
 from flagquantum.compiler._construction.frontend.python import _QuantumFunction
 from tests.team.compiler.test_construction_python_program import program_definition
-from tools.synthesis_catalog import load_catalog
+from tools.docs.synthesis_catalog import load_catalog
 
 pytestmark = pytest.mark.integration
 ROOT = Path(__file__).resolve().parents[2]

@@ -179,7 +179,7 @@ lowering, record budget and publication checks are pending implementation.
 9. `tests/unit/test_compiled_measurement_sampler_contract.py` (new)
 10. `tests/team/simulation/test_compiled_measurement_sampler_conformance.py` (new)
 11. `tests/api_contract/test_public_docstring_examples.py`
-12. `tools/qec_installed_smoke.py`
+12. `tools/release/qec_installed_smoke.py`
 13. `tests/unit/test_qec_installed_profiles.py`
 14. `examples/qec/compiled_measurement_sampler.py` (new)
 15. `examples/README.md`
@@ -193,7 +193,7 @@ checks first. Run path ownership before editing.
 ## Acceptance commands
 
 ```bash
-python tools/check_team_scope.py --team integration --files <the-15-paths-above>
+python tools/architecture/check_team_scope.py --team integration --files <the-15-paths-above>
 python -m pytest -q \
   tests/unit/test_compiled_measurement_sampler_contract.py \
   tests/team/simulation/test_compiled_measurement_sampler_conformance.py \
@@ -201,11 +201,11 @@ python -m pytest -q \
   tests/api_contract/test_public_docstring_examples.py \
   tests/test_dynamic_circuit.py
 python -m examples.qec.compiled_measurement_sampler
-python tools/check_architecture.py
+python tools/architecture/check_architecture.py
 python tools/check_dependency_policy.py
-python tools/check_docs_links.py
-python tools/docs_source_of_truth.py --check
-python tools/check_qec_installed_profiles.py --dist-dir dist --report-dir /tmp/qec-installed-reports
+python tools/docs/check_docs_links.py
+python tools/docs/docs_source_of_truth.py --check
+python tools/release/check_qec_installed_profiles.py --dist-dir dist --report-dir /tmp/qec-installed-reports
 ```
 
 Use a core-only fake to verify one preparation, one SDK call per sample or

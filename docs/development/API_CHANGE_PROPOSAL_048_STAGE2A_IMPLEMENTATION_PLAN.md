@@ -40,11 +40,11 @@
   The image's own editable install points at a stale `/opt/FlagQuantum` snapshot, so the `pip install -e .` step is mandatory on every run; `-e PYTHONPATH=/w` makes submodule imports resolve to the mounted tree. `pytest-randomly` is not installed, so `-p no:randomly` is unnecessary. The image lacks `pennylane`, `hypothesis`, `datasets`, and `transformers`, so tests needing them skip.
 - Do not modify `flagquantum/qec/types.py`, `decoders.py`, `repetition.py`, `pauli.py`, `codes.py`, or `circuit.py`. The seven names pinned by `contracts/hybrid-compilation-private-v0-candidate.json` keep their signatures.
 - `flagquantum/qec/noise.py` **is** modified, but only additively: `RepetitionNoiseProfile` and `run_repetition_memory_noise_sweep` keep their current fields, signatures, and behavior.
-- Do not modify `flagquantum/noise/`, `flagquantum/compiler/`, `flagquantum/runtime/`, `architecture.toml`, or `.github/`.
+- Do not modify `flagquantum/noise/`, `flagquantum/compiler/`, `flagquantum/runtime/`, `config/architecture.toml`, or `.github/`.
 - Do not touch `capability-maturity.toml`, the generated docs under `docs/generated/`, or any capability row. Staging a capability promotion is Stage 5 work.
 - Do not update `flagquantum/qec/README.md`. Its module list is stale from Stage 1 and `docs/development/API_CHANGE_PROPOSAL_048_QEC_DETECTOR_ERROR_MODEL.md` assigns the QEC documentation sweep to Stage 5.
-- All source, docstring, and comment text is English (`tools/check_repository_language.py` gates this).
-- Gates that must pass on every task that changes `flagquantum/`: `black --check`, `ruff check` (the repository's selected rule set requires `zip(..., strict=...)` in every `zip` call), `mypy --strict --python-version 3.12 --ignore-missing-imports flagquantum`, and `python tools/check_architecture.py`.
+- All source, docstring, and comment text is English (`tools/architecture/check_repository_language.py` gates this).
+- Gates that must pass on every task that changes `flagquantum/`: `black --check`, `ruff check` (the repository's selected rule set requires `zip(..., strict=...)` in every `zip` call), `mypy --strict --python-version 3.12 --ignore-missing-imports flagquantum`, and `python tools/architecture/check_architecture.py`.
 - Coverage floors in `contracts/coverage-policy.toml` must hold: `[global] min = 76` and `[packages.qec] min = 82`. New code must not lower either.
 - Module line ceiling is 1250 for anything other than `flagquantum/__init__.py`. If `dem.py` crosses 1000 lines, stop and split the signature engine into `flagquantum/qec/_signatures.py` rather than pushing on.
 - Every task ends with a commit. Conventional-commit prefixes used by this repository: `feat:`, `test:`, `docs:`.
@@ -546,7 +546,7 @@ Expected: all tests pass.
 black --check flagquantum/qec/dem.py tests/qec/test_dem_records.py
 ruff check flagquantum/qec/dem.py tests/qec/test_dem_records.py
 mypy --strict --python-version 3.12 --ignore-missing-imports flagquantum
-python tools/check_architecture.py
+python tools/architecture/check_architecture.py
 ```
 
 Expected: all clean. `mypy --strict` will require the `_normalized_indices` overload-free signature above to satisfy the call sites; adjust annotations rather than adding `# type: ignore`.
@@ -2007,14 +2007,14 @@ python -m pytest tests/qec -q
 black --check flagquantum tests
 ruff check flagquantum tests
 mypy --strict --python-version 3.12 --ignore-missing-imports flagquantum
-python tools/check_architecture.py
-python tools/check_repository_language.py flagquantum/qec tests/qec
+python tools/architecture/check_architecture.py
+python tools/architecture/check_repository_language.py flagquantum/qec tests/qec
 python -m pytest -m "(smoke or unit or integration or jax) and not qiskit and not triton" -q \
   --cov=flagquantum --cov-report=xml
-python tools/check_coverage.py
+python tools/ci/check_coverage.py
 ```
 
-The marker expression must match the one CI's coverage job uses (`.github/workflows/ci.yml`), which includes **`or jax`**. Dropping it deselects the jax-marked tests and makes nine package floors fail on a clean container — a failure that looks like a coverage regression and is really a wrong selector. `tools/check_repository_language.py` also needs explicit paths here, because the container has no `.git` for it to enumerate the tree from.
+The marker expression must match the one CI's coverage job uses (`.github/workflows/ci.yml`), which includes **`or jax`**. Dropping it deselects the jax-marked tests and makes nine package floors fail on a clean container — a failure that looks like a coverage regression and is really a wrong selector. `tools/architecture/check_repository_language.py` also needs explicit paths here, because the container has no `.git` for it to enumerate the tree from.
 
 Expected: `tests/qec` passes with the Stage 1 count plus the new tests; the gates are clean; `[global] min = 76` and `[packages.qec] min = 82` both hold. In this image `ecosystem.pennylane` will also fail its floor, because `pennylane` is absent from the container — that is the known image artifact, not this change. If `packages.qec` is close to its floor, add unit tests for the uncovered branches rather than lowering the floor.
 

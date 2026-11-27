@@ -10,7 +10,8 @@ from typing import Any
 import torch
 import torch.distributed as dist
 
-from ....compute import get_platform_runtime
+from flagquantum.compute.local import get_platform_runtime
+
 from ...distributed.context import resolve_local_world_size, resolve_node_count
 
 #: How each sliced-reverse gradient reduction leaves the reduced gradient

@@ -5,8 +5,8 @@ import torch
 
 pytest.importorskip("triton")
 
-import flagquantum.kernels.triton.mps_wire_probabilities as mps_wire_probabilities
-from flagquantum.kernels.triton.mps_wire_probabilities import (
+import flagquantum.simulation.kernels.triton.mps_wire_probabilities as mps_wire_probabilities
+from flagquantum.simulation.kernels.triton.mps_wire_probabilities import (
     fused_mps_qubit_probabilities,
 )
 

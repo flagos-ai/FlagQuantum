@@ -8,7 +8,7 @@ from typing import TYPE_CHECKING, Any, Protocol
 if TYPE_CHECKING:
     from jax.sharding import PartitionSpec
 
-from .....simulation.jax.statevector.kernels import (
+from flagquantum.simulation.statevector.jax.kernels import (
     jax_accumulate_all_to_all_statevector_delta,
     jax_apply_local_statevector_gate,
     jax_combine_pair_exchanged_statevector,
@@ -16,12 +16,13 @@ from .....simulation.jax.statevector.kernels import (
     jax_rank_mask_for_touched_delta,
     jax_sharded_statevector_loss,
 )
-from .....simulation.jax.statevector.kernels import (
+from flagquantum.simulation.statevector.jax.kernels import (
     jax_basis_indices_for_qubits as _jax_basis_indices_for_qubits,
 )
-from .....simulation.jax.statevector.kernels import (
+from flagquantum.simulation.statevector.jax.kernels import (
     jax_sharded_statevector_rank_loss as _jax_sharded_statevector_rank_loss_from_local_amplitudes,
 )
+
 from ..array_conversions import (
     _parameterized_gate_matrix_as_jax,
 )
@@ -201,7 +202,8 @@ def _jax_pmap_statevector_parameter_loss(
     jax, jnp = _require_jax()
     import numpy as np
 
-    from .....simulation.jax.primitives import _set_active_jax_compute_dtype
+    from flagquantum.simulation.numerics.jax import _set_active_jax_compute_dtype
+
     from ..kernel import _JAXParameterProxy
 
     compute_dtype = "complex128" if int(complex_bytes) == 16 else "complex64"
@@ -324,7 +326,8 @@ def _jax_shard_map_statevector_parameter_loss(
     import numpy as np
     from jax.sharding import Mesh, PartitionSpec
 
-    from .....simulation.jax.primitives import _set_active_jax_compute_dtype
+    from flagquantum.simulation.numerics.jax import _set_active_jax_compute_dtype
+
     from ..kernel import _JAXParameterProxy
 
     partition_spec: _PartitionSpecFactory = PartitionSpec

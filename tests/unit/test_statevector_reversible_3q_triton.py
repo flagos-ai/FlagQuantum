@@ -7,7 +7,7 @@ import torch
 
 pytest.importorskip("triton")
 
-from flagquantum.kernels.triton.statevector_reversible_3q import (
+from flagquantum.simulation.kernels.triton.statevector_reversible_3q import (
     apply_complex64_local_reversible_3q,
 )
 from flagquantum.simulation.matrices import FREDKIN_MATRIX, TOFFOLI_MATRIX

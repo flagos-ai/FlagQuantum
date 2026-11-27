@@ -7,7 +7,7 @@ from pathlib import Path
 import pytest
 
 from flagquantum.ecosystem.cirq import CirqDependencyError, conversion
-from tools.check_architecture import CONFIG, architecture_errors
+from tools.architecture.check_architecture import CONFIG, architecture_errors
 
 pytestmark = pytest.mark.unit
 ROOT = Path(__file__).resolve().parents[2]

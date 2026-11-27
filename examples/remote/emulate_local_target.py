@@ -10,18 +10,18 @@ from __future__ import annotations
 
 import flagquantum as fq
 import flagquantum.compiler as compiler
-from flagquantum.deployment.cloud import CloudBackendProfile
-from flagquantum.noise import (
-    NoiseModel,
-    depolarizing_channel,
-    two_qubit_depolarizing_channel,
-)
-from flagquantum.noise.device_profile import (
+from flagquantum.core.noise import NoiseModel
+from flagquantum.core.noise_profile import (
     DeviceNoiseProfile,
     GateDuration,
     QubitNoiseCalibration,
 )
-from flagquantum.remote.emulation import emulate
+from flagquantum.core.operators.channels import (
+    depolarizing_channel,
+    two_qubit_depolarizing_channel,
+)
+from flagquantum.deployment.cloud import CloudBackendProfile
+from flagquantum.compute.remote.emulation import emulate
 
 
 def main() -> None:

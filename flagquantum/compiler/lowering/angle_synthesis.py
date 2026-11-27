@@ -47,8 +47,9 @@ from collections.abc import Mapping
 from types import MappingProxyType
 from typing import Any
 
+from flagquantum.core.operators.schema import get_operator_schema
+
 from ...core.ir import Instruction
-from ...core.operator_schema import get_operator_schema
 from ..optimization.one_qubit_synthesis import Z_ROTATION_OPCODES
 
 _QUARTER_PI = 0.25 * math.pi

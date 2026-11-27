@@ -6,7 +6,7 @@ from collections.abc import Mapping, Sequence
 from dataclasses import dataclass
 from typing import Any
 
-from ..core.operator_schema import get_operator_schema
+from flagquantum.core.operators.schema import get_operator_schema
 
 
 @dataclass(frozen=True)

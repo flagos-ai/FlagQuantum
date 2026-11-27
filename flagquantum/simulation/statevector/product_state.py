@@ -7,8 +7,9 @@ from typing import TYPE_CHECKING
 
 import torch
 
+from flagquantum.core.operators.schema import canonical_opcode
+
 from ...core.ir import Instruction
-from ...core.operator_schema import canonical_opcode
 from ..gate_matrix import gate_matrix as _gate_matrix
 from ..native_cpu.rotation import fused_static_clifford_layer_
 from .clifford_matching import apply_native_clifford_matching

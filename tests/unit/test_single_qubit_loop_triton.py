@@ -1,13 +1,13 @@
 import pytest
 import torch
 
-from flagquantum.algorithms import zz_chain_hamiltonian
+from flagquantum.algorithms.many_body.spin import zz_chain_hamiltonian
 
 pytest.importorskip("triton")
 
 import flagquantum as fq
 import flagquantum.simulation.statevector.rx_rz_dispatch as rx_rz_dispatch
-from flagquantum.kernels.triton import (
+from flagquantum.simulation.kernels.triton import (
     repeated_rx_rz,
     repeated_rx_rz_tangents,
 )

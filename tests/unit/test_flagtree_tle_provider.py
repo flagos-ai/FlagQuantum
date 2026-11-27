@@ -7,7 +7,7 @@ from types import SimpleNamespace
 import pytest
 import torch
 
-import flagquantum.kernels.flagtree as provider
+import flagquantum.simulation.kernels.flagtree as provider
 
 pytestmark = pytest.mark.unit
 

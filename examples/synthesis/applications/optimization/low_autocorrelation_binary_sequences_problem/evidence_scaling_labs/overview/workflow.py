@@ -6,7 +6,7 @@ from dataclasses import dataclass
 import torch
 
 import flagquantum as fq
-from flagquantum.algorithms import CobylaOptimizer
+from flagquantum.algorithms.optimizers.cobyla import CobylaOptimizer
 
 from . import model, quantum
 

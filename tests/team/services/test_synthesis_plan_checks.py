@@ -18,7 +18,7 @@ from flagquantum.runtime.execution_plan_contract import (
     ExecutionPlanContractError,
     plan_execution_program,
 )
-from flagquantum.services._synthesis_execution import (
+from flagquantum.runtime.planner.synthesis import (
     ExecutionContractError,
     inspect_execution,
 )

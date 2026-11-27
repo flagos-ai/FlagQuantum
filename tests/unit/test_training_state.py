@@ -85,7 +85,7 @@ def test_checkpoint_restores_module_optimizer_rng_and_next_step(tmp_path) -> Non
 
 
 def test_checkpoint_rejects_non_equivalent_topology(tmp_path, monkeypatch) -> None:
-    import flagquantum.runtime.training_state as training_state
+    import flagquantum.runtime.checkpointing as training_state
 
     seed = fqt.seed_everything(7)
     source = fq.Module(build, 2)
@@ -105,7 +105,7 @@ def test_checkpoint_rejects_non_equivalent_topology(tmp_path, monkeypatch) -> No
 
 
 def test_default_world_is_recorded_as_distributed_state_group(monkeypatch) -> None:
-    import flagquantum.runtime.training_state as training_state
+    import flagquantum.runtime.checkpointing as training_state
 
     module = fq.Module(build, 2)
     monkeypatch.setattr(torch.distributed, "is_initialized", lambda: True)

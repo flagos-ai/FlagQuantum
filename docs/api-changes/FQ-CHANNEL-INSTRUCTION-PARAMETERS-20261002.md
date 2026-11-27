@@ -25,7 +25,7 @@ change spans `flagquantum/core` (registry and IR), `flagquantum/circuit.py`
 (public entry point), `flagquantum/noise` (factories and the new reader),
 `flagquantum/runtime/planner` (route selection), and
 `flagquantum/simulation/statevector` (the matrix field is no longer always one
-tensor). `python tools/check_team_scope.py --team integration` passes for the
+tensor). `python tools/architecture/check_team_scope.py --team integration` passes for the
 complete change set.
 
 ## Problem and affected user journey
@@ -245,7 +245,7 @@ with the command in the same row.
 | An inline channel reaches the `auto` + `allow_approximate` MPS route | pass | same |
 | An inline channel survives `plan_to_json` / `plan_from_dict` | pass | same |
 | A materialized channel without declared parameters still loads | pass | same |
-| The operator manifest is current | pass | `python tools/operator_manifest.py --check` |
+| The operator manifest is current | pass | `python tools/docs/operator_manifest.py --check` |
 | All twelve fail-closed repository checkers pass | pass | `python tools/check_*.py` |
 
 ## Decision Candidates
@@ -345,7 +345,7 @@ This is an additive success path plus a fail-closed correction.
 The four channel opcodes remain in `[unsupported] flagquantum_opcodes` of
 `contracts/pennylane-interop-contract.toml`. That entry states what the
 PennyLane adapter can lower, not what FlagQuantum can execute, and the adapter
-still converts gates only. `tools/check_pennylane_interop_contract.py` passes
+still converts gates only. `tools/validation/check_pennylane_interop_contract.py` passes
 unchanged.
 
 ## Acceptance Tests
@@ -404,21 +404,21 @@ and `tests/unit/test_native_cpu_adjoint.py::test_compact_cx_runtime_threshold_an
 Repository gates:
 
 ```text
-python tools/operator_manifest.py --check                    # pass, after regeneration
-python tools/docs_source_of_truth.py                         # pass
-python tools/public_api_snapshot.py                          # public API migration baseline passed
-python tools/check_docs_links.py                             # 497 markdown files, all links resolve
-python tools/check_repository_language.py                    # pass
-python tools/check_repository_hygiene.py                     # pass
-python tools/check_capability_maturity.py                    # pass
-python tools/check_team_scope.py --validate                  # pass
-python tools/check_pennylane_interop_contract.py             # pass, unchanged
+python tools/docs/operator_manifest.py --check                    # pass, after regeneration
+python tools/docs/docs_source_of_truth.py                         # pass
+python tools/architecture/public_api_snapshot.py                          # public API migration baseline passed
+python tools/docs/check_docs_links.py                             # 497 markdown files, all links resolve
+python tools/architecture/check_repository_language.py                    # pass
+python tools/architecture/check_repository_hygiene.py                     # pass
+python tools/validation/check_capability_maturity.py                    # pass
+python tools/architecture/check_team_scope.py --validate                  # pass
+python tools/validation/check_pennylane_interop_contract.py             # pass, unchanged
 python tools/check_cirq_interop_contract.py                  # pass
-python tools/check_qiskit_interop_contract.py                # pass
-python tools/check_braket_interop_contract.py                # pass
-python tools/check_cudaq_export_contract.py                  # pass
-python tools/check_interop_capability_gap_matrix.py          # pass
-python tools/check_legacy_root_api_usage.py                  # pass
+python tools/validation/check_qiskit_interop_contract.py                # pass
+python tools/validation/check_braket_interop_contract.py                # pass
+python tools/validation/check_cudaq_export_contract.py                  # pass
+python tools/validation/check_interop_capability_gap_matrix.py          # pass
+python tools/architecture/check_legacy_root_api_usage.py                  # pass
 ```
 
 ## Open Questions
@@ -465,7 +465,7 @@ python tools/check_legacy_root_api_usage.py                  # pass
   `flagquantum/simulation/statevector/{fixed_layer_cpu,clifford_matching}.py`,
   `docs/operator_manifest.json`, `capability-maturity.toml`,
   `docs/guides/NOISY_SIMULATION.md`.
-- **Team scope:** `python tools/check_team_scope.py --team integration --files`
+- **Team scope:** `python tools/architecture/check_team_scope.py --team integration --files`
   over the complete change set reports `team ownership policy passed`.
 - **Approval required from:** the API owner for the registry and IR change; the
   integration maintainer for the planner and simulation change. Both are the

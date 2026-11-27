@@ -12,9 +12,9 @@ import pytest
 import torch
 
 from flagquantum.core.ir import CircuitIR, Instruction
-from flagquantum.noise import (
+from flagquantum.core.noise import NoiseModel
+from flagquantum.core.operators.channels import (
     KrausChannel,
-    NoiseModel,
     bit_flip_channel,
     depolarizing_channel,
     two_qubit_depolarizing_channel,
@@ -288,7 +288,7 @@ def test_all_fifteen_depolarizing_products_match_the_injected_dem() -> None:
 
 
 def test_old_x_z_sampler_instructions_remain_bit_identical() -> None:
-    from flagquantum.noise import phase_flip_channel
+    from flagquantum.core.operators.channels import phase_flip_channel
     from flagquantum.qec.execution.sampling import (
         _gate_bound_locations,
         _measurement_plan,

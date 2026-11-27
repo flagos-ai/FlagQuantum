@@ -13,8 +13,8 @@ import flagquantum.runtime as fqr
 import flagquantum.simulation.mps as fqmps
 import flagquantum.simulation.mps.models as mps_models
 from flagquantum.core.ir import Instruction, MeasurementNode
-from flagquantum.noise import (
-    ReadoutError,
+from flagquantum.core.noise import ReadoutError
+from flagquantum.core.operators.channels import (
     amplitude_damping_channel,
     bit_flip_channel,
     depolarizing_channel,

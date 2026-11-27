@@ -7,7 +7,7 @@ from pathlib import Path
 import pytest
 
 from flagquantum.ecosystem.pennylane import PennyLaneDependencyError, conversion
-from tools.check_architecture import CONFIG, architecture_errors
+from tools.architecture.check_architecture import CONFIG, architecture_errors
 
 pytestmark = pytest.mark.unit
 ROOT = Path(__file__).resolve().parents[2]
@@ -48,7 +48,7 @@ def test_ci_has_minimum_and_latest_pennylane_lanes() -> None:
     assert 'OPTIONAL_VERSIONS: "0.44.1 0.45.1"' in workflow
     assert "for version in ${OPTIONAL_VERSIONS}" in workflow
     assert '"pennylane==${version}"' in workflow
-    assert "python tools/check_pennylane_interop_contract.py" in workflow
+    assert "python tools/validation/check_pennylane_interop_contract.py" in workflow
     assert "tests/test_pennylane_interop.py" in workflow
     assert "tests/test_pennylane_interop_conformance.py" in workflow
     assert "-m pennylane -q" in workflow

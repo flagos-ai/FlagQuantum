@@ -17,7 +17,8 @@ from typing import Any
 import torch
 import torch.distributed as dist
 
-from ....compute import get_platform_runtime
+from flagquantum.compute.local import get_platform_runtime
+
 from ....simulation.mps.rank_local import (
     tensor_nbytes as _tensor_nbytes,
 )

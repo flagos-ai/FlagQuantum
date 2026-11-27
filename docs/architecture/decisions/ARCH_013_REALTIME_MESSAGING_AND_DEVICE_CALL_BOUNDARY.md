@@ -40,11 +40,11 @@ delivered, the hardware side cannot, and the hardware side is represented as an
 owned blocked row rather than as a plan. This ADR records the decision that
 follows from those statements.
 
-**Two architectural limits bear on the placement.** `architecture.toml` lists
+**Two architectural limits bear on the placement.** `config/architecture.toml` lists
 `remote` among the allowed top-level directories and constrains neither
 `remote/**` nor `deployment/**` with a forbidden-dependency prefix; it does list
 `remote` inside `compiler_forbidden` and `simulation_forbidden`, so neither the
-compiler nor the simulator may reach a realtime channel. `team-ownership.toml`
+compiler nor the simulator may reach a realtime channel. `config/team-ownership.toml`
 assigns `flagquantum/remote/**` to the `remote` team. A realtime messaging package
 therefore belongs under `remote`, and by construction cannot be wired into the
 simulator's inner loop.
@@ -113,7 +113,7 @@ registration authority. The function table is an owned type with a collision
 check, the channel registry is owned by a driver, and neither shadows
 `flagquantum/ecosystem/extensions/sdk.py`, which remains the only plugin-admission
 surface. A future round that tries to reach the simulator's inner loop with this
-package would have to change `architecture.toml`, and that is a separate decision.
+package would have to change `config/architecture.toml`, and that is a separate decision.
 
 ### 4. The contract and its fake land together with a conformance test
 
@@ -121,7 +121,7 @@ package would have to change `architecture.toml`, and that is a separate decisio
 the limits, the status convention, and the hash vectors so a tool can read them
 without importing the package. `LoopbackTransport` is the contract fake: an
 in-process transport that performs no I/O and is how the protocol is exercised
-offline. The gate `tools/check_realtime_messaging_contract.py` is the contract's
+offline. The gate `tools/validation/check_realtime_messaging_contract.py` is the contract's
 reader, and it fails if the contract and the implementation disagree. Two of its
 checks reach outside this repository on purpose, because a contract that only
 agrees with the code it was written from proves nothing:

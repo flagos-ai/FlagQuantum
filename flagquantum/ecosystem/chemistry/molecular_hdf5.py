@@ -9,7 +9,7 @@ from typing import Any
 
 import torch
 
-from ...algorithms.chemistry_domain.problem import MolecularProblem
+from flagquantum.algorithms.chemistry.models.problem import MolecularProblem
 
 
 def _dataset(source: Any, name: str) -> Any:

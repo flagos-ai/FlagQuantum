@@ -9,7 +9,7 @@ from types import SimpleNamespace
 
 import pytest
 
-from tools.pytest_shard import pytest_testnodedown
+from tools.ci.pytest_shard import pytest_testnodedown
 
 pytestmark = pytest.mark.unit
 

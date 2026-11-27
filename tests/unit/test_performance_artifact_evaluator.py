@@ -6,7 +6,7 @@ from pathlib import Path
 
 import pytest
 
-from tools.evaluate_performance_artifact import resolve_optional_baseline
+from tools.validation.evaluate_performance_artifact import resolve_optional_baseline
 
 pytestmark = pytest.mark.unit
 

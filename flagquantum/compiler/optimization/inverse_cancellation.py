@@ -58,13 +58,14 @@ from collections.abc import Mapping
 from dataclasses import replace
 from types import MappingProxyType
 
-from ...core.ir import CircuitIR, Instruction
-from ...core.operator_schema import (
+from flagquantum.core.operators.schema import (
     OPERATOR_SCHEMAS,
     canonical_opcode,
     get_operator_schema,
     inverse_operator,
 )
+
+from ...core.ir import CircuitIR, Instruction
 from .canonicalization import _WireLocalProgram
 
 

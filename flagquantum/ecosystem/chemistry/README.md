@@ -120,7 +120,7 @@ edit this adapter and its rejection/replacement tests, then run:
 ```bash
 python -m pytest tests/unit/test_molecular_data_boundary.py tests/integration/test_molecular_data_isolation.py -q
 python -m pytest tests/unit/test_openfermion_conversion.py -k molecular_data -q
-python tools/check_architecture.py
+python tools/architecture/check_architecture.py
 python tools/check_dependency_policy.py
 ```
 

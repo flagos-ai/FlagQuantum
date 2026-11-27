@@ -18,6 +18,8 @@ import flagquantum.deployment as deployment
 import flagquantum.lindblad as fql
 from flagquantum.compiler import compile as compile_program
 from flagquantum.compiler.openqasm import emit_openqasm
+from flagquantum.compute.remote.compute._native_job import NativeJiudingJobClient
+from flagquantum.compute.remote.compute.jiuding import JiudingClient
 from flagquantum.core.ir import IRValidationError, ensure_circuit_ir
 from flagquantum.core.ir.levels import (
     SUPPORTED_EXACT,
@@ -41,9 +43,7 @@ from flagquantum.errors import CapabilityError, SerializationError
 from flagquantum.experimental.simulation import (
     IsingBraidProgram as ExperimentalIsingBraidProgram,
 )
-from flagquantum.lindblad._plan import _identity
-from flagquantum.remote.compute._native_job import NativeJiudingJobClient
-from flagquantum.remote.compute.jiuding import JiudingClient
+from flagquantum.runtime.evolution._plan import _identity
 
 pytestmark = pytest.mark.unit
 
@@ -420,7 +420,8 @@ def test_old_native_plan_cannot_seal_an_ising_source_as_rydberg(
         side_effect=AssertionError("discrete source reached Rydberg numerical work")
     )
     monkeypatch.setattr(
-        "flagquantum.lindblad._native_plan._plan_density_matrix_evolution", numerical
+        "flagquantum.runtime.evolution._native_plan._plan_density_matrix_evolution",
+        numerical,
     )
     with pytest.raises(SerializationError, match="timed Rydberg"):
         fql.LindbladPlan.from_dict(payload)
@@ -431,7 +432,7 @@ def test_old_native_plan_cannot_seal_an_ising_source_as_rydberg(
 def test_deployment_and_remote_reject_before_side_effects(as_record: bool) -> None:
     program = IsingBraidProgram()
     source = program.to_ir() if as_record else program
-    with patch("flagquantum.deployment.cloud.compile_program") as compiler:
+    with patch("flagquantum.runtime.planner.deployment.compile_program") as compiler:
         entry: Callable[..., object] = deployment.create_deployment_package
         with pytest.raises(CapabilityError, match="Ising"):
             entry(source)

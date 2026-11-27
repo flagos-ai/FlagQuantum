@@ -130,7 +130,7 @@ faulthandler dump and exited zero with `OOMKilled=False`. Each diagnostic cleanu
 reported no remaining container under its exact name.
 
 This is not the full shard or its worker history. The isolated run used pytest's
-faulthandler at 300 seconds; the failed CI used `tools.pytest_stack_watchdog`
+faulthandler at 300 seconds; the failed CI used `tools.ci.pytest_stack_watchdog`
 at 300 seconds and disabled faulthandler. Source location, installation paths and
 other runner activity also differ. Shared rootless-engine resource accounting
 does not certify per-test memory or host exclusivity. The passing node does not

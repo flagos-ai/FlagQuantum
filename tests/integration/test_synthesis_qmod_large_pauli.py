@@ -6,7 +6,7 @@ import torch
 import flagquantum as fq
 from flagquantum import synth
 from flagquantum.ecosystem._qmod.adapter import SUPPORTED_SOURCE_VERSION, parse_qmod
-from tools.validate_qmod_large_pauli import FIXTURES, validate
+from tools.validation.validate_qmod_large_pauli import FIXTURES, validate
 
 pytestmark = pytest.mark.integration
 

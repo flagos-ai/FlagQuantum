@@ -11,9 +11,9 @@ import pytest
 import torch
 
 import flagquantum as fq
+from flagquantum.core.measurement import OutputRequest
 from flagquantum.dynamic import DynamicCircuit
 from flagquantum.errors import CapabilityError, ValidationError
-from flagquantum.observables import OutputRequest
 from flagquantum.runtime import plan_execution
 from flagquantum.runtime.dynamic import execution
 from flagquantum.runtime.dynamic.result import DynamicExecutionResult

@@ -5,7 +5,7 @@ from dataclasses import replace
 import pytest
 import torch
 
-from flagquantum.compiler._hybrid import (
+from flagquantum.compiler.frontends._structured import (
     BoundedLoopUnrollPass,
     HybridProgram,
     HybridVerificationError,

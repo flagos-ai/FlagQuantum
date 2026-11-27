@@ -2,7 +2,7 @@ from pathlib import Path
 
 import pytest
 
-from tools.ci_tier import CI_TIERS
+from tools.ci.ci_tier import CI_TIERS
 
 pytestmark = pytest.mark.unit
 

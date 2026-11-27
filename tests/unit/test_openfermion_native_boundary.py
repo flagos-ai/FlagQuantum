@@ -6,9 +6,9 @@ from typing import cast
 
 import pytest
 
-from flagquantum.core.algebra.pauli import PauliOperator, PauliTerm
+from flagquantum.core.operators.fermion import FermionOperator, FermionTerm
+from flagquantum.core.operators.pauli import PauliOperator, PauliTerm
 from flagquantum.ecosystem import openfermion as adapter
-from flagquantum.observables.fermion import FermionOperator, FermionTerm
 
 pytestmark = pytest.mark.unit
 

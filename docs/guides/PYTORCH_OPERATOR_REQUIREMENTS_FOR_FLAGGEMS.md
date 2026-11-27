@@ -199,7 +199,7 @@ native PyTorch path:
 
 FlagQuantum already has operator-backend entry points:
 
-- `flagquantum/compute/flaggems.py`
+- `flagquantum/compute/local/flaggems.py`
 - `benchmarks/operator_backend_compare.py`
 
 Current safe candidate operators:
@@ -263,7 +263,7 @@ rg -o --no-filename "torch\.[A-Za-z_][A-Za-z0-9_]*" flagquantum -g "*.py" \
 Verify actual FlagGems support for a dtype:
 
 ```python
-from flagquantum.compute.flaggems import validate_flaggems_ops
+from flagquantum.compute.local.flaggems import validate_flaggems_ops
 
 ops = [
     "mm", "bmm", "sum", "mul", "abs", "add", "addmm",

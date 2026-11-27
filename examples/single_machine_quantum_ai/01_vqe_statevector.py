@@ -19,10 +19,12 @@ from common import (  # noqa: E402
 )
 
 import flagquantum as fq  # noqa: E402
-from flagquantum.algorithms import (  # noqa: E402
+from flagquantum.algorithms.primitives.hamiltonian import (  # noqa: E402
     Hamiltonian,
-    hardware_efficient_parameter_count,
     pauli_term,
+)
+from flagquantum.algorithms.primitives.ansatz import (
+    hardware_efficient_parameter_count,
 )
 
 

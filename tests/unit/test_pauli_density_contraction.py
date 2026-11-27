@@ -3,7 +3,7 @@
 import pytest
 import torch
 
-from flagquantum.algorithms import pauli_term
+from flagquantum.algorithms.primitives.hamiltonian import pauli_term
 from flagquantum.simulation.pauli import pauli_product_density_expectation
 
 pytestmark = pytest.mark.unit

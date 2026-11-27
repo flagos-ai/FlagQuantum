@@ -11,7 +11,12 @@ from pathlib import Path
 from types import MappingProxyType
 from typing import Any
 
-from ..remote.qpu import DeploymentResult, ProviderTaskHandle, build_result_metadata
+from flagquantum.compute.remote.qpu import (
+    DeploymentResult,
+    ProviderTaskHandle,
+    build_result_metadata,
+)
+
 from ._atomic import write_once
 from .experiment import TwinExperiment, TwinHardwareReport
 from .prediction import TwinPrediction

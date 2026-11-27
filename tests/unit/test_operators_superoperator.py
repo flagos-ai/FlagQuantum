@@ -21,9 +21,10 @@ except ModuleNotFoundError:  # pragma: no cover - Python 3.10 and older
 import pytest
 import torch
 
+from flagquantum.core.operators.embedding import expand_operator
 from flagquantum.operators import DEFAULT_DENSE_MATRIX_BYTES, SuperOperator
-from flagquantum.simulation.density_matrix import apply_kraus_density, expand_operator
-from flagquantum.simulation.lindblad_generator import Liouvillian
+from flagquantum.simulation.density_matrix import apply_kraus_density
+from flagquantum.simulation.dynamics.generator import Liouvillian
 
 pytestmark = pytest.mark.unit
 

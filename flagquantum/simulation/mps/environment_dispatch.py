@@ -6,12 +6,13 @@ import os
 
 import torch
 
-from ...kernels.catalog import (
+from flagquantum.simulation.kernels.catalog import (
     KernelImplementation,
     KernelMatchResult,
     KernelRequest,
     match_kernel_implementations,
 )
+
 from ..kernel_dispatch import _require_cataloged_kernel
 
 _TRANSFER_IMPLEMENTATION_ID = "FQKI-TRITON-MPS-004-A"
@@ -196,7 +197,9 @@ def _apply_cataloged_mps_environment(
         device_type=environment.device.type,
         dtype=str(environment.dtype).removeprefix("torch."),
     )
-    from ...kernels.triton.mps_environment import fused_mps_environment_transfer
+    from flagquantum.simulation.kernels.triton.mps_environment import (
+        fused_mps_environment_transfer,
+    )
 
     return fused_mps_environment_transfer(
         environment,
@@ -215,7 +218,9 @@ def _apply_cataloged_mps_environment_channels(
         device_type=channels.device.type,
         dtype=str(channels.dtype).removeprefix("torch."),
     )
-    from ...kernels.triton.mps_environment import fused_mps_environment_channels
+    from flagquantum.simulation.kernels.triton.mps_environment import (
+        fused_mps_environment_channels,
+    )
 
     return fused_mps_environment_channels(channels, tensor)
 

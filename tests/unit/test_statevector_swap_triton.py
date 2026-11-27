@@ -7,7 +7,7 @@ import torch
 
 pytest.importorskip("triton")
 
-from flagquantum.kernels.triton.statevector_swap import (
+from flagquantum.simulation.kernels.triton.statevector_swap import (
     apply_complex64_local_swap_sequence,
 )
 

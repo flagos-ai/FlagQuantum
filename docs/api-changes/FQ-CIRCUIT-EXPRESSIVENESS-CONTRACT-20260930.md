@@ -358,7 +358,7 @@ it and pass after:
 ## Owner and approvals
 
 - Owning domain: `core` for the IR contract, with `integration` for the record.
-  `docs/api-changes/**` is a shared path, and `python tools/check_team_scope.py --team
+  `docs/api-changes/**` is a shared path, and `python tools/architecture/check_team_scope.py --team
   integration --files docs/api-changes/FQ-CIRCUIT-EXPRESSIVENESS-CONTRACT-20260930.md`
   passes.
 - Required approvals before implementation: **core domain owner** (opcode set,

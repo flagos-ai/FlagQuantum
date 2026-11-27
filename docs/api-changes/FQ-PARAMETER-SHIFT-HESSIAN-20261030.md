@@ -205,8 +205,8 @@ preserving.
   promotion is claimed here.
 - **The sequencing rationale in the alignment plan is corrected, not followed.**
   The tracker predicted this slice would turn
-  `tools/check_gradient_methods_contract.py` and
-  `tools/check_opcode_gradient_exactness.py` red "until both matrices are
+  `tools/validation/check_gradient_methods_contract.py` and
+  `tools/validation/check_opcode_gradient_exactness.py` red "until both matrices are
   revisited". Measured: both stay green, because the chosen surface touches
   neither `_GRADIENT_METHODS` nor the root exports. The prediction was written
   against a different candidate design (a `hessian` method value) and is recorded
@@ -214,13 +214,13 @@ preserving.
 
 ## Verification
 
-`tools/check_parameter_shift_hessian_contract.py` re-derives the composition from
+`tools/validation/check_parameter_shift_hessian_contract.py` re-derives the composition from
 `OPERATOR_SCHEMAS`, drives the implementation for every registered opcode, builds
 every refusal, and compares all of it against
 `contracts/parameter-shift-hessian-contract.toml`. It runs in the `quality` job of
 `.github/workflows/ci.yml` as a **step** next to the batch profile's gate and in
-`tools/pre_push.py`. It is a step rather than a job deliberately:
-`tools/validate_required_checks.py` pins six externally configured required checks
+`tools/ci/pre_push.py`. It is a step rather than a job deliberately:
+`tools/ci/validate_required_checks.py` pins six externally configured required checks
 across four jobs, so adding a job would change the required-check contract and
 adding a step does not.
 
@@ -307,7 +307,7 @@ catch.
 Focused run:
 
 ```bash
-python tools/check_parameter_shift_hessian_contract.py
+python tools/validation/check_parameter_shift_hessian_contract.py
 python -m pytest tests/unit/test_parameter_shift_hessian_contract.py -q
 python -m pytest tests/test_gradient_api.py tests/integration/test_gradient_modes.py -q
 ```

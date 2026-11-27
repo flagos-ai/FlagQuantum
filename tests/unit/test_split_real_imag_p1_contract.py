@@ -7,7 +7,7 @@ import pytest
 
 pytestmark = pytest.mark.unit
 ROOT = Path(__file__).resolve().parents[2]
-MODULE_PATH = ROOT / "tools" / "check_split_real_imag_p1_contract.py"
+MODULE_PATH = ROOT / "tools" / "validation/check_split_real_imag_p1_contract.py"
 SPEC = importlib.util.spec_from_file_location(
     "split_real_imag_p1_contract", MODULE_PATH
 )

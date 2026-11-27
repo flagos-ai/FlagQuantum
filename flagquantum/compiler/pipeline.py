@@ -1,4 +1,4 @@
-"""Compiler entry points and compatibility exports for stage implementations."""
+"""Public compiler entry points composing the owned transformation stages."""
 
 from __future__ import annotations
 
@@ -12,14 +12,6 @@ from ..core.runtime_config import get_runtime_config as get_runtime_config
 from .lowering.pipeline import compile_circuit as _compile_circuit
 from .lowering.schedule_legalization import schedule_layers as schedule_layers
 from .optimization import pipeline as _optimization_pipeline
-from .optimization.canonicalization import _ROTATION_PARAM as _ROTATION_PARAM
-from .optimization.canonicalization import _SELF_INVERSE as _SELF_INVERSE
-from .optimization.canonicalization import _add_values as _add_values
-from .optimization.canonicalization import _is_zero as _is_zero
-from .optimization.canonicalization import _replace_param as _replace_param
-from .optimization.canonicalization import _rotation_table as _rotation_table
-from .optimization.canonicalization import _self_inverse_table as _self_inverse_table
-from .optimization.canonicalization import _WireLocalProgram as _WireLocalProgram
 from .optimization.canonicalization import (
     merge_adjacent_rotations as merge_adjacent_rotations,
 )
@@ -35,31 +27,8 @@ from .optimization.optimization_levels import (
 from .optimization.optimization_levels import (
     optimization_level_stages as optimization_level_stages,
 )
-from .optimization.pass_registry import _BUILTIN_ANALYSES as _BUILTIN_ANALYSES
-from .optimization.pass_registry import _BUILTIN_PASS_SPECS as _BUILTIN_PASS_SPECS
 from .optimization.pass_registry import BUILTIN_PASSES as BUILTIN_PASSES
-from .optimization.pass_registry import (
-    _cancel_commuting_self_inverse as _cancel_commuting_self_inverse,
-)
-from .optimization.pass_registry import (
-    _collapse_one_qubit_runs as _collapse_one_qubit_runs,
-)
-from .optimization.pass_registry import (
-    _collapse_two_qubit_blocks as _collapse_two_qubit_blocks,
-)
-from .optimization.pass_registry import _commutation_blocks as _commutation_blocks
-from .optimization.pass_registry import (
-    _merge_commuting_rotations as _merge_commuting_rotations,
-)
-from .optimization.pass_registry import _merge_inverse_pairs as _merge_inverse_pairs
-from .optimization.pass_registry import (
-    _remove_diagonal_gates_before_measure as _remove_diagonal_gates_before_measure,
-)
-from .optimization.pass_registry import _rotation_parameters as _rotation_parameters
-from .optimization.pass_registry import _self_inverse_opcodes as _self_inverse_opcodes
 from .optimization.pass_registry import default_pass_registry as _default_pass_registry
-from .optimization.pipeline import _as_ir as _as_ir
-from .optimization.pipeline import _with_recorded_level as _with_recorded_level
 from .optimization.zero_state_reset import (
     remove_zero_state_resets as remove_zero_state_resets,
 )
@@ -100,20 +69,12 @@ def default_pass_registry() -> PassRegistry:
     return _default_pass_registry()
 
 
-def _registry_admitting(
-    passes: Mapping[str, PassBinding] | None,
-) -> PassRegistry:
-    # Keep replacement of the original registry entry effective for old callers.
-    return _optimization_pipeline._registry_admitting(
-        passes, registry_factory=default_pass_registry
-    )
-
-
 def _optimize_to_fixed_point(
     circuit_or_ir: Any,
     optimization_level: int = DEFAULT_OPTIMIZATION_LEVEL,
     passes: Mapping[str, PassBinding] | None = None,
 ) -> CircuitIR:
+    # Bind the public registry factory for optimize and post-routing optimization.
     return _optimization_pipeline._optimize_to_fixed_point(
         circuit_or_ir,
         optimization_level,

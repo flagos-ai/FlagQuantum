@@ -9,7 +9,8 @@ from typing import Any
 
 import torch
 
-from ....compute import get_platform_runtime, resolve_platform_device
+from flagquantum.compute.local import get_platform_runtime, resolve_platform_device
+
 from ....core.ir import CircuitIR, ensure_circuit_ir
 from ....core.numerics import AccuracyRequirementContract, PrecisionPlanContract
 from ....core.parameters import (
@@ -794,7 +795,7 @@ def _training_conformance_ir(depth: int, seed: int) -> CircuitIR:
 
 
 def _training_conformance_observable() -> Any:
-    from ....algorithms import Hamiltonian, pauli_term
+    from flagquantum.algorithms.primitives.hamiltonian import Hamiltonian, pauli_term
 
     return Hamiltonian(
         (

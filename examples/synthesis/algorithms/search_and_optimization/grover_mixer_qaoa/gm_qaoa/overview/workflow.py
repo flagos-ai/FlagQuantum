@@ -7,7 +7,7 @@ import torch
 
 from examples.synthesis.graph_optimization import Evaluation
 from flagquantum import synth
-from flagquantum.algorithms import CobylaOptimizer
+from flagquantum.algorithms.optimizers.cobyla import CobylaOptimizer
 
 from .quantum import build_program, distribution
 

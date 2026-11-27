@@ -224,7 +224,7 @@ speed ladder, and `scalability_claim_allowed` stays false everywhere it was fals
       neither snapshot contains the string `EvidenceScope` or
       `multi_node_16_gpu_scale`. `EvidenceScope` is an internal serialized
       `evidence_scope` schema value, not a Stable Core root export.
-- [x] `python tools/check_team_scope.py --team integration --files
+- [x] `python tools/architecture/check_team_scope.py --team integration --files
       flagquantum/runtime/observability/evidence.py
       tests/unit/test_runtime_evidence.py
       docs/development/API_CHANGE_PROPOSAL_065_MULTI_NODE_EVIDENCE_SCOPE.md`

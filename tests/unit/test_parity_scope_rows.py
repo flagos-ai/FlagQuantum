@@ -16,7 +16,7 @@ from pathlib import Path
 
 import pytest
 
-from tools.parity_matrix import load_inputs, validate_contract
+from tools.architecture.parity_matrix import load_inputs, validate_contract
 
 pytestmark = pytest.mark.unit
 
@@ -127,12 +127,10 @@ def test_the_four_routes_the_record_quotes_are_real() -> None:
     import torch
 
     import flagquantum as fq
-    from flagquantum.noise.channels import amplitude_damping_channel
+    from flagquantum.core.operators.channels import amplitude_damping_channel
+    from flagquantum.core.operators.embedding import expand_operator
     from flagquantum.operators import SuperOperator
-    from flagquantum.simulation.density_matrix import (
-        apply_unitary_density,
-        expand_operator,
-    )
+    from flagquantum.simulation.density_matrix import apply_unitary_density
 
     pauli_x = torch.tensor([[0, 1], [1, 0]], dtype=torch.complex128)
     identity = torch.eye(2, dtype=torch.complex128)

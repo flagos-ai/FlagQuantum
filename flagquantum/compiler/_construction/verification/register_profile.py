@@ -12,7 +12,7 @@ from types import MappingProxyType
 
 import torch
 
-from ..._hybrid.model import (
+from flagquantum.compiler.frontends._structured.model import (
     QUANTUM_EFFECT,
     Block,
     HybridProgram,
@@ -22,6 +22,7 @@ from ..._hybrid.model import (
     Value,
     ValueId,
 )
+
 from ..codegen.register_expansion import expand_register_calls, is_register_function
 from .profile import _fail, _positive_integer, verify_construction
 

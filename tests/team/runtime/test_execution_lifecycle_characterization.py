@@ -22,14 +22,14 @@ from flagquantum.runtime.observability.evidence import (
     RuntimeProvenance,
     create_evidence_artifact,
 )
-from flagquantum.runtime.records import record_execution
+from flagquantum.runtime.results.records import record_execution
+from flagquantum.runtime.results.trajectories import TrajectoryFailure
 from flagquantum.runtime.routing import FallbackEvent, StrictExecutionScope
 from flagquantum.runtime.trajectories.checkpoint import (
     TrajectoryCheckpoint,
     load_trajectory_checkpoint,
     save_trajectory_checkpoint,
 )
-from flagquantum.runtime.trajectories.result import TrajectoryFailure
 from flagquantum.runtime.trajectories.statistics import TensorWelford
 
 

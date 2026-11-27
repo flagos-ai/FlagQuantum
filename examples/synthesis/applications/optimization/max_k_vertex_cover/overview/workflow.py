@@ -14,7 +14,10 @@ from examples.synthesis.graph_optimization import (
     selected_nodes,
 )
 from flagquantum import synth
-from flagquantum.algorithms import NelderMeadOptimizer, NelderMeadResult
+from flagquantum.algorithms.optimizers.nelder_mead import (
+    NelderMeadOptimizer,
+    NelderMeadResult,
+)
 
 
 @dataclass(frozen=True)

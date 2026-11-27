@@ -2,6 +2,7 @@ import pytest
 import torch
 
 import flagquantum as fq
+import flagquantum.compiler.topology.routing as _stage_routing
 from flagquantum.compiler import CouplingMap, route_to_topology
 from flagquantum.core.ir import CircuitIR, Instruction
 
@@ -191,7 +192,7 @@ def test_existing_entries_dispatch_to_emission(
     circuit = fq.Circuit(3).h(0).ry(2, theta=0.37).cx(0, 2)
     routed = entry.route_to_topology(circuit, CouplingMap.line(3), strategy=strategy)
     emitter.assert_called_once()
-    assert entry._routing_metadata is routing_emission._routing_metadata
+    assert _stage_routing._routing_metadata is routing_emission._routing_metadata
     assert (
         entry.record_post_routing_optimization
         is routing_emission.record_post_routing_optimization

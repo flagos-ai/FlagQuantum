@@ -12,7 +12,7 @@ from flagquantum.compiler._construction.scheduling.target import Target
 from flagquantum.compiler._construction.verification.register_profile import (
     register_type,
 )
-from flagquantum.compiler._hybrid.model import (
+from flagquantum.compiler.frontends._structured.model import (
     QUANTUM_EFFECT,
     Block,
     HybridProgram,
@@ -22,7 +22,7 @@ from flagquantum.compiler._hybrid.model import (
     ValueId,
 )
 from flagquantum.errors import PlanningError
-from flagquantum.services._synthesis_registers import synthesize_registers
+from flagquantum.synth._program import synthesize_registers
 from tests.register_program_cases import Registers
 from tests.synthesis_workflow_helpers import check_state
 from tools.synthesis_compiler_examples.const_calls.main import const_composition

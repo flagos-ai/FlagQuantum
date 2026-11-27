@@ -54,7 +54,7 @@ one of these lifecycle classes:
 
 An entry may name the older result it `supersedes`. Remove the entry when its
 artifact is archived or removed. The CI and pre-push gates check this relationship
-with `python tools/check_evidence_retention.py --base <revision>`.
+with `python tools/release/check_evidence_retention.py --base <revision>`.
 
 Historical benchmark families, provider batches, paper workspaces, task
 fragments, and agent-specific authoring workflows are stored outside the source
@@ -85,7 +85,7 @@ default to external storage unless a release or regression gate requires them.
 
 ## Size budgets
 
-`python tools/check_repository_hygiene.py --report` prints tracked-tree metrics.
+`python tools/architecture/check_repository_hygiene.py --report` prints tracked-tree metrics.
 Generated artifacts have hard limits; normal source, test and documentation
 growth is reported for review without failing CI:
 

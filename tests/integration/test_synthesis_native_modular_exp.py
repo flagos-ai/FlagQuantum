@@ -18,7 +18,7 @@ from examples.synthesis.functions.arithmetic.modular_exp.modular_exp_example.mai
     run_example,
 )
 from flagquantum import synth
-from flagquantum.compiler._hybrid.verifier import HybridVerificationError
+from flagquantum.compiler.frontends._structured.verifier import HybridVerificationError
 from flagquantum.errors import PlanningError
 from tests.team.compiler.test_construction_python_program import program_definition
 

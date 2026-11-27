@@ -59,21 +59,22 @@ from typing import Any
 
 import torch
 
-from flagquantum.algorithms import (
-    CobylaOptimizer,
-    Hamiltonian,
-    NelderMeadOptimizer,
-    VQESolver,
-    hardware_efficient_ansatz,
-    hardware_efficient_parameter_count,
-    pauli_term,
+from flagquantum.algorithms.chemistry.molecular import create_molecular_hamiltonian
+from flagquantum.algorithms.primitives.hamiltonian import Hamiltonian, pauli_term
+from flagquantum.algorithms.optimization import OptimizationStage
+from flagquantum.algorithms.optimization.solvers import VQESolver
+from flagquantum.algorithms.optimization.vqe import (
     run_adapt_vqe,
     run_hybrid_vqe,
     run_layerwise_vqe,
     run_vqe,
 )
-from flagquantum.algorithms.molecular import create_molecular_hamiltonian
-from flagquantum.algorithms.optimization import OptimizationStage
+from flagquantum.algorithms.optimizers.cobyla import CobylaOptimizer
+from flagquantum.algorithms.optimizers.nelder_mead import NelderMeadOptimizer
+from flagquantum.algorithms.primitives.ansatz import (
+    hardware_efficient_ansatz,
+    hardware_efficient_parameter_count,
+)
 from flagquantum.circuit import Circuit
 
 #: Two qubits and one field each: the smallest instance with an entangled ground

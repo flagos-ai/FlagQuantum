@@ -11,20 +11,20 @@ from typing import Any, cast
 import pytest
 
 import flagquantum as fq
-import flagquantum.deployment.dynamic_sealing as sealing
+import flagquantum.runtime.dynamic.remote_sealing as sealing
 from flagquantum.compiler import CouplingMap
-from flagquantum.deployment import CloudBackendProfile
-from flagquantum.deployment.dynamic_rematch import evaluate_dynamic_routing_rematch
-from flagquantum.dynamic import DynamicCircuit
-from flagquantum.errors import CapabilityError
-from flagquantum.remote.qpu.quafu_dynamic import (
+from flagquantum.compute.remote.packages import CloudBackendProfile
+from flagquantum.compute.remote.qpu.quafu_dynamic import (
     _quafu_dynamic_snapshot_from_fixture,
 )
-from flagquantum.remote.qpu.quafu_dynamic_legality import (
+from flagquantum.compute.remote.qpu.quafu_dynamic_legality import (
     _preview_quafu_dynamic_request,
 )
+from flagquantum.dynamic import DynamicCircuit
+from flagquantum.errors import CapabilityError
 from flagquantum.runtime.dynamic.remote_capabilities import dynamic_remote_requirements
 from flagquantum.runtime.dynamic.routing import route_dynamic_circuit
+from flagquantum.runtime.dynamic.routing_rematch import evaluate_dynamic_routing_rematch
 
 pytestmark = pytest.mark.unit
 

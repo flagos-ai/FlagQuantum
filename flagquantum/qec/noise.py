@@ -8,7 +8,9 @@ from dataclasses import dataclass
 from numbers import Integral, Real
 from typing import TYPE_CHECKING, Any
 
-from ..noise import NoiseModel, ReadoutError, bit_flip_channel
+from flagquantum.core.noise import NoiseModel, ReadoutError
+from flagquantum.core.operators.channels import bit_flip_channel
+
 from .types import NoiseSweepPoint as NoiseSweepPoint
 
 if TYPE_CHECKING:

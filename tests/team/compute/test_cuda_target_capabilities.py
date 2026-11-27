@@ -9,7 +9,7 @@ from pathlib import Path
 
 import pytest
 
-from flagquantum.compute.cuda_target_capabilities import (
+from flagquantum.compute.local.cuda_target_capabilities import (
     cuda_statevector_capability_snapshot,
 )
 from flagquantum.core.target_capabilities import (

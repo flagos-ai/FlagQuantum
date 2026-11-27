@@ -90,7 +90,7 @@ Reproduced on `main` at `d6de3a28a45706b5c2dbab70953faa4d5bf9a75a`, with
 `QUAFU_API_TOKEN`, `QUAFU_API_KEY` and `QUAFU_TASK_SERVER_URL` cleared, using the
 same transport-injection point the repository's own test uses
 (`tests/api_contract/test_quafu_service_compile.py`, which patches the provider
-factory in `flagquantum.remote.qpu.execution`). The transport is a spy and the
+factory in `flagquantum.compute.remote.qpu.execution`). The transport is a spy and the
 base URL is a non-resolving one, so **no request left the machine**; the spy
 records the request that the provider tried to send and then replies with the
 failure an unauthenticated submission is modelled to produce. This is a
@@ -293,7 +293,7 @@ What this section projected, and what landed:
 ## Owner and approvals
 
 * Owning domain: `remote`. `docs/api-changes/**` is a shared path, and
-  `python tools/check_team_scope.py --team remote --files
+  `python tools/architecture/check_team_scope.py --team remote --files
   docs/api-changes/FQ-QUAFU-CREDENTIAL-FAIL-CLOSED-20260930.md` passes.
 * Required approvals before implementation: **API owner** and **remote domain
   owner**. Both were given by the user on 2026-10-07, as recorded under

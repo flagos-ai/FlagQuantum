@@ -12,7 +12,7 @@ from examples.synthesis.tutorials.composition.python_program.comparisons.circuit
 )
 from examples.synthesis.tutorials.composition.python_program.main import main
 from flagquantum import synth
-from flagquantum.compiler._hybrid.verifier import HybridVerificationError
+from flagquantum.compiler.frontends._structured.verifier import HybridVerificationError
 from flagquantum.errors import PlanningError
 from tests.synthesis_workflow_helpers import check_state
 from tests.team.compiler.test_construction_python_program import program_definition

@@ -6,8 +6,12 @@ import pytest
 
 import flagquantum as fq
 import flagquantum.deployment as fqd
-from flagquantum.remote import HttpQuantumProvider, ProviderCredentials, QuafuProvider
-from flagquantum.remote.qpu import _quafu_sdk
+from flagquantum.compute.remote import (
+    HttpQuantumProvider,
+    ProviderCredentials,
+    QuafuProvider,
+)
+from flagquantum.compute.remote.qpu import _quafu_sdk
 from flagquantum.testing import InMemoryRemoteTarget
 
 pytestmark = pytest.mark.integration

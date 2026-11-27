@@ -20,24 +20,17 @@ import dataclasses
 import pytest
 import torch
 
-from flagquantum.algorithms import (
-    Ansatz,
-    CobylaOptimizer,
-    Hamiltonian,
-    NelderMeadOptimizer,
-    VQEResult,
-    VQESolver,
-    hardware_efficient_parameter_count,
-    pauli_term,
-    run_vqe,
-    uccsd_excitations,
-    vqe_loss,
-    vqe_objective,
-)
-from flagquantum.algorithms.molecular import (
+from flagquantum.algorithms.chemistry import uccsd_excitations
+from flagquantum.algorithms.chemistry.molecular import (
     MolecularHamiltonian,
     create_molecular_hamiltonian,
 )
+from flagquantum.algorithms.optimization.solvers import Ansatz, VQESolver, vqe_objective
+from flagquantum.algorithms.optimization.vqe import VQEResult, run_vqe, vqe_loss
+from flagquantum.algorithms.optimizers.cobyla import CobylaOptimizer
+from flagquantum.algorithms.optimizers.nelder_mead import NelderMeadOptimizer
+from flagquantum.algorithms.primitives.ansatz import hardware_efficient_parameter_count
+from flagquantum.algorithms.primitives.hamiltonian import Hamiltonian, pauli_term
 from flagquantum.circuit import Circuit
 from flagquantum.errors import ValidationError
 

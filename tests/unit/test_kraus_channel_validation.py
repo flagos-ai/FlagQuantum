@@ -15,7 +15,7 @@ import pytest
 import torch
 
 import flagquantum.simulation.density_matrix as density_matrix_module
-from flagquantum.noise import KrausChannel
+from flagquantum.core.operators.channels import KrausChannel
 
 pytestmark = pytest.mark.unit
 

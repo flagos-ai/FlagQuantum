@@ -21,7 +21,7 @@ this review does not promote their maturity levels.
 The reviewed CI run passed all 15 jobs. Its coverage job enforces the global
 line-coverage floor and the per-package floors declared in
 [`contracts/coverage-policy.toml`](../../contracts/coverage-policy.toml) through
-`tools/check_coverage.py`, so a passing coverage job measured at or above those
+`tools/ci/check_coverage.py`, so a passing coverage job measured at or above those
 floors. The CPU distributed tier passed 402 tests with 28 skipped; a separate
 benchmark-contract tier passed 113 with 12 skipped. These counts are different
 scopes and must not be added into a unique-test total. Skipped tests are not

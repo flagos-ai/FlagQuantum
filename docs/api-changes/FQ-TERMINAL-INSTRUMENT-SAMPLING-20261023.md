@@ -80,7 +80,7 @@ reinterpret implementation approval as an agent merge grant.
 
 The separate integration change #730 extended the existing
 `contracts/execution-result-v1-candidate.json` and
-`tools/public_api_snapshot.py`; it creates no separate manifest or checker.
+`tools/architecture/public_api_snapshot.py`; it creates no separate manifest or checker.
 The admission records the approved Runtime-only signature, retained Runtime
 export prefix and exact result metadata fields. Metadata object key order is
 not a new promise. Existing MeasurementResult fields and schema version remain

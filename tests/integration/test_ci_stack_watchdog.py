@@ -37,7 +37,7 @@ def _run(
             "-c",
             os.devnull,
             "-p",
-            "tools.pytest_stack_watchdog",
+            "tools.ci.pytest_stack_watchdog",
             "-q",
             *options,
         ],

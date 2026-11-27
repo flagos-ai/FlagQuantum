@@ -10,8 +10,8 @@ import flagquantum as fq
 from flagquantum import _api, synth
 from flagquantum.compiler._construction.frontend.python import capture
 from flagquantum.compiler._construction.scheduling.selection import select_arithmetic
-from flagquantum.services.synthesis import _complete
-from tools.public_api_snapshot import _initial_state_run_signature
+from flagquantum.synth._workflow import _complete
+from tools.architecture.public_api_snapshot import _initial_state_run_signature
 
 pytestmark = pytest.mark.integration
 ROOT = Path(__file__).resolve().parents[2]
@@ -58,7 +58,7 @@ def test_proposal_records_current_api_and_precise_pending_delta_without_fake_app
     )
     assert PROPOSAL["namespace_exports"] == program["previous_namespace_exports"]
     # Later authorized deltas are checked by the current admission validator.
-    from tools.public_api_snapshot import (
+    from tools.architecture.public_api_snapshot import (
         _validate_authorized_synthesis_python_program,
     )
 

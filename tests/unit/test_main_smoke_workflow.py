@@ -35,7 +35,7 @@ def test_main_smoke_checks_installation_outside_the_checkout(tmp_path: Path) -> 
     checkout = tmp_path / "checkout"
     sources = (
         "tests/smoke/test_smoke_baseline.py",
-        "tools/check_main_smoke_qec_wheel.py",
+        "tools/release/check_main_smoke_qec_wheel.py",
         "examples/qec/ai_predecoder.py",
     )
     for name in sources:

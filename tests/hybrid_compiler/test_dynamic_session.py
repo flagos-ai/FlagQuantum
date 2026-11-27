@@ -6,7 +6,7 @@ from dataclasses import replace
 import pytest
 import torch
 
-from flagquantum.compiler._hybrid import (
+from flagquantum.compiler.frontends._structured import (
     BOOL,
     INDEX,
     HybridCaptureError,
@@ -16,10 +16,10 @@ from flagquantum.compiler._hybrid import (
     scalar_type,
     tensor_type,
 )
-from flagquantum.compiler._hybrid.dynamic_lowering import (
+from flagquantum.compiler.frontends._structured.dynamic_lowering import (
     LoweredDynamicProgram as RetainedLoweredDynamicProgram,
 )
-from flagquantum.compiler._hybrid.dynamic_lowering import (
+from flagquantum.compiler.frontends._structured.dynamic_lowering import (
     lower_dynamic_program as retained_lower_dynamic_program,
 )
 from flagquantum.core.ir import Instruction

@@ -3,7 +3,7 @@
 import pytest
 import torch
 
-from flagquantum.noise import CorrelatedReadoutError, NoiseModel, ReadoutError
+from flagquantum.core.noise import CorrelatedReadoutError, NoiseModel, ReadoutError
 
 pytestmark = pytest.mark.unit
 

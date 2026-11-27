@@ -5,7 +5,8 @@ from __future__ import annotations
 import ast
 from typing import TYPE_CHECKING
 
-from ..._hybrid.model import Value
+from flagquantum.compiler.frontends._structured.model import Value
+
 from ..verification.register_profile import _verify_borrowed_effects, register_width
 from .callback_effects import emit_callback_effects
 from .classical import bind_helper

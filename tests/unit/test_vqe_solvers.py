@@ -25,21 +25,22 @@ from __future__ import annotations
 import pytest
 import torch
 
-from flagquantum.algorithms import (
-    Hamiltonian,
+from flagquantum.algorithms.optimization import OptimizationStage
+from flagquantum.algorithms.optimization.vqe import (
+    AdaptVQEResult,
     LayerwiseVQEResult,
     VQEResult,
-    hardware_efficient_ansatz,
-    hardware_efficient_parameter_count,
-    pauli_term,
     run_adapt_vqe,
     run_hybrid_vqe,
     run_layerwise_vqe,
     run_vqe,
     vqe_loss,
 )
-from flagquantum.algorithms.core import AdaptVQEResult
-from flagquantum.algorithms.optimization import OptimizationStage
+from flagquantum.algorithms.primitives.ansatz import (
+    hardware_efficient_ansatz,
+    hardware_efficient_parameter_count,
+)
+from flagquantum.algorithms.primitives.hamiltonian import Hamiltonian, pauli_term
 from flagquantum.circuit import Circuit
 
 pytestmark = pytest.mark.unit

@@ -29,7 +29,7 @@ import torch
 
 import flagquantum as fq
 import flagquantum.noise as fqn
-from flagquantum.noise import depolarizing_channel
+from flagquantum.core.operators.channels import depolarizing_channel
 from flagquantum.runtime.executors.statevector import (
     BatchedStatevectorTrajectoryResult,
     run_noisy_statevector,

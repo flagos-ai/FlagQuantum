@@ -4,7 +4,7 @@ import pickle
 
 import pytest
 
-from flagquantum.remote.kaiwu import (
+from flagquantum.compute.remote.kaiwu import (
     KaiwuCredentials,
     resolve_kaiwu_credentials,
 )

@@ -8,17 +8,16 @@ from collections.abc import Mapping, Sequence
 from dataclasses import dataclass
 from typing import TYPE_CHECKING, Any
 
-from ..core.ir import ensure_circuit_ir
-from ..core.qubit_mapping import remap_qubits
-from ..noise import (
-    CorrelatedReadoutError,
+from flagquantum.core.noise import CorrelatedReadoutError, NoiseModel, ReadoutError
+from flagquantum.core.noise_profile import (
     DeviceNoiseProfile,
     GateDuration,
-    KrausChannel,
-    NoiseModel,
     QubitNoiseCalibration,
-    ReadoutError,
 )
+from flagquantum.core.operators.channels import KrausChannel
+
+from ..core.ir import ensure_circuit_ir
+from ..core.qubit_mapping import remap_qubits
 from .circuit_support import TwinCircuitSupport
 from .experiment import TwinExperiment
 from .factory import from_noise_model

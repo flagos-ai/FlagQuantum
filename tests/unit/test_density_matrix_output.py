@@ -16,7 +16,8 @@ import pytest
 import torch
 
 import flagquantum as fq
-from flagquantum.noise import NoiseModel, ReadoutError, depolarizing_channel
+from flagquantum.core.noise import NoiseModel, ReadoutError
+from flagquantum.core.operators.channels import depolarizing_channel
 from flagquantum.runtime.noise_registry import (
     noisy_density_matrix as registry_noisy_density_matrix,
 )
@@ -55,7 +56,7 @@ def test_noisy_density_method_forwards_circuit_device(
 def test_noisy_density_keeps_accelerator_and_gradient(dtype: torch.dtype) -> None:
     if not torch.cuda.is_available():
         pytest.skip("requires a CUDA-compatible accelerator")
-    from flagquantum.noise import amplitude_damping_channel
+    from flagquantum.core.operators.channels import amplitude_damping_channel
 
     real_dtype = torch.float64 if dtype == torch.complex128 else torch.float32
     theta = torch.tensor(0.31, device="cuda:0", dtype=real_dtype, requires_grad=True)

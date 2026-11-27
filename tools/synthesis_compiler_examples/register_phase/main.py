@@ -14,7 +14,7 @@ from flagquantum.compiler._construction.verification.constraints import CircuitL
 from flagquantum.compiler._construction.verification.register_profile import (
     register_type,
 )
-from flagquantum.compiler._hybrid.model import (
+from flagquantum.compiler.frontends._structured.model import (
     QUANTUM_EFFECT,
     Block,
     HybridProgram,
@@ -23,7 +23,7 @@ from flagquantum.compiler._hybrid.model import (
     Value,
     ValueId,
 )
-from flagquantum.services._synthesis_registers import synthesize_registers
+from flagquantum.synth._program import synthesize_registers
 
 
 def marked(x: int, y: int) -> bool:

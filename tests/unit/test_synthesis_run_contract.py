@@ -10,8 +10,8 @@ import pytest
 
 import flagquantum as fq
 from flagquantum import synth
-from flagquantum.services import synthesis
-from tools.public_api_snapshot import _validate_authorized_synthesis_run
+from flagquantum.synth import _workflow as synthesis
+from tools.architecture.public_api_snapshot import _validate_authorized_synthesis_run
 
 pytestmark = pytest.mark.unit
 ROOT = Path(__file__).resolve().parents[2]
@@ -80,7 +80,7 @@ def test_namespace_reexports_one_authoritative_services_implementation() -> None
     )
     assert synth.Program.__module__ == "flagquantum.services.synthesis"
     assert importlib.util.find_spec("flagquantum.services._synthesis") is None
-    from flagquantum.observables import X as OBSERVABLE_X
+    from flagquantum.core.operators.observable import X as OBSERVABLE_X
 
     assert set(synth.__all__).intersection(fq.__all__) == {"X"}
     assert fq.X is OBSERVABLE_X and id(fq.X) != id(synth.X)

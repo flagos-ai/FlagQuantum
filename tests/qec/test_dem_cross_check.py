@@ -79,7 +79,11 @@ from dataclasses import dataclass, replace
 
 import pytest
 
-from flagquantum.compiler._hybrid import INDEX, capture_source, lower_dynamic_program
+from flagquantum.compiler.frontends._structured import (
+    INDEX,
+    capture_source,
+    lower_dynamic_program,
+)
 from flagquantum.qec.circuits.memory import (
     MeasurementRef,
     MemoryCircuit,

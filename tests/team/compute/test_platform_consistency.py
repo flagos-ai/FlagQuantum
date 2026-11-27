@@ -16,13 +16,13 @@ from typing import Any
 import pytest
 import torch
 
-from flagquantum.compute import (
+from flagquantum.compute.local import (
     MemorySnapshot,
     PlatformRuntime,
     get_platform_runtime,
     list_platform_status,
 )
-from flagquantum.compute.pytorch import _cgroup_memory_snapshot
+from flagquantum.compute.local.pytorch import _cgroup_memory_snapshot
 from flagquantum.ecosystem.extensions import (
     CapabilityRequest,
     CapabilityResponse,

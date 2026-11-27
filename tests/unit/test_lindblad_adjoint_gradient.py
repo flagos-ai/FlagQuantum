@@ -41,11 +41,11 @@ from flagquantum.simulation import (
     adjoint_gradient,
     evolve_density_matrix,
 )
-from flagquantum.simulation.lindblad import (
+from flagquantum.simulation.dynamics.generator import Liouvillian
+from flagquantum.simulation.dynamics.lindblad import (
     _normalize_collapse_operators,
     _normalize_hamiltonian,
 )
-from flagquantum.simulation.lindblad_generator import Liouvillian
 
 pytestmark = pytest.mark.unit
 
@@ -910,7 +910,7 @@ class TestWhatTheRouteRefuses:
         # is driven directly: a step that reports a defect above the target has
         # to fail the call rather than return a cotangent that silently carries
         # the missed defect.
-        from flagquantum.simulation import lindblad_adjoint as module
+        from flagquantum.simulation.dynamics import adjoint as module
 
         def unsatisfied_interval(*args: object, **kwargs: object):
             return args[1], 0.5

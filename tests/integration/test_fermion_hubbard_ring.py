@@ -13,7 +13,7 @@ import flagquantum as fq
 from flagquantum.algorithms.fermion.encoding import encode_fermion
 from flagquantum.algorithms.fermion.hubbard import fermi_hubbard_ring
 from flagquantum.algorithms.fermion.observables import to_observable
-from flagquantum.observables import Observable
+from flagquantum.core.operators.observable import Observable
 
 pytestmark = pytest.mark.integration
 

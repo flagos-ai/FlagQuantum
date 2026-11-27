@@ -8,16 +8,18 @@ from importlib import metadata, util
 
 import torch
 
+from flagquantum.algorithms.optimization._research_providers import (
+    ResearchProviderAvailability,
+)
+from flagquantum.algorithms.optimization.ground_state import (
+    GroundStateVQERequest,
+    GroundStateVQEResult,
+)
 from flagquantum.circuit import Circuit
 from flagquantum.ecosystem.research_vqe_provider import (
     ResearchVQEProviderIdentity,
     run_statevector_research_vqe,
 )
-from flagquantum.services.ground_state import (
-    GroundStateVQERequest,
-    GroundStateVQEResult,
-)
-from flagquantum.services.research_providers import ResearchProviderAvailability
 
 _PROVIDER_ID = "pennylane-lightning"
 _ADAPTER_VERSION = "1.0.0"

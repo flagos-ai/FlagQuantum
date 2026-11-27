@@ -54,8 +54,8 @@ The retirement gate and 499 QEC alignment checks pass at this acceptance revisio
 Source validation runs:
 
 ```bash
-PYTHONPATH=. python tools/check_qec_retirement.py --phase retired
-PYTHONPATH=. python tools/check_qec_cudaq_alignment.py
+PYTHONPATH=. python tools/validation/check_qec_retirement.py --phase retired
+PYTHONPATH=. python tools/validation/check_qec_cudaq_alignment.py
 PYTHONPATH=. python -m pytest tests/api_contract/test_qec_retirement_contract.py tests/qec -q
 ```
 

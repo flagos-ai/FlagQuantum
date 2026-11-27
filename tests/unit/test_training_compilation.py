@@ -6,10 +6,10 @@ import pytest
 import torch
 
 import flagquantum as fq
-from flagquantum.compiler import training as compiler
-from flagquantum.runtime.result import ExecutionResult
-from flagquantum.runtime.result_adapters import LiveRuntimeSummary
-from flagquantum.runtime.training_compilation import _compilation_diagnostics
+from flagquantum.compiler.frontends.torch import _training as compiler
+from flagquantum.runtime.results import ExecutionResult
+from flagquantum.runtime.results.adapters import LiveRuntimeSummary
+from flagquantum.runtime.training.compilation import _compilation_diagnostics
 
 pytestmark = pytest.mark.unit
 training = importlib.import_module("flagquantum.runtime.training")

@@ -1,6 +1,6 @@
 import pytest
 
-from tools.sanitize_public_evidence import sanitize_text, unsanitized_files
+from tools.release.sanitize_public_evidence import sanitize_text, unsanitized_files
 
 pytestmark = pytest.mark.unit
 

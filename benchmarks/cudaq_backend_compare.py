@@ -60,7 +60,10 @@ if str(REPO_ROOT) not in sys.path:
 from benchmarks.sc27_metadata import source_identity  # noqa: E402
 
 import flagquantum as fq  # noqa: E402
-from flagquantum.algorithms import Hamiltonian, pauli_term  # noqa: E402
+from flagquantum.algorithms.primitives.hamiltonian import (
+    Hamiltonian,
+    pauli_term,
+)  # noqa: E402
 
 # The JAX executor boundary imports its optional dependency only when an
 # execution function is called, so this import succeeds without JAX installed.
@@ -108,14 +111,18 @@ def _init_params(
     device: str,
 ) -> torch.Tensor:
     total = int(layers) * int(n_wires) * 3
-    base = torch.linspace(-0.37, 0.41, steps=total, dtype=torch.float32, device=device).reshape(
+    base = torch.linspace(
+        -0.37, 0.41, steps=total, dtype=torch.float32, device=device
+    ).reshape(
         int(layers),
         int(n_wires),
         3,
     )
     if int(batch_size) <= 1:
         return base
-    offsets = torch.linspace(-0.09, 0.09, steps=int(batch_size), dtype=torch.float32, device=device)
+    offsets = torch.linspace(
+        -0.09, 0.09, steps=int(batch_size), dtype=torch.float32, device=device
+    )
     return base.unsqueeze(0) + offsets.reshape(int(batch_size), 1, 1, 1)
 
 
@@ -142,7 +149,9 @@ def _ising_hamiltonian(n_wires: int) -> Hamiltonian:
     return Hamiltonian(terms)
 
 
-def _fq_value_and_grad(kernel: Any, params_seed: torch.Tensor, *, forward_only: bool) -> tuple[torch.Tensor, torch.Tensor]:
+def _fq_value_and_grad(
+    kernel: Any, params_seed: torch.Tensor, *, forward_only: bool
+) -> tuple[torch.Tensor, torch.Tensor]:
     params = params_seed.detach().clone().requires_grad_(not forward_only)
     loss = kernel(params).sum()
     if forward_only:
@@ -209,7 +218,9 @@ def _time_value_and_grad(
 
 
 def _max_abs_diff(left: torch.Tensor, right: torch.Tensor) -> float:
-    return float(torch.max(torch.abs(left.detach().cpu() - right.detach().cpu())).item())
+    return float(
+        torch.max(torch.abs(left.detach().cpu() - right.detach().cpu())).item()
+    )
 
 
 def _cudaq_set_target(cudaq: Any, target: str | None) -> None:
@@ -264,7 +275,9 @@ def _cudaq_spin_hamiltonian(cudaq: Any, n_wires: int, observable: str) -> Any:
     raise ValueError(f"Unsupported observable {observable!r}.")
 
 
-def _cudaq_observe_loss(cudaq: Any, kernel: Any, hamiltonian: Any, values: list[float]) -> float:
+def _cudaq_observe_loss(
+    cudaq: Any, kernel: Any, hamiltonian: Any, values: list[float]
+) -> float:
     result = cudaq.observe(kernel, hamiltonian, values)
     if hasattr(result, "expectation"):
         return float(result.expectation())
@@ -274,7 +287,9 @@ def _cudaq_observe_loss(cudaq: Any, kernel: Any, hamiltonian: Any, values: list[
 def _cudaq_gradient_instance(cudaq: Any, method: str) -> Any:
     gradients = getattr(cudaq, "gradients", None)
     if gradients is None:
-        raise AttributeError("cudaq.gradients is not available in this CUDA-Q installation.")
+        raise AttributeError(
+            "cudaq.gradients is not available in this CUDA-Q installation."
+        )
     names = {
         "parameter-shift": ("ParameterShift", "ParameterShiftGradient"),
         "central-difference": ("CentralDifference", "CentralDifferenceGradient"),
@@ -309,10 +324,14 @@ def _cudaq_gradient_compute(
             return [float(x) for x in list(out)]
         except Exception as exc:
             attempts.append({"type": type(exc).__name__, "message": str(exc)})
-    raise RuntimeError(f"CUDA-Q gradient compute failed for known signatures: {attempts}")
+    raise RuntimeError(
+        f"CUDA-Q gradient compute failed for known signatures: {attempts}"
+    )
 
 
-def _cudaq_finite_difference(loss_fn: Any, values: list[float], eps: float = 1e-3) -> list[float]:
+def _cudaq_finite_difference(
+    loss_fn: Any, values: list[float], eps: float = 1e-3
+) -> list[float]:
     grad = []
     plus = list(values)
     minus = list(values)
@@ -340,18 +359,33 @@ def _cudaq_value_and_grad(
         rows = rows.reshape(1, *rows.shape)
     losses = []
     grads = []
-    gradient = None if forward_only or method == "finite-difference" else _cudaq_gradient_instance(cudaq, method)
+    gradient = (
+        None
+        if forward_only or method == "finite-difference"
+        else _cudaq_gradient_instance(cudaq, method)
+    )
     for row in rows:
         values = _cudaq_flat_params(row)
-        loss_fn = lambda vector: _cudaq_observe_loss(cudaq, kernel, hamiltonian, list(vector))
+        loss_fn = lambda vector: _cudaq_observe_loss(
+            cudaq, kernel, hamiltonian, list(vector)
+        )
         value_at_x = loss_fn(values)
         losses.append(value_at_x)
         if forward_only:
             grads.append(torch.zeros_like(row))
         elif method == "finite-difference":
-            grads.append(torch.tensor(_cudaq_finite_difference(loss_fn, values), dtype=torch.float32).reshape_as(row))
+            grads.append(
+                torch.tensor(
+                    _cudaq_finite_difference(loss_fn, values), dtype=torch.float32
+                ).reshape_as(row)
+            )
         else:
-            grads.append(torch.tensor(_cudaq_gradient_compute(gradient, loss_fn, values, value_at_x), dtype=torch.float32).reshape_as(row))
+            grads.append(
+                torch.tensor(
+                    _cudaq_gradient_compute(gradient, loss_fn, values, value_at_x),
+                    dtype=torch.float32,
+                ).reshape_as(row)
+            )
     loss = torch.tensor(float(sum(losses)), dtype=torch.float32)
     grad = grads[0] if not batched else torch.stack(grads, dim=0)
     return loss, grad
@@ -367,8 +401,12 @@ def _cudaq_worker(config: dict[str, Any], queue: Any) -> None:
             batch_size=int(config["batch_size"]),
             device="cpu",
         )
-        kernel = _build_cudaq_kernel(cudaq, int(config["n_wires"]), int(config["layers"]))
-        hamiltonian = _cudaq_spin_hamiltonian(cudaq, int(config["n_wires"]), str(config["observable"]))
+        kernel = _build_cudaq_kernel(
+            cudaq, int(config["n_wires"]), int(config["layers"])
+        )
+        hamiltonian = _cudaq_spin_hamiltonian(
+            cudaq, int(config["n_wires"]), str(config["observable"])
+        )
         result = _time_value_and_grad(
             lambda: _cudaq_value_and_grad(
                 cudaq=cudaq,
@@ -389,7 +427,9 @@ def _cudaq_worker(config: dict[str, Any], queue: Any) -> None:
         result["grad"] = result["grad"].detach().cpu().reshape(-1).tolist()
         queue.put({"ok": True, "result": result})
     except Exception as exc:
-        queue.put({"ok": False, "error": {"type": type(exc).__name__, "message": str(exc)}})
+        queue.put(
+            {"ok": False, "error": {"type": type(exc).__name__, "message": str(exc)}}
+        )
 
 
 def _time_cudaq_in_subprocess(
@@ -420,7 +460,9 @@ def _time_cudaq_in_subprocess(
     if not payload.get("ok"):
         return None, payload.get("error")
     result = payload["result"]
-    result["grad"] = torch.tensor(result["grad"], dtype=torch.float32).reshape(tuple(result["grad_shape"]))
+    result["grad"] = torch.tensor(result["grad"], dtype=torch.float32).reshape(
+        tuple(result["grad_shape"])
+    )
     del result["grad_shape"]
     return result, None
 
@@ -436,7 +478,9 @@ def _comparison_payload(
 ) -> dict[str, Any]:
     if cudaq_error is not None:
         if cudaq_error.get("type") == "TimeoutError":
-            lower_bound = float(cudaq_error["timeout_seconds"]) / float(flagquantum_result["avg_seconds"])
+            lower_bound = float(cudaq_error["timeout_seconds"]) / float(
+                flagquantum_result["avg_seconds"]
+            )
             return {
                 "status": "timeout",
                 "reason": cudaq_error,
@@ -444,11 +488,18 @@ def _comparison_payload(
             }
         return {"status": "unavailable", "reason": cudaq_error}
     assert cudaq_result is not None
-    loss_abs_error = abs(float(flagquantum_result["loss"]) - float(cudaq_result["loss"]))
-    grad_max_abs_error = 0.0 if forward_only else _max_abs_diff(flagquantum_result["grad"], cudaq_result["grad"])
+    loss_abs_error = abs(
+        float(flagquantum_result["loss"]) - float(cudaq_result["loss"])
+    )
+    grad_max_abs_error = (
+        0.0
+        if forward_only
+        else _max_abs_diff(flagquantum_result["grad"], cudaq_result["grad"])
+    )
     status = (
         "ok"
-        if loss_abs_error <= float(loss_atol) and (forward_only or grad_max_abs_error <= float(grad_atol))
+        if loss_abs_error <= float(loss_atol)
+        and (forward_only or grad_max_abs_error <= float(grad_atol))
         else "precision_mismatch"
     )
     return {
@@ -457,12 +508,16 @@ def _comparison_payload(
         "grad_max_abs_error": None if forward_only else grad_max_abs_error,
         "loss_atol": float(loss_atol),
         "grad_atol": None if forward_only else float(grad_atol),
-        "speedup_flagquantum_over_cudaq": cudaq_result["avg_seconds"] / flagquantum_result["avg_seconds"]
-        if flagquantum_result["avg_seconds"] > 0
-        else None,
-        "slowdown_flagquantum_vs_cudaq": flagquantum_result["avg_seconds"] / cudaq_result["avg_seconds"]
-        if cudaq_result["avg_seconds"] > 0
-        else None,
+        "speedup_flagquantum_over_cudaq": (
+            cudaq_result["avg_seconds"] / flagquantum_result["avg_seconds"]
+            if flagquantum_result["avg_seconds"] > 0
+            else None
+        ),
+        "slowdown_flagquantum_vs_cudaq": (
+            flagquantum_result["avg_seconds"] / cudaq_result["avg_seconds"]
+            if cudaq_result["avg_seconds"] > 0
+            else None
+        ),
     }
 
 
@@ -473,13 +528,22 @@ def main() -> None:
     parser.add_argument("--batch-size", type=int, default=1)
     parser.add_argument("--observable", choices=("z_sum", "ising"), default="ising")
     parser.add_argument("--device", default="auto")
-    parser.add_argument("--mode", choices=("statevector", "mps", "tensor_network", "tn"), default="statevector")
+    parser.add_argument(
+        "--mode",
+        choices=("statevector", "mps", "tensor_network", "tn"),
+        default="statevector",
+    )
     parser.add_argument("--max-bond", type=int, default=None)
     parser.add_argument("--forward-only", action="store_true")
     parser.add_argument("--cudaq-target", default=None)
     parser.add_argument(
         "--cudaq-gradient-method",
-        choices=("parameter-shift", "central-difference", "forward-difference", "finite-difference"),
+        choices=(
+            "parameter-shift",
+            "central-difference",
+            "forward-difference",
+            "finite-difference",
+        ),
         default="parameter-shift",
     )
     parser.add_argument("--cudaq-run-timeout-seconds", type=float, default=120.0)
@@ -489,7 +553,9 @@ def main() -> None:
     parser.add_argument("--warmup", type=int, default=1)
     parser.add_argument("--no-jax-jit", action="store_true")
     parser.add_argument("--jax-matmul-precision", default="highest")
-    parser.add_argument("--jax-compute-dtype", choices=("complex64", "complex128"), default="complex64")
+    parser.add_argument(
+        "--jax-compute-dtype", choices=("complex64", "complex128"), default="complex64"
+    )
     parser.add_argument("--torch-matmul-precision", default="highest")
     parser.add_argument("--loss-atol", type=float, default=1e-4)
     parser.add_argument("--grad-atol", type=float, default=1e-4)
@@ -501,9 +567,15 @@ def main() -> None:
     _configure_torch_precision(args.torch_matmul_precision)
     device = _device(args.device)
     fq_mode = "tensor_network" if args.mode == "tn" else args.mode
-    params_seed = _init_params(args.n_wires, args.layers, batch_size=args.batch_size, device=device)
-    example_params = params_seed[0].detach() if params_seed.ndim == 4 else params_seed.detach()
-    hamiltonian = _ising_hamiltonian(args.n_wires) if args.observable == "ising" else None
+    params_seed = _init_params(
+        args.n_wires, args.layers, batch_size=args.batch_size, device=device
+    )
+    example_params = (
+        params_seed[0].detach() if params_seed.ndim == 4 else params_seed.detach()
+    )
+    hamiltonian = (
+        _ising_hamiltonian(args.n_wires) if args.observable == "ising" else None
+    )
 
     payload: dict[str, Any] = {
         "schema": SCHEMA,
@@ -543,7 +615,9 @@ def main() -> None:
             "python": platform.python_version(),
             "torch": torch.__version__,
             "cuda_available": torch.cuda.is_available(),
-            "cuda_device_count": torch.cuda.device_count() if torch.cuda.is_available() else 0,
+            "cuda_device_count": (
+                torch.cuda.device_count() if torch.cuda.is_available() else 0
+            ),
             "platform": platform.platform(),
             "cudaq_installed": importlib.util.find_spec("cudaq") is not None,
             "cudaq": _installed_cudaq_version(),
@@ -569,8 +643,14 @@ def main() -> None:
     )
 
     if importlib.util.find_spec("jax") is None:
-        payload["flagquantum_jax"] = {"status": "unavailable", "reason": "jax is not installed"}
-        payload["comparison"] = {"status": "unavailable", "reason": "jax is not installed"}
+        payload["flagquantum_jax"] = {
+            "status": "unavailable",
+            "reason": "jax is not installed",
+        }
+        payload["comparison"] = {
+            "status": "unavailable",
+            "reason": "jax is not installed",
+        }
         text = json.dumps(payload, indent=2, sort_keys=True)
         print(text)
         if args.json_output:
@@ -587,12 +667,18 @@ def main() -> None:
         observable="z_sum" if args.observable == "z_sum" else "hamiltonian",
         hamiltonian=hamiltonian,
         jit=not args.no_jax_jit,
-        matmul_precision=None if args.jax_matmul_precision == "default" else args.jax_matmul_precision,
+        matmul_precision=(
+            None
+            if args.jax_matmul_precision == "default"
+            else args.jax_matmul_precision
+        ),
         compute_dtype=args.jax_compute_dtype,
         max_bond=args.max_bond,
     )
     flagquantum_result = _time_value_and_grad(
-        lambda: _fq_value_and_grad(kernel, params_seed, forward_only=bool(args.forward_only)),
+        lambda: _fq_value_and_grad(
+            kernel, params_seed, forward_only=bool(args.forward_only)
+        ),
         warmup=args.warmup,
         iters=args.iters,
         device=device,
@@ -610,7 +696,10 @@ def main() -> None:
     cudaq_result = None
     cudaq_error = None
     if importlib.util.find_spec("cudaq") is None:
-        cudaq_error = {"type": "ModuleNotFoundError", "message": "cudaq is not installed"}
+        cudaq_error = {
+            "type": "ModuleNotFoundError",
+            "message": "cudaq is not installed",
+        }
     else:
         cudaq_result, cudaq_error = _time_cudaq_in_subprocess(
             {
@@ -635,7 +724,11 @@ def main() -> None:
             "backend": "cudaq",
             "target": args.cudaq_target,
             "gradient_method": args.cudaq_gradient_method,
-            "status": "timeout" if cudaq_error and cudaq_error.get("type") == "TimeoutError" else "unavailable",
+            "status": (
+                "timeout"
+                if cudaq_error and cudaq_error.get("type") == "TimeoutError"
+                else "unavailable"
+            ),
             "error": cudaq_error,
         }
     else:

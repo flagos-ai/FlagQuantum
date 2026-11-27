@@ -161,7 +161,7 @@ These existing commands exercise the source interfaces this proposal composes:
 ```bash
 python -m examples.realtime.feedback_loop
 python -m pytest tests/qec/test_repetition_memory.py -q
-python tools/check_realtime_messaging_contract.py
+python tools/validation/check_realtime_messaging_contract.py
 ```
 
 The first prints two shots with `corrected states=(0, 0, 0)` and

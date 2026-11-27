@@ -11,7 +11,7 @@ import flagquantum as fq
 import flagquantum.lindblad as fql
 from flagquantum.core.rydberg import RydbergProgram
 from flagquantum.errors import CapabilityError, ExecutionError, SerializationError
-from flagquantum.lindblad._plan import _identity
+from flagquantum.runtime.evolution._plan import _identity
 from flagquantum.runtime.execution_plan_contract import ExecutionPlanContractError
 from tests.unit.test_rydberg_presence_contract import _program
 
@@ -125,7 +125,9 @@ def test_environment_refusal_precedes_capture_and_draw(
     def forbidden(*args: Any, **kwargs: Any) -> None:
         raise AssertionError("must refuse before numeric capture/draw")
 
-    monkeypatch.setattr("flagquantum.lindblad._native_plan.native_request", forbidden)
+    monkeypatch.setattr(
+        "flagquantum.runtime.evolution._native_plan.native_request", forbidden
+    )
     monkeypatch.setattr(
         "flagquantum.runtime.measurements._draw_probability_indices", forbidden
     )
@@ -154,7 +156,9 @@ def test_unsupported_options_refused_before_capture(
     def forbidden(*args: Any, **kwargs: Any) -> None:
         raise AssertionError("must refuse before native capture")
 
-    monkeypatch.setattr("flagquantum.lindblad._native_plan.native_request", forbidden)
+    monkeypatch.setattr(
+        "flagquantum.runtime.evolution._native_plan.native_request", forbidden
+    )
     with pytest.raises(CapabilityError):
         _plan(options=options)
 
@@ -209,7 +213,9 @@ def test_resource_ceiling_precedes_native_capture(
     def forbidden(*args: Any, **kwargs: Any) -> None:
         raise AssertionError("must refuse before allocation")
 
-    monkeypatch.setattr("flagquantum.lindblad._native_plan.native_request", forbidden)
+    monkeypatch.setattr(
+        "flagquantum.runtime.evolution._native_plan.native_request", forbidden
+    )
     with pytest.raises(CapabilityError, match="ceiling"):
         _plan(return_density_matrices=False)
 
@@ -226,7 +232,9 @@ def test_public_unconditional_and_adjoint_paths_do_not_ignore_presence(
     def forbidden(*args: Any, **kwargs: Any) -> None:
         raise AssertionError("unconditional execution must remain closed")
 
-    monkeypatch.setattr(fql, "_evolve_density_matrix", forbidden)
+    monkeypatch.setattr(
+        "flagquantum.runtime.evolution._evolve_density_matrix", forbidden
+    )
     with pytest.raises(CapabilityError, match="fq.run"):
         fql.run(source, initial, grid, options=fq.ExecutionOptions(shots=1, seed=17))
     with pytest.raises(CapabilityError, match="conditional trajectory"):
@@ -244,7 +252,9 @@ def test_reader_budget_refusal_precedes_matrix_reconstruction(
     monkeypatch.setattr(
         "flagquantum.runtime._rydberg_presence.DEFAULT_DENSE_MATRIX_BYTES", 455
     )
-    monkeypatch.setattr("flagquantum.lindblad._native_plan.native_request", forbidden)
+    monkeypatch.setattr(
+        "flagquantum.runtime.evolution._native_plan.native_request", forbidden
+    )
     with pytest.raises(SerializationError, match="ceiling"):
         fql.LindbladPlan.from_dict(payload)
 
@@ -274,7 +284,7 @@ def test_world_size_refused_before_capture_and_execution(
 
 
 def test_native_source_stays_closed_at_circuit_and_deployment_frontdoors() -> None:
-    from flagquantum.deployment import create_deployment_package
+    from flagquantum.runtime.planner.deployment import create_deployment_package
 
     source = _program(RydbergProgram, False).measure_presence(
         "a", at=0.5, efficiency=0.8

@@ -9,7 +9,9 @@ import pytest
 
 pytestmark = pytest.mark.unit
 ROOT = Path(__file__).resolve().parents[2]
-MODULE_PATH = ROOT / "tools" / "validate_split_real_imag_training_evidence.py"
+MODULE_PATH = (
+    ROOT / "tools" / "validation/validate_split_real_imag_training_evidence.py"
+)
 SPEC = importlib.util.spec_from_file_location("split_p1_evidence", MODULE_PATH)
 assert SPEC is not None and SPEC.loader is not None
 MODULE = importlib.util.module_from_spec(SPEC)

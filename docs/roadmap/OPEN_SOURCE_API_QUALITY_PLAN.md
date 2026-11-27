@@ -420,7 +420,7 @@ at least builds/plans on CPU, and links plan/execution/result provenance.
 
 Preserve `public_api_v1.json` as the internal baseline. Record exports, signatures,
 defaults, and dataclass fields in `contracts/public-api-v0.2-baseline.json`, enforced
-by `tools/public_api_snapshot.py`. Add golden paths, inventory signatures/docs,
+by `tools/architecture/public_api_snapshot.py`. Add golden paths, inventory signatures/docs,
 and stop root API expansion during convergence. Acceptance: automatically detect
 public signature/example changes.
 
@@ -454,7 +454,7 @@ Implementation record (2026-08-31):
   `distributed`, `mps`, `planning` namespaces import successfully.
 - Golden deployment examples no longer depend on old root helpers.
 - README, architecture, maintained guides/reference, and examples migrated;
-  `tools/check_legacy_root_api_usage.py` prevents regression in pre-commit/CI.
+  `tools/architecture/check_legacy_root_api_usage.py` prevents regression in pre-commit/CI.
 - Production, tools, and benchmarks migrated. `benchmarks/mps_stability.py` remains
   an exact read-only historical exception because its source hash binds measured
   A800 evidence; do not update the hash without remeasurement just for imports.

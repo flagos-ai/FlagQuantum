@@ -10,9 +10,11 @@ from urllib.error import HTTPError
 
 import pytest
 
-from flagquantum.remote.compute import JiudingCredentials
-from flagquantum.remote.compute._jiuding_credentials import load_jiuding_credentials
-from flagquantum.remote.compute.jiuding import JiudingClient
+from flagquantum.compute.remote.compute import JiudingCredentials
+from flagquantum.compute.remote.compute._jiuding_credentials import (
+    load_jiuding_credentials,
+)
+from flagquantum.compute.remote.compute.jiuding import JiudingClient
 
 pytestmark = pytest.mark.unit
 
@@ -144,7 +146,7 @@ def test_explicit_credentials_bypass_environment_and_injected_files(monkeypatch)
     monkeypatch.setenv("JIUDING_AK", "shared-environment-ak")
     monkeypatch.setenv("JIUDING_SK", "shared-environment-sk")
     monkeypatch.setattr(
-        "flagquantum.remote.compute._jiuding_credentials.load_jiuding_credentials",
+        "flagquantum.compute.remote.compute._jiuding_credentials.load_jiuding_credentials",
         Mock(side_effect=AssertionError("credential discovery must not run")),
     )
     client = JiudingClient(
@@ -178,7 +180,8 @@ def test_explicit_credentials_are_redacted_from_http_errors(monkeypatch):
     opener = Mock()
     opener.open.side_effect = error
     monkeypatch.setattr(
-        "flagquantum.remote.compute.jiuding.build_opener", Mock(return_value=opener)
+        "flagquantum.compute.remote.compute.jiuding.build_opener",
+        Mock(return_value=opener),
     )
 
     with pytest.raises(RuntimeError) as caught:
@@ -422,7 +425,7 @@ def test_token_is_cached_and_refreshed_from_server_expiry(monkeypatch):
 
 
 def test_worker_returns_run_bound_json_and_rejects_nonfinite(tmp_path, monkeypatch):
-    from flagquantum.remote.compute import _worker
+    from flagquantum.compute.remote.compute import _worker
 
     script, output = tmp_path / "entry.py", tmp_path / "result.json"
     script.write_text("def main(): return {'answer': 42}")
@@ -1123,8 +1126,8 @@ def test_gpu_target_must_match_model_observed_for_image(client, tmp_path):
 def test_gpu_worker_fails_before_user_code_without_one_gpu(
     tmp_path, monkeypatch, available, count
 ):
-    from flagquantum.compute.registry import get_platform_runtime
-    from flagquantum.remote.compute import _worker
+    from flagquantum.compute.local.registry import get_platform_runtime
+    from flagquantum.compute.remote.compute import _worker
 
     output = tmp_path / "result.json"
     monkeypatch.setattr(

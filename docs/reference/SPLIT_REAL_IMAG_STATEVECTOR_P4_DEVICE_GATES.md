@@ -91,7 +91,7 @@ pytest tests/test_split_real_imag_device_double_single_conformance.py
 Run Torch-FL logical-device conformance with:
 
 ```bash
-python tools/validate_split_real_imag_device_double_single_flagos.py \
+python tools/validation/validate_split_real_imag_device_double_single_flagos.py \
   --device flagos:0
 ```
 
@@ -103,7 +103,7 @@ complex128 diagnostics.
 The checked-in A800 native-CUDA and `flagos:0` portability record is
 [`split_real_imag_device_double_single_a800_20260825.json`](../../artifacts/split_real_imag_device_double_single_a800_20260825.json).
 It is fail-closed by
-`tools/validate_split_real_imag_device_double_single_evidence.py`. The FlagOS
+`tools/validation/validate_split_real_imag_device_double_single_evidence.py`. The FlagOS
 route is a single-device Torch-FL test; it neither validates FlagCX collectives
 nor makes a distributed-execution claim. That artifact remains bound to the
 historical profile used on 2026-08-25, which performed host-synchronizing safety

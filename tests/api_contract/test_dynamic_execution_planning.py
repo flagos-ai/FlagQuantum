@@ -10,8 +10,8 @@ import torch
 import flagquantum as fq
 import flagquantum.errors as fqe
 import flagquantum.noise as fqn
+from flagquantum.core.operators.channels import bit_flip_channel
 from flagquantum.dynamic import DynamicCircuit
-from flagquantum.noise import bit_flip_channel
 from flagquantum.runtime.execution_plan_contract import (
     ExecutionPlanContractError,
     plan_program,

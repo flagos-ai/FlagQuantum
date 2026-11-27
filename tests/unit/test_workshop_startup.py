@@ -9,7 +9,7 @@ from pathlib import Path
 import pytest
 
 pytestmark = pytest.mark.unit
-SCRIPTS = Path(__file__).resolve().parents[2] / "workshops/flagos2026/scripts"
+SCRIPTS = Path(__file__).resolve().parents[2] / "examples/workshops/flagos2026/scripts"
 
 
 @pytest.fixture
@@ -77,12 +77,12 @@ def test_unverified_identity_stops_before_jupyter_launch(
 ) -> None:
     from types import ModuleType
 
-    client_module = ModuleType("flagquantum.remote.compute.jiuding")
+    client_module = ModuleType("flagquantum.compute.remote.compute.jiuding")
     client_module.JiudingClient = lambda: object()
     lab_module = ModuleType("jupyterlab.labapp")
     lab_module.main = lambda: pytest.fail("Do not launch in unverified storage")
     monkeypatch.setitem(
-        sys.modules, "flagquantum.remote.compute.jiuding", client_module
+        sys.modules, "flagquantum.compute.remote.compute.jiuding", client_module
     )
     monkeypatch.setitem(sys.modules, "jupyterlab.labapp", lab_module)
 

@@ -7,12 +7,12 @@ from __future__ import annotations
 
 import torch
 
-from flagquantum.algorithms.chemistry_domain.orbital_rotation import (
+from flagquantum.algorithms.chemistry.models.orbital_rotation import (
     closed_shell_determinant_energy,
     rotate_spatial_integrals,
 )
-from flagquantum.algorithms.chemistry_domain.problem import from_native_molecule
-from flagquantum.algorithms.molecular import create_molecular_hamiltonian
+from flagquantum.algorithms.chemistry.models.problem import from_native_molecule
+from flagquantum.algorithms.chemistry.molecular import create_molecular_hamiltonian
 
 
 def main() -> None:

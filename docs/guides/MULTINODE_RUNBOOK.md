@@ -333,7 +333,7 @@ untested there and the artifact says so in its blockers.
 On the launch host, one command runs the whole lane:
 
 ```bash
-python tools/multinode_launch_plan.py --run \
+python tools/validation/multinode_launch_plan.py --run \
   --probe mps \
   --peer-host fq-node2 \
   --staging /nfs/fq-multinode-run \
@@ -353,7 +353,7 @@ The lane is always two nodes. `--local-world-size` says how many ranks each of
 them runs, and it defaults to one:
 
 ```bash
-python tools/multinode_launch_plan.py --run \
+python tools/validation/multinode_launch_plan.py --run \
   --probe tn \
   --peer-host fq-node2 \
   --local-world-size 2 \
@@ -379,7 +379,7 @@ again before it builds a process group, because a shape mismatch found after
 that reports as a collective that never completes rather than as the shape that
 was refused. The two widths the launcher has to know before a launch -- the MPS
 circuit's qubit count and the tensor-network slice count -- are declared in both
-`tools/multinode_launch_plan.py` and the probe that enforces them, and a unit
+`tools/validation/multinode_launch_plan.py` and the probe that enforces them, and a unit
 test reads both copies and fails if they drift apart.
 
 Each node runs one `torchrun` that starts all of its ranks from one environment,
@@ -403,7 +403,7 @@ would be resumed from instead of the one this run wrote. All three names carry
 the `fq-multinode` prefix so a mistyped path cannot be wiped.
 
 The command refuses to start when any preflight answer is no, stages the tree,
-and supervises both nodes as one unit with `tools/run_multinode_watchdog.py`.
+and supervises both nodes as one unit with `tools/ci/run_multinode_watchdog.py`.
 On exit the report directory holds:
 
 ```text
@@ -890,7 +890,7 @@ invocation reports, because the two MPS payloads in the same directory satisfy
 every other requirement the frozen manifest states.
 
 The lane's own reading is therefore the release set on its own, which is what
-`tools/promote_release_candidates.py` evaluated before it moved the files:
+`tools/release/promote_release_candidates.py` evaluated before it moved the files:
 
 ```console
 $ rm -rf /tmp/gate && mkdir -p /tmp/gate/candidates /tmp/gate/baseline
@@ -985,7 +985,7 @@ $ python benchmarks/internal/evidence/tensor_network_release_gate.py \
 
 A future tensor-network promotion must therefore also pass
 `--release-directory`, because `benchmarks/results/scalability` belongs to the
-statevector capability and `tools/promote_release_candidates.py` promotes into
+statevector capability and `tools/release/promote_release_candidates.py` promotes into
 the gate's own `RESULTS` unless told otherwise. Two capabilities do not share a
 release directory.
 

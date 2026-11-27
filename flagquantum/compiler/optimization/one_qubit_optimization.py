@@ -86,8 +86,9 @@ from collections.abc import Iterable, Mapping
 from dataclasses import replace
 from typing import Any
 
+from flagquantum.core.operators.schema import canonical_opcode
+
 from ...core.ir import CircuitIR, Instruction
-from ...core.operator_schema import canonical_opcode
 from .one_qubit_synthesis import (
     _FIXED_EULER_ANGLES,
     _PARAMETERIZED_EULER_ANGLES,

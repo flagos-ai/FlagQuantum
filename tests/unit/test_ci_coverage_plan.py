@@ -4,7 +4,7 @@ import json
 
 import pytest
 
-from tools.ci_coverage_plan import verify_plan, write_plan
+from tools.ci.ci_coverage_plan import verify_plan, write_plan
 
 pytestmark = pytest.mark.unit
 
@@ -111,7 +111,7 @@ def test_collected_plan_executes_the_same_selection_and_records_cpu(
             "-m",
             "unit",
             "-p",
-            "tools.pytest_shard",
+            "tools.ci.pytest_shard",
             "--fq-write-coverage-plan",
             str(plan),
             "--fq-coverage-plan-count",
@@ -134,7 +134,7 @@ def test_collected_plan_executes_the_same_selection_and_records_cpu(
                 "@" + str(plan / f"shard-{index}.txt"),
                 "-q",
                 "-p",
-                "tools.pytest_shard",
+                "tools.ci.pytest_shard",
             ],
             cwd=tmp_path,
             env=env,
@@ -168,7 +168,7 @@ def test_large_untimed_file_is_spread_instead_of_forming_one_long_tail(
 
 
 def test_measured_heavy_cases_in_one_file_can_use_separate_slots(tmp_path, monkeypatch):
-    from tools import ci_coverage_plan
+    from tools.ci import ci_coverage_plan
 
     monkeypatch.setenv("GITHUB_SHA", "e" * 40)
     monkeypatch.delenv("GITHUB_OUTPUT", raising=False)
@@ -188,7 +188,7 @@ def test_measured_heavy_cases_in_one_file_can_use_separate_slots(tmp_path, monke
 def test_original_optimization_workloads_receive_only_their_finite_budgets(
     tmp_path, monkeypatch, requested
 ):
-    from tools.ci_coverage_plan import LONG_TEST_TIMEOUT_MINUTES
+    from tools.ci.ci_coverage_plan import LONG_TEST_TIMEOUT_MINUTES
 
     monkeypatch.setenv("GITHUB_SHA", "e" * 40)
     monkeypatch.setenv("GITHUB_OUTPUT", str(tmp_path / "output"))

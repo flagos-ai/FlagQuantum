@@ -21,7 +21,9 @@ import random
 import pytest
 import torch
 
+import flagquantum.compiler.optimization.pass_registry as _stage_pass_registry
 from flagquantum.compiler import optimize
+from flagquantum.compiler.optimization.canonicalization import _SELF_INVERSE
 from flagquantum.compiler.optimization.commutation import analyze_commutation, commute
 from flagquantum.compiler.optimization.commutation_cancellation import (
     _is_cancellable,
@@ -37,7 +39,10 @@ from flagquantum.compiler.optimization.optimization_levels import (
     DEFAULT_OPTIMIZATION_LEVEL,
     OPTIMIZATION_LEVEL_STAGES,
 )
-from flagquantum.compiler.pipeline import _SELF_INVERSE, _optimize_to_fixed_point
+from flagquantum.compiler.optimization.pass_registry import (
+    _cancel_commuting_self_inverse,
+)
+from flagquantum.compiler.pipeline import _optimize_to_fixed_point
 from flagquantum.core.ir import CircuitIR, Instruction, IRValidationError
 
 pytestmark = pytest.mark.unit
@@ -436,7 +441,7 @@ def test_the_pass_is_wired_into_the_fixed_point_loop_exactly_once() -> None:
     assert [
         name
         for name, function in module.BUILTIN_PASSES.items()
-        if function is module._cancel_commuting_self_inverse
+        if function is _cancel_commuting_self_inverse
     ] == ["cancel_commuting_self_inverse"]
 
     probe = CircuitIR(
@@ -472,11 +477,14 @@ def test_the_pass_is_wired_into_the_fixed_point_loop_exactly_once() -> None:
     assert len(calls) == 1
     registered = [
         name
-        for name, spec in module._BUILTIN_ANALYSES.items()
+        for name, spec in _stage_pass_registry._BUILTIN_ANALYSES.items()
         if getattr(spec.function, "__name__", None) == "_commutation_blocks"
     ]
     assert registered == ["commutation_blocks"]
-    assert module._BUILTIN_ANALYSES["commutation_blocks"].program_independent is False
+    assert (
+        _stage_pass_registry._BUILTIN_ANALYSES["commutation_blocks"].program_independent
+        is False
+    )
     # Nothing in the pipeline reaches for the analysis directly either: the one
     # call site below is the registered analysis this pass declares, and a second
     # route to the same fact is what the registry replaced.
@@ -608,7 +616,7 @@ def test_a_single_qubit_self_inverse_gate_gains_no_reach_from_this_pass(
     claim with a boundary instead of a hope.
     """
 
-    from flagquantum.core.operator_schema import OPERATOR_SCHEMAS
+    from flagquantum.core.operators.schema import OPERATOR_SCHEMAS
 
     commuters = []
     for other in sorted(OPERATOR_SCHEMAS):

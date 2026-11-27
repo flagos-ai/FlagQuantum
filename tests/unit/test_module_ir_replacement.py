@@ -8,7 +8,7 @@ import pytest
 import torch
 
 import flagquantum as fq
-from flagquantum.compiler.module_builder import CapturedModuleBuilder
+from flagquantum.compiler.frontends.torch._module_builder import CapturedModuleBuilder
 
 pytestmark = pytest.mark.unit
 pytest.importorskip("jax")
@@ -338,7 +338,10 @@ def test_captured_trainable_tensor_is_refused_instead_of_losing_its_gradient():
 
 
 def test_hamiltonian_value_changes_rebuild_only_the_quantum_kernel_and_keep_fallback_gradients():
-    from flagquantum.algorithms import Hamiltonian, HamiltonianTerm
+    from flagquantum.algorithms.primitives.hamiltonian import (
+        Hamiltonian,
+        HamiltonianTerm,
+    )
 
     coefficient = torch.tensor(0.7, dtype=torch.float64)
     hamiltonian = Hamiltonian([HamiltonianTerm(coefficient, "Z", (0,))])

@@ -7,7 +7,8 @@ from numbers import Integral, Real
 
 import torch
 
-from ...algorithms.chemistry_domain.problem import MolecularProblem
+from flagquantum.algorithms.chemistry.models.problem import MolecularProblem
+
 from ..openfermion import _upstream
 
 

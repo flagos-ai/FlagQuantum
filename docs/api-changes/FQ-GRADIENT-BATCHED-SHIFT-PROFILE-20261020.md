@@ -119,7 +119,7 @@ The five hardcoded gate lists that express a **kernel capability** are untouched
 `flagquantum/runtime/executors/statevector/split_real_imag.py`. They answer "which
 gates can this kernel split or apply natively", which is not the question this
 change answers. `SPLIT_REAL_IMAG_PARAMETER_SHIFT_GATES` is additionally read by
-`tools/check_split_real_imag_p1_contract.py`, so it is a gated contract surface
+`tools/validation/check_split_real_imag_p1_contract.py`, so it is a gated contract surface
 rather than an oversight. Open Question 1 of the previous record is therefore
 **expired, superseded by measurement**: those lists are not underived copies of
 this rule, they are a different rule. `P4_PARAMETER_GATES` in particular is a
@@ -163,21 +163,21 @@ something the profile cannot phrase.
 
 ## Verification
 
-`tools/check_parameter_shift_coverage_contract.py` re-derives the profile from
+`tools/validation/check_parameter_shift_coverage_contract.py` re-derives the profile from
 `OPERATOR_SCHEMAS`, censuses `flagquantum/gradients.py` for opcode names written
 in code, drives the implementation for every registered opcode, builds every
 refusal row, and compares all of it against
 `contracts/parameter-shift-coverage-contract.toml`. It runs in the `quality` job
-of `.github/workflows/ci.yml` as a **step** and in `tools/pre_push.py`. It is a
+of `.github/workflows/ci.yml` as a **step** and in `tools/ci/pre_push.py`. It is a
 step rather than a job deliberately:
-`tools/validate_required_checks.py` pins six externally configured required
+`tools/ci/validate_required_checks.py` pins six externally configured required
 checks across four jobs, so adding a job would change the required-check contract
 and adding a step does not.
 
 Measured on this checkout:
 
 ```console
-$ python tools/check_parameter_shift_coverage_contract.py
+$ python tools/validation/check_parameter_shift_coverage_contract.py
 Parameter-shift coverage contract passed: 11 opcodes differentiate from one evaluation pair, 24 do not
 ```
 
@@ -222,7 +222,7 @@ than a silent acceptance.
 `tests/unit/test_parameter_shift_coverage_contract.py` owns the contract and the
 gate: it asks whether the gate still reads the clauses it claims to, by mutating
 six of them and requiring the gate to name each one, and it asserts that the gate
-is invoked by both CI and `tools/pre_push.py`. `tests/test_native_circuit.py`
+is invoked by both CI and `tools/ci/pre_push.py`. `tests/test_native_circuit.py`
 owns the semantics and gained one row per admitted parameter plus four new
 refusal rows.
 

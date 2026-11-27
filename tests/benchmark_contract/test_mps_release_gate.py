@@ -44,7 +44,7 @@ from flagquantum.runtime.observability.evidence import (
     RuntimeProvenance,
     create_evidence_artifact,
 )
-from tools.promote_release_candidates import main as promote_main
+from tools.release.promote_release_candidates import main as promote_main
 
 pytestmark = [pytest.mark.benchmark_contract, pytest.mark.release_gate]
 

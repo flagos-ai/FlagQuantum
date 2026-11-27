@@ -42,8 +42,9 @@ import json
 from collections.abc import Callable, Collection, Iterable, Mapping
 from dataclasses import dataclass, field, replace
 
+from flagquantum.core.operators.schema import canonical_opcode, get_operator_schema
+
 from ...core.ir import CircuitIR, Instruction, ensure_circuit_ir
-from ...core.operator_schema import canonical_opcode, get_operator_schema
 from ...errors import CompilationError
 from ..optimization.one_qubit_synthesis import (
     HALF_PI_PULSE_OPCODES,

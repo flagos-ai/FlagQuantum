@@ -17,7 +17,7 @@ from flagquantum.compiler._construction.scheduling.target import Target
 from flagquantum.compiler._construction.verification.constraints import CircuitLimits
 from flagquantum.compiler.topology.coupling import CouplingMap
 from flagquantum.runtime.execution_plan_contract import plan_execution_program
-from flagquantum.services._synthesis_execution import inspect_execution
+from flagquantum.runtime.planner.synthesis import inspect_execution
 from tools.synthesis_compiler_examples.selection.main import polynomial, pressure
 
 pytestmark = pytest.mark.integration

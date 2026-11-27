@@ -7,9 +7,9 @@ import flagquantum as fq
 from flagquantum.algorithms.fermion.encoding import ENCODINGS, Encoding, encode_fermion
 from flagquantum.algorithms.fermion.numerics import pauli_matrix
 from flagquantum.algorithms.fermion.observables import to_observable
-from flagquantum.core.algebra.pauli import PauliOperator, PauliTerm, pauli
-from flagquantum.observables import annihilate, create, number
-from flagquantum.observables.fermion import FermionOperator
+from flagquantum.core.operators.fermion import FermionOperator
+from flagquantum.core.operators.observable import annihilate, create, number
+from flagquantum.core.operators.pauli import PauliOperator, PauliTerm, pauli
 
 from .oracles import fock_matrix
 

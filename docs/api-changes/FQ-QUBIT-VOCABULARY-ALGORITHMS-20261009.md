@@ -122,14 +122,14 @@ Each command was run at the commit that carries the rename, in
 | 1 | `python -m black --check flagquantum tests tools` | all files unchanged |
 | 2 | `python -m ruff check flagquantum tests tools` | `All checks passed!` |
 | 3 | `python -m mypy --strict --python-version 3.12 --ignore-missing-imports flagquantum` | `Success: no issues found in 624 source files` |
-| 4 | `python tools/check_architecture.py` | `architecture boundaries passed` |
-| 5 | `python tools/check_qubit_vocabulary.py` | exit 0; `131 of 341` parameters retired, `83 of 122` attributes retired, `4 of 10` definitions retired; WQ-5 is `52 / 15 / 0` with 0 remaining |
-| 6 | `python tools/public_api_snapshot.py` | `public API migration baseline passed`, and neither `docs/public_api_v1.json` nor `contracts/public-api-v0.2-baseline.json` is edited |
-| 7 | `python tools/validate_required_checks.py` | still `validated 6 externally configured required checks`: this change adds tests and contract rows, never a CI job |
-| 8 | `python tools/check_team_scope.py --require-classified --base d4076b99f` | every changed path is classified: 12 `algorithms`, 1 `remote`, 1 `simulation`, 1 protected, 9 shared |
+| 4 | `python tools/architecture/check_architecture.py` | `architecture boundaries passed` |
+| 5 | `python tools/architecture/check_qubit_vocabulary.py` | exit 0; `131 of 341` parameters retired, `83 of 122` attributes retired, `4 of 10` definitions retired; WQ-5 is `52 / 15 / 0` with 0 remaining |
+| 6 | `python tools/architecture/public_api_snapshot.py` | `public API migration baseline passed`, and neither `docs/public_api_v1.json` nor `contracts/public-api-v0.2-baseline.json` is edited |
+| 7 | `python tools/ci/validate_required_checks.py` | still `validated 6 externally configured required checks`: this change adds tests and contract rows, never a CI job |
+| 8 | `python tools/architecture/check_team_scope.py --require-classified --base d4076b99f` | every changed path is classified: 12 `algorithms`, 1 `remote`, 1 `simulation`, 1 protected, 9 shared |
 | 9 | the CI marker lane | no new failure; see the PR body for the exact run |
 
-`tools/check_team_scope.py` reads `flagquantum/deployment/cloud.py` as `remote`
+`tools/architecture/check_team_scope.py` reads `flagquantum/deployment/cloud.py` as `remote`
 and `flagquantum/simulation/mps/tebd.py` as `simulation`, so the contract declares
 WQ-5's owner as `algorithms + remote + simulation` rather than `algorithms`
 alone. The alternative — leaving the two catch-up sites to a later slice — would

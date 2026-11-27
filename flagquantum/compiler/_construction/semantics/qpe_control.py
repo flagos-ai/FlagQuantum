@@ -5,7 +5,8 @@ from __future__ import annotations
 import math
 from collections.abc import Callable
 
-from ..._hybrid.model import Operation, Value
+from flagquantum.compiler.frontends._structured.model import Operation, Value
+
 from ..verification.register_profile import register_width
 from .pauli_rotation import pauli_rotation_instructions
 

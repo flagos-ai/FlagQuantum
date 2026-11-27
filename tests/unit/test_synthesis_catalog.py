@@ -9,8 +9,7 @@ from pathlib import Path
 
 import pytest
 
-from tools.run_qmod_catalog import run_case
-from tools.synthesis_catalog import (
+from tools.docs.synthesis_catalog import (
     CATALOG,
     ROOT,
     case_readme,
@@ -19,6 +18,7 @@ from tools.synthesis_catalog import (
     render,
     verify_catalog,
 )
+from tools.validation.run_qmod_catalog import run_case
 
 pytestmark = pytest.mark.unit
 
@@ -131,7 +131,7 @@ def test_catalog_rejects_reference_only_comparison(
     def comparison_path(path: str) -> Path:
         return reference_only if path == comparison else example_path(path)
 
-    monkeypatch.setattr("tools.synthesis_catalog.example_path", comparison_path)
+    monkeypatch.setattr("tools.docs.synthesis_catalog.example_path", comparison_path)
     with pytest.raises(ValueError, match="executable comparison"):
         verify_catalog(catalog)
 

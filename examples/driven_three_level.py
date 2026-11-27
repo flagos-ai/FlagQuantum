@@ -16,7 +16,7 @@ import torch
 
 import flagquantum as fq
 import flagquantum.lindblad as fql
-from flagquantum.observables.boson import annihilate
+from flagquantum.core.operators.boson import annihilate
 
 
 def pulse_plan(

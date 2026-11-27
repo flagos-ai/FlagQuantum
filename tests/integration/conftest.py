@@ -2,7 +2,7 @@
 
 import pytest
 
-from flagquantum.services import _synthesis_registers
+from flagquantum.synth import _program as _synthesis_registers
 
 
 @pytest.fixture

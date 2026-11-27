@@ -18,7 +18,7 @@ from flagquantum.compiler._construction.codegen.arithmetic import (
     schedule_arithmetic,
 )
 from flagquantum.compiler._construction.frontend.python import Definition, capture
-from flagquantum.compiler._hybrid.verifier import HybridVerificationError
+from flagquantum.compiler.frontends._structured.verifier import HybridVerificationError
 from flagquantum.errors import PlanningError
 from tests.synthesis_workflow_helpers import check_state
 from tests.team.compiler.test_construction_python import _cell

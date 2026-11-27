@@ -114,7 +114,7 @@ jobs:
           extra=()
           if [ "$TRAINING_SERIES" = true ]; then extra+=(--training-series); fi
           /root/liuwei/FlagQuantum/.conda-root/envs/flagquantum-dev/bin/python \
-            tools/run_mps_capacity_series.py --staging "$STAGING" --output "$OUTPUT" "${extra[@]}"
+            tools/validation/run_mps_capacity_series.py --staging "$STAGING" --output "$OUTPUT" "${extra[@]}"
       - name: Retain raw measurements and diagnostics
         if: always()
         run: |
@@ -176,13 +176,13 @@ jobs:
         run: |
           mkdir -p hardware-run
           set -o pipefail
-          python tools/run_with_watchdog.py --phase gpu-tier --stall-seconds 240 --timeout-seconds 1800 --diagnostics hardware-run/watchdog-gpu-tier -- python tools/ci_tier.py gpu-scheduled 2>&1 | tee hardware-run/gpu.log
-          CUDA_VISIBLE_DEVICES=0 python tools/run_with_watchdog.py --phase jax-benchmark --stall-seconds 240 --timeout-seconds 900 --diagnostics hardware-run/watchdog-jax-benchmark -- python benchmarks/continuous_performance.py --mode local-gpu --backend jax --warmup 10 --repetitions 30 --inner-loops 20 --output hardware-run/jax-performance.json
-          python tools/evaluate_performance_artifact.py --write hardware-run/jax-performance.json
+          python tools/ci/run_with_watchdog.py --phase gpu-tier --stall-seconds 240 --timeout-seconds 1800 --diagnostics hardware-run/watchdog-gpu-tier -- python tools/ci/ci_tier.py gpu-scheduled 2>&1 | tee hardware-run/gpu.log
+          CUDA_VISIBLE_DEVICES=0 python tools/ci/run_with_watchdog.py --phase jax-benchmark --stall-seconds 240 --timeout-seconds 900 --diagnostics hardware-run/watchdog-jax-benchmark -- python benchmarks/continuous_performance.py --mode local-gpu --backend jax --warmup 10 --repetitions 30 --inner-loops 20 --output hardware-run/jax-performance.json
+          python tools/validation/evaluate_performance_artifact.py --write hardware-run/jax-performance.json
       - name: Record run context
         if: always()
         run: |
-          python tools/artifact_manifest.py --output hardware-run/manifest.json hardware-run/gpu.log
+          python tools/release/artifact_manifest.py --output hardware-run/manifest.json hardware-run/gpu.log
       - uses: actions/upload-artifact@v4
         if: always()
         with:
@@ -225,21 +225,21 @@ jobs:
         run: |
           mkdir -p hardware-run
           set -o pipefail
-          python tools/run_with_watchdog.py --phase scale-forward --stall-seconds 240 --timeout-seconds 900 --diagnostics hardware-run/watchdog-forward-${{ matrix.gpu-count }} -- torchrun --standalone --nproc-per-node=${{ matrix.gpu-count }} tests/distributed/statevector_forward_executor.py --backend nccl 2>&1 | tee hardware-run/statevector-forward-${{ matrix.gpu-count }}.log
-          python tools/run_with_watchdog.py --phase scale-backward --stall-seconds 240 --timeout-seconds 900 --diagnostics hardware-run/watchdog-backward-${{ matrix.gpu-count }} -- torchrun --standalone --nproc-per-node=${{ matrix.gpu-count }} tests/distributed/statevector_reverse_executor.py --backend nccl 2>&1 | tee hardware-run/statevector-reverse-${{ matrix.gpu-count }}.log
-          python tools/run_with_watchdog.py --phase scale-train --stall-seconds 300 --timeout-seconds 1200 --diagnostics hardware-run/watchdog-train-${{ matrix.gpu-count }} -- torchrun --standalone --nproc-per-node=${{ matrix.gpu-count }} tests/distributed/statevector_training_runtime.py --backend nccl --checkpoint-dir hardware-run/training-checkpoint-${{ matrix.gpu-count }} --mode train 2>&1 | tee hardware-run/statevector-training-${{ matrix.gpu-count }}.log
-          python tools/run_with_watchdog.py --phase scale-correctness --stall-seconds 240 --timeout-seconds 900 --diagnostics hardware-run/watchdog-correctness-${{ matrix.gpu-count }} -- torchrun --standalone --nproc-per-node=${{ matrix.gpu-count }} tests/distributed/correctness_hardware.py 2>&1 | tee hardware-run/correctness-${{ matrix.gpu-count }}.log
-          python tools/run_with_watchdog.py --phase scale-statevector --stall-seconds 240 --timeout-seconds 900 --diagnostics hardware-run/watchdog-statevector-${{ matrix.gpu-count }} -- torchrun --standalone --nproc-per-node=${{ matrix.gpu-count }} tests/distributed/statevector_correctness.py 2>&1 | tee hardware-run/scale-${{ matrix.gpu-count }}.log
-          python tools/run_with_watchdog.py --phase scale-mps-forward --stall-seconds 300 --timeout-seconds 1200 --diagnostics hardware-run/watchdog-mps-forward-${{ matrix.gpu-count }} -- torchrun --standalone --nproc-per-node=${{ matrix.gpu-count }} tests/distributed/mps_forward_runtime.py --backend nccl 2>&1 | tee hardware-run/mps-forward-${{ matrix.gpu-count }}.log
-          python tools/run_with_watchdog.py --phase scale-mps-boundary --stall-seconds 300 --timeout-seconds 1200 --diagnostics hardware-run/watchdog-mps-boundary-${{ matrix.gpu-count }} -- torchrun --standalone --nproc-per-node=${{ matrix.gpu-count }} benchmarks/mps_boundary_transport.py --output hardware-run/mps-boundary-${{ matrix.gpu-count }}.json 2>&1 | tee hardware-run/mps-boundary-${{ matrix.gpu-count }}.log
+          python tools/ci/run_with_watchdog.py --phase scale-forward --stall-seconds 240 --timeout-seconds 900 --diagnostics hardware-run/watchdog-forward-${{ matrix.gpu-count }} -- torchrun --standalone --nproc-per-node=${{ matrix.gpu-count }} tests/distributed/statevector_forward_executor.py --backend nccl 2>&1 | tee hardware-run/statevector-forward-${{ matrix.gpu-count }}.log
+          python tools/ci/run_with_watchdog.py --phase scale-backward --stall-seconds 240 --timeout-seconds 900 --diagnostics hardware-run/watchdog-backward-${{ matrix.gpu-count }} -- torchrun --standalone --nproc-per-node=${{ matrix.gpu-count }} tests/distributed/statevector_reverse_executor.py --backend nccl 2>&1 | tee hardware-run/statevector-reverse-${{ matrix.gpu-count }}.log
+          python tools/ci/run_with_watchdog.py --phase scale-train --stall-seconds 300 --timeout-seconds 1200 --diagnostics hardware-run/watchdog-train-${{ matrix.gpu-count }} -- torchrun --standalone --nproc-per-node=${{ matrix.gpu-count }} tests/distributed/statevector_training_runtime.py --backend nccl --checkpoint-dir hardware-run/training-checkpoint-${{ matrix.gpu-count }} --mode train 2>&1 | tee hardware-run/statevector-training-${{ matrix.gpu-count }}.log
+          python tools/ci/run_with_watchdog.py --phase scale-correctness --stall-seconds 240 --timeout-seconds 900 --diagnostics hardware-run/watchdog-correctness-${{ matrix.gpu-count }} -- torchrun --standalone --nproc-per-node=${{ matrix.gpu-count }} tests/distributed/correctness_hardware.py 2>&1 | tee hardware-run/correctness-${{ matrix.gpu-count }}.log
+          python tools/ci/run_with_watchdog.py --phase scale-statevector --stall-seconds 240 --timeout-seconds 900 --diagnostics hardware-run/watchdog-statevector-${{ matrix.gpu-count }} -- torchrun --standalone --nproc-per-node=${{ matrix.gpu-count }} tests/distributed/statevector_correctness.py 2>&1 | tee hardware-run/scale-${{ matrix.gpu-count }}.log
+          python tools/ci/run_with_watchdog.py --phase scale-mps-forward --stall-seconds 300 --timeout-seconds 1200 --diagnostics hardware-run/watchdog-mps-forward-${{ matrix.gpu-count }} -- torchrun --standalone --nproc-per-node=${{ matrix.gpu-count }} tests/distributed/mps_forward_runtime.py --backend nccl 2>&1 | tee hardware-run/mps-forward-${{ matrix.gpu-count }}.log
+          python tools/ci/run_with_watchdog.py --phase scale-mps-boundary --stall-seconds 300 --timeout-seconds 1200 --diagnostics hardware-run/watchdog-mps-boundary-${{ matrix.gpu-count }} -- torchrun --standalone --nproc-per-node=${{ matrix.gpu-count }} benchmarks/mps_boundary_transport.py --output hardware-run/mps-boundary-${{ matrix.gpu-count }}.json 2>&1 | tee hardware-run/mps-boundary-${{ matrix.gpu-count }}.log
           if [ "${{ matrix.gpu-count }}" = "8" ]; then
-            python tools/run_with_watchdog.py --phase scale-mps-stability --stall-seconds 300 --timeout-seconds 1800 --diagnostics hardware-run/watchdog-mps-stability -- torchrun --standalone --nproc-per-node=8 benchmarks/mps_stability.py --optimizer sgd --steps 100 --restart-steps 10 --max-bond 16 --output hardware-run/mps-stability-8.json 2>&1 | tee hardware-run/mps-stability-8.log
+            python tools/ci/run_with_watchdog.py --phase scale-mps-stability --stall-seconds 300 --timeout-seconds 1800 --diagnostics hardware-run/watchdog-mps-stability -- torchrun --standalone --nproc-per-node=8 benchmarks/mps_stability.py --optimizer sgd --steps 100 --restart-steps 10 --max-bond 16 --output hardware-run/mps-stability-8.json 2>&1 | tee hardware-run/mps-stability-8.log
           fi
-          python tools/run_with_watchdog.py --phase scale-benchmark --stall-seconds 300 --timeout-seconds 1200 --diagnostics hardware-run/watchdog-benchmark-${{ matrix.gpu-count }} -- torchrun --standalone --nproc-per-node=${{ matrix.gpu-count }} benchmarks/continuous_performance.py --mode distributed-shard --warmup 10 --repetitions 30 --inner-loops 50 --output hardware-run/performance-${{ matrix.gpu-count }}.json
-          python tools/evaluate_performance_artifact.py --write hardware-run/performance-${{ matrix.gpu-count }}.json
+          python tools/ci/run_with_watchdog.py --phase scale-benchmark --stall-seconds 300 --timeout-seconds 1200 --diagnostics hardware-run/watchdog-benchmark-${{ matrix.gpu-count }} -- torchrun --standalone --nproc-per-node=${{ matrix.gpu-count }} benchmarks/continuous_performance.py --mode distributed-shard --warmup 10 --repetitions 30 --inner-loops 50 --output hardware-run/performance-${{ matrix.gpu-count }}.json
+          python tools/validation/evaluate_performance_artifact.py --write hardware-run/performance-${{ matrix.gpu-count }}.json
       - if: always()
         run: >-
-          python tools/hardware_run_manifest.py
+          python tools/release/hardware_run_manifest.py
           --output hardware-run/scale-${{ matrix.gpu-count }}.json
           --command 'torchrun --standalone --nproc-per-node=${{ matrix.gpu-count }} tests/distributed/statevector_correctness.py'
           --world-size ${{ matrix.gpu-count }}
@@ -283,10 +283,10 @@ jobs:
           set -o pipefail
           for world in 1 2 4 8; do
             for elements in 262144 1048576 4194304 16777216; do
-              python tools/run_with_watchdog.py --phase crossover-${world}-${elements} --stall-seconds 240 --timeout-seconds 900 --diagnostics hardware-run/watchdog-crossover-${world}-${elements} -- torchrun --standalone --nproc-per-node=${world} benchmarks/continuous_performance.py --mode crossover --global-elements ${elements} --warmup 5 --repetitions 20 --inner-loops 20 --output hardware-run/crossover/${world}gpu_${elements}.json
+              python tools/ci/run_with_watchdog.py --phase crossover-${world}-${elements} --stall-seconds 240 --timeout-seconds 900 --diagnostics hardware-run/watchdog-crossover-${world}-${elements} -- torchrun --standalone --nproc-per-node=${world} benchmarks/continuous_performance.py --mode crossover --global-elements ${elements} --warmup 5 --repetitions 20 --inner-loops 20 --output hardware-run/crossover/${world}gpu_${elements}.json
             done
           done
-          python tools/calibrate_performance_crossover.py hardware-run/crossover/*.json --output hardware-run/issue077-crossover.json
+          python tools/validation/calibrate_performance_crossover.py hardware-run/crossover/*.json --output hardware-run/issue077-crossover.json
       - uses: actions/upload-artifact@v4
         if: always()
         with:
@@ -332,7 +332,7 @@ jobs:
       - name: Run one workload across two nodes, supervised as one unit
         run: |
           mkdir -p hardware-run
-          python tools/multinode_launch_plan.py --run \
+          python tools/validation/multinode_launch_plan.py --run \
             --staging "$STAGING" \
             --interface "$NETWORK_INTERFACE" \
             --transport "$NETWORK_TRANSPORT" \
@@ -343,7 +343,7 @@ jobs:
             --report-directory hardware-run
       - name: Run the MPS workload across the same two nodes
         run: |
-          python tools/multinode_launch_plan.py --run \
+          python tools/validation/multinode_launch_plan.py --run \
             --probe mps \
             --staging "$STAGING" \
             --interface "$NETWORK_INTERFACE" \
@@ -355,7 +355,7 @@ jobs:
             --report-directory hardware-run-mps
       - name: Run the tensor-network workload across the same two nodes
         run: |
-          python tools/multinode_launch_plan.py --run \
+          python tools/validation/multinode_launch_plan.py --run \
             --probe tn \
             --staging "$STAGING" \
             --interface "$NETWORK_INTERFACE" \

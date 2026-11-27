@@ -20,6 +20,7 @@ from flagquantum.compiler.lowering.target_legalization import (
     legalize_circuit_for_target,
 )
 from flagquantum.compiler.topology.directed_topology import DirectedCouplingMap
+from flagquantum.compute.remote.validation import prepare_artifact_deployment
 from flagquantum.core._artifacts import ProgramArtifactV2
 from flagquantum.core._compilation_evidence import (
     read_compilation_evidence_bundle_json,
@@ -37,7 +38,6 @@ from flagquantum.core.target_capabilities import (
     TargetCapabilitySnapshot,
     TargetIdentity,
 )
-from flagquantum.deployment.artifact_dry_run import prepare_artifact_deployment
 from flagquantum.errors import ExecutionError
 from flagquantum.runtime.compilation_evidence import (
     verify_compilation_evidence_handoff,

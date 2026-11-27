@@ -12,11 +12,11 @@ import torch
 
 import flagquantum as fq
 from flagquantum.core.ising import IsingBraidProgram
+from flagquantum.core.measurement import OutputRequest
 from flagquantum.errors import CapabilityError
-from flagquantum.observables import OutputRequest
 from flagquantum.runtime.execution_plan import ExecutionPlan
 from flagquantum.runtime.measurements import _draw_probability_indices
-from flagquantum.runtime.result import ExecutionResult
+from flagquantum.runtime.results import ExecutionResult
 
 pytestmark = pytest.mark.unit
 Channel = Literal["1", "psi"]

@@ -6,7 +6,7 @@ import pytest
 
 import flagquantum as fq
 from flagquantum import synth
-from flagquantum.compiler._hybrid.verifier import HybridVerificationError
+from flagquantum.compiler.frontends._structured.verifier import HybridVerificationError
 from flagquantum.ecosystem import InteropConversionError
 from tests.synthesis_workflow_helpers import check_state
 from tests.team.compiler.test_construction_python import _cell

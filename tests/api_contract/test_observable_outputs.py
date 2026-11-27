@@ -10,7 +10,7 @@ import pytest
 import torch
 
 import flagquantum as fq
-from flagquantum.observables import OutputRequest
+from flagquantum.core.measurement import OutputRequest
 
 pytestmark = pytest.mark.unit
 

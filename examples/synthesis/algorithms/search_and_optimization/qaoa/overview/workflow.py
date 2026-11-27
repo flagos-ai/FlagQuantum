@@ -14,7 +14,10 @@ from examples.synthesis.algorithms.search_and_optimization.qaoa.qaoa_max_cut.mai
     main as maxcut,
 )
 from flagquantum import synth
-from flagquantum.algorithms import NelderMeadOptimizer, NelderMeadResult
+from flagquantum.algorithms.optimizers.nelder_mead import (
+    NelderMeadOptimizer,
+    NelderMeadResult,
+)
 
 Case = Literal["maxcut", "knapsack"]
 EDGES = ((0, 1), (0, 2), (1, 2), (1, 3), (2, 4), (3, 4))

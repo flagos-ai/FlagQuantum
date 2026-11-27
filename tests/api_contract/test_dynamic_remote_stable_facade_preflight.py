@@ -10,8 +10,8 @@ import torch
 import flagquantum as fq
 import flagquantum._api as fq_api
 import flagquantum.errors as fqe
+from flagquantum.compute.remote.packages import CloudBackendProfile
 from flagquantum.core.target_capabilities import TargetCapabilitySnapshot
-from flagquantum.deployment import CloudBackendProfile
 from flagquantum.dynamic import DynamicCircuit
 from flagquantum.runtime.dynamic.conformance import DynamicFeatureSet
 from flagquantum.runtime.dynamic.remote_capabilities import dynamic_remote_snapshot
@@ -195,7 +195,7 @@ def test_local_dynamic_execution_and_static_remote_dispatch_are_not_reclassified
         return marker
 
     monkeypatch.setattr(
-        "flagquantum.remote.qpu.execution.execute_quafu",
+        "flagquantum.compute.remote.qpu.execution.execute_quafu",
         execute_static,
     )
     result = fq.run(fq.Circuit(1).x(0), target="quafu:Baihua", shots=1024)

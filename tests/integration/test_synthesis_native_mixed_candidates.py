@@ -17,7 +17,7 @@ from flagquantum.compiler._construction.frontend.python import _QuantumFunction
 from flagquantum.compiler._construction.scheduling.selection import (
     select_register_program,
 )
-from flagquantum.compiler._hybrid.verifier import HybridVerificationError
+from flagquantum.compiler.frontends._structured.verifier import HybridVerificationError
 from flagquantum.errors import PlanningError
 from tests.integration.test_synthesis_native_exact_numbers import definition
 

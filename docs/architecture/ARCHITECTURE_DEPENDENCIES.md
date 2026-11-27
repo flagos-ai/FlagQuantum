@@ -22,18 +22,18 @@ flowchart TD
 ```
 
 This is an ownership overview, not an exhaustive import graph. The exact forbidden
-imports and bounded exceptions are in `architecture.toml` and checked by
-`tools/check_architecture.py`.
+imports and bounded exceptions are in `config/architecture.toml` and checked by
+`tools/architecture/check_architecture.py`.
 
 Reverse edges into IR/core are forbidden. Executors emit backend-neutral
 records and cannot import audit/release classification. Importing the stable
 root API is lazy and does not load runtime, provider, drawing, distributed, or
 optional-kernel modules.
 
-`architecture.toml` owns module-size budgets, import allowlists, and bounded
+`config/architecture.toml` owns module-size budgets, import allowlists, and bounded
 accelerator-call exceptions. Compatibility exceptions, when introduced, must
 name an owner and removal version. Run
-`python tools/check_architecture.py` locally and in CI.
+`python tools/architecture/check_architecture.py` locally and in CI.
 
 ## Enforced Package Surfaces
 
@@ -50,7 +50,7 @@ name an owner and removal version. Run
 | Backend boundaries | `flagquantum.runtime.executors` |
 | Distributed orchestration | `flagquantum.runtime.distributed` |
 | Numerical semantics and portable references | `flagquantum.simulation`, including optional `simulation.jax` |
-| Optional optimized kernels | `flagquantum.kernels`, including lazy `kernels.triton` |
+| Optional optimized kernels | `flagquantum.simulation.kernels`, including lazy `kernels.triton` |
 | Directly controlled resources | `flagquantum.compute` |
 | Measurement contracts | `flagquantum.core.ir`, `flagquantum.runtime.measurements` |
 | Deployment packages | `flagquantum.deployment` |

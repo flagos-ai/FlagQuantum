@@ -8,7 +8,7 @@ from collections.abc import Callable, Mapping, Sequence
 from copy import deepcopy
 from dataclasses import replace
 
-from ..._hybrid.model import (
+from flagquantum.compiler.frontends._structured.model import (
     QUANTUM_EFFECT,
     Block,
     HybridProgram,
@@ -17,6 +17,7 @@ from ..._hybrid.model import (
     Value,
     ValueId,
 )
+
 from ..analysis.ranges import unsigned_width
 from ..program_types import (
     _width_spec,

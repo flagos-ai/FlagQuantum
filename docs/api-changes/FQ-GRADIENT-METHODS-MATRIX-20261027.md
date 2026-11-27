@@ -47,7 +47,7 @@ drift from the implementation without a failure.
   vocabularies, `[taxonomy]`, `[rules]`, `[reference]`, `[resolution]`, `[accuracy]`,
   `[cost]`, then `[[cells]]` (30), `[[noise_cells]]` (30), `[noise]`, `[[refusals]]`
   (10), `[[reframings]]` (1, with two measured instances), and `[verification]`.
-- `tools/check_gradient_methods_contract.py`: rebuilds the reference program, runs all
+- `tools/validation/check_gradient_methods_contract.py`: rebuilds the reference program, runs all
   sixty cells, and compares each measured verdict, reported method, and exactness with
   the recorded one. It also reads the two vocabularies out of the implementation, checks
   every refusal phrase against the file it names, re-counts loss evaluations, reproduces
@@ -55,7 +55,7 @@ drift from the implementation without a failure.
   the noisy axis to the precision and the step it records.
 - `tests/unit/test_gradient_methods_contract.py`: the file's internal consistency and
   the refusal vocabulary, plus a mutation per clause requiring the gate to name it.
-- `.github/workflows/ci.yml` and `tools/pre_push.py`: the gate is invoked by both.
+- `.github/workflows/ci.yml` and `tools/ci/pre_push.py`: the gate is invoked by both.
 
 ### The reference program
 

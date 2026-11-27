@@ -140,7 +140,7 @@ removing repeated routing alone does not satisfy resource admission. The
 12-wire case has no quality gain and its close timing is not a demonstrated
 speedup. Keep the native-cost consumer experimental.
 
-The required full `python tools/ci_tier.py pr-default` attempt reached roughly
+The required full `python tools/ci/ci_tier.py pr-default` attempt reached roughly
 41 percent before its explicit 300-second deadline. Its process group was
 terminated; it is not a passing full-tier result. Focused checks above are the
 completed local evidence. Ruff and mypy pass the changed source modules; full

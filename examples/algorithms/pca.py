@@ -30,7 +30,7 @@ import math
 
 import torch
 
-from flagquantum.algorithms.pca import principal_components
+from flagquantum.algorithms.linear_algebra.pca import principal_components
 
 N_COUNTING_WIRES = 6
 # A diagonal data matrix, so its exact eigenvalues can be read off by eye next to
@@ -57,7 +57,9 @@ def main() -> None:
     print("=" * 72)
     print("quantum PCA -- flagquantum.algorithms.pca")
     print("=" * 72)
-    print(f"  {'task':<18}: estimate a density matrix's eigenvalues by phase estimation")
+    print(
+        f"  {'task':<18}: estimate a density matrix's eigenvalues by phase estimation"
+    )
     print(f"  {'execution':<18}: local statevector sampling, CPU")
     print(f"  {'premise':<18}: the density matrix, its exponential and the")
     print(f"  {'':<18}  purification's amplitudes are all built classically")
@@ -78,10 +80,18 @@ def main() -> None:
     print(f"  {'within(largest)':<18}: {result.within(largest)}")
     print()
     print("take away")
-    print("  the mode is the counter value carrying the largest share of the sample, and")
-    print("  the readout is that counter value's eigenvalue. within() answers one question")
-    print("  about the readout: whether a named eigenvalue lies within half a counter step")
-    print("  of it. The unit does not claim the readout is the largest eigenvalue, and it")
+    print(
+        "  the mode is the counter value carrying the largest share of the sample, and"
+    )
+    print(
+        "  the readout is that counter value's eigenvalue. within() answers one question"
+    )
+    print(
+        "  about the readout: whether a named eigenvalue lies within half a counter step"
+    )
+    print(
+        "  of it. The unit does not claim the readout is the largest eigenvalue, and it"
+    )
     print("  does not predict which eigenvalue it will be.")
 
 

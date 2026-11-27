@@ -172,7 +172,7 @@ jobs:
         if: matrix.python == '3.12'
         run: >-
           PYTEST_ADDOPTS="-n $FQ_PYTEST_WORKERS --dist=worksteal --durations=25"
-          python tools/ci_tier.py pr-default
+          python tools/ci/ci_tier.py pr-default
       - uses: actions/upload-artifact@v4
         if: ${{ always() && env.FQ_CI_REPORT_DIR != '' }}
         with:

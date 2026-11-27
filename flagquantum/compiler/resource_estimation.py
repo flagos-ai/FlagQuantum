@@ -1,9 +1,6 @@
 """Compatibility imports for :mod:`flagquantum.compiler.optimization.resource_estimation`."""
 
 from .optimization.resource_estimation import (
-    _T_FAMILY_OPCODES as _T_FAMILY_OPCODES,
-)
-from .optimization.resource_estimation import (
     ESTIMATE_BASIS as ESTIMATE_BASIS,
 )
 from .optimization.resource_estimation import (

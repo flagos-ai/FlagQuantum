@@ -37,7 +37,7 @@ measurements, each produced by the shipped code:
   `unknown opcode 'cphase_quarter'; custom operations require an explicit matrix`
   (Decision 7). With the matrix it runs, and the user path end to end is the
   example in "Public API".
-- `tools/operator_manifest.py` then `tools/docs_source_of_truth.py` regenerate
+- `tools/docs/operator_manifest.py` then `tools/docs/docs_source_of_truth.py` regenerate
   `docs/operator_manifest.json` and `docs/generated/OPERATOR_CAPABILITIES.md` with
   **no diff** (both exit 0, `git status --short` on the two paths is empty), which
   is the outcome Decision 10 said to measure rather than assume: the authorized
@@ -62,7 +62,7 @@ API-owner decision taken after the authorized half landed, not a weakening of
 Decision 6's refusals: the returned table is still a new frozen value, the
 built-in `OPERATOR_SCHEMAS` is still never written, no process-global *registry*
 exists, and the checked-in artefacts are still independent of which registrations
-a process ran -- `tools/operator_manifest.py` and `tools/docs_source_of_truth.py`
+a process ran -- `tools/docs/operator_manifest.py` and `tools/docs/docs_source_of_truth.py`
 regenerate with no diff after a registration, because the installed method is not
 a schema entry. What does become order-sensitive is the spelling, so it is pinned
 rather than left implicit: redeclaring the same calling surface is a no-op even
@@ -261,11 +261,11 @@ flagquantum/runtime/executors/statevector/reverse_observable.py:49:    sweep.adj
 flagquantum/compiler/inverse_cancellation.py:14:than from a table of its own. `OperatorSchema.adjoint` already names the inverse
 flagquantum/compiler/inverse_cancellation.py:17:`flagquantum.circuit.Circuit.adjoint` is already its consumer. A second table
 $ grep -rn '\.adjoint\b' --include=*.py tools/ | grep -v __pycache__
-tools/check_circuit_composition_contract.py:5:`Circuit.compose` and `Circuit.adjoint` guarantee and of every way they refuse. This
-tools/check_circuit_composition_contract.py:93:    if provided != ["Circuit.compose", "Circuit.adjoint"]:
-tools/check_circuit_composition_contract.py:160:    adjoint_arguments = list(inspect.signature(fq.Circuit.adjoint).parameters)
-tools/check_circuit_composition_contract.py:162:        errors.append(f"Circuit.adjoint grew parameters: {adjoint_arguments}")
-tools/check_circuit_composition_contract.py:274:        if OPERATOR_SCHEMAS[opcode].adjoint == "not_applicable"
+tools/validation/check_circuit_composition_contract.py:5:`Circuit.compose` and `Circuit.adjoint` guarantee and of every way they refuse. This
+tools/validation/check_circuit_composition_contract.py:93:    if provided != ["Circuit.compose", "Circuit.adjoint"]:
+tools/validation/check_circuit_composition_contract.py:160:    adjoint_arguments = list(inspect.signature(fq.Circuit.adjoint).parameters)
+tools/validation/check_circuit_composition_contract.py:162:        errors.append(f"Circuit.adjoint grew parameters: {adjoint_arguments}")
+tools/validation/check_circuit_composition_contract.py:274:        if OPERATOR_SCHEMAS[opcode].adjoint == "not_applicable"
 ```
 
 Of the 69 matches, 52 are the gradient machinery: every one under
@@ -274,7 +274,7 @@ adjoint *state vector*, and `flagquantum/simulation/statevector/adjoint.py` is t
 reverse-mode sweeper. The eleven in `flagquantum/core/operator_schema.py` are the
 schema field and the one function that reads it. The two in
 `flagquantum/compiler/inverse_cancellation.py` are the pass that already reads the
-field. The five in `tools/check_circuit_composition_contract.py` are the gate that
+field. The five in `tools/validation/check_circuit_composition_contract.py` are the gate that
 pins `Circuit.adjoint`'s signature.
 
 That leaves the two in `flagquantum/circuit.py`, and they are the fourth meaning.
@@ -552,14 +552,14 @@ compiler layer while the schema it registers against lives in Core, and
 > frameworks, or gateways.
 
 Measured, Core obeys it today, and Core importing the compiler would also be
-visible in the lazy import budget that `tools/check_import_time.py` protects:
+visible in the lazy import budget that `tools/validation/check_import_time.py` protects:
 
 ```
 $ grep -rn "from ..compiler\|from flagquantum.compiler" --include=*.py flagquantum/core/ ; echo "exit=$?"
 exit=1
-$ PYTHONPATH=$PWD python tools/check_import_time.py
+$ PYTHONPATH=$PWD python tools/validation/check_import_time.py
 flagquantum import fastest=0.001335s median=0.002066s slowest=0.003231s over 5 runs
-$ PYTHONPATH=$PWD python tools/check_architecture.py
+$ PYTHONPATH=$PWD python tools/architecture/check_architecture.py
 architecture boundaries passed
 ```
 
@@ -604,16 +604,16 @@ Do not edit. Source: `docs/operator_manifest.json`; `yes` means an executable re
 | --- | --- | --- | --- | --- | --- | --- | --- | --- |
 ```
 
-`tools/operator_manifest.py:17` builds `docs/operator_manifest.json` from
+`tools/docs/operator_manifest.py:17` builds `docs/operator_manifest.json` from
 `operator_manifest()` and `DEFAULT_LOWERING_REGISTRY.manifest()["backends"]`, and
-`tools/docs_source_of_truth.py:95` renders the markdown from that JSON. All the
+`tools/docs/docs_source_of_truth.py:95` renders the markdown from that JSON. All the
 guards are green on this checkout:
 
 ```
-$ PYTHONPATH=$PWD python tools/operator_manifest.py --check       -> exit=0
-$ PYTHONPATH=$PWD python tools/docs_source_of_truth.py --check    -> exit=0
-$ PYTHONPATH=$PWD python tools/parity_matrix.py --check           -> exit=0 :: parity-matrix: contract valid and document current
-$ PYTHONPATH=$PWD python tools/check_capability_maturity.py       -> exit=0 :: capability maturity matrix passed
+$ PYTHONPATH=$PWD python tools/docs/operator_manifest.py --check       -> exit=0
+$ PYTHONPATH=$PWD python tools/docs/docs_source_of_truth.py --check    -> exit=0
+$ PYTHONPATH=$PWD python tools/architecture/parity_matrix.py --check           -> exit=0 :: parity-matrix: contract valid and document current
+$ PYTHONPATH=$PWD python tools/validation/check_capability_maturity.py       -> exit=0 :: capability maturity matrix passed
 ```
 
 The two gap rows this proposal answers are already in the parity contract, at
@@ -918,7 +918,7 @@ schema-only table is Core-owned and new; the lowerings remain
 declared and already refuses a duplicate opcode, an unknown backend and an
 unknown opcode. Core does not import the compiler, and the compiler consumes the
 Core table. This direction is forced by the boundary rule quoted in section 5 of
-"Problem" and is checked by `tools/check_architecture.py`, which passes today.
+"Problem" and is checked by `tools/architecture/check_architecture.py`, which passes today.
 
 Refused explicitly:
 
@@ -927,7 +927,7 @@ Refused explicitly:
   `dict` that shadows it. Measured to be unnecessary: every registration the
   contract allows is expressible as a new frozen value.
 - A process-global mutable registry, because it would make
-  `tools/operator_manifest.py --check` depend on import order and on which tests
+  `tools/docs/operator_manifest.py --check` depend on import order and on which tests
   ran first, and the manifest is a checked-in artefact.
 - Redefining an existing opcode. `with_operator` already refuses this with
   `operator schema 'h' is already registered`, and the refusal is kept rather
@@ -1012,7 +1012,7 @@ the program-level adjoint exists, and the modifier half is the part that must
 extend it -- and it removes a collision that revision 1 would have created.
 `contracts/circuit-composition-contract.toml` already contracts both
 `Circuit.adjoint` and the *absence* of `Circuit.control`, and
-`tools/check_circuit_composition_contract.py` enforces both, so an accepted
+`tools/validation/check_circuit_composition_contract.py` enforces both, so an accepted
 `control` is a change to a protected contract rather than an addition beside one.
 
 ### 10. The capability document is regenerated, never hand-edited
@@ -1020,7 +1020,7 @@ extend it -- and it removes a collision that revision 1 would have created.
 `docs/generated/OPERATOR_CAPABILITIES.md` is derived from
 `docs/operator_manifest.json`, which is derived from `operator_manifest()` and
 `DEFAULT_LOWERING_REGISTRY.manifest()["backends"]`. It says so on line 3, and
-`tools/operator_manifest.py:37` refuses to let it go stale. This proposal
+`tools/docs/operator_manifest.py:37` refuses to let it go stale. This proposal
 therefore regenerates it by running the two generators, and refuses to edit it
 directly; a hand edit is a defect, not a shortcut.
 
@@ -1124,11 +1124,11 @@ in "Compatibility". The new public root name count is zero.
 ## Compatibility
 
 - **`docs/public_api_v1.json` is unchanged.** Its `stable_exports` list has 41
-  names and none of them is introduced here, and `tools/public_api_snapshot.py`
+  names and none of them is introduced here, and `tools/architecture/public_api_snapshot.py`
   refuses automatic regeneration of that file at all:
 
   ```
-  $ PYTHONPATH=$PWD python tools/public_api_snapshot.py --check
+  $ PYTHONPATH=$PWD python tools/architecture/public_api_snapshot.py --check
   error: unrecognized arguments: --check
   ```
 
@@ -1235,7 +1235,7 @@ in "Compatibility". The new public root name count is zero.
   31:not_provided_reason = "no approved API change proposal; control and power are unplanned, not partial"
   ```
 
-  `tools/check_circuit_composition_contract.py` enforces that list from three
+  `tools/validation/check_circuit_composition_contract.py` enforces that list from three
   sides: line 93 requires `provided` to equal `["Circuit.compose",
   "Circuit.adjoint"]`, lines 95-101 require `not_provided` to equal
   `["Circuit.control", "Circuit.power"]` **and** require every name in it to be
@@ -1245,13 +1245,13 @@ in "Compatibility". The new public root name count is zero.
   `Circuit.adjoint` gains a parameter -- which is the second option above,
   confirming that the collision is enforced rather than merely documented. Both
   files are protected surfaces (`contracts/**` and `tools/**` in
-  `team-ownership.toml`), so an approved implementation must change the contract
-  and the gate together, and `tools/check_team_scope.py` will report both as
+  `config/team-ownership.toml`), so an approved implementation must change the contract
+  and the gate together, and `tools/architecture/check_team_scope.py` will report both as
   cross-team surfaces. Revision 1 did not record this and its acceptance path
   would have failed this gate on the first run.
 
 - **No Stable Core root name changes, so no deprecation window is owed**, and no
-  maturity level is raised by this proposal. `tools/check_capability_maturity.py`
+  maturity level is raised by this proposal. `tools/validation/check_capability_maturity.py`
   passes today and must still pass.
 
 ## Required evidence before this proposal can be accepted
@@ -1347,22 +1347,22 @@ it and observing a test fail.
       `tests/unit/test_api_namespace_convergence.py` both pass with no failures,
       including the case that currently fails only because the symbol does not
       exist yet.
-- [ ] `python tools/check_import_time.py` passes, and `import
+- [ ] `python tools/validation/check_import_time.py` passes, and `import
       flagquantum.operators` still loads zero modules under `flagquantum.compiler`.
       Both are measured, and the import figures are reported.
-- [ ] `python tools/check_architecture.py` passes, proving Core did not import
+- [ ] `python tools/architecture/check_architecture.py` passes, proving Core did not import
       Compiler to reach the lowering registry.
-- [ ] `python tools/check_capability_maturity.py` passes unchanged, and no
+- [ ] `python tools/validation/check_capability_maturity.py` passes unchanged, and no
       maturity level is raised by this change.
 - [ ] The parity rows `control_adjoint_modifiers` and
       `custom_operation_registration` in `contracts/cudaq-parity-matrix.toml` are
       updated only as far as the measurements above support, their rendered
       entries in `docs/reference/CUDAQ_PARITY_MATRIX.md` are regenerated rather
-      than hand-edited, and `python tools/parity_matrix.py --check` exits `0`.
+      than hand-edited, and `python tools/architecture/parity_matrix.py --check` exits `0`.
       The status values written there are the ones the recorded evidence
       supports, and the document that records them is not the place to argue for
       a level.
-- [ ] `python tools/check_repository_language.py` reports `0 files contain
+- [ ] `python tools/architecture/check_repository_language.py` reports `0 files contain
       Han-script text`.
 - [ ] Repository owner approves. Not yet requested; see `## Status`.
 

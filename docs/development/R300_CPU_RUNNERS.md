@@ -31,7 +31,7 @@ The [resource inventory](https://github.com/flagos-ai/FlagQuantum/actions/runs/3
 targets all 17 scale sets listed in repository settings, including the exact
 `flagcicd-r300-cpu115` spelling. Inventory uses shell tools and reads the current
 process's cgroup ancestors without downloading source or third-party actions.
-The workload probes separately use the existing `tools/ci_cpu_budget.py` to
+The workload probes separately use the existing `tools/ci/ci_cpu_budget.py` to
 measure effective CPU/memory limits and select bounded test workers.
 
 Measured samples expose 128 logical CPUs, 540,647,444,480 bytes (503.5 GiB) of

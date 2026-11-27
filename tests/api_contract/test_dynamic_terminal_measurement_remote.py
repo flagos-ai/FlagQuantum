@@ -8,9 +8,9 @@ import pytest
 
 import flagquantum as fq
 import flagquantum.errors as fqe
+from flagquantum.compute.remote.qpu import _quafu_sdk
+from flagquantum.compute.remote.qpu.quafu import QuafuProvider
 from flagquantum.dynamic import DynamicCircuit
-from flagquantum.remote.qpu import _quafu_sdk
-from flagquantum.remote.qpu.quafu import QuafuProvider
 
 pytestmark = pytest.mark.unit
 
@@ -53,7 +53,7 @@ def client(monkeypatch: pytest.MonkeyPatch) -> _Client:
     client = _Client()
     adapter = _quafu_sdk._QuafuSdkAdapter.for_submission(client=client)
     monkeypatch.setattr(
-        "flagquantum.remote.qpu.execution.QuafuProvider",
+        "flagquantum.compute.remote.qpu.execution.QuafuProvider",
         lambda **options: QuafuProvider(_sdk_adapter=adapter, **options),
     )
     return client
@@ -109,7 +109,7 @@ def test_incompatible_terminal_output_fails_before_provider_construction(
         raise AssertionError("invalid output must fail before provider construction")
 
     monkeypatch.setattr(
-        "flagquantum.remote.qpu.execution.QuafuProvider",
+        "flagquantum.compute.remote.qpu.execution.QuafuProvider",
         reject_provider,
     )
 

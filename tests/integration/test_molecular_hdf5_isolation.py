@@ -11,14 +11,14 @@ import torch
 
 import flagquantum as fq
 from flagquantum.algorithms.chemistry import uccsd_ansatz
-from flagquantum.algorithms.chemistry_domain.problem import (
+from flagquantum.algorithms.chemistry.models.problem import (
     MolecularProblem,
     fermion_hamiltonian,
     from_native_molecule,
 )
+from flagquantum.algorithms.chemistry.molecular import create_molecular_hamiltonian
 from flagquantum.algorithms.fermion.encoding import encode_fermion
 from flagquantum.algorithms.fermion.observables import to_observable
-from flagquantum.algorithms.molecular import create_molecular_hamiltonian
 from flagquantum.ecosystem.chemistry.fcidump import read_fcidump
 from flagquantum.ecosystem.chemistry.molecular_hdf5 import read_molecular_hdf5
 from tests.unit.fermion.test_fcidump import _dump

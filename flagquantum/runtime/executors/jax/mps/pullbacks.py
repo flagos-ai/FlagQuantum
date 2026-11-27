@@ -5,10 +5,11 @@ from __future__ import annotations
 from collections.abc import Sequence
 from typing import Any
 
-from .....simulation.jax.mps.pullbacks import (
+from flagquantum.simulation.mps.jax.pullbacks import (
     jax_mps_boundary_rxx_pullback,
     jax_mps_owner_local_vjp,
 )
+
 from ..release_policy import (
     attach_mps_backward_readiness as _attach_mps_backward_readiness,
 )

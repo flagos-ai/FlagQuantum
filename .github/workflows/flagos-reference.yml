@@ -51,7 +51,7 @@ jobs:
           assert not missing, f'FlagOS reference provisioner identity missing: {missing}'"
       - name: Validate checked-in development evidence
         run: >-
-          python tools/validate_flagos_reference_evidence.py
+          python tools/validation/validate_flagos_reference_evidence.py
           artifacts/flagos_cuda_reference_a800_20260824.json
       - name: Run focused CPU contract tests
         run: >-
@@ -63,17 +63,17 @@ jobs:
       - name: Execute locked FlagOS CUDA reference
         run: |
           mkdir -p hardware-run
-          python tools/run_with_watchdog.py \
+          python tools/ci/run_with_watchdog.py \
             --phase flagos-cuda-reference \
             --stall-seconds 240 \
             --timeout-seconds 1200 \
             --diagnostics hardware-run/watchdog \
-            -- python tools/validate_flagos_cuda_reference.py \
+            -- python tools/validation/validate_flagos_cuda_reference.py \
               --strict-environment \
               --output hardware-run/flagos-cuda-reference.json
       - name: Enforce development-only evidence gate
         run: >-
-          python tools/validate_flagos_reference_evidence.py
+          python tools/validation/validate_flagos_reference_evidence.py
           hardware-run/flagos-cuda-reference.json
       - name: Upload raw reference evidence
         if: always()

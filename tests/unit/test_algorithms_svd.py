@@ -27,14 +27,7 @@ from dataclasses import FrozenInstanceError
 import pytest
 import torch
 
-from flagquantum.algorithms.primitives.block_encoding import (
-    spectral_block_encoding,
-)
-from flagquantum.algorithms.primitives.block_encoding import (
-    subnormalisation as _primitive_subnormalisation,
-)
-from flagquantum.algorithms.primitives.state_preparation import append_arbitrary_state
-from flagquantum.algorithms.svd import (
+from flagquantum.algorithms.linear_algebra.svd import (
     SingularValueResult,
     _append_block_encoding,
     _input_amplitudes,
@@ -42,6 +35,13 @@ from flagquantum.algorithms.svd import (
     _subnormalisation,
     estimate_singular_values,
 )
+from flagquantum.algorithms.primitives.block_encoding import (
+    spectral_block_encoding,
+)
+from flagquantum.algorithms.primitives.block_encoding import (
+    subnormalisation as _primitive_subnormalisation,
+)
+from flagquantum.algorithms.primitives.state_preparation import append_arbitrary_state
 from flagquantum.circuit import Circuit
 
 pytestmark = pytest.mark.unit

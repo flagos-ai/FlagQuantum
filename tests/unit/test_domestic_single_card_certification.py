@@ -5,8 +5,11 @@ from pathlib import Path
 
 import pytest
 
-from tools.check_domestic_single_card_contract import contract_errors
-from tools.validate_domestic_single_card import attestation_errors, evidence_errors
+from tools.validation.check_domestic_single_card_contract import contract_errors
+from tools.validation.validate_domestic_single_card import (
+    attestation_errors,
+    evidence_errors,
+)
 
 try:
     import tomllib

@@ -1087,13 +1087,13 @@ pass/provider. Warnings/remarks use sinks/reports/log policy, not print.
 
 **Correction, 2026-10-08: the internal directory below is not buildable in this
 tree, and the levels live in the IR package instead.** Measured, creating
-`flagquantum/_compiler/__init__.py` fails `tools/check_architecture.py` with
+`flagquantum/_compiler/__init__.py` fails `tools/architecture/check_architecture.py` with
 `flagquantum/_compiler: unreviewed top-level package directory is forbidden`,
-because the directory is absent from `architecture.toml`
+because the directory is absent from `config/architecture.toml`
 `package_layout.allowed_top_level_directories`; one `from .._compiler import ...`
 line under `flagquantum/compiler/` fails the same gate with `compiler imports
 forbidden layer _compiler`, because `boundaries.compiler_forbidden` lists that
-name; and `team-ownership.toml` records `flagquantum/_compiler` among five
+name; and `config/team-ownership.toml` records `flagquantum/_compiler` among five
 patterns removed for matching no tracked path. `IR_007` therefore places the
 internal levels in `flagquantum/core/ir/**`, the package that already owns the
 public IR, and the sketch below is kept only as the shape of the intended

@@ -5,7 +5,10 @@ import torch
 
 from flagquantum import synth
 from flagquantum.ecosystem._qmod import decisions
-from tools.validate_qmod_decision_predicates import grover_power_matrix, validate
+from tools.validation.validate_qmod_decision_predicates import (
+    grover_power_matrix,
+    validate,
+)
 
 pytestmark = pytest.mark.integration
 
@@ -14,7 +17,7 @@ def test_original_local_phase_evaluator_keeps_eight_bit_cap() -> None:
     from flagquantum.compiler._construction.verification.register_profile import (
         register_type,
     )
-    from flagquantum.compiler._hybrid.model import Value, ValueId
+    from flagquantum.compiler.frontends._structured.model import Value, ValueId
     from flagquantum.ecosystem._qmod.phase import expand_phase
     from flagquantum.ecosystem._qmod.syntax import Parser, tokenize
 
@@ -92,7 +95,7 @@ def test_decision_limits_fail_closed(
     ],
 )
 def test_actual_budgets(key: str, value: int) -> None:
-    from tools.validate_qmod_decision_predicates import FIXTURES
+    from tools.validation.validate_qmod_decision_predicates import FIXTURES
 
     with pytest.raises(
         ValueError,

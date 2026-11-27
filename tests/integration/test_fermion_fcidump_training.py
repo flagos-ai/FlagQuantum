@@ -10,10 +10,10 @@ import torch
 
 from examples.algorithms.fermion_fcidump_training import DEFAULT_FCIDUMP, energy, main
 from flagquantum.algorithms.chemistry import uccsd_ansatz
-from flagquantum.algorithms.chemistry_domain.problem import fermion_hamiltonian
+from flagquantum.algorithms.chemistry.models.problem import fermion_hamiltonian
+from flagquantum.algorithms.chemistry.molecular import create_molecular_hamiltonian
 from flagquantum.algorithms.fermion.encoding import encode_fermion
 from flagquantum.algorithms.fermion.observables import to_observable
-from flagquantum.algorithms.molecular import create_molecular_hamiltonian
 from flagquantum.ecosystem.chemistry.fcidump import read_fcidump
 
 pytestmark = pytest.mark.integration

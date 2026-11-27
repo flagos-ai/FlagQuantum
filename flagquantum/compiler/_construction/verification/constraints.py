@@ -2,7 +2,8 @@
 
 from dataclasses import dataclass
 
-from ..._hybrid.verifier import Diagnostic
+from flagquantum.compiler.frontends._structured.verifier import Diagnostic
+
 from ...optimization.resource_estimation import ResourceEstimate
 
 

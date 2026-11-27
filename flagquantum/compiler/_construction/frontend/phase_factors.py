@@ -6,7 +6,8 @@ import ast
 from collections.abc import Callable
 from typing import TYPE_CHECKING, NoReturn
 
-from ..._hybrid.model import Operation, Value, ValueId
+from flagquantum.compiler.frontends._structured.model import Operation, Value, ValueId
+
 from ..semantics import _phase_factors
 from ..semantics._phase_factors import Cube
 from ..semantics._phase_polynomial import (

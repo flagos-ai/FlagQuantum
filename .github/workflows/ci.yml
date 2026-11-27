@@ -48,7 +48,9 @@ jobs:
     outputs:
       artifact-key: ${{ steps.pack-source.outputs.artifact-key }}
     runs-on: ${{ fromJSON((github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository) && '["self-hosted","linux","x64","flagquantum-cpu"]' || '["ubuntu-latest"]') }}
-    timeout-minutes: 15
+    # Cold migration trees can require up to 2,048 verified API objects.
+    # Keep ten minutes for checkout fallback, packing and artifact upload.
+    timeout-minutes: 30
     env:
       # Self-hosted GitHub connections can reset HTTP/2 streams.
       GIT_CONFIG_COUNT: "1"
@@ -64,7 +66,7 @@ jobs:
         id: archive-source
         if: runner.environment == 'self-hosted'
         continue-on-error: true
-        timeout-minutes: 10
+        timeout-minutes: 20
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
@@ -178,7 +180,7 @@ jobs:
       # the commit. A depth-1 clone cannot answer either question about a
       # revision it did not fetch: it cannot tell one it never fetched from one
       # the repository never contained, nor list the refs reaching a commit, and
-      # tools/evidence_provenance.py fails closed on that ambiguity rather than
+      # tools/release/evidence_provenance.py fails closed on that ambiguity rather than
       # reading it as a pass.
       - name: Clear sparse checkout state from a previous job
         run: |
@@ -198,7 +200,7 @@ jobs:
       - uses: ./.github/actions/install-cpu-torch
       - run: python -m pip install --no-build-isolation -e '.[dev]'
       - name: English repository content
-        run: python tools/check_repository_language.py
+        run: python tools/architecture/check_repository_language.py
       - name: Ruff production and test surface
         run: ruff check flagquantum tests tools
       - name: Black production and test surface
@@ -214,13 +216,13 @@ jobs:
         run: >-
           mypy --strict --python-version 3.12 --ignore-missing-imports
           --follow-imports skip
-          tools/ci_tier.py
-          tools/check_evidence_revisions.py
-          tools/check_evidence_retention.py
+          tools/ci/ci_tier.py
+          tools/release/check_evidence_revisions.py
+          tools/release/check_evidence_retention.py
       - name: Enforce package boundaries and module budgets
-        run: python tools/check_architecture.py
+        run: python tools/architecture/check_architecture.py
       - name: Validate multi-team ownership policy
-        run: python tools/check_team_scope.py --validate
+        run: python tools/architecture/check_team_scope.py --validate
       # `--validate` reads the policy; it never resolves a path. A pull request
       # that adds a file no rule covers therefore passes that step and only
       # fails later in `cpu-core`, as an assertion diff from
@@ -243,7 +245,7 @@ jobs:
             echo "no base revision is available for this event; skipping"
             exit 0
           fi
-          python tools/check_team_scope.py --require-classified --base "$BASE_SHA"
+          python tools/architecture/check_team_scope.py --require-classified --base "$BASE_SHA"
       - name: Require retention metadata for new benchmark evidence
         env:
           BASE_SHA: ${{ github.event.merge_group.base_sha || github.event.pull_request.base.sha || github.event.before }}
@@ -257,104 +259,104 @@ jobs:
             echo "no base revision is available for this event; skipping"
             exit 0
           fi
-          python tools/check_evidence_retention.py --base "$BASE_SHA"
+          python tools/release/check_evidence_retention.py --base "$BASE_SHA"
       - name: Enforce core, extras, interop, and external-platform dependencies
         run: python tools/check_dependency_policy.py
       - name: Verify Amazon Braket circuit interoperability contract
-        run: python tools/check_braket_interop_contract.py
+        run: python tools/validation/check_braket_interop_contract.py
       - name: Verify Cirq interoperability contract
         run: python tools/check_cirq_interop_contract.py
       - name: Verify CUDA-Q export contract
-        run: python tools/check_cudaq_export_contract.py
+        run: python tools/validation/check_cudaq_export_contract.py
       - name: Verify Qiskit interoperability contract
-        run: python tools/check_qiskit_interop_contract.py
+        run: python tools/validation/check_qiskit_interop_contract.py
       - name: Verify PennyLane interoperability contract
-        run: python tools/check_pennylane_interop_contract.py
+        run: python tools/validation/check_pennylane_interop_contract.py
       - name: Verify construction-time composition contract
-        run: python tools/check_circuit_composition_contract.py
+        run: python tools/validation/check_circuit_composition_contract.py
       - name: Verify the density-matrix output contract
-        run: python tools/check_density_matrix_output_contract.py
+        run: python tools/validation/check_density_matrix_output_contract.py
       - name: Verify the von Neumann entropy output contract
-        run: python tools/check_vn_entropy_output_contract.py
+        run: python tools/validation/check_vn_entropy_output_contract.py
       - name: Verify primitives admission contract
-        run: python tools/check_primitives_admission_contract.py
+        run: python tools/validation/check_primitives_admission_contract.py
       - name: Verify construction-layer acceptance contract
-        run: python tools/check_construction_acceptance_contract.py
+        run: python tools/validation/check_construction_acceptance_contract.py
       - name: Verify interoperability capability-gap matrix
-        run: python tools/check_interop_capability_gap_matrix.py
+        run: python tools/validation/check_interop_capability_gap_matrix.py
       - name: Verify OpenQASM import contract
-        run: python tools/check_openqasm_import_contract.py
+        run: python tools/validation/check_openqasm_import_contract.py
       - name: Verify internal multi-level IR contract
         run: python tools/check_multi_level_ir_contract.py
       - name: Verify realtime messaging contract
-        run: python tools/check_realtime_messaging_contract.py
+        run: python tools/validation/check_realtime_messaging_contract.py
       - name: Verify the qubit-vocabulary ledgers
-        run: python tools/check_qubit_vocabulary.py
+        run: python tools/architecture/check_qubit_vocabulary.py
       - name: Verify CUDA-Q parity matrix and its generated scoreboard
-        run: python tools/parity_matrix.py --check
+        run: python tools/architecture/parity_matrix.py --check
       - name: Verify the CUDA-Q QEC alignment checklist against this checkout
-        run: python tools/check_qec_cudaq_alignment.py
+        run: python tools/validation/check_qec_cudaq_alignment.py
       - name: Verify Double-Single FP32 numerical contract
-        run: python tools/check_double_single_contract.py
+        run: python tools/validation/check_double_single_contract.py
       - name: Verify split real/imag statevector P0 contract
-        run: python tools/check_split_real_imag_contract.py
+        run: python tools/validation/check_split_real_imag_contract.py
       - name: Verify split real/imag statevector P1 contract
-        run: python tools/check_split_real_imag_p1_contract.py
+        run: python tools/validation/check_split_real_imag_p1_contract.py
       - name: Verify split real/imag P1 A800 reference evidence
-        run: python tools/validate_split_real_imag_training_evidence.py
+        run: python tools/validation/validate_split_real_imag_training_evidence.py
       - name: Verify split real/imag statevector P2 precision contract
-        run: python tools/check_split_real_imag_p2_precision_contract.py
+        run: python tools/validation/check_split_real_imag_p2_precision_contract.py
       - name: Verify split real/imag P2 A800 reference evidence
-        run: python tools/validate_split_real_imag_precision_evidence.py
+        run: python tools/validation/validate_split_real_imag_precision_evidence.py
       - name: Verify split real/imag statevector P3 Double-Single contract
-        run: python tools/check_split_real_imag_p3_double_single_contract.py
+        run: python tools/validation/check_split_real_imag_p3_double_single_contract.py
       - name: Verify split real/imag P3 A800 reference evidence
-        run: python tools/validate_split_real_imag_double_single_evidence.py
+        run: python tools/validation/validate_split_real_imag_double_single_evidence.py
       - name: Verify split real/imag statevector P4 device Double-Single contract
-        run: python tools/check_split_real_imag_p4_device_double_single_contract.py
+        run: python tools/validation/check_split_real_imag_p4_device_double_single_contract.py
       - name: Verify split real/imag P4 A800 reference evidence
-        run: python tools/validate_split_real_imag_device_double_single_evidence.py
+        run: python tools/validation/validate_split_real_imag_device_double_single_evidence.py
       - name: Verify split real/imag statevector P5 autograd/optimizer contract
-        run: python tools/check_split_real_imag_p5_autograd_optimizer_contract.py
+        run: python tools/validation/check_split_real_imag_p5_autograd_optimizer_contract.py
       - name: Verify split real/imag P5 optimizer A800 reference evidence
-        run: python tools/validate_split_real_imag_optimizer_evidence.py
+        run: python tools/validation/validate_split_real_imag_optimizer_evidence.py
       - name: Verify domestic single-card certification contract
-        run: python tools/check_domestic_single_card_contract.py
+        run: python tools/validation/check_domestic_single_card_contract.py
       - name: Verify operator capability manifest
-        run: python tools/operator_manifest.py --check
+        run: python tools/docs/operator_manifest.py --check
       - name: Verify batch parameter-shift coverage against the opcode declaration
-        run: python tools/check_parameter_shift_coverage_contract.py
+        run: python tools/validation/check_parameter_shift_coverage_contract.py
       - name: Verify parameter-shift Hessian against central differences
-        run: python tools/check_parameter_shift_hessian_contract.py
+        run: python tools/validation/check_parameter_shift_hessian_contract.py
       - name: Verify every differentiable opcode against an independent difference scheme
-        run: python tools/check_opcode_gradient_exactness.py
+        run: python tools/validation/check_opcode_gradient_exactness.py
       - name: Verify the gradient method and execution mode matrix by re-measuring it
-        run: python tools/check_gradient_methods_contract.py
+        run: python tools/validation/check_gradient_methods_contract.py
       - name: Verify the native gradient capability registration
-        run: python tools/check_native_gradients_contract.py
+        run: python tools/validation/check_native_gradients_contract.py
       - name: Verify the metric tensor against its independent routes
-        run: python tools/check_metric_tensor_contract.py
+        run: python tools/validation/check_metric_tensor_contract.py
       - name: Verify runtime contract schema
-        run: python tools/runtime_contract_schema.py --check
+        run: python tools/release/runtime_contract_schema.py --check
       - name: Verify documentation sources of truth
-        run: python tools/docs_source_of_truth.py --check
+        run: python tools/docs/docs_source_of_truth.py --check
       # `docs_source_of_truth.py --check` also resolves relative links, but only
       # for the ten documents listed under `stable_documents` in
       # `docs/source_of_truth.json`, and it never resolves anchors. A rename
       # elsewhere in the tree therefore breaks a reader's link without failing
       # any check. This step covers every tracked markdown file instead.
       - name: Verify documentation links and anchors
-        run: python tools/check_docs_links.py
+        run: python tools/docs/check_docs_links.py
       - name: Verify retained Stable Core against migration baseline
-        run: python tools/public_api_snapshot.py
+        run: python tools/architecture/public_api_snapshot.py
       - name: Verify proposed Stable Core classification
         run: python -m pytest tests/unit/test_public_api_candidate.py -q
       - name: Reject legacy root API in user-facing files
-        run: python tools/check_legacy_root_api_usage.py
+        run: python tools/architecture/check_legacy_root_api_usage.py
       - name: Verify correctness certification matrix
-        run: python tools/correctness_certification.py --check
+        run: python tools/validation/correctness_certification.py --check
       - name: Verify capability maturity claims
-        run: python tools/check_capability_maturity.py
+        run: python tools/validation/check_capability_maturity.py
       # The two modules below resolve each performance claim's recorded
       # `code_version` against this repository's history. A depth-1 clone cannot
       # separate a revision it never fetched from one the repository never
@@ -399,17 +401,17 @@ jobs:
       # the object database of the checkout that made it and no clone obtains it.
       # It needs the full history this job already fetches.
       - name: Verify evidence revision origins
-        run: python tools/check_evidence_revisions.py
+        run: python tools/release/check_evidence_revisions.py
       - name: Verify checked-in FlagOS reference evidence
         run: >-
-          python tools/validate_flagos_reference_evidence.py
+          python tools/validation/validate_flagos_reference_evidence.py
           artifacts/flagos_cuda_reference_a800_20260824.json
       - name: Verify branch-protection required-check contract
-        run: python tools/validate_required_checks.py
+        run: python tools/ci/validate_required_checks.py
       - name: Repository size and forbidden artifacts
-        run: python tools/check_repository_hygiene.py
+        run: python tools/architecture/check_repository_hygiene.py
       - name: Lazy import budget
-        run: python tools/check_import_time.py
+        run: python tools/validation/check_import_time.py
       - name: Retain resource limits and pytest timing reports
         if: ${{ always() && env.FQ_CI_REPORT_DIR != '' }}
         uses: ./.github/actions/upload-artifact
@@ -626,7 +628,7 @@ jobs:
           registry-token: ${{ github.token }}
           require-cached: ${{ runner.environment == 'self-hosted' }}
       - name: Measure CPU and memory limits
-        run: python -I tools/ci_cpu_budget.py
+        run: python -I tools/ci/ci_cpu_budget.py
       - name: Verify dependency consistency and the CPU-only PyTorch build
         run: |
           python -m pip check
@@ -642,7 +644,7 @@ jobs:
         if: github.event_name != 'pull_request'
         env:
           PYTEST_ADDOPTS: -n ${{ env.FQ_PYTEST_WORKERS }} --dist=worksteal --durations=50 --junitxml=${{ env.FQ_CI_REPORT_DIR }}/pytest.xml
-        run: python tools/ci_tier.py pr-default
+        run: python tools/ci/ci_tier.py pr-default
       - name: Prove JAX is absent from the PyTorch-only environment
         run: python -c "import importlib.util; assert importlib.util.find_spec('jax') is None"
       - name: Prove NumPy and the 3.11 standard library are absent
@@ -771,7 +773,7 @@ jobs:
           registry-token: ${{ github.token }}
           require-cached: ${{ runner.environment == 'self-hosted' }}
       - name: Measure CPU and memory limits
-        run: python -I tools/ci_cpu_budget.py
+        run: python -I tools/ci/ci_cpu_budget.py
       - name: Verify dependency consistency and the CPU-only PyTorch build
         run: |
           python -m pip check
@@ -779,7 +781,7 @@ jobs:
       - name: Run smoke and unit tests with bounded workers
         env:
           PYTEST_ADDOPTS: -n ${{ env.FQ_PYTEST_WORKERS }} --dist=worksteal --durations=50 --junitxml=${{ env.FQ_CI_REPORT_DIR }}/pytest.xml
-        run: python tools/ci_tier.py pr-default
+        run: python tools/ci/ci_tier.py pr-default
       - name: Prove JAX is absent from the PyTorch-only environment
         run: python -c "import importlib.util; assert importlib.util.find_spec('jax') is None"
       - name: Prove NumPy is absent from the PyTorch-only environment
@@ -890,7 +892,7 @@ jobs:
           registry-token: ${{ github.token }}
           require-cached: ${{ runner.environment == 'self-hosted' }}
       - name: Measure CPU and memory limits
-        run: python -I tools/ci_cpu_budget.py
+        run: python -I tools/ci/ci_cpu_budget.py
       - name: Verify dependency consistency and the CPU-only PyTorch build
         run: |
           python -m pip check
@@ -898,7 +900,7 @@ jobs:
       - name: Run integration tests with bounded workers
         env:
           PYTEST_ADDOPTS: -n ${{ env.FQ_PYTEST_WORKERS }} --dist=worksteal --durations=50 --junitxml=${{ env.FQ_CI_REPORT_DIR }}/pytest.xml
-        run: python tools/ci_tier.py pr-runtime --shard-count 8 --shard-index ${{ matrix.shard }}
+        run: python tools/ci/ci_tier.py pr-runtime --shard-count 8 --shard-index ${{ matrix.shard }}
       - name: Prove native distributed runtime does not require JAX
         if: matrix.shard == 0
         run: torchrun --standalone --nproc-per-node=2 tests/distributed/runtime_modes.py
@@ -1389,7 +1391,7 @@ jobs:
             'qiskit-aer==0.17.*' \
             'sympy>=1.13,<2'
           python -m pip check
-          python tools/check_qiskit_interop_contract.py
+          python tools/validation/check_qiskit_interop_contract.py
           python -m pytest tests/api_contract/test_open_source_golden_paths.py tests/team/ecosystem/test_qiskit_boundary_semantics.py tests/test_dynamic_conformance.py tests/test_qiskit_interop.py tests/test_qiskit_interop_conformance.py tests/optional/test_qiskit_aer_backend.py -m qiskit -q
           # Read every compiler Qiskit anchor on both certified versions.
           # The distributed tier has no Qiskit and cannot validate these comparisons.
@@ -1628,7 +1630,7 @@ jobs:
           set -euxo pipefail
           for version in ${OPTIONAL_VERSIONS}; do
             python -m pip install --upgrade "amazon-braket-sdk==${version}"
-            python tools/check_braket_interop_contract.py --verify-sdk
+            python tools/validation/check_braket_interop_contract.py --verify-sdk
             python -m pytest tests/test_amazon_braket_provider.py tests/test_braket_iqm_dynamic.py tests/test_braket_interop.py tests/test_braket_interop_conformance.py -m braket -q
             python -c "import sys, flagquantum; assert not any(name == 'braket' or name.startswith('braket.') for name in sys.modules)"
           done
@@ -1715,7 +1717,7 @@ jobs:
           print(f"CUDA-Q {expected}: explicit cu13 distribution")
           PYTHON
             python -m pip check
-            python tools/check_cudaq_export_contract.py --verify-sdk
+            python tools/validation/check_cudaq_export_contract.py --verify-sdk
             python -m pytest tests/test_cudaq_export.py tests/test_cudaq_export_conformance.py -m cudaq -q
             python -m examples.cudaq_bell_export
             python -c "import sys, flagquantum; assert not any(name == 'cudaq' or name.startswith('cudaq.') for name in sys.modules)"
@@ -1814,7 +1816,7 @@ jobs:
           set -euxo pipefail
           for version in ${OPTIONAL_VERSIONS}; do
             python -m pip install --upgrade "pennylane==${version}"
-            python tools/check_pennylane_interop_contract.py
+            python tools/validation/check_pennylane_interop_contract.py
             python -m pytest tests/team/ecosystem/test_pennylane_boundary_semantics.py tests/test_pennylane_interop.py tests/test_pennylane_interop_conformance.py tests/benchmark_contract/test_batched_statevector_corpus.py -m pennylane -q
             python -c "import sys, flagquantum; assert not any(name == 'pennylane' or name.startswith('pennylane.') for name in sys.modules)"
           done
@@ -1994,7 +1996,7 @@ jobs:
         run: |
           SOURCE_DATE_EPOCH=1767225600 python -m build --no-isolation --outdir dist-a
           SOURCE_DATE_EPOCH=1767225600 python -m build --no-isolation --outdir dist-b
-          python tools/verify_reproducible_builds.py dist-a dist-b
+          python tools/validation/verify_reproducible_builds.py dist-a dist-b
           mkdir -p dist
           cp dist-a/* dist/
       - name: Verify artifact contents
@@ -2052,12 +2054,12 @@ jobs:
           /tmp/fq-sdist/bin/python -c "from flagquantum.simulation.numerics.conformance import run_double_single_conformance; assert run_double_single_conformance().passed"
           popd
       - name: Write checksummed artifact manifest
-        run: python tools/artifact_manifest.py --output dist/manifest.json dist/*.whl dist/*.tar.gz
+        run: python tools/release/artifact_manifest.py --output dist/manifest.json dist/*.whl dist/*.tar.gz
       - name: Verify real QEC optional installations outside the checkout
         id: qec-installed
         timeout-minutes: 15
         run: >-
-          python tools/check_qec_installed_profiles.py
+          python tools/release/check_qec_installed_profiles.py
           --dist-dir dist
           --report-dir "${{ runner.temp }}/qec-installed-reports"
       - name: Retain installed QEC evidence
@@ -2212,7 +2214,7 @@ jobs:
           profile: coverage-py3.12
           registry-token: ${{ github.token }}
       - name: Budget launchers for this isolated CPU service
-        run: python -I tools/ci_cpu_budget.py --dedicated
+        run: python -I tools/ci/ci_cpu_budget.py --dedicated
       - name: Verify dependency consistency and CPU frameworks
         run: |
           python -m pip check
@@ -2225,7 +2227,7 @@ jobs:
           # The shared platform may set RANK=0 for its own one-process job.
           # Only an explicit torchrun child may define the tested rank topology.
           unset RANK WORLD_SIZE LOCAL_RANK LOCAL_WORLD_SIZE MASTER_ADDR MASTER_PORT GROUP_RANK NODE_RANK
-          python tools/ci_tier.py pr-distributed --command-index ${{ matrix.command }} --shard-count ${{ matrix.shards }} --shard-index ${{ matrix.shard }}
+          python tools/ci/ci_tier.py pr-distributed --command-index ${{ matrix.command }} --shard-count ${{ matrix.shards }} --shard-index ${{ matrix.shard }}
       - name: Verify the JAX rank-local gradient contract under two actual ranks
         if: matrix.command == 0 && matrix.shard == 0
         timeout-minutes: 10
@@ -2346,7 +2348,7 @@ jobs:
           registry-token: ${{ github.token }}
           require-cached: ${{ runner.environment == 'self-hosted' }}
       - name: Measure CPU and memory limits
-        run: python -I tools/ci_cpu_budget.py
+        run: python -I tools/ci/ci_cpu_budget.py
       - name: Verify dependency consistency and CPU frameworks
         run: |
           python -m pip check
@@ -2360,7 +2362,7 @@ jobs:
           if [ "$GITHUB_EVENT_NAME" = pull_request ]; then
             marker="$marker and not slow"
           fi
-          python -m pytest --collect-only -q -m "$marker" -p tools.pytest_shard \
+          python -m pytest --collect-only -q -m "$marker" -p tools.ci.pytest_shard \
             --fq-write-coverage-plan "$RUNNER_TEMP/coverage-plan" \
             --fq-coverage-plan-count "$FQ_COVERAGE_SHARDS"
       - uses: ./.github/actions/upload-artifact
@@ -2468,7 +2470,7 @@ jobs:
           registry-token: ${{ github.token }}
           require-cached: ${{ runner.environment == 'self-hosted' }}
       - name: Measure CPU and memory limits
-        run: python -I tools/ci_cpu_budget.py
+        run: python -I tools/ci/ci_cpu_budget.py
       - name: Verify dependency consistency and CPU frameworks
         run: |
           python -m pip check
@@ -2487,11 +2489,11 @@ jobs:
         run: |
           mkdir -p "$RUNNER_TEMP/fq-coverage"
           export COVERAGE_FILE="$RUNNER_TEMP/fq-coverage/.coverage.${{ matrix.shard }}"
-          plan="$(python -m tools.ci_coverage_plan "$FQ_COVERAGE_PLAN" ${{ matrix.shard }})"
+          plan="$(python -m tools.ci.ci_coverage_plan "$FQ_COVERAGE_PLAN" ${{ matrix.shard }})"
           python -m pytest "@$plan" -m "(smoke or unit or integration or jax) and not slow and not qiskit and not cudaq and not triton" \
             -n ${{ env.FQ_PYTEST_WORKERS }} --dist=worksteal --durations=50 \
-            -p tools.pytest_shard --cov=flagquantum --cov-report= \
-            -p tools.pytest_stack_watchdog --fq-stack-dump-after=300 -o faulthandler_timeout=0
+            -p tools.ci.pytest_shard --cov=flagquantum --cov-report= \
+            -p tools.ci.pytest_stack_watchdog --fq-stack-dump-after=300 -o faulthandler_timeout=0
       - name: Run this exact coverage partition (integration revisions)
         if: github.event_name != 'pull_request'
         env:
@@ -2499,11 +2501,11 @@ jobs:
         run: |
           mkdir -p "$RUNNER_TEMP/fq-coverage"
           export COVERAGE_FILE="$RUNNER_TEMP/fq-coverage/.coverage.${{ matrix.shard }}"
-          plan="$(python -m tools.ci_coverage_plan "$FQ_COVERAGE_PLAN" ${{ matrix.shard }})"
+          plan="$(python -m tools.ci.ci_coverage_plan "$FQ_COVERAGE_PLAN" ${{ matrix.shard }})"
           python -m pytest "@$plan" -m "(smoke or unit or integration or jax) and not qiskit and not cudaq and not triton" \
             -n ${{ env.FQ_PYTEST_WORKERS }} --dist=worksteal --durations=50 \
-            -p tools.pytest_shard --cov=flagquantum --cov-report= \
-            -p tools.pytest_stack_watchdog --fq-stack-dump-after=300 -o faulthandler_timeout=0
+            -p tools.ci.pytest_shard --cov=flagquantum --cov-report= \
+            -p tools.ci.pytest_stack_watchdog --fq-stack-dump-after=300 -o faulthandler_timeout=0
       - uses: ./.github/actions/upload-artifact
         timeout-minutes: 6
         with:
@@ -2645,8 +2647,9 @@ jobs:
           python -m coverage combine "$FQ_COVERAGE_INPUTS"
           python -m coverage xml
       - name: Enforce coverage policy
-        run: python tools/check_coverage.py
+        run: python tools/ci/check_coverage.py
       - uses: ./.github/actions/upload-artifact
+        if: ${{ always() && hashFiles('coverage.xml') != '' }}
         timeout-minutes: 6
         with:
           name: coverage-${{ github.sha }}
@@ -2750,7 +2753,7 @@ jobs:
         # suffixes such as PyTorch's `+cpu`. `--disable-pip --no-deps` prevents
         # the audit from resolving or downloading a different environment.
         run: |
-          python tools/write_audit_requirements.py audit-requirements.txt
+          python tools/validation/write_audit_requirements.py audit-requirements.txt
           # Vulnerability queries contact PyPI directly, even on mirror-backed
           # runners. Allow slow responses while bounding the complete audit step.
           pip-audit --strict --disable-pip --no-deps --requirement audit-requirements.txt --timeout 60
@@ -2759,7 +2762,7 @@ jobs:
       - name: Generate CycloneDX SBOM
         run: cyclonedx-py environment --output-format JSON --output-file sbom.cdx.json
       - name: Validate SBOM
-        run: python tools/validate_sbom.py sbom.cdx.json
+        run: python tools/release/validate_sbom.py sbom.cdx.json
       - uses: ./.github/actions/upload-artifact
         timeout-minutes: 6
         with:

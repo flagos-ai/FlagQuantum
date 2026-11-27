@@ -33,7 +33,10 @@ import argparse
 
 import torch
 
-from flagquantum.algorithms.qarm import frequent_itemset_operator, run_frequent_itemset
+from flagquantum.algorithms.quantum_ml.qarm import (
+    frequent_itemset_operator,
+    run_frequent_itemset,
+)
 
 DATABASE = torch.tensor([[1, 0], [1, 1]])
 THRESHOLD = 2
@@ -69,7 +72,9 @@ def main() -> None:
     print(f"  {'':<18}  the coherent database access the cited paper's count assumes")
     print()
     print("inputs")
-    print(f"  {'database':<18}: {DATABASE.tolist()} ({transactions} transactions, {items} items)")
+    print(
+        f"  {'database':<18}: {DATABASE.tolist()} ({transactions} transactions, {items} items)"
+    )
     print(f"  {'threshold':<18}: {THRESHOLD} (inclusive)")
     print(f"  {'shots':<18}: {args.shots}")
     print(f"  {'seed':<18}: {args.seed}")
@@ -97,8 +102,12 @@ def main() -> None:
         )
     print()
     print("take away")
-    print("  the estimate is read off the counting register as the fraction the marking")
-    print("  operator selects, and the support it marks is filled from the database entry")
+    print(
+        "  the estimate is read off the counting register as the fraction the marking"
+    )
+    print(
+        "  operator selects, and the support it marks is filled from the database entry"
+    )
     print("  by entry in Python. The comparison at the threshold is inclusive, so the")
     print("  item whose support is exactly 2 counts here. A threshold below one, or")
     print("  above the transaction count, is refused rather than run: every item meets")

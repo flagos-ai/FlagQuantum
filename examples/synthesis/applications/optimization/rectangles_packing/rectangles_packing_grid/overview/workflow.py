@@ -6,7 +6,7 @@ from dataclasses import dataclass
 import torch
 
 from flagquantum import synth
-from flagquantum.algorithms import CobylaOptimizer
+from flagquantum.algorithms.optimizers.cobyla import CobylaOptimizer
 
 from .model import PackingModel, Placement, make_model, unpack
 from .quantum import LAYERS, probabilities, program_builder

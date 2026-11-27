@@ -5,7 +5,7 @@ import pytest
 from flagquantum.compiler._construction.codegen.registers import (
     schedule_register_program,
 )
-from flagquantum.compiler._hybrid.verifier import HybridVerificationError
+from flagquantum.compiler.frontends._structured.verifier import HybridVerificationError
 from tests.register_program_cases import Registers
 
 pytestmark = pytest.mark.unit

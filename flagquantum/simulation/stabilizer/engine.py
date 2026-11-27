@@ -16,10 +16,11 @@ from typing import Any
 
 import torch
 
+from flagquantum.core.operators.channels import KrausChannel
+from flagquantum.core.operators.schema import canonical_opcode, get_operator_schema
+
 from ...core.ir import CircuitIR, MeasurementNode, ensure_circuit_ir
-from ...core.operator_schema import canonical_opcode, get_operator_schema
 from ...errors import CapabilityError, FlagQuantumError, ValidationError
-from ...noise import KrausChannel
 from ._circuit_text import (
     _annotated_stim_source as _annotated_stim_source,
 )

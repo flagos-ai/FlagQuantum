@@ -9,10 +9,10 @@ the release.
 """
 
 import flagquantum as fq
-from flagquantum.noise import (
+from flagquantum.core.noise import NoiseModel
+from flagquantum.core.noise_profile import (
     DeviceNoiseProfile,
     GateDuration,
-    NoiseModel,
     QubitNoiseCalibration,
 )
 

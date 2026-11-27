@@ -1,5 +1,7 @@
 # Services
 
+This directory maintains published service entry points. Workflows are implemented in Algorithms, Synth, Compiler, Runtime and Ecosystem according to their responsibility. See the [migration ledger](../../docs/development/INDEPENDENT_STRUCTURE_MIGRATION.md) before adding an implementation here.
+
 ## Synthesis module ownership
 
 | Module | Responsibility |
@@ -168,6 +170,6 @@ an isolated copy so an adapter cannot mutate process-wide contract state.
 
 ```bash
 python -m pytest tests/team/services tests/test_service_preflight.py -q
-python tools/check_architecture.py
+python tools/architecture/check_architecture.py
 python tools/check_dependency_policy.py
 ```

@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import pytest
 
-from flagquantum.compiler._hybrid import (
+from flagquantum.compiler.frontends._structured import (
     BOOL,
     INDEX,
     QUANTUM_EFFECT,

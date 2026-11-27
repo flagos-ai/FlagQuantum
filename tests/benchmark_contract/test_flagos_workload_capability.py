@@ -12,7 +12,7 @@ from flagquantum.runtime.distributed.workload_capability import (
     FlagOSWorkloadCapabilityError,
     build_flagos_workload_capability_matrix,
 )
-from tools.audit_flagos_workload_capability import (
+from tools.validation.audit_flagos_workload_capability import (
     DEFAULT_CONFORMANCE,
     DEFAULT_OUTPUT,
     DEFAULT_SCALE,

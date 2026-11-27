@@ -22,12 +22,12 @@ from flagquantum.simulation import (
     evolve_density_matrix,
     plan_density_matrix_evolution,
 )
-from flagquantum.simulation.lindblad import (
+from flagquantum.simulation.dynamics.generator import Liouvillian
+from flagquantum.simulation.dynamics.integrators import advance_interval
+from flagquantum.simulation.dynamics.lindblad import (
     _normalize_collapse_operators,
     _normalize_hamiltonian,
 )
-from flagquantum.simulation.lindblad_generator import Liouvillian
-from flagquantum.simulation.lindblad_integrators import advance_interval
 from flagquantum.simulation.matrix_free_exponential import exponential_action
 from flagquantum.simulation.matrix_free_hamiltonian import PauliSum, PauliSumTerm
 from flagquantum.simulation.matrix_free_linear_solve import gmres

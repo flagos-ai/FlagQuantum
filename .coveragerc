@@ -4,7 +4,7 @@ relative_files = True
 omit =
     flagquantum/benchmarking/*
     flagquantum/runtime/executors/statevector/triton.py
-    flagquantum/kernels/triton/*
+    flagquantum/simulation/kernels/triton/*
     flagquantum/ecosystem/cudaq/*
 
 [report]

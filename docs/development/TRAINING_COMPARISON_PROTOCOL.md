@@ -145,7 +145,7 @@ memory. All cases are single-process CPU comparisons with
 
 ```bash
 python -m pytest tests/benchmark_contract/test_training_comparison.py -q
-python tools/check_architecture.py
+python tools/architecture/check_architecture.py
 python tools/check_dependency_policy.py
 ```
 

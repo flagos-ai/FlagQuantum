@@ -4,12 +4,12 @@ from dataclasses import dataclass
 
 import torch
 
-from flagquantum.algorithms.molecular import (
+from flagquantum.algorithms.chemistry.molecular import (
     create_molecular_hamiltonian,
     exact_ground_state_energy,
     second_quantized_hamiltonian,
 )
-from flagquantum.observables.fermion import FermionOperator
+from flagquantum.core.operators.fermion import FermionOperator
 
 GEOMETRY = (("Li", (0.833472, 0.0, 0.0)), ("H", (-0.833472, 0.0, 0.0)))
 BASIS = "sto-3g"

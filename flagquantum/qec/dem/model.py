@@ -58,7 +58,7 @@ from typing import TYPE_CHECKING, Any
 
 import torch
 
-from flagquantum.noise import NoiseModel
+from flagquantum.core.noise import NoiseModel
 from flagquantum.qec.circuits.memory import MemoryCircuit
 from flagquantum.qec.codes import StabilizerCode
 from flagquantum.qec.codes._compat import _retain_module

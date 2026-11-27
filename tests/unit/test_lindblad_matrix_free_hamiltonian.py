@@ -13,8 +13,9 @@ import pytest
 import torch
 
 import flagquantum as fq
+from flagquantum.core.operators.embedding import expand_operator
+from flagquantum.core.operators.observable import Observable, _PauliTerm
 from flagquantum.errors import SerializationError
-from flagquantum.observables import Observable, _PauliTerm
 from flagquantum.operators import SuperOperator
 from flagquantum.simulation import (
     EvolutionValidationError,
@@ -22,8 +23,7 @@ from flagquantum.simulation import (
     evolve_density_matrix,
     plan_density_matrix_evolution,
 )
-from flagquantum.simulation import lindblad as lindblad_module
-from flagquantum.simulation.density_matrix import expand_operator
+from flagquantum.simulation.dynamics import lindblad as lindblad_module
 from flagquantum.simulation.matrix_free_hamiltonian import PauliSum, PauliSumTerm
 
 pytestmark = pytest.mark.unit
@@ -769,7 +769,7 @@ def test_planning_does_not_materialize_the_hamiltonian(
 def test_the_serialized_request_schema_is_unchanged() -> None:
     """The plan payload keeps its shape, so stored plans stay readable."""
 
-    from flagquantum.lindblad import plan as build_plan
+    from flagquantum.runtime.evolution import plan as build_plan
 
     hamiltonian = 0.5 * fq.X(0) + 0.25 * fq.Z(0)
     plan = build_plan(hamiltonian, "0", [0.0, 0.1], n_qubits=1)

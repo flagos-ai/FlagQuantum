@@ -3,7 +3,7 @@ from unittest.mock import Mock
 import pytest
 
 import flagquantum as fq
-from flagquantum.deployment import CloudBackendProfile
+from flagquantum.compute.remote.packages import CloudBackendProfile
 from flagquantum.testing import InMemoryRemoteTarget
 
 pytestmark = pytest.mark.unit
@@ -38,7 +38,8 @@ def _configure(monkeypatch: pytest.MonkeyPatch) -> None:
     )
     monkeypatch.setenv("AZURE_QUANTUM_TARGET_QUBITS", "20")
     monkeypatch.setattr(
-        "flagquantum.remote.qpu.execution.AzureQuantumProvider", _AzureTestTarget
+        "flagquantum.compute.remote.qpu.execution.AzureQuantumProvider",
+        _AzureTestTarget,
     )
 
 
@@ -74,7 +75,7 @@ def test_fq_run_azure_rejects_explicit_compiler_before_provider(
 ) -> None:
     provider = Mock(side_effect=AssertionError("unexpected provider creation"))
     monkeypatch.setattr(
-        "flagquantum.remote.qpu.execution.AzureQuantumProvider", provider
+        "flagquantum.compute.remote.qpu.execution.AzureQuantumProvider", provider
     )
 
     with pytest.raises(TypeError, match="does not accept compiler"):
@@ -90,7 +91,7 @@ def test_fq_run_azure_rejects_explicit_compiler_before_provider(
 def test_fq_run_azure_rejects_expectation_before_provider(monkeypatch) -> None:
     provider = Mock(side_effect=AssertionError("unexpected provider creation"))
     monkeypatch.setattr(
-        "flagquantum.remote.qpu.execution.AzureQuantumProvider", provider
+        "flagquantum.compute.remote.qpu.execution.AzureQuantumProvider", provider
     )
 
     with pytest.raises(ValueError, match="full-register fq.counts"):
@@ -106,7 +107,7 @@ def test_fq_run_azure_rejects_expectation_before_provider(monkeypatch) -> None:
 def test_fq_run_azure_rejects_physical_mapping_before_provider(monkeypatch) -> None:
     provider = Mock(side_effect=AssertionError("unexpected provider creation"))
     monkeypatch.setattr(
-        "flagquantum.remote.qpu.execution.AzureQuantumProvider", provider
+        "flagquantum.compute.remote.qpu.execution.AzureQuantumProvider", provider
     )
 
     with pytest.raises(TypeError, match="does not accept target_qubits"):
@@ -126,7 +127,7 @@ def test_fq_run_azure_requires_workspace_before_provider(
     monkeypatch.setenv("AZURE_QUANTUM_TARGET_QUBITS", "20")
     provider = Mock(side_effect=AssertionError("unexpected provider creation"))
     monkeypatch.setattr(
-        "flagquantum.remote.qpu.execution.AzureQuantumProvider", provider
+        "flagquantum.compute.remote.qpu.execution.AzureQuantumProvider", provider
     )
 
     with pytest.raises(RuntimeError, match="AZURE_QUANTUM_RESOURCE_ID"):
@@ -145,7 +146,7 @@ def test_fq_run_azure_requires_authoritative_target_width_before_provider(
     monkeypatch.delenv("AZURE_QUANTUM_TARGET_QUBITS", raising=False)
     provider = Mock(side_effect=AssertionError("unexpected provider creation"))
     monkeypatch.setattr(
-        "flagquantum.remote.qpu.execution.AzureQuantumProvider", provider
+        "flagquantum.compute.remote.qpu.execution.AzureQuantumProvider", provider
     )
 
     with pytest.raises(RuntimeError, match="AZURE_QUANTUM_TARGET_QUBITS"):

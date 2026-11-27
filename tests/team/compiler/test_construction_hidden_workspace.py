@@ -10,7 +10,7 @@ from flagquantum.compiler._construction.codegen.registers import (
 from flagquantum.compiler._construction.verification.register_profile import (
     verify_register_program,
 )
-from flagquantum.compiler._hybrid.model import Block, Region
+from flagquantum.compiler.frontends._structured.model import Block, Region
 from flagquantum.ecosystem._qmod.adapter import SUPPORTED_SOURCE_VERSION, parse_qmod
 
 pytestmark = pytest.mark.unit

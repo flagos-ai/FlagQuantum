@@ -24,7 +24,7 @@ import torch
 from benchmarks.compiler_one_qubit_product_reuse import Measurement, _git
 from flagquantum.compiler.optimization import two_qubit_optimization as current
 from flagquantum.core.ir import CircuitIR, Instruction
-from flagquantum.core.operator_schema import get_operator_schema
+from flagquantum.core.operators.schema import get_operator_schema
 
 _SOURCE = "flagquantum/compiler/optimization/two_qubit_optimization.py"
 _Rewrite = Callable[[CircuitIR], CircuitIR]

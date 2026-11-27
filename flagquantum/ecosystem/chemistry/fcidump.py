@@ -9,8 +9,8 @@ from typing import TextIO
 
 import torch
 
-from ...algorithms.chemistry_domain.problem import MolecularProblem
-from ...core.algebra.pauli import count
+from flagquantum.algorithms.chemistry.models.problem import MolecularProblem
+from flagquantum.core.operators.pauli import count
 
 
 def _header(stream: TextIO) -> dict[str, tuple[int, ...]]:

@@ -5,7 +5,7 @@
 **Surface:** the admission rule of `flagquantum/algorithms/primitives`, its export list,
 and the differentiability of the two amplitude entry points
 **Contract:** `contracts/primitives-admission-contract.toml` (new)
-**Gate:** `tools/check_primitives_admission_contract.py` (new)
+**Gate:** `tools/validation/check_primitives_admission_contract.py` (new)
 **Conformance:** `tests/unit/test_primitives_admission_contract.py`
 **Guide:** [`docs/guides/CIRCUIT_COMPOSITION.md`](../guides/CIRCUIT_COMPOSITION.md), and
 the admission paragraph of [`docs/guides/ALGORITHMS.md`](../guides/ALGORITHMS.md)
@@ -168,7 +168,7 @@ paragraph are different documents. What is not allowed is for one of them to be 
 about a dimension, because then a contributor reading *that* one is reading a different
 rule.
 
-`tools/check_primitives_admission_contract.py` therefore reads the three files the
+`tools/validation/check_primitives_admission_contract.py` therefore reads the three files the
 contract names in its top-level `stated_in` list and requires each of them to write each
 dimension's marker:
 
@@ -195,7 +195,7 @@ writes 'differentiability', so the rule a contributor reads there is a different
 
 ## The gate, and what it refuses
 
-`tools/check_primitives_admission_contract.py` reads the contract against the tree and
+`tools/validation/check_primitives_admission_contract.py` reads the contract against the tree and
 refuses six kinds of drift. Each is negative-tested in
 `tests/unit/test_primitives_admission_contract.py` against a payload the test builds
 itself, so the refusal is exercised rather than described:
@@ -263,7 +263,7 @@ The guide carries the two losses that make the point it is making, and both were
 ## Evidence
 
 ```console
-$ python tools/check_primitives_admission_contract.py
+$ python tools/validation/check_primitives_admission_contract.py
 Primitives admission contract passed: 18 exports, 9 admitted as public units
 
 $ python -m pytest tests/unit/test_primitives_admission_contract.py -q
@@ -273,17 +273,17 @@ $ python -m pytest tests/unit/test_circuit_composition_guide.py \
       tests/test_documentation_entry_examples.py -q
 5 passed, 1 skipped
 
-$ python tools/check_qubit_vocabulary.py
+$ python tools/architecture/check_qubit_vocabulary.py
 Qubit vocabulary contract passed: 341 of 341 baseline sites retired, 11 kept as deprecated aliases
 …
 Qubit vocabulary contract passed: 117 of 122 attribute sites retired, 5 kept as deprecated aliases
 …
 Qubit vocabulary call sites: 0 keywords passed that their callee rejects (invariant: 0)
 
-$ python tools/check_circuit_composition_contract.py
+$ python tools/validation/check_circuit_composition_contract.py
 Circuit composition contract passed
 
-$ python tools/check_docs_links.py
+$ python tools/docs/check_docs_links.py
 Checked 547 markdown files; all local links and anchors resolve.
 ```
 

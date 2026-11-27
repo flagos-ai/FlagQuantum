@@ -211,7 +211,7 @@ retained beside this proposal.
 10. `tests/team/simulation/test_terminal_readout_conversion_conformance.py` (new)
 11. `tests/team/simulation/test_stim_record_conversion_conformance.py` (retain old cases, adapt private helper import if moved)
 12. `tests/unit/test_qec_installed_profiles.py`
-13. `tools/qec_installed_smoke.py`
+13. `tools/release/qec_installed_smoke.py`
 14. `examples/qec/terminal_measurement_conversion.py` (new)
 15. `examples/README.md`
 16. `tests/api_contract/test_public_docstring_examples.py`
@@ -236,7 +236,7 @@ No workflow changes, frozen fixture changes or hardware runs.
 ## Verification commands
 
 ```bash
-python tools/check_team_scope.py --team integration --files <the-17-listed-paths>
+python tools/architecture/check_team_scope.py --team integration --files <the-17-listed-paths>
 python -m pytest -q \
   tests/qec/test_terminal_measurement_conversion.py \
   tests/team/simulation/test_terminal_readout_conversion_conformance.py \
@@ -247,11 +247,11 @@ python -m pytest -q \
   tests/api_contract/test_public_docstring_examples.py \
   tests/test_algorithm_examples.py::test_examples_readme_names_every_example_that_does_not_use_the_root_alias
 python -m examples.qec.terminal_measurement_conversion
-python tools/check_architecture.py
+python tools/architecture/check_architecture.py
 python tools/check_dependency_policy.py
-python tools/check_docs_links.py
-python tools/docs_source_of_truth.py --check
-python tools/check_qec_installed_profiles.py --dist-dir dist --report-dir /tmp/qec-installed-reports
+python tools/docs/check_docs_links.py
+python tools/docs/docs_source_of_truth.py --check
+python tools/release/check_qec_installed_profiles.py --dist-dir dist --report-dir /tmp/qec-installed-reports
 ```
 
 Use Black, minimum Ruff and strict Mypy on changed Python paths. Also run the

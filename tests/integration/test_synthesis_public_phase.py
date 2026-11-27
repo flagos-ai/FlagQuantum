@@ -9,7 +9,7 @@ import torch
 import flagquantum as fq
 from flagquantum import _api, synth
 from flagquantum.errors import PlanningError
-from flagquantum.services import synthesis
+from flagquantum.synth import _workflow as synthesis
 from tests.synthesis_workflow_helpers import check_state
 
 pytestmark = pytest.mark.integration
@@ -228,7 +228,7 @@ def test_native_phase_is_refused_before_source_acquisition(kind, tmp_path, monke
     "target", [{"topology": "line"}, {"basis": ("x", "cx")}, {"basis": []}]
 )
 def test_phase_targets_refuse_before_capture_or_basis_iteration(target, monkeypatch):
-    from flagquantum.services import synthesis
+    from flagquantum.synth import _workflow as synthesis
 
     monkeypatch.setattr(
         synthesis,

@@ -8,7 +8,7 @@ to the same classes, exceptions and enums, without loading a second copy.
 import sys
 from importlib import import_module
 
-from ... import realtime as _realtime
+from flagquantum.compute import realtime as _realtime
 
 __all__ = _realtime.__all__
 

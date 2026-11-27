@@ -13,14 +13,14 @@ decides, not how a change travels.
 | Role | What it is | Who is in it |
 | --- | --- | --- |
 | Contributor | Anyone who opens an issue or a pull request. No membership step and no form to fill in. | Anyone |
-| Team | One of the 12 entries in `team-ownership.toml`. **A path-ownership classification, not a people roster.** | Unstaffed; see below |
-| Integration | The role that resolves protected paths and cross-team changes. `--team integration` is the supported bypass in `tools/check_team_scope.py`. | The maintainer |
+| Team | One of the 12 entries in `config/team-ownership.toml`. **A path-ownership classification, not a people roster.** | Unstaffed; see below |
+| Integration | The role that resolves protected paths and cross-team changes. `--team integration` is the supported bypass in `tools/architecture/check_team_scope.py`. | The maintainer |
 | Maintainer | Merge rights on `main`; decides releases, API authorization, and this document. | One account today |
 
 ### The teams are not staffed
 
-`team-ownership.toml` defines 11 teams, and each owns a set of paths. They are a
-classification mechanism: `tools/check_team_scope.py` resolves *which domain owns this
+`config/team-ownership.toml` defines 11 teams, and each owns a set of paths. They are a
+classification mechanism: `tools/architecture/check_team_scope.py` resolves *which domain owns this
 path*, which is what makes a boundary checkable. They are **not** eleven working groups.
 
 Read the roster honestly: there is one maintainer. No branch named in that file has ever
@@ -33,12 +33,12 @@ as a claim. `docs/development/INTEGRATION_WORKFLOW.md` records the measurements.
 | Class | Examples | Who decides |
 | --- | --- | --- |
 | Ordinary change | A domain's internal implementation, its tests, and its documentation. | The required checks on the pull request, merged by the maintainer |
-| Protected surface | `AGENTS.md`, `architecture.toml`, `team-ownership.toml`, `contracts/**`, `.github/**`, `tools/**`, `pyproject.toml`, `flagquantum/core/ir/**` | Integration owner. A separate integration change, before the team implementation proceeds |
+| Protected surface | `AGENTS.md`, `config/architecture.toml`, `config/team-ownership.toml`, `contracts/**`, `.github/**`, `tools/**`, `pyproject.toml`, `flagquantum/core/ir/**` | Integration owner. A separate integration change, before the team implementation proceeds |
 | Stable Core API | The 34 exports in `docs/public_api_v1.json` | An API change proposal plus recorded authorization, per `AGENTS.md` |
-| Capability level | A level in `capability-maturity.toml` | Evidence that satisfies `tools/check_capability_maturity.py`, approved by Integration |
+| Capability level | A level in `capability-maturity.toml` | Evidence that satisfies `tools/validation/check_capability_maturity.py`, approved by Integration |
 | Release | `flagquantum/version.py`, tags, release notes | Maintainer |
 
-The distinction that matters is the second row. `tools/check_team_scope.py` refuses a
+The distinction that matters is the second row. `tools/architecture/check_team_scope.py` refuses a
 team-authored change to a protected path, which is why a change that *starts* as an
 implementation can become an integration change. The rule is mechanical rather than a
 matter of judgment.
@@ -110,7 +110,7 @@ Both halves are now stated rather than left nominal:
 - **The required checks are the review of record for `main`.** Each of the eight must
   complete successfully, on a head branch up to date with `main`, before a merge is
   accepted — including a merge by the maintainer, because `enforce_admins` is on.
-  `.github/required-checks.json` records the names and `tools/validate_required_checks.py`
+  `.github/required-checks.json` records the names and `tools/ci/validate_required_checks.py`
   proves each name is one a workflow job produces, so a required check cannot be a name
   that reports nothing. The name is the check run's own name — the job key, or the job's
   `name:` where it declares one, with GitHub's matrix suffix — and not a
@@ -148,16 +148,16 @@ an authority that already exists.
 
 **`MAINTAINERS.md` — not added.** `docs/development/MULTI_TEAM_DEVELOPMENT.md` states of
 the machine-readable authority that "This document does not maintain a second roster." A
-`MAINTAINERS.md` beside a `team-ownership.toml` is exactly such a second roster, and the
+`MAINTAINERS.md` beside a `config/team-ownership.toml` is exactly such a second roster, and the
 repository already has a machine-checked one. The maintainer and the domain approvers are
 recorded above, in the document that explains how the decision is made.
 
-**`.github/CODEOWNERS` — not added.** `team-ownership.toml` plus
-`tools/check_team_scope.py` already are the path-ownership authority, and the classification
+**`.github/CODEOWNERS` — not added.** `config/team-ownership.toml` plus
+`tools/architecture/check_team_scope.py` already are the path-ownership authority, and the classification
 is enforced on every pull request by `ci.yml`. A `CODEOWNERS` file would be a second
 statement of the same fact, which `AGENTS.md` prohibits, and it would have no effect on
 merging today because `require_code_owner_reviews` is `false`. Generating it from
-`team-ownership.toml` would be a defensible alternative and is an open question below;
+`config/team-ownership.toml` would be a defensible alternative and is an open question below;
 hand-maintaining it would not be.
 
 ## Security
@@ -168,7 +168,7 @@ rather than the monthly dependency cadence.
 
 ## Amending this document
 
-This file is a protected integration path in `team-ownership.toml`, so amending it is an
+This file is a protected integration path in `config/team-ownership.toml`, so amending it is an
 integration change. A change that names a new maintainer, a new domain approver, or a new
 decision class should state the measurement that supports it, in the same way the tables
 above do.
@@ -180,7 +180,7 @@ above do.
    would place a differently licensed document in an Apache-2.0 repository. The current
    [code of conduct](CODE_OF_CONDUCT.md) states the standard this project already had
    and says plainly that it is not the Covenant.
-2. **Generate `.github/CODEOWNERS` from `team-ownership.toml`?** There is one obvious
+2. **Generate `.github/CODEOWNERS` from `config/team-ownership.toml`?** There is one obvious
    benefit — GitHub would surface the owning domain in the review UI without any rule
    change — and one obvious cost: a generated file needs a check that it is current, which
    is a new protected tool.

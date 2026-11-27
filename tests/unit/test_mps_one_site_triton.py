@@ -5,7 +5,7 @@ import torch
 
 pytest.importorskip("triton")
 
-from flagquantum.kernels.triton.mps_one_site import fused_mps_one_site
+from flagquantum.simulation.kernels.triton.mps_one_site import fused_mps_one_site
 
 pytestmark = [pytest.mark.unit, pytest.mark.triton, pytest.mark.gpu]
 

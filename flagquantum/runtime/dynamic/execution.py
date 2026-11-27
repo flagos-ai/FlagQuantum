@@ -5,11 +5,12 @@ from time import perf_counter
 
 import torch
 
+from flagquantum.core.noise import NoiseModel
+from flagquantum.core.operators.schema import canonical_opcode
+
 from ...core.classical_control import validate_classical_control
 from ...core.ir import Instruction
-from ...core.operator_schema import canonical_opcode
 from ...errors import ValidationError
-from ...noise import NoiseModel
 from ...simulation.gate_matrix import gate_matrix
 from ...simulation.statevector.operations import (
     _DIAGONAL_STATEVECTOR_GATES,

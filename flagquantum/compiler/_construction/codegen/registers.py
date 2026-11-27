@@ -14,11 +14,19 @@ from typing import Literal
 
 import torch
 
+from flagquantum.compiler.frontends._structured.model import (
+    Block,
+    HybridProgram,
+    Operation,
+    Region,
+    Value,
+    ValueId,
+)
+from flagquantum.compiler.frontends._structured.verifier import Diagnostic
+from flagquantum.core.operators.channels import amplitude_damping_channel
+
 from ....core._composition import controlled_instruction, inverted_instruction
 from ....core.ir import CircuitIR, Instruction
-from ....noise import amplitude_damping_channel
-from ..._hybrid.model import Block, HybridProgram, Operation, Region, Value, ValueId
-from ..._hybrid.verifier import Diagnostic
 from ...lowering.noise import _encode_channel_instruction
 from ...optimization.canonicalization import merge_self_inverse
 from ...optimization.commutation_cancellation import cancel_commuting_self_inverse

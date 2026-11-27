@@ -9,7 +9,7 @@ from pathlib import Path
 import pytest
 
 from flagquantum.runtime.observability.performance import PerformanceRecord
-from tools.evaluate_performance_artifact import (
+from tools.validation.evaluate_performance_artifact import (
     CLEAN,
     CONTENDED,
     FOREIGN_MEMORY_FLOOR_MIB,

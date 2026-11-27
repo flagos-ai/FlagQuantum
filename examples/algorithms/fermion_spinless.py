@@ -16,7 +16,7 @@ from flagquantum.algorithms.fermion.hubbard import (
 from flagquantum.algorithms.fermion.numerics import pauli_matrix
 from flagquantum.algorithms.fermion.observables import to_observable
 from flagquantum.algorithms.primitives.state_preparation import append_arbitrary_state
-from flagquantum.observables.fermion import FermionOperator, number
+from flagquantum.core.operators.fermion import FermionOperator, number
 
 
 def main(*, periodic: bool = False) -> None:

@@ -66,7 +66,7 @@ Under those tests the following are non-goals.
 | The complete QEC stack | Not added beyond the current minimal set | Quantum error correction is a research programme with its own abstractions, decoders, and hardware assumptions. A minimal, self-contained set is supported so that error-correction results are reproducible inside the framework; growing it into the ecosystem-scale stack of a dedicated project is not planned here. | `flagquantum/qec/` (codes, decoders, detectors, Pauli, repetition) and `flagquantum/lindblad/` are the minimal set; `capability-maturity.toml` states each one's scope |
 
 The repository-language rule (English in-repository) is not a Qiskit feature decision. It is owned by
-`AGENTS.md` and enforced by `tools/check_repository_language.py`, and this ADR neither restates nor
+`AGENTS.md` and enforced by `tools/architecture/check_repository_language.py`, and this ADR neither restates nor
 extends it.
 
 ### How a non-goal is revisited
@@ -124,10 +124,10 @@ This ADR is satisfied by review, not by a machine check. The properties a review
    workstreams. An item in both places is a defect in one of them.
 4. Each cited path resolves.
 
-Existing checks that remain relevant and unchanged: `tools/check_capability_maturity.py` and
-`tools/docs_source_of_truth.py --check` for the maturity matrix,
-`tools/check_interop_capability_gap_matrix.py` for the per-adapter `out_of_scope` reasons, and
-`tools/check_architecture.py` for layer boundaries. None of them is extended by this decision.
+Existing checks that remain relevant and unchanged: `tools/validation/check_capability_maturity.py` and
+`tools/docs/docs_source_of_truth.py --check` for the maturity matrix,
+`tools/validation/check_interop_capability_gap_matrix.py` for the per-adapter `out_of_scope` reasons, and
+`tools/architecture/check_architecture.py` for layer boundaries. None of them is extended by this decision.
 
 ## Open Questions
 

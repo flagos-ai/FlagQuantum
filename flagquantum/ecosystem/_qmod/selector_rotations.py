@@ -8,10 +8,11 @@ from dataclasses import replace
 from operator import eq, ge, gt, le, lt, ne
 from typing import TYPE_CHECKING, NoReturn
 
+from flagquantum.compiler.frontends._structured.model import Value
+
 from ...compiler._construction.semantics.rotation_table import (
     emit_rotation_table as emit_shared_rotation_table,
 )
-from ...compiler._hybrid.model import Value
 from .angles import REAL_LITERAL
 from .syntax import Expression, Function, Statement, Token, reject
 

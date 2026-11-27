@@ -8,7 +8,8 @@ import torch
 
 import flagquantum as fq
 from flagquantum import synth
-from flagquantum.algorithms import Hamiltonian, pauli_term, trotter_circuit
+from flagquantum.algorithms.many_body.trotter import trotter_circuit
+from flagquantum.algorithms.primitives.hamiltonian import Hamiltonian, pauli_term
 from flagquantum.compiler.lowering import _pauli_schedule
 from tests.integration.test_synthesis_qmod_suzuki_trotter import _reference
 from tests.team.compiler.test_construction_python_program import program_definition

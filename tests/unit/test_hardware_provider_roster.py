@@ -18,14 +18,14 @@ from typing import Any
 import pytest
 
 import flagquantum as fq
+import flagquantum.compute.remote as remote
 import flagquantum.deployment as fqd
-import flagquantum.remote as remote
-from flagquantum.remote.qpu import http
-from flagquantum.remote.qpu.contracts import (
+from flagquantum.compute.remote.qpu import http
+from flagquantum.compute.remote.qpu.contracts import (
     ProviderTaskHandle,
     preflight_submission,
 )
-from flagquantum.remote.qpu.declaration import (
+from flagquantum.compute.remote.qpu.declaration import (
     connectivity_edges,
     declared_count,
     declared_flag,
@@ -35,9 +35,9 @@ from flagquantum.remote.qpu.declaration import (
     declared_width,
     edge_pair,
 )
-from flagquantum.remote.qpu.ionq import IonQProvider, ionq_backend_profile
-from flagquantum.remote.qpu.iqm import IQMProvider, iqm_backend_profile
-from flagquantum.remote.qpu.quantinuum import (
+from flagquantum.compute.remote.qpu.ionq import IonQProvider, ionq_backend_profile
+from flagquantum.compute.remote.qpu.iqm import IQMProvider, iqm_backend_profile
+from flagquantum.compute.remote.qpu.quantinuum import (
     QuantinuumProvider,
     _language,
     quantinuum_backend_profile,
@@ -1003,7 +1003,7 @@ def test_result_decoding_delegates_to_the_shared_boundary() -> None:
     the boundary was admitted by replacing implementations rather than by
     declaring an interface beside them."""
 
-    from flagquantum.remote.qpu import azure, quantinuum, result_parsing
+    from flagquantum.compute.remote.qpu import azure, quantinuum, result_parsing
 
     assert azure._probability_counts is result_parsing._probability_counts
     assert quantinuum._tally_outcomes is result_parsing._tally_outcomes

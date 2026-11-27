@@ -17,9 +17,9 @@ import pytest
 import torch
 
 from flagquantum.core.ir.state_space import ProductStateSpace
-from flagquantum.observables.boson import annihilate
-from flagquantum.simulation.lindblad_generator import Liouvillian
-from flagquantum.simulation.lindblad_integrators import (
+from flagquantum.core.operators.boson import annihilate
+from flagquantum.simulation.dynamics.generator import Liouvillian
+from flagquantum.simulation.dynamics.integrators import (
     INTEGRATOR_NAMES,
     advance_interval,
 )

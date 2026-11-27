@@ -16,6 +16,8 @@ def offline_manifest(path: Path) -> dict[str, object]:
     config["project"].pop("license-files", None)
     tools = config.get("tool", {})
     tools.pop("cibuildwheel", None)
+    # Lint configuration does not change the installed dependency environment.
+    tools.pop("ruff", None)
     if not tools:
         config.pop("tool", None)
     return config

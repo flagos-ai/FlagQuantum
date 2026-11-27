@@ -9,7 +9,7 @@ import torch
 import flagquantum as fq
 import flagquantum.errors as fqe
 import flagquantum.training as fqt
-from flagquantum.models import HybridQuantumClassifier
+from flagquantum.algorithms.quantum_ml.models import HybridQuantumClassifier
 from flagquantum.runtime.execution_plan_contract import (
     ExecutionPlanContractError,
 )

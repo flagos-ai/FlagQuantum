@@ -15,7 +15,7 @@ qft(n_qubits: int, *, inverse: bool = False) -> Circuit
 ```
 
 No authorization under rule 8 of `AGENTS.md` is therefore required, and none is claimed.
-The change is internal to one team's path: `python tools/check_team_scope.py --team
+The change is internal to one team's path: `python tools/architecture/check_team_scope.py --team
 algorithms --files flagquantum/algorithms/primitives/qft.py
 tests/unit/test_algorithms_primitives_placement.py` passes.
 
@@ -214,24 +214,24 @@ $ python -m pytest tests/unit/test_algorithms_qft.py \
     tests/unit/test_primitives_admission_contract.py -q
 199 passed
 
-$ python -m tools.check_primitives_admission_contract
+$ python -m tools.validation.check_primitives_admission_contract
 Primitives admission contract passed: 18 exports, 9 admitted as public units
 
-$ python -m tools.docs_source_of_truth --check
-$ python -m tools.operator_manifest --check
-$ python -m tools.runtime_contract_schema --check
-$ python tools/check_docs_links.py
+$ python -m tools.docs.docs_source_of_truth --check
+$ python -m tools.docs.operator_manifest --check
+$ python -m tools.release.runtime_contract_schema --check
+$ python tools/docs/check_docs_links.py
 Checked 553 markdown files; all local links and anchors resolve.
-$ python -m tools.public_api_snapshot
+$ python -m tools.architecture.public_api_snapshot
 public API migration baseline passed
-$ python tools/check_architecture.py
+$ python tools/architecture/check_architecture.py
 architecture boundaries passed
-$ python tools/check_repository_hygiene.py
+$ python tools/architecture/check_repository_hygiene.py
 repository hygiene passed
-$ python -m tools.correctness_certification --check
-$ python tools/check_repository_language.py
-$ python tools/check_legacy_root_api_usage.py
-$ python tools/check_team_scope.py --team algorithms --files \
+$ python -m tools.validation.correctness_certification --check
+$ python tools/architecture/check_repository_language.py
+$ python tools/architecture/check_legacy_root_api_usage.py
+$ python tools/architecture/check_team_scope.py --team algorithms --files \
     flagquantum/algorithms/primitives/qft.py \
     flagquantum/algorithms/primitives/README.md \
     tests/unit/test_algorithms_primitives_placement.py \

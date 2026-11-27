@@ -4,7 +4,7 @@ Static amplification in Qmod, existing native scalar qfunc, and Circuit.
 
 Native programs spell out zero/one/two rounds with existing phase/CX primitives.
 No native amplification export, mutable helper port or Python loop is added.
-Run tools/validate_qmod_iterations.py for the three unchanged counting/QMCI files.
+Run tools/validation/validate_qmod_iterations.py for the three unchanged counting/QMCI files.
 
 ## Run
 

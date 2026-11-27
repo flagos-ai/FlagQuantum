@@ -9,7 +9,7 @@ from examples.synthesis.tutorials.basics.qml.main import (
     main,
 )
 from flagquantum.synth import synthesize
-from tools.validate_native_source_states import compare_states
+from tools.validation.validate_native_source_states import compare_states
 
 
 def run_example() -> None:

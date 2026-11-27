@@ -14,7 +14,7 @@ import torch
 import flagquantum as fq
 from examples.synthesis.compare_states import compare_states
 from flagquantum import synth
-from flagquantum.compiler._hybrid.verifier import HybridVerificationError
+from flagquantum.compiler.frontends._structured.verifier import HybridVerificationError
 from flagquantum.synth import (
     Const,
     Output,

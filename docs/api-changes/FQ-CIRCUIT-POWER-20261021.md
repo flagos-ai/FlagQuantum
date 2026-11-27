@@ -87,7 +87,7 @@ instruction" cannot drift apart — the same reasoning that made `OperatorSchema
 
 `scale_single_parameter` asserts `U(theta)^k == U(k * theta)`. That is a claim about the
 gate matrices, not about the field that predicts it, so
-`tools/check_circuit_composition_contract.py::_power_measurement_errors` settles it by
+`tools/validation/check_circuit_composition_contract.py::_power_measurement_errors` settles it by
 comparing the two dense operators through `simulation/gate_matrix.py` — the same matrix
 the simulator executes. Measured at `complex128`, over the 12 opcodes this rule names
 times three angles `(0.3, 1.1, -0.7)` times three exponents `(2, 3, 5)`:
@@ -221,14 +221,14 @@ below was measured on this branch, not transcribed from the plan.
 | --- | --- | --- |
 | A power is the program applied that many times | `pytest tests/unit/test_circuit_power.py -k matches_the_repeated_program` | 155 tests; worst `max abs(U^power(k) - U applied k times)` = `3.51e-16` over the 31 unitary opcodes times `k in {0,1,2,3,5}` at `complex128` |
 | A negative power is the matrix power of the program | `pytest tests/unit/test_circuit_power.py -k "negative_power_matches_the_inverse_applied or equals_the_matrix_power_of_the_program"` | 101 tests: worst `1.45e-15` over the 31 unitary opcodes times `k in {-1,-2,-3}` (93 of them), and `7.77e-16` for `h(0).rz(1,0.7).cnot(0,1)` against `torch.linalg.matrix_power` (8 of them) |
-| The single-gate rewrite is exact for the gates it names | `python -m tools.check_circuit_composition_contract` (`_power_measurement_errors`) | worst `5.551e-16` over 12 opcodes times 3 angles times 3 exponents |
+| The single-gate rewrite is exact for the gates it names | `python -m tools.validation.check_circuit_composition_contract` (`_power_measurement_errors`) | worst `5.551e-16` over 12 opcodes times 3 angles times 3 exponents |
 | The rewrite is not vacuously true | same gate, `u2` and `u3` rows | `u3(theta=0.4, phi=0.9, lbd=1.3)` `2.191289381e-01`, `u2(phi=0.9, lbd=1.3)` `4.135343356e-01` — both above the `1e-9` tolerance |
 | The rewrite happens only for a one-instruction program | `pytest tests/unit/test_circuit_power.py -k rewrite_is_not_applied_to_a_longer_program` | `rx(0.3).cnot(0,1)` at `k=2` is `['rx', 'cx', 'rx', 'cx']`, not `rx(0.6).cnot.cnot` |
 | An angle scaling is differentiable | `pytest tests/unit/test_circuit_power.py -k gradient_flows_through_a_scaled_angle` | `theta.grad = -0.29552020666133955` through `power(2)`, byte-identical to the gradient of `rx(0, 2.0 * theta)` written by hand and to `-sin(0.3)` |
 | `power(1)` does not rewrite the parameters | `pytest tests/unit/test_circuit_power.py -k power_one_is_the_same_program` | a symbolic parameter comes back as `Parameter(name='t')`, not `t * 1`; a trainable angle comes back as the same tensor object |
 | Non-integers fail closed | `pytest tests/unit/test_circuit_power.py -k non_integer_exponent_is_refused` | 8 tests; `TypeError` for `2.5`, `0.5`, `'2'`, `None`, `True`, `False` and `[2]`; `power` is not built on `int()` |
 | The instruction bound fails closed | `pytest tests/unit/test_circuit_power.py -k instruction_bound_is_measured` | `power(MAX_POWER_REPEATS)` is accepted and `power(MAX_POWER_REPEATS + 1)` raises `ValueError` naming the emitted count, with `MAX_POWER_REPEATS = 4096` |
-| The serialized declaration changed consistently | `python -m tools.operator_manifest --check` after regeneration | one new `"power"` key per operator, 35 lines changed |
+| The serialized declaration changed consistently | `python -m tools.docs.operator_manifest --check` after regeneration | one new `"power"` key per operator, 35 lines changed |
 | Rule agreement with PennyLane | `python -c "import pennylane as qml; print(qml.simplify(qml.RX(0.3, wires=0) ** 2))"` with `pennylane==0.45.1` | `RX(0.6, wires=[0])`; the same operator as FlagQuantum's `rx(0.6)`, deviation `0.0` on the dense operator |
 | The `-1` spellings are the same operator | same interpreter, `qml.simplify(qml.RX(0.3, wires=0) ** -1)` | `RX(12.266370614359172, wires=[0])` vs FlagQuantum `rx(-0.3)`; deviation `6.11e-16` at `complex128` and `0.0` at `complex64` |
 
@@ -288,7 +288,7 @@ that delegates to `power` is a candidate for a later slice if user evidence asks
   tree, unchanged by this slice: the one name between the **36** this branch measured
   alone and the **37** of the merged base is `fq.density_matrix`, which `main` added
   independently. `docs/public_api_v1.json` and `docs/generated/STABLE_API.md` are
-  unchanged by this slice, and `tools/public_api_snapshot.py` passes.
+  unchanged by this slice, and `tools/architecture/public_api_snapshot.py` passes.
 - `Circuit.power` is a new method on an existing stable class. It does not change any
   existing signature, default, or documented exception.
 - `OperatorSchema` gains one property and no constructor argument, so every existing
@@ -313,11 +313,11 @@ that delegates to `power` is a candidate for a later slice if user evidence asks
   receiver being left alone, the preserved width/batch/dtype, symbolic and per-batch
   angles, a custom matrix, every refusal, and the instruction bound.
 - `tests/unit/test_circuit_composition_contract.py` — the contract rows for `power`.
-- `tools/check_circuit_composition_contract.py` — the closed-form measurement, the rule
+- `tools/validation/check_circuit_composition_contract.py` — the closed-form measurement, the rule
   census, the argument list, and the bound against `MAX_POWER_REPEATS`.
-- `tools/operator_manifest.py --check` — the regenerated manifest is current.
-- `tools/public_api_snapshot.py` — the stable surface is unchanged.
-- `tools/check_team_scope.py --team core` — the changed paths are owned.
+- `tools/docs/operator_manifest.py --check` — the regenerated manifest is current.
+- `tools/architecture/public_api_snapshot.py` — the stable surface is unchanged.
+- `tools/architecture/check_team_scope.py --team core` — the changed paths are owned.
 
 ## Open Questions
 
@@ -333,7 +333,7 @@ that delegates to `power` is a candidate for a later slice if user evidence asks
 
 ## Owner and approvals
 
-Owner: FlagQuantum core maintainers (team `core` in `team-ownership.toml`).
+Owner: FlagQuantum core maintainers (team `core` in `config/team-ownership.toml`).
 
 Approval recorded by this document: the method name `Circuit.power`, its single argument
 `exponent`, the **wide** reading of `066` §6.2, the two rule names in `POWER_RULES`, the

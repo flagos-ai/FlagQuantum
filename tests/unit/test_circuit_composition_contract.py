@@ -39,7 +39,7 @@ from flagquantum.core import (
     POWER_RULES,
 )
 from flagquantum.core.ir import IR_VERSION, Instruction, IRValidationError
-from flagquantum.core.operator_schema import MAX_POWER_REPEATS
+from flagquantum.core.operators.schema import MAX_POWER_REPEATS
 from flagquantum.ecosystem.conformance import semantic_fingerprint
 from flagquantum.errors import CapabilityError, ValidationError
 
@@ -372,7 +372,7 @@ def test_compose_expands_to_the_hand_built_program() -> None:
     """Expansion, instruction by instruction: the composed program is the hand-built one.
 
     `expansion_tests` in the contract names this test, and
-    `tools/check_circuit_composition_contract.py` refuses a name that is not here. The
+    `tools/validation/check_circuit_composition_contract.py` refuses a name that is not here. The
     measurement is exact equality of the emitted instruction lists, not a state
     comparison: two different programs can reach the same state, and the contract claims
     the emitted program.
@@ -861,7 +861,7 @@ def test_control_expands_to_the_hand_built_ladder() -> None:
     """Expansion, instruction by instruction: the controlled program is the hand-built one.
 
     `expansion_tests` in the contract names this test, and
-    `tools/check_circuit_composition_contract.py` refuses a name that is not here. Both
+    `tools/validation/check_circuit_composition_contract.py` refuses a name that is not here. Both
     halves of the claim are measured: the emitted instruction list is compared with the
     program a user would have written, exact and in order, and the result is then applied
     to a basis and compared with the diagonal the definition of a controlled gate names,
@@ -1012,7 +1012,7 @@ def test_composition_adds_no_ir_field_and_no_root_export() -> None:
     assert contract["root_export_effect"] == "none"
     family = {"compose", "adjoint", "power"}
     assert not [name for name in fq.__all__ if name in family]
-    # The count itself is pinned by `tools/public_api_snapshot.py`; this is the same
+    # The count itself is pinned by `tools/architecture/public_api_snapshot.py`; this is the same
     # claim read from the other side, that the family is a family of methods. The
     # literal count this test used to carry (`37`) was correct when this slice was
     # measured and stale once `fq.jacobian`, `fq.jvp`, and `fq.vjp` landed, which is
@@ -1201,15 +1201,15 @@ def test_the_power_census_is_the_declared_rule_split() -> None:
 
 
 # --------------------------------------------------------------------------------------
-# The gate: `tools/check_circuit_composition_contract.py`
+# The gate: `tools/validation/check_circuit_composition_contract.py`
 # --------------------------------------------------------------------------------------
 #
 # The tests above ask whether the contract is true of the code. This section asks the
 # other question: is the contract still enforced as a *gate*? The gate is what CI and
-# `tools/pre_push.py` run, so a clause it stopped reading is a clause nobody checks. Each
+# `tools/ci/pre_push.py` run, so a clause it stopped reading is a clause nobody checks. Each
 # mutation below patches one clause and requires the gate to name it.
 
-_GATE_PATH = ROOT / "tools" / "check_circuit_composition_contract.py"
+_GATE_PATH = ROOT / "tools" / "validation/check_circuit_composition_contract.py"
 _GATE_SPEC = importlib.util.spec_from_file_location(
     "check_circuit_composition_contract", _GATE_PATH
 )
@@ -1226,9 +1226,9 @@ def test_the_composition_gate_runs_in_ci_and_before_push() -> None:
     """A gate that no workflow invokes is a script, not a gate."""
 
     workflow = (ROOT / ".github/workflows/ci.yml").read_text(encoding="utf-8")
-    assert "python tools/check_circuit_composition_contract.py" in workflow
-    pre_push = (ROOT / "tools/pre_push.py").read_text(encoding="utf-8")
-    assert '"tools/check_circuit_composition_contract.py"' in pre_push
+    assert "python tools/validation/check_circuit_composition_contract.py" in workflow
+    pre_push = (ROOT / "tools/ci/pre_push.py").read_text(encoding="utf-8")
+    assert '"tools/validation/check_circuit_composition_contract.py"' in pre_push
 
 
 def test_the_gate_and_this_file_agree_on_the_expansion_tests() -> None:

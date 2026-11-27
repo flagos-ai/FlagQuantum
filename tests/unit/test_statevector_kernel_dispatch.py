@@ -5,9 +5,8 @@ import importlib.util
 import pytest
 import torch
 
-import flagquantum.kernels.provenance as kernel_provenance
 import flagquantum.runtime.executors.statevector.kernel_dispatch as kernel_dispatch
-from flagquantum.kernels.catalog import KernelRequest
+import flagquantum.simulation.kernels.provenance as kernel_provenance
 from flagquantum.runtime.executors.statevector.kernel_dispatch import (
     KernelDispatchEvidence,
     select_cataloged_triton_kernel,
@@ -21,6 +20,7 @@ from flagquantum.runtime.executors.statevector.local_gate_dispatch import (
     _triton_local_cx_decision,
     _triton_local_cx_requested,
 )
+from flagquantum.simulation.kernels.catalog import KernelRequest
 
 pytestmark = pytest.mark.unit
 
@@ -252,8 +252,8 @@ def test_the_local_kernel_window_applies_only_without_an_override(monkeypatch):
 
 
 def test_the_flat_local_address_limit_matches_the_kernel_contract():
-    import flagquantum.kernels.triton as triton_kernels
     import flagquantum.runtime.executors.statevector.local_gate_dispatch as policy
+    import flagquantum.simulation.kernels.triton as triton_kernels
 
     assert policy.FLAT_LOCAL_MAX_AMPLITUDES == triton_kernels.FLAT_LOCAL_MAX_AMPLITUDES
 

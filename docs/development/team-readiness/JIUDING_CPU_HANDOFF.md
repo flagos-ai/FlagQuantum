@@ -87,8 +87,8 @@ Original remote validation before integration:
     PyTorch Dynamo cache_size_limit reached.
   - `test_dynamo_specialization_limit_accounts_for_microbatch_variants`:
     this PyTorch lacks `config.recompile_limit`.
-- `tools/check_architecture.py`: passed.
-- `tools/check_capability_maturity.py`: passed; no catalog promotion.
+- `tools/architecture/check_architecture.py`: passed.
+- `tools/validation/check_capability_maturity.py`: passed; no catalog promotion.
 - `git diff --check`: passed before final staging.
 - Live cancellation was not exercised; stop request shape was observed with the
   platform CLI against a fake gateway and covered by an offline behavior test.

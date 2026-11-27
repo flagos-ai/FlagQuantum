@@ -24,7 +24,7 @@ from flagquantum.compiler.openqasm_import import (
     import_openqasm,
     import_openqasm_to_ir,
 )
-from flagquantum.core.operator_schema import OPERATOR_SCHEMAS
+from flagquantum.core.operators.schema import OPERATOR_SCHEMAS
 
 pytestmark = pytest.mark.unit
 

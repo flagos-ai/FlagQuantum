@@ -62,7 +62,7 @@ The frozen manifest is
 On an isolated eight-device FlagOS environment, run:
 
 ```bash
-python tools/validate_flagos_statevector_capacity.py \
+python tools/validation/validate_flagos_statevector_capacity.py \
   --manifest benchmarks/manifests/flagos_statevector_capacity_f5.json \
   --output artifacts/flagos_statevector_capacity_f5_a800_20260827.json \
   --timeout-seconds 900

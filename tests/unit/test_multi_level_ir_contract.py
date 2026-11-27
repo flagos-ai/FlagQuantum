@@ -779,5 +779,5 @@ def test_the_boundary_gate_runs_in_ci_and_before_push():
 
     workflow = (ROOT / ".github/workflows/ci.yml").read_text(encoding="utf-8")
     assert "python tools/check_multi_level_ir_contract.py" in workflow
-    pre_push = (ROOT / "tools/pre_push.py").read_text(encoding="utf-8")
+    pre_push = (ROOT / "tools/ci/pre_push.py").read_text(encoding="utf-8")
     assert '"tools/check_multi_level_ir_contract.py"' in pre_push

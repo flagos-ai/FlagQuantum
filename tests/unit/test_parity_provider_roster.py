@@ -18,8 +18,8 @@ except ModuleNotFoundError:  # pragma: no cover - Python 3.10 and older
 
 import pytest
 
-import flagquantum.remote as remote
-import flagquantum.remote.qpu as qpu
+import flagquantum.compute.remote as remote
+import flagquantum.compute.remote.qpu as qpu
 
 pytestmark = pytest.mark.unit
 

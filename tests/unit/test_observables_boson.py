@@ -28,8 +28,8 @@ import torch
 
 import flagquantum as fq
 from flagquantum import observables
-from flagquantum.observables import boson as boson_module
-from flagquantum.observables.boson import (
+from flagquantum.core.operators import boson as boson_module
+from flagquantum.core.operators.boson import (
     BosonOperator,
     BosonTerm,
     annihilate,

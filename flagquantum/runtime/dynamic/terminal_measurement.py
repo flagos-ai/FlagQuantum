@@ -8,13 +8,14 @@ from collections.abc import Mapping, Sequence
 from dataclasses import dataclass, field, replace
 from typing import Any
 
+from flagquantum.core.measurement import OutputRequest
+
 from ...core.classical_control import (
     is_classical_control_instruction,
     validate_classical_control,
 )
 from ...core.ir import CircuitIR, ensure_circuit_ir
 from ...errors import ExecutionError
-from ...observables import OutputRequest
 
 
 @dataclass(frozen=True, slots=True)

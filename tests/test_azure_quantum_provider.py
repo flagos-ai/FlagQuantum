@@ -7,7 +7,7 @@ import pytest
 
 import flagquantum as fq
 import flagquantum.deployment as fqd
-from flagquantum.remote import AzureQuantumProvider, azure_backend_profile
+from flagquantum.compute.remote import AzureQuantumProvider, azure_backend_profile
 
 pytestmark = [pytest.mark.unit, pytest.mark.azure]
 ROOT = Path(__file__).resolve().parents[1]

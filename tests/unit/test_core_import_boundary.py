@@ -5,15 +5,15 @@ closed list of distributions Core must never import, because Core is the
 vendor-neutral layer and ``core`` declares exactly one dependency (``torch``).
 That list is read today by two things, and both of them leave a hole:
 
-* ``tools/check_import_time.py`` imports ``flagquantum`` in a child and reports a
+* ``tools/validation/check_import_time.py`` imports ``flagquantum`` in a child and reports a
   forbidden name that ended up in ``sys.modules``. It therefore only sees a
   module that the eager path actually reaches, and only at import time. That
   reach is measured rather than assumed, and it is *none*: a child that runs
   ``import flagquantum`` loads no module whose name starts with
   ``flagquantum.core``, so every one of the package's 21 modules is invisible to
   that check.
-* ``tools/check_architecture.py`` enforces ``[interop_boundaries]`` in
-  ``architecture.toml``, which names five frameworks (``braket``, ``cirq``,
+* ``tools/architecture/check_architecture.py`` enforces ``[interop_boundaries]`` in
+  ``config/architecture.toml``, which names five frameworks (``braket``, ``cirq``,
   ``cudaq``, ``pennylane``, ``qiskit``). The other names on the policy list have
   no boundary rule to enforce them: 13 of the 19 declared names have no reader at
   all.
@@ -134,7 +134,7 @@ def test_the_guard_scans_the_whole_core_package() -> None:
     modules = {path.relative_to(ROOT).as_posix() for path in _core_modules()}
 
     assert "flagquantum/core/__init__.py" in modules
-    assert "flagquantum/core/operator_schema.py" in modules
+    assert "flagquantum/core/operators/schema.py" in modules
     assert "flagquantum/core/ir/__init__.py" in modules
     assert "flagquantum/core/ir/program/verifier.py" in modules
     # The walk is recursive, so a module in a subdirectory added later is covered.

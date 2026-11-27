@@ -98,8 +98,8 @@ or credentials. Nonidentity layouts still receive explicit restoration SWAPs.
 python -m pytest tests/unit/test_compilation_identity_restoration.py \
   tests/unit/test_compilation_sabre_layout.py \
   tests/unit/test_compilation_sabre_routing.py -q
-python tools/ci_tier.py pr-default
-python tools/ci_tier.py pr-runtime
+python tools/ci/ci_tier.py pr-default
+python tools/ci/ci_tier.py pr-runtime
 ```
 
 The archive retains the exact driver, every paired acceptance, normalized output

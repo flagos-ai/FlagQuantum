@@ -17,8 +17,9 @@ import torch
 import torch.distributed as dist
 from torch.profiler import record_function
 
-from ....compute import PlatformRuntime, get_platform_runtime
-from ....compute._memory import _peak_allocated_memory
+from flagquantum.compute.local import PlatformRuntime, get_platform_runtime
+from flagquantum.compute.local._memory import _peak_allocated_memory
+
 from ....core.ir import CircuitIR, ensure_circuit_ir
 from ...distributed.context import resolve_local_world_size
 from . import checkpointing as _checkpointing

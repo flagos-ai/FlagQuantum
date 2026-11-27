@@ -22,7 +22,7 @@ try:
 except ModuleNotFoundError:  # pragma: no cover - Python 3.10 compatibility
     # The strict package check targets 3.12, where `tomllib` resolves and the
     # fallback is unreachable, so it reports the alias as a redefinition. This
-    # is the same suppression `tools/check_evidence_revisions.py` carries.
+    # is the same suppression `tools/release/check_evidence_revisions.py` carries.
     import tomli as tomllib  # type: ignore[no-redef]
 
 CONFORMANCE_VERSION = "1.0"

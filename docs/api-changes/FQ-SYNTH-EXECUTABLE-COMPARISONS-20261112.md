@@ -20,7 +20,7 @@ acceptance, even if the underlying integration tests pass.
 
 ## Integration boundary
 
-`tools/synthesis_catalog.py` remains the single catalog validator. Before a
+`tools/docs/synthesis_catalog.py` remains the single catalog validator. Before a
 native comparison can appear as runnable, validation must find its standard
 `if __name__ == "__main__"` guard containing a call. A reference-only module or
 an empty guard must fail catalog validation with a specific diagnostic. Add

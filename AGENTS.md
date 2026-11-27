@@ -10,7 +10,7 @@ All repository content must be written in English: source comments, docstrings,
 exceptions, documentation, tests, examples, notebook text, diagrams, and filenames.
 The sole localization exception is Markdown-cell teaching prose in the six
 Chinese workshop notebooks directly under
-`workshops/flagos2026/notebooks_cn/`. Code cells, outputs, metadata, filenames,
+`examples/workshops/flagos2026/notebooks_cn/`. Code cells, outputs, metadata, filenames,
 and reusable code examples remain English and aligned with `notebooks/`.
 This exception does not apply to nested directories or other workshop files.
 Translate existing material without deleting technical meaning, changing recorded
@@ -263,7 +263,7 @@ identities. Configure this identity in the repository before committing.
 
 Ordinary work is a short-lived branch cut from `main` and merged by pull request;
 `docs/development/INTEGRATION_WORKFLOW.md` declares that flow from measured
-evidence. The linked-worktree layout in `team-ownership.toml` is an optional mode
+evidence. The linked-worktree layout in `config/team-ownership.toml` is an optional mode
 for a coordinated multi-team round. Its `branch` and `worktree` values, and
 `refactor/flagquantum-vnext-architecture`, are reserved names for that mode rather
 than current instructions: no branch with that prefix exists in this repository,
@@ -274,12 +274,12 @@ worktree to a different branch, or commit unrelated changes left by another
 session.
 
 Before editing, identify the responsible team and run
-`python tools/check_team_scope.py --team <team> --files <paths...>`. A team may
+`python tools/architecture/check_team_scope.py --team <team> --files <paths...>`. A team may
 change its most-specific owned paths and shared test/documentation paths.
 Protected integration surfaces, including Stable Core contracts, public API,
 architecture policy, CI, dependency manifests, and ADRs, require a separate
 integration change before team implementations proceed. Do not create a private
-duplicate contract to bypass this rule. `team-ownership.toml` owns the roster and
+duplicate contract to bypass this rule. `config/team-ownership.toml` owns the roster and
 the path rules; this section does not maintain a second copy of them.
 
 Follow `docs/development/MULTI_TEAM_DEVELOPMENT.md` when the optional multi-team
@@ -343,7 +343,7 @@ when a smaller seeded tier proves the touched surface.
 Default verification for every change:
 
 ```bash
-python tools/ci_tier.py pr-default
+python tools/ci/ci_tier.py pr-default
 # equivalent direct command:
 python -m pytest -m "smoke or unit" -q
 ```
@@ -352,11 +352,11 @@ Expand by blast radius:
 
 | Change Surface | Primary Tier | Command |
 | --- | --- | --- |
-| local API, runtime, planner, compiler, or single-device behavior | `integration` | `python tools/ci_tier.py pr-runtime` |
-| distributed planning, runtime metadata, audit logic, benchmark JSON, or release-gate code | `distributed_cpu`, `benchmark_contract`, `release_gate` | `python tools/ci_tier.py pr-distributed` |
-| accelerator-backed distributed behavior | `distributed_accel`, `gpu` | `python tools/ci_tier.py gpu-scheduled` |
-| multi-node transport or rank-placement behavior | `distributed_multinode` | `python tools/ci_tier.py multinode-scheduled` |
-| release candidate or promoted benchmark claim | full non-scalability pytest plus benchmark audit | `python tools/ci_tier.py release` |
+| local API, runtime, planner, compiler, or single-device behavior | `integration` | `python tools/ci/ci_tier.py pr-runtime` |
+| distributed planning, runtime metadata, audit logic, benchmark JSON, or release-gate code | `distributed_cpu`, `benchmark_contract`, `release_gate` | `python tools/ci/ci_tier.py pr-distributed` |
+| accelerator-backed distributed behavior | `distributed_accel`, `gpu` | `python tools/ci/ci_tier.py gpu-scheduled` |
+| multi-node transport or rank-placement behavior | `distributed_multinode` | `python tools/ci/ci_tier.py multinode-scheduled` |
+| release candidate or promoted benchmark claim | full non-scalability pytest plus benchmark audit | `python tools/ci/ci_tier.py release` |
 
 Only run marker-selection commands that have seeded tests; an empty selection is not verification evidence.
 

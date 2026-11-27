@@ -62,8 +62,9 @@ import math
 from collections.abc import Mapping, Sequence
 from typing import Any
 
+from flagquantum.core.operators.schema import get_operator_schema
+
 from ...core.ir import Instruction
-from ...core.operator_schema import get_operator_schema
 from .one_qubit_synthesis import HALF_PI_PULSE_OPCODES, Z_ROTATION_OPCODES
 from .two_qubit_synthesis import (
     SUPERCONTROLLED_ENTANGLERS,

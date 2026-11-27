@@ -46,7 +46,7 @@ from flagquantum.compiler.basis_conversion import (
 )
 from flagquantum.compiler.basis_translation import EQUIVALENCE_RULES
 from flagquantum.core.ir import CircuitIR, Instruction
-from flagquantum.core.operator_schema import OPERATOR_SCHEMAS
+from flagquantum.core.operators.schema import OPERATOR_SCHEMAS
 from flagquantum.simulation.unitary import get_unitary
 
 pytestmark = pytest.mark.unit

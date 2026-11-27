@@ -1,0 +1,285 @@
+"""Ordered Quafu collections behind the FlagQuantum provider boundary."""
+
+from __future__ import annotations
+
+import hashlib
+import json
+import re
+from collections.abc import Mapping, Sequence
+from dataclasses import replace
+from typing import Any, TypedDict
+
+from flagquantum.compute.remote.packages import (
+    DeploymentPackage,
+    validate_deployment_package,
+)
+from flagquantum.errors import CapabilityError, ExecutionError, ValidationError
+from flagquantum.runtime.results import ExecutionResult
+
+from .qpu.contracts import (
+    DeploymentResult,
+    ProviderTaskHandle,
+    build_result_metadata,
+    build_submission_receipt,
+    validate_deployment_result,
+)
+from .qpu.execution import counts_result
+from .qpu.quafu import QuafuProvider
+from .qpu.result_parsing import _extract_counts
+
+_SCHEMA = "flagquantum.quafu-collection.v1"
+
+
+class _CollectionReceipt(TypedDict):
+    schema: str
+    items: list[dict[str, str]]
+    shots: int
+    n_qubits: int
+    sha256: str
+
+
+def _digest(items: list[dict[str, str]], shots: int, width: int) -> str:
+    payload = json.dumps([items, shots, width], sort_keys=True, separators=(",", ":"))
+    return hashlib.sha256(payload.encode()).hexdigest()
+
+
+def validate_context(
+    raw: Any, *, width: int, identity: Mapping[str, str]
+) -> tuple[list[dict[str, str]], int]:
+    if not isinstance(raw, dict) or set(raw) != {
+        "schema",
+        "items",
+        "shots",
+        "n_qubits",
+        "sha256",
+    }:
+        raise ValueError("Invalid Quafu collection receipt context")
+    items, shots = raw["items"], raw["shots"]
+    if (
+        raw["schema"] != _SCHEMA
+        or type(raw["n_qubits"]) is not int
+        or raw["n_qubits"] != width
+        or type(shots) is not int
+        or shots <= 0
+        or not isinstance(items, list)
+        or not items
+    ):
+        raise ValueError("Invalid Quafu collection receipt dimensions")
+    for item in items:
+        if not isinstance(item, dict) or any(
+            not isinstance(k, str) or not isinstance(v, str) for k, v in item.items()
+        ):
+            raise ValueError("Invalid Quafu collection submission identity")
+        build_result_metadata(ProviderTaskHandle("quafu", "validation", "", item))
+        if item.get("quafu_protocol") != "quafu_sdk_v1" or any(
+            re.fullmatch(r"[0-9a-f]{64}", item.get(key, "")) is None
+            for key in ("routing_evidence_sha256", "deployment_artifact_sha256")
+        ):
+            raise ValueError("Invalid Quafu collection artifact identity")
+    digest = _digest(items, shots, width)
+    if raw["sha256"] != digest or identity != items[0] | {"collection_sha256": digest}:
+        raise ValueError("Quafu collection receipt identity mismatch")
+    return items, shots
+
+
+def submit_collection(
+    client: QuafuProvider, packages: Sequence[DeploymentPackage]
+) -> tuple[ProviderTaskHandle, _CollectionReceipt]:
+    for package in packages:
+        validate_deployment_package(package)
+    first = packages[0]
+    adapter = client._submission_sdk_adapter()
+    metadata: Mapping[str, Any] = adapter.backend_metadata(first.backend.name)
+    limits = metadata.get("limits") if isinstance(metadata, Mapping) else None
+    maximum = limits.get("max_tasks_per_job") if isinstance(limits, Mapping) else None
+    if type(maximum) is not int or maximum < 1:
+        raise CapabilityError("Quafu did not publish a valid max_tasks_per_job limit")
+    if len(packages) > maximum:
+        raise CapabilityError(f"Quafu collection exceeds max_tasks_per_job={maximum}")
+    items = [
+        build_submission_receipt(package, {"quafu_protocol": "quafu_sdk_v1"})
+        for package in packages
+    ]
+    digest = _digest(items, first.shots, first.n_qubits)
+    context: _CollectionReceipt = {
+        "schema": _SCHEMA,
+        "items": items,
+        "shots": first.shots,
+        "n_qubits": first.n_qubits,
+        "sha256": digest,
+    }
+    response: Mapping[str, Any] = adapter.submit_collection(
+        [package.qasm for package in packages],
+        target=first.backend.name,
+        shots=first.shots,
+        name=first.name,
+    )
+    job_id = response.get("job_id") if isinstance(response, Mapping) else None
+    if not isinstance(job_id, str) or not job_id.strip():
+        raise ExecutionError(
+            "Quafu collection response does not contain a job ID; do not resubmit"
+        )
+    if "n_tasks" in response and (
+        type(response["n_tasks"]) is not int or response["n_tasks"] != len(packages)
+    ):
+        raise ExecutionError("Quafu accepted an unexpected task count; do not resubmit")
+    if "task_ids" in response and (
+        not isinstance(response["task_ids"], list)
+        or len(response["task_ids"]) != len(packages)
+    ):
+        raise ExecutionError("Quafu accepted an unexpected task count; do not resubmit")
+    return (
+        ProviderTaskHandle(
+            "quafu",
+            job_id,
+            first.backend.name,
+            items[0] | {"collection_sha256": digest},
+        ),
+        context,
+    )
+
+
+def _fetch_results(
+    client: QuafuProvider,
+    handle: ProviderTaskHandle,
+    items: list[dict[str, str]],
+    shots: int,
+    width: int,
+) -> list[DeploymentResult]:
+    if handle.payload.get("quafu_protocol") != "quafu_sdk_v1":
+        raise ValidationError(
+            "This Quafu collection uses a retired transport protocol; only "
+            "quafu_sdk_v1 collections can be restored."
+        )
+    return _fetch_sdk_results(client, handle, items, shots, width)
+
+
+def _fetch_sdk_results(
+    client: QuafuProvider,
+    handle: ProviderTaskHandle,
+    items: list[dict[str, str]],
+    shots: int,
+    width: int,
+) -> list[DeploymentResult]:
+    rows = client._submission_sdk_adapter().job_results(handle.task_id)
+    if len(rows) != len(items):
+        raise ExecutionError("Quafu SDK collection results are incomplete")
+    results: dict[int, DeploymentResult] = {}
+    for row in rows:
+        index = row.get("seq")
+        if type(index) is not int or not 0 <= index < len(items) or index in results:
+            raise ExecutionError("Duplicate or invalid Quafu collection task index")
+        status = row.get("status")
+        if not isinstance(status, str) or status not in {"Finished", "Completed"}:
+            raise ExecutionError(f"Quafu collection task #{index} is {status}")
+        order = row.get("bit_order")
+        if order not in {"c0_rightmost", "c0_leftmost"}:
+            raise ExecutionError("Unknown Quafu collection result bit order")
+        raw = row.get("counts")
+        returned = row.get("shots_returned")
+        if (
+            not isinstance(raw, Mapping)
+            or not raw
+            or type(returned) is not int
+            or not 0 < returned <= shots
+            or type(row.get("n_clbits")) is not int
+            or row["n_clbits"] != width
+            or any(
+                not isinstance(key, str)
+                or len(key) != width
+                or set(key) - {"0", "1"}
+                or type(value) is not int
+                or value < 0
+                for key, value in raw.items()
+            )
+            or sum(raw.values()) != returned
+        ):
+            raise ExecutionError(f"Invalid Quafu collection counts for task #{index}")
+        counts = _extract_counts(
+            {"counts": raw},
+            provider="quafu",
+            flip=client.reverse_result_bits and order == "c0_rightmost",
+        )
+        task_handle = ProviderTaskHandle(
+            "quafu", handle.task_id, handle.backend_name, items[index]
+        )
+        result_metadata = {
+            key: row[key]
+            for key in (
+                "compiler",
+                "calibration_id",
+                "measurements",
+                "executed_qasm",
+            )
+            if row.get(key) is not None
+        }
+        results[index] = validate_deployment_result(
+            DeploymentResult(
+                task_handle,
+                counts,
+                returned,
+                build_result_metadata(
+                    task_handle,
+                    result_metadata
+                    | {
+                        "quafu_protocol": "quafu_sdk_v1",
+                        "task_index": index,
+                        "bit_order": order,
+                        "status": status,
+                    },
+                ),
+            )
+        )
+    return [results[index] for index in range(len(items))]
+
+
+def collection_result(
+    client: QuafuProvider,
+    handle: ProviderTaskHandle,
+    context: Any,
+    *,
+    width: int,
+    output_name: str | None,
+    target: str,
+    name: str | None,
+) -> ExecutionResult:
+    items, shots = validate_context(context, width=width, identity=handle.payload)
+    native = _fetch_results(client, handle, items, shots, width)
+    first = counts_result(
+        native[0],
+        n_qubits=width,
+        output_name=output_name,
+        compiler=None,
+        target=target,
+        target_qubits=(),
+        name=name,
+    )
+    returned = [item.shots for item in native]
+    counts: list[dict[str | int, int]] = [
+        {key: value for key, value in item.counts.items()} for item in native
+    ]
+    measurement = replace(
+        first.measurements[0],
+        value=counts,
+        shots=returned[0] if len(set(returned)) == 1 else None,
+    )
+    return replace(
+        first,
+        measurements=(measurement,),
+        provenance={
+            key: value
+            for key, value in first.provenance.items()
+            if key != "service_compiler"
+        }
+        | {
+            "collection_sha256": context["sha256"],
+            "batch_size": len(items),
+            "deployment": [dict(item.metadata) for item in native],
+        },
+        runtime={
+            "mode": "remote_qpu",
+            "shots": shots,
+            "batch_size": len(items),
+            "shots_returned": returned,
+        },
+    )

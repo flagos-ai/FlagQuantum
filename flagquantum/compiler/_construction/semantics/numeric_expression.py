@@ -8,7 +8,7 @@ from operator import add, and_, eq, ge, gt, le, lt, mul, ne, or_, pow, xor
 from types import MappingProxyType
 from typing import Generic, NoReturn, TypeVar
 
-from ..._hybrid.model import (
+from flagquantum.compiler.frontends._structured.model import (
     INDEX,
     Block,
     HybridProgram,
@@ -19,6 +19,7 @@ from ..._hybrid.model import (
     Value,
     ValueId,
 )
+
 from ..analysis.ranges import bitwise_width, unsigned_width
 from ..verification.profile import uint_type
 

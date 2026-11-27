@@ -7,8 +7,9 @@ from importlib import import_module
 from numbers import Number
 from typing import Any
 
+from flagquantum.core.operators.schema import get_operator_schema
+
 from ...core.ir import Instruction, ensure_circuit_ir
-from ...core.operator_schema import get_operator_schema
 from ...core.parameters import Parameter, ParameterExpression
 from ._version import installed_cudaq_version
 from .models import (

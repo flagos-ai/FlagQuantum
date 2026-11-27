@@ -7,7 +7,7 @@ from typing import Any
 import pytest
 import torch
 
-from flagquantum.compiler._hybrid import (
+from flagquantum.compiler.frontends._structured import (
     BOOL,
     INDEX,
     HybridProgram,
@@ -20,7 +20,7 @@ from flagquantum.compiler._hybrid import (
     specialize_program,
     tensor_type,
 )
-from flagquantum.compiler._hybrid.diagnostics import (
+from flagquantum.compiler.frontends._structured.diagnostics import (
     SpecializationError as SharedSpecializationError,
 )
 

@@ -13,8 +13,8 @@ from flagquantum.algorithms.fermion.stabilizer import (
     discover_pauli_symmetries,
     reduce_stabilizers,
 )
-from flagquantum.core.algebra.pauli import pauli
-from flagquantum.observables import Observable
+from flagquantum.core.operators.observable import Observable
+from flagquantum.core.operators.pauli import pauli
 
 
 def build_ansatz(angle: torch.Tensor) -> fq.Circuit:

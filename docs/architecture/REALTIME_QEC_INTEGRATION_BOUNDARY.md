@@ -96,7 +96,7 @@ From the checkout with a supported core installation:
 
 ```bash
 python -m examples.realtime.device_call
-python tools/check_realtime_messaging_contract.py
+python tools/validation/check_realtime_messaging_contract.py
 python -m pytest tests/unit/test_realtime_protocol.py tests/integration/test_realtime_device_call_golden_path.py -q
 ```
 

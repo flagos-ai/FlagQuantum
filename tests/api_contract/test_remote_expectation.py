@@ -23,7 +23,7 @@ class _QuafuTestTarget(InMemoryRemoteTarget):
 def test_direct_quafu_simulators_accept_task_api_shot_range(
     monkeypatch: pytest.MonkeyPatch, target: str, shots: int
 ) -> None:
-    import flagquantum.remote.qpu.execution as execution
+    import flagquantum.compute.remote.qpu.execution as execution
 
     execute = Mock(return_value=(target, shots))
     monkeypatch.setattr(execution, "execute_quafu", execute)
@@ -46,7 +46,7 @@ def test_direct_quafu_simulators_accept_task_api_shot_range(
 def test_direct_quafu_rejects_invalid_shots_before_execution(
     monkeypatch: pytest.MonkeyPatch, target: str, shots: int
 ) -> None:
-    import flagquantum.remote.qpu.execution as execution
+    import flagquantum.compute.remote.qpu.execution as execution
 
     execute = Mock(side_effect=AssertionError("execution must not start"))
     monkeypatch.setattr(execution, "execute_quafu", execute)
@@ -62,7 +62,7 @@ def test_quafu_rejects_non_request_output_items_before_compilation(
     monkeypatch: pytest.MonkeyPatch, outputs: object
 ) -> None:
     import flagquantum._api as api
-    import flagquantum.remote.qpu.execution as execution
+    import flagquantum.compute.remote.qpu.execution as execution
 
     compile_program = Mock(side_effect=AssertionError("unexpected compilation"))
     provider = Mock(side_effect=AssertionError("unexpected provider creation"))
@@ -84,7 +84,7 @@ def test_quafu_rejects_out_of_range_observable_before_compilation(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     import flagquantum._api as api
-    import flagquantum.remote.qpu.execution as execution
+    import flagquantum.compute.remote.qpu.execution as execution
 
     compile_program = Mock(side_effect=AssertionError("unexpected compilation"))
     provider = Mock(side_effect=AssertionError("unexpected provider creation"))
@@ -106,7 +106,7 @@ def test_quafu_rejects_local_plan_before_compilation_or_provider_creation(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     import flagquantum._api as api
-    import flagquantum.remote.qpu.execution as execution
+    import flagquantum.compute.remote.qpu.execution as execution
 
     plan = fq.plan(fq.Circuit(1))
     compile_program = Mock(side_effect=AssertionError("unexpected compilation"))
@@ -146,7 +146,7 @@ def test_fq_run_remote_expectation_compiles_once_and_groups_measurements(
 
     monkeypatch.setattr("flagquantum._api.compile", compile_target)
     monkeypatch.setattr(
-        "flagquantum.remote.qpu.execution.QuafuProvider", lambda: provider
+        "flagquantum.compute.remote.qpu.execution.QuafuProvider", lambda: provider
     )
 
     result = fq.run(

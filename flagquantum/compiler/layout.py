@@ -5,9 +5,6 @@ from .topology.layout import (
 )
 from .topology.layout import __all__ as __all__
 from .topology.layout import (
-    _routing_swap_phases as _routing_swap_phases,
-)
-from .topology.layout import (
     apply_layout as apply_layout,
 )
 from .topology.layout import (

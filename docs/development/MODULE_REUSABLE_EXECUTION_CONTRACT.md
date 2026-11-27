@@ -12,7 +12,7 @@ The user approved one narrow Runtime-to-Compiler dependency for the existing
 Module builder capture/lowering entry, replacing `Module._compile_builder_program`, after the
 contract-only change lands. The domain instructions and architecture checker now admit only imports of
 `CapturedModuleBuilder` and `capture_module_builder` from
-`compiler.module_builder` in `runtime/module.py`. This contract-only permission
+`compiler.frontends.torch._module_builder` in `runtime/module.py`. This contract-only permission
 is separate from the legacy migration allowances and does not admit arbitrary
 Compiler imports. The follow-up implementation invokes it only from Module's
 existing builder capture method. Simulation continues to consume Core

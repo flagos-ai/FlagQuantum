@@ -60,7 +60,7 @@ def __exit__(
 Import `Literal` from typing. Preserve the existing `return False` body:
 exceptions must continue to propagate out of `StrictExecutionScope`.
 
-In `flagquantum/compute/cpu_target_capabilities.py`, replace each of the six
+In `flagquantum/compute/local/cpu_target_capabilities.py`, replace each of the six
 mutable protocol attributes with a read-only property returning `str`:
 
 ```python

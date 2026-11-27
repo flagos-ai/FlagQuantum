@@ -4,10 +4,11 @@ from __future__ import annotations
 
 from dataclasses import replace
 
+from flagquantum.runtime.results import ExecutionResult, MeasurementResult
+
 from ...core.ir import CircuitIR, MeasurementNode
 from ...errors import CapabilityError, ExecutionError, ValidationError
 from ..options import ExecutionOptions
-from ..result import ExecutionResult, MeasurementResult
 
 _FINAL_OUTPUT = "_fq_dynamic_final_output"
 _REGISTER_KIND = "mid_circuit_measurement"

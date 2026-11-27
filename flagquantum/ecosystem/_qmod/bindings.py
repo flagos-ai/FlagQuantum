@@ -9,7 +9,8 @@ from .syntax import MAX_SCOPE_DEPTH, Expression, Parameter, Statement, Token, re
 from .unitary_effects import PURE_EFFECTS, emit_inverse
 
 if TYPE_CHECKING:
-    from ...compiler._hybrid.model import Value
+    from flagquantum.compiler.frontends._structured.model import Value
+
     from .context import _Adapt
     from .syntax import Parser
 

@@ -26,9 +26,13 @@ import torch
 import flagquantum as fq
 from flagquantum.compiler import lower_noise_model
 from flagquantum.core.ir import CircuitIR, Instruction, IRValidationError
-from flagquantum.core.operator_schema import OPERATOR_SCHEMAS
+from flagquantum.core.noise import NoiseModel
+from flagquantum.core.operators.channels import (
+    channel_from_parameters,
+    depolarizing_channel,
+)
+from flagquantum.core.operators.schema import OPERATOR_SCHEMAS
 from flagquantum.errors import ValidationError
-from flagquantum.noise import NoiseModel, channel_from_parameters, depolarizing_channel
 from flagquantum.runtime.execution_plan_contract import plan_from_dict, plan_to_json
 
 pytestmark = pytest.mark.unit

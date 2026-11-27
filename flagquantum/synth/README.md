@@ -1,5 +1,7 @@
 # Constrained synthesis
 
+This package owns the public synthesis workflow and its program/readout adapters (`_workflow.py`, `_program.py`, `_readout.py`). Compiler owns program preparation; Runtime owns plan inspection. Rotation mathematics remains at its existing locations until the directly overlapping #1084 synthesis family is integrated.
+
 This maintained domain facade re-exports one Services implementation. It adds no
 builder, Program wrapper, validation engine or executor. The initial unreleased
 candidate supports bounded typed Python programs, source-retaining unsigned
@@ -917,7 +919,7 @@ bounded expansion fails, the adapter can preserve shared products of signed bit
 literals using existing arithmetic calls. The Compiler verifies their inverse
 cleanup and chooses their physical realization. The original TSP and facility
 location files keep their bytes and layer counts; reproduce their independent
-full-state checks with `python tools/validate_qmod_phase_factors.py --case
+full-state checks with `python tools/validation/validate_qmod_phase_factors.py --case
 facility_location --scale .003 --output /tmp/facility.json` (one shell line).
 See [the bounded profile](../../docs/reference/KNOWN_LIMITATIONS.md) for the
 factor, active-bit, expression-depth and resource limits. This is a local
@@ -945,7 +947,7 @@ print(program.report["resources"])
 print(result.statevector())
 ```
 
-Run `python tools/validate_qmod_large_pauli.py --case hamiltonian_evolution
+Run `python tools/validation/validate_qmod_large_pauli.py --case hamiltonian_evolution
 --output /tmp/qdrift.json` on one shell line for the pinned fixture, independent
 sample sequence and full-state Circuit reference. The companion case is
 `example_exponentiation`. Source files and their MIT license are hash checked.
@@ -985,7 +987,7 @@ Python qfunc's parameter contract is unchanged. The adapter accepts exact int
 and int[] bindings, bounded static loops/if and finite classical-expression time
 arrays; it never reads quantum values to select host branches.
 
-Reproduce the unchanged originals with tools/validate_qmod_integer_composition.py:
+Reproduce the unchanged originals with tools/validation/validate_qmod_integer_composition.py:
 --case fermi_hubbard_1D --iterations 1 (then 2), --case credit_card_fraud
 --data-case 0 (then 1), or --case bb84_implementation, each with --output <path>.
 These source and MIT-license-checked runs compare complete complex128 vectors
@@ -1035,7 +1037,7 @@ preparation and nested/array-valued borrowed records remain outside this slice.
 Three unchanged originals are accepted separately: grover_operator.qmod,
 oracles_workshop.qmod and grover.qmod (r=0/1/2). The workshop subtraction does not
 wrap; the graph original marks >=4, unlike the previous <=4 Max-Cut original.
-Run tools/validate_qmod_predicate_oracle.py --case grover --iterations 2
+Run tools/validation/validate_qmod_predicate_oracle.py --case grover --iterations 2
 --output /tmp/predicate.json for independent full-state Circuit comparison.
 python -m examples.synthesis.algorithms.grover.predicate_oracle.main compares Qmod, existing native
 qfunc phase intent and an independent Circuit. It does not add a native Python

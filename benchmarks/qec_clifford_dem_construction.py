@@ -20,7 +20,8 @@ from pathlib import Path
 
 import torch
 
-from flagquantum.noise import NoiseModel, bit_flip_channel
+from flagquantum.core.noise import NoiseModel
+from flagquantum.core.operators.channels import bit_flip_channel
 from flagquantum.qec import (
     DetectorErrorModel,
     RotatedSurfaceCode,

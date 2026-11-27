@@ -12,7 +12,7 @@ from flagquantum.compiler._construction.frontend.program import capture_program
 from flagquantum.compiler._construction.verification.register_profile import (
     verify_register_program,
 )
-from flagquantum.compiler._hybrid.verifier import HybridVerificationError
+from flagquantum.compiler.frontends._structured.verifier import HybridVerificationError
 from flagquantum.errors import PlanningError
 from tests.integration.test_synthesis_native_exact_numbers import definition
 

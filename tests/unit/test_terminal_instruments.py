@@ -13,7 +13,7 @@ from flagquantum.errors import CapabilityError, ValidationError
 from flagquantum.runtime import _terminal_instruments as terminal
 from flagquantum.runtime import measurements, sample_terminal
 from flagquantum.runtime.measurements import _DensityMatrixTarget
-from flagquantum.simulation.lindblad_request import EvolutionValidationError
+from flagquantum.simulation.dynamics.problem import EvolutionValidationError
 
 pytestmark = pytest.mark.unit
 Instrument = dict[str, tuple[torch.Tensor, ...]]

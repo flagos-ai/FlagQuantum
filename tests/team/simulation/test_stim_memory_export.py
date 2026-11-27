@@ -8,8 +8,8 @@ from types import SimpleNamespace
 import pytest
 
 from flagquantum.core.ir import CircuitIR, Instruction
+from flagquantum.core.operators.channels import bit_flip_channel
 from flagquantum.errors import CapabilityError
-from flagquantum.noise import bit_flip_channel
 from flagquantum.qec import PhenomenologicalNoise, RepetitionCode, build_memory_circuit
 from flagquantum.qec.adapters.stim import memory_to_stim_text
 from flagquantum.simulation.stabilizer import _embedded_sampler, engine

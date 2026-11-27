@@ -5,10 +5,11 @@ from __future__ import annotations
 import math
 from typing import TYPE_CHECKING
 
+from flagquantum.compiler.frontends._structured.model import Operation, Value, ValueId
+
 from ...compiler._construction.semantics import cnf_phase
 from ...compiler._construction.semantics.cnf_phase import Clause
 from ...compiler._construction.verification.register_profile import register_type
-from ...compiler._hybrid.model import Operation, Value, ValueId
 from .syntax import Expression, Statement, reject
 
 if TYPE_CHECKING:

@@ -25,7 +25,7 @@ def test_split_real_imag_training_runs_on_torch_fl_flagos_device() -> None:
     completed = subprocess.run(
         [
             sys.executable,
-            "tools/validate_split_real_imag_training_flagos.py",
+            "tools/validation/validate_split_real_imag_training_flagos.py",
             "--device",
             "flagos:0",
         ],

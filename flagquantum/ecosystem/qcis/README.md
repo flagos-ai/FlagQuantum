@@ -22,7 +22,7 @@ then run:
 
 ```sh
 python -m pytest tests/unit/test_qcis_import.py tests/integration/test_qcis_import.py -q
-python tools/check_architecture.py
+python tools/architecture/check_architecture.py
 python tools/check_dependency_policy.py
 ```
 

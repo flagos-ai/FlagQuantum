@@ -16,7 +16,8 @@ from dataclasses import dataclass
 
 import torch
 
-from ...core.algebra.pauli import count, scalar
+from flagquantum.core.operators.pauli import count, scalar
+
 from .numerics import static_tensor
 
 

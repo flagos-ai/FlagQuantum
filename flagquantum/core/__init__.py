@@ -1,5 +1,26 @@
 """Core circuit and IR primitives."""
 
+from flagquantum.core.operators.schema import (
+    ADJOINT_RULES,
+    CONTROL_PARTNERS,
+    CONTROL_RULES,
+    MAX_LADDER_LEVEL,
+    MAX_POWER_REPEATS,
+    OPERATOR_ALIASES,
+    OPERATOR_SCHEMAS,
+    POWER_RULES,
+    GateInfo,
+    OperatorSchema,
+    canonical_opcode,
+    control_ladder_level,
+    gate_info,
+    get_operator_schema,
+    inverse_operator,
+    operator_manifest,
+    parameter_shift_rule,
+    power_operator,
+)
+
 from .contracts import (
     CONTRACT_TYPES,
     CONTRACT_VERSION,
@@ -41,26 +62,6 @@ from .numerics import (
     ComplexRepresentation,
     PrecisionPlanContract,
     RefinementStrategy,
-)
-from .operator_schema import (
-    ADJOINT_RULES,
-    CONTROL_PARTNERS,
-    CONTROL_RULES,
-    MAX_LADDER_LEVEL,
-    MAX_POWER_REPEATS,
-    OPERATOR_ALIASES,
-    OPERATOR_SCHEMAS,
-    POWER_RULES,
-    GateInfo,
-    OperatorSchema,
-    canonical_opcode,
-    control_ladder_level,
-    gate_info,
-    get_operator_schema,
-    inverse_operator,
-    operator_manifest,
-    parameter_shift_rule,
-    power_operator,
 )
 from .parameters import (
     Parameter,

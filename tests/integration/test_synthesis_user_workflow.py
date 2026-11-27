@@ -12,7 +12,7 @@ from examples.synthesis.tutorials.getting_started.trial.main import polynomial, 
 from flagquantum import synth
 from flagquantum.core.ir import Instruction
 from flagquantum.runtime.execution_plan import ExecutionPlan
-from flagquantum.services import _synthesis_readout as readout
+from flagquantum.synth import _readout as readout
 
 pytestmark = pytest.mark.integration
 
@@ -198,7 +198,7 @@ def test_changed_options_same_size_program_and_logical_bindings_are_refused() ->
 def test_compiler_prediction_is_bound_to_actual_runtime_even_if_fake_claims_success(
     monkeypatch,
 ) -> None:
-    from flagquantum.services import synthesis as workflow
+    from flagquantum.synth import _workflow as workflow
 
     original = workflow.select_arithmetic
 
@@ -259,7 +259,7 @@ def test_unsupported_basis_topology_and_target_fail_without_execution() -> None:
 
 
 def test_physical_port_substitution_and_mutated_compiler_stages_are_refused() -> None:
-    from flagquantum.services._synthesis_execution import inspect_execution
+    from flagquantum.runtime.planner.synthesis import inspect_execution
 
     program = _program()
     forged = inspect_execution(

@@ -8,9 +8,10 @@ from typing import Any
 
 import torch
 
-from ....algorithms import pauli_term
+from flagquantum.algorithms.primitives.hamiltonian import pauli_term
+from flagquantum.compute.local import get_platform_runtime, resolve_platform_device
+
 from ....circuit import Circuit
-from ....compute import get_platform_runtime, resolve_platform_device
 from ....core.ir import ensure_circuit_ir
 from ....core.parameters import Parameter
 from ....simulation.numerics.double_single import DoubleSingleTensor

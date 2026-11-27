@@ -12,7 +12,7 @@ from examples.synthesis.algorithms.amplitude_amplification.amplification_iterati
     zero,
 )
 from flagquantum import synth
-from flagquantum.services.synthesis import _synthesize
+from flagquantum.synth._workflow import _synthesize
 
 QMOD = Path(__file__).with_name("source.qmod").read_text(encoding="utf-8")
 

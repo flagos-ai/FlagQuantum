@@ -9,7 +9,8 @@ from threading import Lock
 import torch
 from torch.profiler import record_function
 
-from ....compute import get_platform_runtime
+from flagquantum.compute.local import get_platform_runtime
+
 from ....simulation.mps.factorization import (
     mps_qr_forward as _simulation_mps_qr_forward,
 )

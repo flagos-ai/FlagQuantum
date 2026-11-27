@@ -2,7 +2,7 @@ from pathlib import Path
 
 import pytest
 
-from tools.write_audit_requirements import audit_requirement, main
+from tools.validation.write_audit_requirements import audit_requirement, main
 
 pytestmark = pytest.mark.unit
 

@@ -276,7 +276,7 @@ def run_benchmark(
     # that record is the authoritative statement of which strategies the cost
     # estimate can rank, and it states them as the keys of its ``candidates``
     # mapping, built from ``DEPLOYABLE_ROUTING_STRATEGIES`` -- the same constant
-    # ``flagquantum/deployment/routing_evidence.py`` reads, so a fifth strategy
+    # ``flagquantum/compiler/artifacts/routing_evidence.py`` reads, so a fifth strategy
     # cannot reach the choice without reaching the deployment contract too. Every
     # comparison is made on the program the selection actually saw, not on the
     # totals.

@@ -5,7 +5,7 @@ import torch
 
 from flagquantum.compiler.optimization import two_qubit_optimization as folding
 from flagquantum.core.ir import CircuitIR, Instruction
-from flagquantum.core.operator_schema import OPERATOR_SCHEMAS
+from flagquantum.core.operators.schema import OPERATOR_SCHEMAS
 from flagquantum.simulation.gate_matrix import gate_matrix
 
 pytestmark = pytest.mark.unit

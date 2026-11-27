@@ -59,12 +59,10 @@ from flagquantum.algorithms.logical_resources import (
     estimate_logical_resources,
     surface_code_qubits_per_logical,
 )
-from flagquantum.compiler.resource_estimation import (
-    _T_FAMILY_OPCODES,
-    estimate_resources,
-)
+from flagquantum.compiler.optimization.resource_estimation import _T_FAMILY_OPCODES
+from flagquantum.compiler.resource_estimation import estimate_resources
 from flagquantum.core.ir import Instruction, MeasurementNode, ensure_circuit_ir
-from flagquantum.core.operator_schema import OPERATOR_SCHEMAS
+from flagquantum.core.operators.schema import OPERATOR_SCHEMAS
 from flagquantum.errors import CapabilityError
 
 pytestmark = pytest.mark.unit
@@ -303,8 +301,8 @@ def test_the_two_refusals_are_distinguishable_by_their_reason() -> None:
 def test_the_trotter_circuit_is_refused_until_angle_synthesis_exists() -> None:
     """The gate-level estimator reads it; this one cannot, and says which blocker."""
 
-    from flagquantum.algorithms.core import transverse_field_ising
-    from flagquantum.algorithms.trotter import trotter_circuit
+    from flagquantum.algorithms.many_body.spin import transverse_field_ising
+    from flagquantum.algorithms.many_body.trotter import trotter_circuit
 
     hamiltonian = transverse_field_ising(3, coupling=0.7, field=0.5)
     program = trotter_circuit(hamiltonian, 0.4, steps=1, order=2)

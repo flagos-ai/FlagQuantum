@@ -410,7 +410,7 @@ def remove_layout_restore(circuit_or_ir: Any) -> CircuitIR:
 
     The result is a program to run against a local simulator or a provider that
     accepts per-physical-qubit results, not a routing result to hand back as
-    deployment evidence. ``flagquantum.deployment.routing_evidence`` requires a
+    deployment evidence. ``flagquantum.compiler.artifacts.routing_evidence`` requires a
     deployment routing plan to end restored and rejects this one by design, and the
     deployment entry points treat a program whose ``mapping_restored`` is not true
     as not routed and route it again, which spends back the SWAPs removed here.

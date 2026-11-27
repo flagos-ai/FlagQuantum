@@ -245,7 +245,7 @@ that `mypy --strict` cannot see, and is fixed here.
 ## The catch-up a rename owes
 
 `flagquantum.compiler`, `flagquantum.noise`, `flagquantum.deployment`,
-`flagquantum.remote`, and `flagquantum.kernels` are sparsely sliced — the contract
+`flagquantum.remote`, and `flagquantum.simulation.kernels` are sparsely sliced — the contract
 names 31 modules across them — and the slice's classes are read from outside it. In
 addition to the 31 owned files, **22 follower modules** under `flagquantum/**`, one
 benchmark script, and four test modules had to follow, and the discipline was the
@@ -325,10 +325,10 @@ Each command was run at the commit that carries the rename, in
 | 2 | `python -m ruff check flagquantum tests tools` | `All checks passed!` |
 | 3 | `python -m mypy --strict --python-version 3.12 --ignore-missing-imports flagquantum` | the three errors this tree already carried at `e5f0348b1`, and no fourth |
 | 4 | `python -m compileall -q flagquantum` | exit 0 |
-| 5 | `python tools/check_qubit_vocabulary.py` | exit 0; `341 of 341` parameters retired, `117 of 122` attributes retired, `10 of 10` definitions retired; WQ-8's three rows read `55 retired / 0 remaining`, `15 retired / 2 remaining`, `2 retired / 0 remaining`, and the two attributes still counted are the forwarders `[attribute_aliases]` declares |
-| 6 | `python tools/public_api_snapshot.py` | `public API migration baseline passed`; neither `docs/public_api_v1.json` nor `contracts/public-api-v0.2-baseline.json` is edited, because no name in `stable_exports` is in this slice |
-| 7 | `python tools/validate_required_checks.py` | still `validated 6 externally configured required checks`: this change adds tests and contract rows, never a CI job |
-| 8 | `python tools/check_team_scope.py --require-classified --base e5f0348b1` | see the PR body for the exact class counts |
+| 5 | `python tools/architecture/check_qubit_vocabulary.py` | exit 0; `341 of 341` parameters retired, `117 of 122` attributes retired, `10 of 10` definitions retired; WQ-8's three rows read `55 retired / 0 remaining`, `15 retired / 2 remaining`, `2 retired / 0 remaining`, and the two attributes still counted are the forwarders `[attribute_aliases]` declares |
+| 6 | `python tools/architecture/public_api_snapshot.py` | `public API migration baseline passed`; neither `docs/public_api_v1.json` nor `contracts/public-api-v0.2-baseline.json` is edited, because no name in `stable_exports` is in this slice |
+| 7 | `python tools/ci/validate_required_checks.py` | still `validated 6 externally configured required checks`: this change adds tests and contract rows, never a CI job |
+| 8 | `python tools/architecture/check_team_scope.py --require-classified --base e5f0348b1` | see the PR body for the exact class counts |
 | 9 | the CI marker lane | no new failure; see the PR body for the exact run |
 
 Status: landed. This slice closes the ledger: no canonical parameter, no `field`

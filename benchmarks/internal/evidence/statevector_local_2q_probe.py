@@ -113,8 +113,10 @@ def _measure_pair(
 def collect_run(args: argparse.Namespace) -> dict[str, object]:
     """Execute one host/compiler lane of the fixed SV-009 matrix."""
 
-    from flagquantum.kernels.provenance import triton_compiler_provenance
-    from flagquantum.kernels.triton.statevector_gates import apply_complex64_local_2q
+    from flagquantum.simulation.kernels.provenance import triton_compiler_provenance
+    from flagquantum.simulation.kernels.triton.statevector_gates import (
+        apply_complex64_local_2q,
+    )
 
     if not torch.cuda.is_available():
         raise RuntimeError("CUDA is required for SV-009 benchmark evidence")

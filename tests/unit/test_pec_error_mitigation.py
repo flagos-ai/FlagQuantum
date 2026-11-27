@@ -16,8 +16,7 @@ import math
 import pytest
 import torch
 
-from flagquantum.algorithms import Hamiltonian, HamiltonianTerm
-from flagquantum.algorithms.pec import (
+from flagquantum.algorithms.error_mitigation.pec import (
     PEC_ASSUMPTIONS,
     PEC_LIMITATIONS,
     PauliTwirlDecomposition,
@@ -27,11 +26,11 @@ from flagquantum.algorithms.pec import (
     pauli_twirl_decomposition,
     run_pec,
 )
+from flagquantum.algorithms.primitives.hamiltonian import Hamiltonian, HamiltonianTerm
 from flagquantum.circuit import Circuit
-from flagquantum.noise import (
+from flagquantum.core.noise import NoiseModel, ReadoutError
+from flagquantum.core.operators.channels import (
     KrausChannel,
-    NoiseModel,
-    ReadoutError,
     amplitude_damping_channel,
     bit_flip_channel,
     coherent_overrotation_channel,
@@ -104,7 +103,7 @@ def _zz() -> Hamiltonian:
 def test_the_channel_is_rebuilt_from_the_declaration_the_lowering_wrote() -> None:
     """A lowered instruction carries the parameter and the operators together."""
 
-    from flagquantum.algorithms.pec import _declared_channel
+    from flagquantum.algorithms.error_mitigation.pec import _declared_channel
     from flagquantum.compiler import lower_noise_model
     from flagquantum.core import Instruction
 

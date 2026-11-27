@@ -4,8 +4,9 @@ from __future__ import annotations
 
 import torch
 
+from flagquantum.core.operators.pauli import count, scalar
+
 from ...circuit import Circuit
-from ...core.algebra.pauli import count, scalar
 from .low_rank import LowRankFactors
 from .lowering import append_orbital_rotation
 from .numerics import static_tensor

@@ -96,7 +96,7 @@ exported through the Stable Core, so no public API change follows from this modu
 
 **The register parameter is spelled ``qubits``, and the flag register names its first
 qubit.** This package is migrating every public parameter named after the retired
-vocabulary to its qubit-named spelling, and ``tools/check_qubit_vocabulary.py`` fails
+vocabulary to its qubit-named spelling, and ``tools/architecture/check_qubit_vocabulary.py`` fails
 closed when a new public parameter grows the ledger. Nothing in this module adds to it:
 the register is ``qubits``, the flag register is named by its first qubit, and
 ``contracts/qubit-vocabulary-contract.toml`` owns the ledger.
@@ -121,7 +121,7 @@ from .oracle import append_multi_controlled_x
 from .state_preparation import arbitrary_state
 
 if TYPE_CHECKING:
-    from ..core import Hamiltonian
+    from flagquantum.algorithms.primitives.hamiltonian import Hamiltonian
 
 __all__ = [
     "LinearCombinationEncoding",

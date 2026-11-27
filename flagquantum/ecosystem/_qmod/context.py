@@ -11,10 +11,7 @@ from collections.abc import Callable, Mapping
 from dataclasses import replace
 from types import MappingProxyType
 
-from ...compiler._construction.verification.register_profile import (
-    register_type,
-)
-from ...compiler._hybrid.model import (
+from flagquantum.compiler.frontends._structured.model import (
     QUANTUM_EFFECT,
     Block,
     HybridProgram,
@@ -22,6 +19,10 @@ from ...compiler._hybrid.model import (
     Region,
     Value,
     ValueId,
+)
+
+from ...compiler._construction.verification.register_profile import (
+    register_type,
 )
 from .adapter_arithmetic import (
     bind_registers as _bind_registers,

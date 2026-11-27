@@ -35,8 +35,9 @@ from datetime import datetime
 from functools import partial
 from typing import Any
 
+from flagquantum.core.operators.schema import canonical_opcode, get_operator_schema
+
 from ...core.ir import CircuitIR, Instruction, ensure_circuit_ir
-from ...core.operator_schema import canonical_opcode, get_operator_schema
 from ...core.target_capabilities import (
     CapabilityRequirement,
     ComparisonOperator,

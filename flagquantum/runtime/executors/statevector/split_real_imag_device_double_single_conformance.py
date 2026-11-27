@@ -9,7 +9,8 @@ from typing import Any
 
 import torch
 
-from ....compute import resolve_platform_device
+from flagquantum.compute.local import resolve_platform_device
+
 from ....core.parameters import Parameter, ParameterExpression
 from ....simulation.numerics.double_single import (
     DoubleSingleTensor,

@@ -8,7 +8,7 @@ from pathlib import Path
 
 import pytest
 
-from flagquantum.kernels.catalog import (
+from flagquantum.simulation.kernels.catalog import (
     EVIDENCE,
     IMPLEMENTATIONS,
     KERNEL_DEVICES,
@@ -104,7 +104,9 @@ def test_cataloged_implementation_symbols_exist_without_importing_providers() ->
 
 
 def test_catalog_covers_every_triton_wrapper() -> None:
-    triton_directory = _REPOSITORY_ROOT / "flagquantum" / "kernels" / "triton"
+    triton_directory = (
+        _REPOSITORY_ROOT / "flagquantum" / "simulation" / "kernels" / "triton"
+    )
     cataloged = {
         (implementation.module, implementation.symbol)
         for implementation in IMPLEMENTATIONS
@@ -114,7 +116,7 @@ def test_catalog_covers_every_triton_wrapper() -> None:
     for source in sorted(triton_directory.glob("*.py")):
         if source.name in {"__init__.py", "_jit.py"}:
             continue
-        module = f"flagquantum.kernels.triton.{source.stem}"
+        module = f"flagquantum.simulation.kernels.triton.{source.stem}"
         exported.update(
             (module, symbol) for symbol in _literal_all(_module_tree(module))
         )
@@ -144,9 +146,9 @@ def test_evidence_references_existing_tests_and_artifacts() -> None:
 def test_catalog_import_is_accelerator_provider_free() -> None:
     command = (
         "import sys; "
-        "import flagquantum.kernels.catalog; "
+        "import flagquantum.simulation.kernels.catalog; "
         "assert 'triton' not in sys.modules; "
-        "assert not any(name.startswith('flagquantum.kernels.triton') "
+        "assert not any(name.startswith('flagquantum.simulation.kernels.triton') "
         "for name in sys.modules)"
     )
     completed = subprocess.run(
@@ -214,12 +216,12 @@ def test_catalog_refuses_an_undeclared_execution_device() -> None:
 
 
 def test_declared_device_vocabulary_matches_the_platform_registry() -> None:
-    # flagquantum.kernels may not import flagquantum.compute: the protected
+    # flagquantum.simulation.kernels may not import flagquantum.compute: the protected
     # architecture boundaries forbid it. The device axis is therefore declared
     # twice by necessity, and this test is what keeps the duplicate honest.
     # Importing compute inside the test rather than at module scope keeps
     # test_catalog_import_is_accelerator_provider_free's subprocess clean.
-    from flagquantum.compute import list_platform_status
+    from flagquantum.compute.local import list_platform_status
 
     declared = set(KERNEL_DEVICES)
     registry = {status["device_type"] for status in list_platform_status()}
@@ -238,12 +240,12 @@ def test_a_non_cuda_provider_record_is_expressible() -> None:
     # provider on the CPU device must validate, so the catalog can describe the
     # implementations a CPU-only machine actually runs. No such record is
     # committed yet, so this one is declared here rather than invented as a
-    # machine record (see flagquantum/kernels/README.md).
+    # machine record (see flagquantum/simulation/kernels/README.md).
     implementation = replace(
         IMPLEMENTATIONS[0],
         implementation_id="FQKI-PYTORCH-SV-001-C",
         provider="pytorch",
-        module="flagquantum.kernels.pytorch.statevector_gates",
+        module="flagquantum.simulation.kernels.pytorch.statevector_gates",
         symbol="apply_cpu",
         devices=("cpu",),
         maturity="experimental",

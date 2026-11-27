@@ -44,8 +44,8 @@ import torch
 
 import flagquantum as fq
 from flagquantum.core.ir import CircuitIR, Instruction
+from flagquantum.core.measurement import probabilities
 from flagquantum.errors import ValidationError
-from flagquantum.observables import probabilities
 from flagquantum.simulation.numerics.double_single import DoubleSingleTensor
 
 pytestmark = pytest.mark.unit

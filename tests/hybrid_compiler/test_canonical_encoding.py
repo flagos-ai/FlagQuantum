@@ -7,7 +7,7 @@ from typing import Any
 
 import pytest
 
-from flagquantum.compiler._hybrid import model
+from flagquantum.compiler.frontends._structured import model
 
 pytestmark = pytest.mark.unit
 

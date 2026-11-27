@@ -5,8 +5,8 @@ from collections.abc import Callable, Mapping
 import pytest
 import torch
 
-from flagquantum.algorithms import Hamiltonian, HamiltonianTerm
-from flagquantum.deployment import (
+from flagquantum.algorithms.primitives.hamiltonian import Hamiltonian, HamiltonianTerm
+from flagquantum.runtime.results.counts import (
     expectation_z_from_counts,
     hamiltonian_expectation_from_counts,
 )

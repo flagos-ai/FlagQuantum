@@ -4,7 +4,8 @@ from __future__ import annotations
 
 from collections.abc import Callable
 
-from ..._hybrid.model import Value
+from flagquantum.compiler.frontends._structured.model import Value
+
 from ..verification.register_profile import register_width
 
 Location = tuple[Value, int]

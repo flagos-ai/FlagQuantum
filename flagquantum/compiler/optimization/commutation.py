@@ -56,8 +56,9 @@ from dataclasses import dataclass
 from types import MappingProxyType
 from typing import Any
 
+from flagquantum.core.operators.schema import canonical_opcode, get_operator_schema
+
 from ...core.ir import CircuitIR, Instruction
-from ...core.operator_schema import canonical_opcode, get_operator_schema
 
 #: Single-qubit opcodes whose runtime matrix is diagonal in the computational
 #: basis. Every angle is acceptable, which is what makes the rule exact without

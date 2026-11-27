@@ -134,11 +134,11 @@ failed acceptance item.
   this is the decision that the layout in Decision 11 records. The design sketch in
   `MULTI_LEVEL_IR_ARCHITECTURE.md` § 19.13 named `flagquantum/_compiler/**`, and
   that name cannot be created in this tree: measured, creating
-  `flagquantum/_compiler/__init__.py` fails `tools/check_architecture.py` with
+  `flagquantum/_compiler/__init__.py` fails `tools/architecture/check_architecture.py` with
   `flagquantum/_compiler: unreviewed top-level package directory is forbidden`,
   and one `from .._compiler import ...` line under `flagquantum/compiler/` fails
   the same gate with `compiler imports forbidden layer _compiler`, because
-  `boundaries.compiler_forbidden` lists that name. `team-ownership.toml` records
+  `boundaries.compiler_forbidden` lists that name. `config/team-ownership.toml` records
   it among five patterns removed for matching no tracked path. A third internal
   IR home beside the public one would also be the parallel scaffolding that
   `ARCH-012` clause 2 prohibits, so the levels go in the package that already
@@ -161,7 +161,7 @@ deprecation process instead.
 ## Protected-path question, verified
 
 An earlier draft of this ADR recorded a suspected defect: that
-`team-ownership.toml` protected `flagquantum/core/ir/**`, a glob that cannot match
+`config/team-ownership.toml` protected `flagquantum/core/ir/**`, a glob that cannot match
 the sibling module `flagquantum/core/ir.py`, leaving the public IR module outside
 the protected-path mechanism. That suspicion has been checked against the tree and
 is **not** a defect for the tree as it stood on 2026-10-06. It is recorded here
@@ -172,7 +172,7 @@ Three checks were run.
 
 1. The entry was `flagquantum/core/ir.py`, a literal repository-relative path, not
    `flagquantum/core/ir/**`. The `**` form appeared nowhere in `protected_paths`.
-2. `tools/check_team_scope.py` is present in this checkout and matches protected
+2. `tools/architecture/check_team_scope.py` is present in this checkout and matches protected
    paths with `fnmatch.fnmatchcase`. Under that matcher `flagquantum/core/ir.py`
    matched the literal entry and `flagquantum/core/ir/**` would not have, which is
    why the distinction matters. The literal form was the correct one for a flat
@@ -199,9 +199,9 @@ kept as the record of 2026-10-06 and are not restated.
 The internal levels live in `flagquantum/core/ir/**`, the package that already owns
 the public IR, and not under `flagquantum/_compiler/**` as
 `MULTI_LEVEL_IR_ARCHITECTURE.md` § 19.13 sketched. § 19.13's name cannot be created
-in this tree: `flagquantum/_compiler/` fails `tools/check_architecture.py` as an
+in this tree: `flagquantum/_compiler/` fails `tools/architecture/check_architecture.py` as an
 unreviewed top-level package directory, importing it from `flagquantum/compiler/`
-fails the same gate as a forbidden layer, and `team-ownership.toml` records the
+fails the same gate as a forbidden layer, and `config/team-ownership.toml` records the
 name among five patterns removed for matching no tracked path. Landing there would
 mean amending two policy files to revive a name the repository deliberately
 deleted, which is a separate change and not part of Phase 4. The consequence for
@@ -233,7 +233,7 @@ verifier taxonomy, and pass contract in Decisions 1-8 are unchanged.
       second internal IR location is proposed or created. The public IR module
       became the package `flagquantum/core/ir/` in the same change, with
       `__init__.py` holding the former module's contents and the glob added to
-      `team-ownership.toml` protected paths beside it.
+      `config/team-ownership.toml` protected paths beside it.
 - [x] Repository owner approves the Phase 4 scope. (2026-10-08, together with the
       Phase 4 activation in `API_CHANGE_PROPOSAL_072`.)
 - [ ] Compiler and runtime owners confirm the pass-contract and defect-semantics

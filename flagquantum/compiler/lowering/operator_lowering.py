@@ -7,8 +7,13 @@ from dataclasses import dataclass, field, replace
 from types import MappingProxyType
 from typing import Any
 
+from flagquantum.core.operators.schema import (
+    OPERATOR_SCHEMAS,
+    OperatorSchema,
+    canonical_opcode,
+)
+
 from ...core.ir import CircuitIR, ensure_circuit_ir
-from ...core.operator_schema import OPERATOR_SCHEMAS, OperatorSchema, canonical_opcode
 
 BACKENDS = (
     "pytorch",
@@ -191,7 +196,7 @@ def _builtin_registry() -> OperatorLoweringRegistry:
             if backend == "qcis":
                 supported = opcode in qcis_supported
                 strategy = "decomposition"
-                implementation = "flagquantum.compiler.qcis._decompose"
+                implementation = "flagquantum.compiler.formats.qcis._decompose"
                 reason = "no QCIS decomposition" if not supported else ""
             elif backend == "qasm":
                 strategy = "serialization"

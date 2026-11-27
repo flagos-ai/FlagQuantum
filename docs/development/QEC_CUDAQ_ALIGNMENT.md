@@ -1,12 +1,12 @@
 # FlagQuantum QEC ↔ CUDA-Q alignment checklist — the reading
 
 Read this with [`qec-cudaq-alignment-checklist.toml`](../../contracts/qec-cudaq-alignment-checklist.toml)
-and [`check_qec_cudaq_alignment.py`](../../tools/check_qec_cudaq_alignment.py)
+and [`check_qec_cudaq_alignment.py`](../../tools/validation/check_qec_cudaq_alignment.py)
 open. The TOML is the checklist; the Python tool is the check that it still
 describes a real repository; this document is the part a person reads once.
 
 ```
-python tools/check_qec_cudaq_alignment.py        # 313 checks, exit 0 or 1
+python tools/validation/check_qec_cudaq_alignment.py        # 313 checks, exit 0 or 1
 python -m pytest tests/unit/test_qec_cudaq_alignment_check.py -q
 ```
 
@@ -1371,7 +1371,7 @@ refuses.
 4. **`qec_stim_integration` named one maturity entry for two capabilities.** The
    row pointed at `stabilizer_sampling`, which is the sampling half, while the
    interchange half is `detector_error_model`. **Landed as** `maturity_refs`, the
-   plural form: the row now names both entries, `tools/parity_matrix.py`
+   plural form: the row now names both entries, `tools/architecture/parity_matrix.py`
    validates every entry, and the checker reads both forms. The alternatives
    were both worse. Splitting the row would leave the join — which is the thing
    the row is actually about — in neither half, and it would move the capability
@@ -1429,7 +1429,7 @@ row.
 
 ## 5. How the checker fails closed
 
-The point of `tools/check_qec_cudaq_alignment.py` is that the checklist cannot quietly
+The point of `tools/validation/check_qec_cudaq_alignment.py` is that the checklist cannot quietly
 become fiction. Resolution is a source-level AST scan, not an import, so it runs
 without torch, without an installed FlagQuantum, and without the optional `stim`
 distribution. Per row it checks:
@@ -1483,12 +1483,12 @@ Four artifacts, all four of them in the repository, each doing one job:
 | Artifact | Home | Role |
 | --- | --- | --- |
 | Checklist | [`contracts/qec-cudaq-alignment-checklist.toml`](../../contracts/qec-cudaq-alignment-checklist.toml) | The rows, as data. A repository contract like its neighbours in `contracts/`. |
-| Checker | [`tools/check_qec_cudaq_alignment.py`](../../tools/check_qec_cudaq_alignment.py) | Resolves every claim against this checkout. Run by CI's `quality` job. |
+| Checker | [`tools/validation/check_qec_cudaq_alignment.py`](../../tools/validation/check_qec_cudaq_alignment.py) | Resolves every claim against this checkout. Run by CI's `quality` job. |
 | This reading | `docs/development/QEC_CUDAQ_ALIGNMENT.md` | The prose a person reads once, including the field-row index below. |
 | Mutation test | [`tests/unit/test_qec_cudaq_alignment_check.py`](../../tests/unit/test_qec_cudaq_alignment_check.py) | Proves the checker can fail, by damaging one section at a time. |
 
 Defaults inside the checker are absolute, derived from its own location, so
-`python tools/check_qec_cudaq_alignment.py` gives the same answer from any
+`python tools/validation/check_qec_cudaq_alignment.py` gives the same answer from any
 working directory and the CI step does not have to name the repository it is
 standing in. `--repo-root`, `--checklist`, and `--reading` remain overridable for
 the mutation test, which runs the checker against a throwaway copy of the
@@ -1497,7 +1497,7 @@ repository rather than the real one.
 The section 4 findings are contract changes rather than separate artifacts. They
 landed in `contracts/cudaq-parity-matrix.toml`, with the regenerated
 `docs/reference/CUDAQ_PARITY_MATRIX.md`, `contracts/README.md`,
-`docs/development/CUDAQ_PARITY_BASELINE.md`, `tools/parity_matrix.py`, and
+`docs/development/CUDAQ_PARITY_BASELINE.md`, `tools/architecture/parity_matrix.py`, and
 `tests/unit/test_cudaq_parity_matrix_contract.py` updated in the same change.
 
 The split between the two documents is deliberate and is the thing to keep

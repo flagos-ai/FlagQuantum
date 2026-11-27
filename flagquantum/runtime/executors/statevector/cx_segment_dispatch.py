@@ -6,8 +6,9 @@ import os
 
 import torch
 
+from flagquantum.simulation.kernels.catalog import KernelRequest
+
 from ....core.ir import CircuitIR
-from ....kernels.catalog import KernelRequest
 from .kernel_dispatch import KernelDecision, select_cataloged_triton_kernel
 
 _TRITON_LOCAL_CX_SEGMENT_DEFAULT_SHAPES = ((1, 1 << 24),)

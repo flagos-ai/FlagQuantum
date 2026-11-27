@@ -14,13 +14,13 @@ from typing import Any
 import pytest
 
 import flagquantum as fq
+import flagquantum.compute.remote as fqr
 import flagquantum.deployment as fqd
-import flagquantum.remote as fqr
 import flagquantum.runtime as fqrt
-from flagquantum.deployment import CloudBackendProfile
+from flagquantum.compute.remote import HttpQuantumProvider, QuafuProvider
+from flagquantum.compute.remote.packages import CloudBackendProfile
 from flagquantum.ecosystem.extensions import ProviderExtension
-from flagquantum.remote import HttpQuantumProvider, QuafuProvider
-from flagquantum.runtime.result import ExecutionResult
+from flagquantum.runtime.results import ExecutionResult
 from flagquantum.runtime.target_execution import TargetExecutionResult
 from flagquantum.testing import InMemoryRemoteTarget
 

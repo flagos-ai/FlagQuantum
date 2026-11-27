@@ -10,10 +10,10 @@ from typing import Any, cast
 import pytest
 
 import flagquantum as fq
-from flagquantum.core.target_capabilities import TargetCapabilitySnapshot
-from flagquantum.remote.qpu.quafu_dynamic import (
+from flagquantum.compute.remote.qpu.quafu_dynamic import (
     _quafu_dynamic_snapshot_from_fixture,
 )
+from flagquantum.core.target_capabilities import TargetCapabilitySnapshot
 from flagquantum.runtime.dynamic.remote_capabilities import DYNAMIC_REMOTE_EXTENSION
 
 pytestmark = pytest.mark.unit

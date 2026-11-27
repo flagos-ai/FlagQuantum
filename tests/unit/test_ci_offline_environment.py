@@ -372,6 +372,8 @@ def test_export_pins_oci_manifests_instead_of_local_docker_ids(
     ("edit", "expected_exit"),
     [
         ('license-files = ["LICENSE", "vendor/LICENSE"]', 0),
+        ('target-version = "py312"', 0),
+        ('build-backend = "other.backend"', 1),
         ('dependencies = ["torch>=2.14"]', 1),
         ('requires = ["setuptools>=78", "wheel"]', 1),
         ('qec = ["stim>=1.17"]', 1),
@@ -383,11 +385,16 @@ def test_offline_manifest_ignores_wheel_metadata_and_rejects_dependency_changes(
     original = """\
 [build-system]
 requires = ["setuptools>=77", "wheel"]
+build-backend = "setuptools.build_meta"
 [project]
 dependencies = ["torch>=2.13"]
 license-files = ["LICENSE"]
 [project.optional-dependencies]
 qec = ["stim>=1.16"]
+[tool.ruff]
+target-version = "py310"
+[tool.ruff.lint.per-file-ignores]
+"flagquantum/observables/__init__.py" = ["E743"]
 [tool.cibuildwheel]
 test-command = "python smoke.py"
 """
@@ -399,7 +406,11 @@ test-command = "python smoke.py"
         edit if line.startswith(f"{key} = ") else line for line in original.splitlines()
     )
     checkout.write_text(
-        updated.replace("python smoke.py", "python check_wheel.py") + "\n"
+        updated.replace("python smoke.py", "python check_wheel.py").replace(
+            "flagquantum/observables/__init__.py",
+            "flagquantum/core/operators/observable.py",
+        )
+        + "\n"
     )
     result = subprocess.run(
         [
@@ -438,4 +449,4 @@ def test_coverage_aggregation_uses_the_producers_locked_environment() -> None:
     assert aggregate["timeout-minutes"] == 20
     commands = [step.get("run", "") for step in aggregate["steps"]]
     assert "test '${{ needs.coverage-shard.result }}' = success" in commands
-    assert "python tools/check_coverage.py" in commands
+    assert "python tools/ci/check_coverage.py" in commands

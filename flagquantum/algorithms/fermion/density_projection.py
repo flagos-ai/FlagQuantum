@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import torch
 
-from ...core.algebra.pauli import count
+from flagquantum.core.operators.pauli import count
 
 
 def _lift(matrix: torch.Tensor, eye: torch.Tensor) -> torch.Tensor:

@@ -15,7 +15,7 @@ from flagquantum.compiler.lowering.native_gate_legalization import (
     legalize_native_gates,
 )
 from flagquantum.core.ir import CircuitIR, Instruction
-from flagquantum.core.operator_schema import OPERATOR_SCHEMAS, canonical_opcode
+from flagquantum.core.operators.schema import OPERATOR_SCHEMAS, canonical_opcode
 from flagquantum.core.target_capabilities import (
     CapabilityFact,
     CapabilityScope,
@@ -257,7 +257,7 @@ def _z_sx_snapshot(*extra: object) -> TargetCapabilitySnapshot:
 def _one_qubit_group() -> tuple[Instruction, ...]:
     """One instruction of every declared single-qubit unitary opcode."""
 
-    from flagquantum.core.operator_schema import OPERATOR_SCHEMAS
+    from flagquantum.core.operators.schema import OPERATOR_SCHEMAS
 
     angles = {"theta": 0.7137, "phi": -0.4211, "lbd": 1.9073}
     return tuple(
@@ -453,7 +453,7 @@ def _two_qubit_group() -> tuple[Instruction, ...]:
     can be legalized.
     """
 
-    from flagquantum.core.operator_schema import OPERATOR_SCHEMAS
+    from flagquantum.core.operators.schema import OPERATOR_SCHEMAS
 
     angles = {"theta": 0.7137}
     group: list[Instruction] = []
@@ -810,7 +810,7 @@ def _named_two_qubit_group() -> tuple[Instruction, ...]:
     `flagquantum.simulation` to be legalized.
     """
 
-    from flagquantum.core.operator_schema import OPERATOR_SCHEMAS
+    from flagquantum.core.operators.schema import OPERATOR_SCHEMAS
 
     return tuple(
         Instruction(
@@ -972,7 +972,7 @@ def test_the_decomposition_record_is_the_moved_class_and_not_a_copy() -> None:
 def test_the_emulation_consumer_still_imports_the_record_from_this_module() -> None:
     """The import path the production consumer uses still resolves to the class."""
 
-    import flagquantum.remote.emulation as emulation
+    import flagquantum.compute.remote.emulation as emulation
 
     assert emulation.GateDecompositionRecord is GateDecompositionRecord
 

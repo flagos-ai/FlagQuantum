@@ -107,8 +107,8 @@ def _shape_record(
 def collect_run(args: argparse.Namespace) -> dict[str, object]:
     """Execute one host/compiler lane of the fixed SV-013 matrix."""
 
-    from flagquantum.kernels.provenance import triton_compiler_provenance
-    from flagquantum.kernels.triton.statevector_reversible_3q import (
+    from flagquantum.simulation.kernels.provenance import triton_compiler_provenance
+    from flagquantum.simulation.kernels.triton.statevector_reversible_3q import (
         apply_complex64_local_reversible_3q,
     )
     from flagquantum.simulation.matrices import FREDKIN_MATRIX, TOFFOLI_MATRIX

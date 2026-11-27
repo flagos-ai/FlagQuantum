@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from collections.abc import Callable
 
-from ..._hybrid.model import Value
+from flagquantum.compiler.frontends._structured.model import Value
 
 
 def emit_rotation_table(

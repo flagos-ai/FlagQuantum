@@ -20,17 +20,17 @@ import torch
 
 import flagquantum as fq
 from flagquantum.errors import SerializationError
-from flagquantum.lindblad import LindbladPlan
-from flagquantum.lindblad import _plan as plan_module
-from flagquantum.lindblad import plan as plan_lindblad_evolution
-from flagquantum.lindblad import run as run_lindblad_evolution
+from flagquantum.runtime.evolution import LindbladPlan
+from flagquantum.runtime.evolution import _plan as plan_module
+from flagquantum.runtime.evolution import plan as plan_lindblad_evolution
+from flagquantum.runtime.evolution import run as run_lindblad_evolution
 from flagquantum.simulation import amplitude_damping, evolve_density_matrix
-from flagquantum.simulation import lindblad as lindblad_module
-from flagquantum.simulation.lindblad_generator import (
+from flagquantum.simulation.dynamics import lindblad as lindblad_module
+from flagquantum.simulation.dynamics.generator import (
     DEFAULT_DENSE_GENERATOR_BYTES,
     Liouvillian,
 )
-from flagquantum.simulation.lindblad_integrators import advance_interval
+from flagquantum.simulation.dynamics.integrators import advance_interval
 from flagquantum.simulation.matrix_free_exponential import exponential_action
 from flagquantum.simulation.matrix_free_hamiltonian import PauliSum
 

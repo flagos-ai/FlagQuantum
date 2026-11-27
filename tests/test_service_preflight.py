@@ -5,7 +5,7 @@ import torch
 
 import flagquantum as fq
 import flagquantum.deployment as deployment
-from flagquantum.deployment import CloudBackendProfile
+from flagquantum.compute.remote.packages import CloudBackendProfile
 from flagquantum.services import (
     capabilities,
     preflight_deployment,

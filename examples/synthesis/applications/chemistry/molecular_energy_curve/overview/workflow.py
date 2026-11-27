@@ -9,7 +9,7 @@ import flagquantum as fq
 from examples.synthesis.applications.chemistry.molecular_energy_curve.main import (
     build_program,
 )
-from flagquantum.algorithms import CobylaOptimizer
+from flagquantum.algorithms.optimizers.cobyla import CobylaOptimizer
 from flagquantum.compiler import ResourceEstimate
 
 from .model import DTYPE, Model, build_model, distances

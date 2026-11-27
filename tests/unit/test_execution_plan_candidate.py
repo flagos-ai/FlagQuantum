@@ -25,7 +25,9 @@ def _load(path: Path) -> dict[str, object]:
     "change", ["version", "implemented", "stage", "result", "unknown"]
 )
 def test_presence_candidate_rejects_unapproved_expansion(change: str) -> None:
-    from tools.public_api_snapshot import _validate_authorized_execution_plan
+    from tools.architecture.public_api_snapshot import (
+        _validate_authorized_execution_plan,
+    )
 
     contract = json.loads(CANDIDATE.read_text())
     assert _validate_authorized_execution_plan(contract, list(fq.__all__)) == []

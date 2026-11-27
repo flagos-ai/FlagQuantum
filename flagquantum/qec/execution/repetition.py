@@ -5,8 +5,13 @@ from __future__ import annotations
 from collections.abc import Sequence
 from dataclasses import dataclass
 
-from ...compiler._hybrid import INDEX, capture_source, lower_dynamic_program
-from ...noise import NoiseModel
+from flagquantum.compiler.frontends._structured import (
+    INDEX,
+    capture_source,
+    lower_dynamic_program,
+)
+from flagquantum.core.noise import NoiseModel
+
 from ...runtime.dynamic._feedback import (
     DynamicFeedbackAction,
     DynamicFeedbackObservation,

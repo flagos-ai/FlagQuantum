@@ -157,7 +157,7 @@ FLAGQUANTUM_TEST_ASCEND_910C=1 FLAGOS_LOG=fallback \
   tests/integration/test_ascend_native_dynamics.py -q
 
 FLAGOS_DIST_STAGED_GLOO=0 FLAGCX_TORCH_BACKEND=flagos \
-  python tools/validate_flagos_statevector_training.py \
+  python tools/validation/validate_flagos_statevector_training.py \
   --world-sizes 2,4,8 --steps 3 --output /tmp/ascend-training.json
 ```
 

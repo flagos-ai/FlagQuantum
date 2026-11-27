@@ -5,7 +5,7 @@ from unittest.mock import Mock
 
 import pytest
 
-from flagquantum.remote.compute._managed_program import _run_ssh
+from flagquantum.compute.remote.compute._managed_program import _run_ssh
 
 pytestmark = pytest.mark.unit
 

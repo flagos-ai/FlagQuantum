@@ -16,7 +16,8 @@ from typing import Any
 import torch
 import torch.distributed as dist
 
-from ....compute import get_platform_runtime
+from flagquantum.compute.local import get_platform_runtime
+
 from .errors import MPSTrainingError
 from .metadata_transport import all_gather_json
 

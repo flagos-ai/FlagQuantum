@@ -17,7 +17,7 @@ from flagquantum.algorithms.fermion.stabilizer import (
     discover_pauli_symmetries,
     reduce_stabilizers,
 )
-from flagquantum.core.algebra.pauli import pauli
+from flagquantum.core.operators.pauli import pauli
 
 pytestmark = pytest.mark.integration
 

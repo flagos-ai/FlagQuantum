@@ -11,7 +11,8 @@ from typing import Any, Protocol
 import torch
 import torch.distributed as dist
 
-from ....compute import resolve_platform_device
+from flagquantum.compute.local import resolve_platform_device
+
 from ....core.ir import CircuitIR, ensure_circuit_ir
 from ....simulation.native_cpu import (
     compact_cpu_cx_adjoint_auxiliary_bytes,

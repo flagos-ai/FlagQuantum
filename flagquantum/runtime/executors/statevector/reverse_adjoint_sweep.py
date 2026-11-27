@@ -10,7 +10,18 @@ from typing import Any
 import torch
 import torch.distributed as dist
 
-from ....compute import get_platform_runtime
+from flagquantum.compute.local import get_platform_runtime
+from flagquantum.runtime.executors.statevector.reverse_adjoint_kernels import (
+    _apply_matrix_gate,
+    _apply_one_gate,
+    _cpu_direct_adjoint_gate_enabled,
+    _fused_sharded_1q_vjp_adjoint,
+    _MatrixJVP,
+)
+from flagquantum.simulation.statevector.adjoint import (
+    _fused_single_process_cpu_reversible_vjp,
+)
+
 from ....core.ir import CircuitIR, Instruction
 from ....core.runtime_config import get_runtime_config, runtime_config
 from ....simulation.native_cpu import (
@@ -43,14 +54,6 @@ from .layout import distributed_swap_rank_local_bits, plan_persistent_statevecto
 from .local_execution import initialize_statevector_shard
 from .planning import plan_distributed_statevector
 from .reverse_adjoint_cx import apply_or_defer_cpu_cx_adjoint_segment
-from .reverse_adjoint_kernels import (
-    _apply_matrix_gate,
-    _apply_one_gate,
-    _cpu_direct_adjoint_gate_enabled,
-    _fused_sharded_1q_vjp_adjoint,
-    _fused_single_process_cpu_reversible_vjp,
-    _MatrixJVP,
-)
 from .reverse_adjoint_rotation_segment import _apply_local_rotation_segment
 from .reverse_observable import hamiltonian_adjoint_seed, prepare_observable_adjoint
 from .reverse_support import (
@@ -575,7 +578,7 @@ class _ReversibleAdjointSweep:
                 execution_instruction, accelerated_matrix
             )
             if derivative_matrix is not None:
-                from ....kernels.triton.statevector_adjoint import (
+                from flagquantum.simulation.kernels.triton.statevector_adjoint import (
                     fused_complex64_local_1q_reversible_vjp,
                 )
 
@@ -694,7 +697,7 @@ class _ReversibleAdjointSweep:
                         segment_start=segment_start,
                         index=index,
                     )
-                from ....kernels.triton.statevector_gates import (
+                from flagquantum.simulation.kernels.triton.statevector_gates import (
                     apply_complex64_local_cx_segment,
                 )
 
@@ -1002,7 +1005,7 @@ class _ReversibleAdjointSweep:
                     runtime_supported=len(active) == 1,
                 )
                 if vjp_decision.accelerated:
-                    from ....kernels.triton.statevector_adjoint import (
+                    from flagquantum.simulation.kernels.triton.statevector_adjoint import (
                         fused_complex64_local_1q_vjp_adjoint,
                     )
 

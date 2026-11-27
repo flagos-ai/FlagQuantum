@@ -18,7 +18,7 @@ from pathlib import Path
 
 import pytest
 
-from tools import check_import_time
+from tools.validation import check_import_time
 
 pytestmark = pytest.mark.unit
 ROOT = Path(__file__).resolve().parents[2]

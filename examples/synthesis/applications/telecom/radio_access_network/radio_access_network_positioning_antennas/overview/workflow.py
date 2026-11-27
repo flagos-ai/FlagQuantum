@@ -8,7 +8,10 @@ import torch
 import flagquantum as fq
 from examples.synthesis.graph_optimization import Evaluation
 from flagquantum import synth
-from flagquantum.algorithms import NelderMeadOptimizer, NelderMeadResult
+from flagquantum.algorithms.optimizers.nelder_mead import (
+    NelderMeadOptimizer,
+    NelderMeadResult,
+)
 
 from .model import (
     Assignment,
@@ -70,7 +73,7 @@ def sample_distribution(
     coefficients: tuple[float, ...],
     *,
     shots: int = 3000,
-    seed: int = 2718
+    seed: int = 2718,
 ) -> tuple[Sample, ...]:
     validate_coefficients(coefficients)
     if type(shots) is not int or not 1 <= shots <= 100000:

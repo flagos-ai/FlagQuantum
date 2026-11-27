@@ -7,7 +7,7 @@ from pathlib import Path
 import pytest
 import yaml
 
-from tools.artifact_manifest import main as manifest_main
+from tools.release.artifact_manifest import main as manifest_main
 from tools.verify_distribution_artifacts import (
     ALLOWED_WHEEL_PACKAGE_ROOTS,
     REQUIRED_MEMBER_SUFFIXES,
@@ -115,7 +115,7 @@ def test_qec_real_installation_acceptance_is_a_required_package_step() -> None:
     steps = workflow["jobs"]["package"]["steps"]
     gate = next(step for step in steps if step.get("id") == "qec-installed")
     assert "if" not in gate and not gate.get("continue-on-error", False)
-    assert "tools/check_qec_installed_profiles.py" in gate["run"]
+    assert "tools/release/check_qec_installed_profiles.py" in gate["run"]
     assert "--dist-dir dist" in gate["run"]
     manifest = next(
         step
@@ -194,7 +194,7 @@ def test_distribution_requires_runtime_profiles_and_numerical_contract() -> None
 
 
 def test_distribution_requires_research_service_modules() -> None:
-    required = "flagquantum/services/research_execution.py"
+    required = "flagquantum/algorithms/optimization/_research_execution.py"
     assert required in REQUIRED_MEMBER_SUFFIXES
     assert _missing_required_members(
         tuple(name for name in REQUIRED_MEMBER_SUFFIXES if name != required)

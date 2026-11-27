@@ -13,8 +13,8 @@ from flagquantum.compiler._construction.codegen.arithmetic import (
 )
 from flagquantum.compiler._construction.frontend.python import Definition, capture
 from flagquantum.compiler._construction.verification.bindings import OutputMode
-from flagquantum.compiler._hybrid.model import HybridProgram, ValueId
-from flagquantum.compiler._hybrid.verifier import HybridVerificationError
+from flagquantum.compiler.frontends._structured.model import HybridProgram, ValueId
+from flagquantum.compiler.frontends._structured.verifier import HybridVerificationError
 from flagquantum.core.ir import CircuitIR, Instruction
 
 pytestmark = pytest.mark.unit

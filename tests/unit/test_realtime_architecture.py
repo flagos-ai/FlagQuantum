@@ -4,7 +4,7 @@ from pathlib import Path
 
 import pytest
 
-import tools.check_architecture as checker
+import tools.architecture.check_architecture as checker
 
 pytestmark = pytest.mark.unit
 

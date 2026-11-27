@@ -10,7 +10,10 @@ import torch
 import flagquantum as fq
 from examples.synthesis.graph_optimization import lower_tail_cost
 from flagquantum import synth
-from flagquantum.algorithms import NelderMeadOptimizer, NelderMeadResult
+from flagquantum.algorithms.optimizers.nelder_mead import (
+    NelderMeadOptimizer,
+    NelderMeadResult,
+)
 
 from .quantum import main
 

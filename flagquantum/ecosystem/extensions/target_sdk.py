@@ -36,7 +36,8 @@ from math import isfinite
 from types import MappingProxyType
 from typing import Any
 
-from ...core.operator_schema import canonical_opcode, get_operator_schema
+from flagquantum.core.operators.schema import canonical_opcode, get_operator_schema
+
 from ...core.target_capabilities import (
     AUTHORITATIVE_STATIC_DECLARATION_ALLOWED,
     CAPABILITY_NAMES,

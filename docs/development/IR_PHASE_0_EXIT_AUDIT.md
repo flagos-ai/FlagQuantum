@@ -84,7 +84,7 @@ Within these results:
 Command:
 
 ```bash
-python tools/ci_tier.py pr-default
+python tools/ci/ci_tier.py pr-default
 ```
 
 After technical remediation: `1019 passed, 10 skipped, 1268 deselected` in 29.45

@@ -7,7 +7,7 @@ import flagquantum as fq
 import flagquantum.noise as fqn
 import flagquantum.runtime as fqr
 from flagquantum.compiler import lower_noise_model
-from flagquantum.noise import bit_flip_channel
+from flagquantum.core.operators.channels import bit_flip_channel
 from flagquantum.runtime.executors.mps.noisy import merge_noisy_mps_results
 from flagquantum.runtime.trajectories import (
     MPSMonteCarloResult,

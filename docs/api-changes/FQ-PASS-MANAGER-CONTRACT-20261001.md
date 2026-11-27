@@ -114,7 +114,7 @@ and documented as such: `flagquantum/compiler/IMPLEMENTATION.md:30-33` states th
 `_hybrid/` "is not a second circuit compiler ... and it is intentionally absent from
 public exports", and
 `tests/unit/test_hybrid_compilation_private_contract.py:892` pins
-`"pipeline_and_audit": "flagquantum.compiler._hybrid.passes"` as that authority.
+`"pipeline_and_audit": "flagquantum.compiler.frontends._structured.passes"` as that authority.
 
 So publishing `PassManager` for `CircuitIR` would create a **third** composition
 authority in the same package, over the same kind of object, with a weaker audit
@@ -322,7 +322,7 @@ changes.
 | `docs/architecture/decisions/ARCH_011_...md` | Its Open Question 3 is answered by this document; the answer removes the graph step's last stated justification, which the ADR already anticipates |
 | No new tool | The four-of-twenty-eight measurement above is a one-off; a gate that pinned "no pass manager is published" would be a rule about a name that does not exist. If W11-01 lands, its differential test is the gate that matters |
 
-`python tools/check_team_scope.py --team integration --files docs/api-changes/FQ-PASS-MANAGER-CONTRACT-20261001.md`
+`python tools/architecture/check_team_scope.py --team integration --files docs/api-changes/FQ-PASS-MANAGER-CONTRACT-20261001.md`
 passes: `docs/api-changes/**` is a shared path.
 
 ## Owner and approvals

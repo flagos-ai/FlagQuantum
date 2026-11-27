@@ -154,15 +154,13 @@ from flagquantum.compiler.optimization.one_qubit_optimization import (
 )
 from flagquantum.compiler.optimization.one_qubit_synthesis import HALF_PI_PULSE_OPCODES
 from flagquantum.compiler.optimization.zero_state_reset import remove_zero_state_resets
-from flagquantum.compiler.pipeline import (
-    _SELF_INVERSE,
-    _optimize_to_fixed_point,
-    merge_adjacent_rotations,
-    merge_self_inverse,
-    remove_identity_gates,
-)
+from flagquantum.compiler.optimization.canonicalization import _SELF_INVERSE
+from flagquantum.compiler.pipeline import _optimize_to_fixed_point
+from flagquantum.compiler.pipeline import merge_adjacent_rotations
+from flagquantum.compiler.pipeline import merge_self_inverse
+from flagquantum.compiler.pipeline import remove_identity_gates
 from flagquantum.core.ir import CircuitIR, Instruction
-from flagquantum.core.operator_schema import (
+from flagquantum.core.operators.schema import (
     OPERATOR_SCHEMAS,
     canonical_opcode,
     get_operator_schema,

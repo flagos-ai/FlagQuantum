@@ -173,8 +173,8 @@ publication and be marked with its environment and evidence receipt.
 8. tests/qec/test_native_detector_execution.py
 9. tests/team/simulation/test_native_detector_execution_conformance.py
 10. tests/unit/test_qec_installed_profiles.py
-11. tools/qec_installed_smoke.py
-12. tools/verify_embedded_stabilizer_install.py
+11. tools/release/qec_installed_smoke.py
+12. tools/validation/verify_embedded_stabilizer_install.py
 13. examples/qec/native_detector_sampling.py
 14. docs/development/QEC_DETECTOR_FILE_OUTPUT_PROPOSAL.md (new)
 15. docs/guides/STIM_USER_MIGRATION.md
@@ -198,15 +198,15 @@ subprocess timeout, terminate its process group on timeout, and stop on first
 failure. Commands below are future acceptance, not claimed executed results.
 
 ```text
-python tools/check_team_scope.py --team integration --files <the 20 paths above>
+python tools/architecture/check_team_scope.py --team integration --files <the 20 paths above>
 python -m pytest tests/qec/test_native_detector_execution.py -q
 python -m pytest tests/team/simulation/test_native_detector_execution_conformance.py tests/unit/test_compiled_measurement_sampler_contract.py tests/unit/test_qec_installed_profiles.py -q
 python -m pytest tests/api_contract/test_public_docstring_examples.py -q
 python -m ruff check <changed Python paths>
 python -m black --check <changed Python paths>
 python -m mypy --strict <changed Python paths>
-python tools/ci_tier.py pr-default
-python tools/ci_tier.py pr-runtime
+python tools/ci/ci_tier.py pr-default
+python tools/ci/ci_tier.py pr-runtime
 FQ_BUILD_EMBEDDED_STIM=1 python -m build --wheel --no-isolation
 ```
 
@@ -221,8 +221,8 @@ only, retain exact wheel/runtime hashes, unset PYTHONPATH, leave the source tree
 and run each with a 120-second timeout:
 
 ```text
-python <absolute-source-path>/tools/verify_embedded_stabilizer_install.py
-python <absolute-source-path>/tools/qec_installed_smoke.py core
+python <absolute-source-path>/tools/validation/verify_embedded_stabilizer_install.py
+python <absolute-source-path>/tools/release/qec_installed_smoke.py core
 ```
 
 Require no Stim Python distribution or import spec, installed module and extension

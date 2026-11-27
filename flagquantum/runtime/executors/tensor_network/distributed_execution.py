@@ -14,7 +14,8 @@ from typing import Any, Literal
 import torch
 import torch.distributed as dist
 
-from ....compute import resolve_platform_device
+from flagquantum.compute.local import resolve_platform_device
+
 from ....simulation.tensor_network.stages import einsum_pair_by_labels
 from ...distributed.flagos_runtime import current_flagos_device
 from .distributed_dag import (

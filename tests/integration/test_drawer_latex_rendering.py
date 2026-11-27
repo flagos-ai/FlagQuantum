@@ -10,7 +10,7 @@ import pytest
 
 import flagquantum as fq
 from flagquantum.core.ir import CircuitIR, Instruction
-from flagquantum.core.operator_schema import OPERATOR_SCHEMAS
+from flagquantum.core.operators.schema import OPERATOR_SCHEMAS
 from flagquantum.drawer import ClassicalLayer, LatexFigure, draw_hybrid, draw_latex
 
 pytestmark = pytest.mark.integration

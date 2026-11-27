@@ -17,10 +17,10 @@ from examples.synthesis.algorithms.search_and_optimization.grover_mixer_qaoa.gm_
 )
 from examples.synthesis.compare_states import compare_states
 from flagquantum import synth
-from flagquantum.compiler._hybrid.verifier import HybridVerificationError
+from flagquantum.compiler.frontends._structured.verifier import HybridVerificationError
 from flagquantum.errors import PlanningError
 from tests.integration.test_synthesis_native_exact_numbers import definition
-from tools.synthesis_catalog import load_catalog
+from tools.docs.synthesis_catalog import load_catalog
 
 pytestmark = pytest.mark.integration
 ROOT = Path(__file__).resolve().parents[2]

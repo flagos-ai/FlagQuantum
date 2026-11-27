@@ -73,7 +73,7 @@ same journey plus plan-integrity failure behavior.
 
 Start with `flagquantum/runtime/execution.py` for dispatch or result assembly,
 `flagquantum/simulation/statevector/local.py` for the numerical entry, and
-`flagquantum/compute/pytorch.py` for CPU lifecycle behavior. Changes
+`flagquantum/compute/local/pytorch.py` for CPU lifecycle behavior. Changes
 to one concern should normally remain in its owning domain.
 
 GPU, distributed execution, noise, MPS, tensor networks, training, QPU, and new

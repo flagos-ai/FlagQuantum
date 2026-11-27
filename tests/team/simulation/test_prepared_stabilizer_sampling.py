@@ -10,8 +10,8 @@ import pytest
 import torch
 
 from flagquantum.core.ir import CircuitIR, Instruction
+from flagquantum.core.operators.channels import bit_flip_channel
 from flagquantum.errors import ValidationError
-from flagquantum.noise import bit_flip_channel
 from flagquantum.simulation.stabilizer import engine
 
 pytestmark = pytest.mark.unit

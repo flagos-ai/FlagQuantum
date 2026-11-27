@@ -6,8 +6,8 @@ import pytest
 import torch
 
 from flagquantum.core.ir import CircuitIR, Instruction
+from flagquantum.core.operators.channels import KrausChannel
 from flagquantum.core.runtime_config import runtime_config
-from flagquantum.noise import KrausChannel
 from flagquantum.qec.execution import sampling
 
 pytestmark = pytest.mark.unit

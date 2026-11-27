@@ -5,14 +5,14 @@ from __future__ import annotations
 from collections.abc import Sequence
 from numbers import Real
 
-from ...core.algebra.pauli import count, scalar
-from ...observables.fermion import (
+from flagquantum.core.operators.fermion import (
     FermionOperator,
     FermionTerm,
     annihilate,
     create,
     number,
 )
+from flagquantum.core.operators.pauli import count, scalar
 
 
 def _real_coefficient(value: float, name: str) -> float:

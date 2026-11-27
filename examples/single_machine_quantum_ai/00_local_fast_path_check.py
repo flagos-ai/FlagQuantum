@@ -26,7 +26,10 @@ from common import (  # noqa: E402
 )
 
 import flagquantum as fq  # noqa: E402
-from flagquantum.algorithms import Hamiltonian, pauli_term  # noqa: E402
+from flagquantum.algorithms.primitives.hamiltonian import (  # noqa: E402
+    Hamiltonian,
+    pauli_term,
+)
 
 
 def tiny_circuit(theta: torch.Tensor) -> fq.Circuit:
@@ -97,9 +100,11 @@ def main() -> None:
     print_kv({"theoretical_ground_energy": exact_ground_energy(hamiltonian, 2)})
     print_speed_compare(
         {
-            "pytorch_native": native_speed
-            if native_speed is not None
-            else {"status": "unavailable", "reason": "run with --compare-torch"},
+            "pytorch_native": (
+                native_speed
+                if native_speed is not None
+                else {"status": "unavailable", "reason": "run with --compare-torch"}
+            ),
             "jax_kernel": {
                 "status": "see examples/single_machine_quantum_ai/04_jax_kernel_torch_layer.py"
             },

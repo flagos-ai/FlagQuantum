@@ -16,8 +16,8 @@ from flagquantum.compiler._construction.scheduling.target import Target
 from flagquantum.compiler._construction.verification.register_profile import (
     verify_register_program,
 )
-from flagquantum.compiler._hybrid.model import HybridProgram, Operation
-from flagquantum.compiler._hybrid.verifier import HybridVerificationError
+from flagquantum.compiler.frontends._structured.model import HybridProgram, Operation
+from flagquantum.compiler.frontends._structured.verifier import HybridVerificationError
 from flagquantum.compiler.resource_estimation import ResourceEstimate
 from tests.team.compiler.test_construction_python_program import program_definition
 

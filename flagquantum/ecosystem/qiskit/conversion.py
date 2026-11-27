@@ -9,8 +9,9 @@ from typing import Any, Literal
 
 import torch
 
+from flagquantum.core.operators.schema import canonical_opcode, get_operator_schema
+
 from ...core.ir import CircuitIR, Instruction, ensure_circuit_ir
-from ...core.operator_schema import canonical_opcode, get_operator_schema
 from ...core.parameters import Parameter, ParameterExpression
 from .models import (
     QiskitConversionError,

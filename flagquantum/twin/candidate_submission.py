@@ -10,7 +10,8 @@ from os import PathLike
 from pathlib import Path
 from typing import Any
 
-from ..remote.qpu import DeploymentResult, ProviderTaskHandle
+from flagquantum.compute.remote.qpu import DeploymentResult, ProviderTaskHandle
+
 from ._atomic import write_once
 from .candidate import (
     TwinCandidateEvaluation,

@@ -8,7 +8,7 @@ from pathlib import Path
 import pytest
 
 from flagquantum.circuit import Circuit
-from flagquantum.core.operator_schema import OPERATOR_ALIASES, OPERATOR_SCHEMAS
+from flagquantum.core.operators.schema import OPERATOR_ALIASES, OPERATOR_SCHEMAS
 from flagquantum.dynamic import DynamicCircuit
 
 pytestmark = pytest.mark.unit

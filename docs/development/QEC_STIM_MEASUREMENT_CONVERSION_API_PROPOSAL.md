@@ -80,7 +80,7 @@ and one million recorded columns, at least one detector) remain unchanged.
 - `tests/qec/test_stim_measurement_conversion.py`
 - `tests/team/simulation/test_stim_record_conversion_conformance.py`
 - `tests/unit/test_qec_installed_profiles.py`
-- `tools/qec_installed_smoke.py`
+- `tools/release/qec_installed_smoke.py`
 - `examples/qec/stim_measurement_conversion.py`
 - `examples/README.md`
 - `docs/development/QEC_STIM_MEASUREMENT_CONVERSION_API_PROPOSAL.md`
@@ -149,7 +149,7 @@ command, prerequisites and observed output from outside the checkout.
 ```bash
 python -m pytest -q tests/qec/test_stim_measurement_conversion.py tests/team/simulation/test_stim_record_conversion_conformance.py tests/qec/test_stim_experiment_bridge.py tests/unit/test_qec_installed_profiles.py
 python -m examples.qec.stim_measurement_conversion
-python tools/check_qec_installed_profiles.py --dist-dir dist --report-dir /tmp/qec-installed-reports
+python tools/release/check_qec_installed_profiles.py --dist-dir dist --report-dir /tmp/qec-installed-reports
 ```
 
 Run Black24.1, minimum Ruff0.15, strict Mypy/Python3.12 on touched Python files,

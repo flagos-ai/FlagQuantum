@@ -12,7 +12,7 @@ import os
 from pathlib import Path
 
 import flagquantum as fq
-from flagquantum.remote.qpu import QuafuProvider
+from flagquantum.compute.remote.qpu import QuafuProvider
 
 PHYSICAL_QUBITS = (20, 27, 34)
 SHOTS = 1024

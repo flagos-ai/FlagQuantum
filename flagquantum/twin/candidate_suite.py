@@ -12,7 +12,8 @@ from pathlib import Path
 from statistics import fmean
 from typing import Any, cast
 
-from ..remote.qpu import DeploymentResult
+from flagquantum.compute.remote.qpu import DeploymentResult
+
 from ._atomic import write_once
 from .candidate import (
     TwinCandidateDecision,

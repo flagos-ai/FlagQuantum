@@ -14,7 +14,7 @@ import torch
 
 import flagquantum as fq
 import flagquantum.lindblad as fql
-from flagquantum.observables.boson import annihilate, create, number
+from flagquantum.core.operators.boson import annihilate, create, number
 
 THERMAL_RATIO = 0.2
 FINAL_TIME = 0.7

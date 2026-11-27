@@ -4,14 +4,14 @@ import pytest
 import torch
 
 import flagquantum as fq
-from flagquantum.algorithms.chemistry_domain.problem import (
+from flagquantum.algorithms.chemistry.models.problem import (
     MolecularProblem,
     fermion_hamiltonian,
 )
 from flagquantum.algorithms.fermion.evolution import low_rank_evolution
 from flagquantum.algorithms.fermion.low_rank import LowRankFactors, decompose_two_body
-from flagquantum.observables import annihilate, create
-from flagquantum.observables.fermion import FermionOperator
+from flagquantum.core.operators.fermion import FermionOperator
+from flagquantum.core.operators.observable import annihilate, create
 from flagquantum.simulation.unitary import get_unitary
 
 from .oracles import fock_matrix

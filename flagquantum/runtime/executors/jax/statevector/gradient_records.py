@@ -6,8 +6,9 @@ from collections.abc import Mapping
 from dataclasses import dataclass, replace
 from typing import Any
 
+from flagquantum.simulation.statevector.jax.kernels import jax_initial_statevector_shard
+
 from .....core.ir import CircuitIR
-from .....simulation.jax.statevector.kernels import jax_initial_statevector_shard
 from ....distributed.backend_policy import DistributedBackendPolicy
 from ..common import node_count as _node_count
 from ..planning_core import JAXDistributedQuantumPlan

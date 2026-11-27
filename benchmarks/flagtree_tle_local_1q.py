@@ -15,7 +15,7 @@ from typing import Any
 
 import torch
 
-from flagquantum.kernels.provenance import triton_compiler_provenance
+from flagquantum.simulation.kernels.provenance import triton_compiler_provenance
 
 RUN_SCHEMA = "flagquantum.kernel_benchmark_run.flagtree_tle_local_1q.v1"
 EVIDENCE_SCHEMA = "flagquantum.kernel_benchmark.flagtree_tle_local_1q.v1"
@@ -83,8 +83,10 @@ def _case(
     repeats: int,
     group_size: int,
 ) -> dict[str, object]:
-    from flagquantum.kernels.flagtree import apply_complex64_local_1q_tle
-    from flagquantum.kernels.triton.statevector_gates import apply_complex64_local_1q
+    from flagquantum.simulation.kernels.flagtree import apply_complex64_local_1q_tle
+    from flagquantum.simulation.kernels.triton.statevector_gates import (
+        apply_complex64_local_1q,
+    )
 
     generator = torch.Generator(device="cuda").manual_seed(seed)
     state = torch.randn(

@@ -7,7 +7,11 @@ from typing import Protocol
 
 import torch
 
-from ...kernels.catalog import KernelRequest, match_kernel_implementations
+from flagquantum.simulation.kernels.catalog import (
+    KernelRequest,
+    match_kernel_implementations,
+)
+
 from ..kernel_dispatch import _require_cataloged_kernel
 
 
@@ -48,7 +52,7 @@ class _CXSequence(torch.autograd.Function):
             implementation_id="FQKI-TRITON-SV-003-C",
             description="double-precision CX kernel",
         )
-        from ...kernels.triton.statevector_cx_fp64 import apply_cx
+        from flagquantum.simulation.kernels.triton.statevector_cx_fp64 import apply_cx
 
         ctx.controls, ctx.targets, ctx.n_qubits = controls, targets, n_qubits
         return apply_cx(state, controls, targets, n_qubits)

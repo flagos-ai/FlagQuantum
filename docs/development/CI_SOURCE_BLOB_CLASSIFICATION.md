@@ -55,7 +55,7 @@ historical gate must not be represented as having passed this corrected code.
 
 ## Local default-tier result
 
-`python tools/ci_tier.py pr-default` completed without timeout: 21561 passed,
+`python tools/ci/ci_tier.py pr-default` completed without timeout: 21561 passed,
 796 skipped and two failed in 1154.72 seconds. It is not a full-tier pass.
 The first attempt could not collect tests because the shared development venv
 lacked declared PyYAML. A separate temporary overlay supplied PyYAML 6.0.4;

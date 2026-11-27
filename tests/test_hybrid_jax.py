@@ -9,11 +9,12 @@ import torch
 import flagquantum as fq
 import flagquantum.simulation.mps as fqmps
 import flagquantum.simulation.tensor_network as fqtn
-from flagquantum.algorithms import Hamiltonian, pauli_term, zz_chain_hamiltonian
+from flagquantum.algorithms.many_body.spin import zz_chain_hamiltonian
+from flagquantum.algorithms.primitives.hamiltonian import Hamiltonian, pauli_term
 from flagquantum.runtime.executors.jax import compile_quantum_kernel
 from flagquantum.runtime.executors.jax.kernel import JAXQuantumKernel, QuantumTorchLayer
 from flagquantum.runtime.executors.jax.mps import lowering as mps_lowering
-from flagquantum.simulation.jax.mps import kernels as jax_mps
+from flagquantum.simulation.mps.jax import kernels as jax_mps
 
 pytestmark = [
     pytest.mark.jax,

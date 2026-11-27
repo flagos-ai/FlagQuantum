@@ -10,13 +10,14 @@ from numbers import Real
 from threading import RLock
 from typing import TYPE_CHECKING, cast
 
-from ...remote.kaiwu import (
+from flagquantum.compute.remote.kaiwu import (
     KaiwuRemoteJob,
     KaiwuTaskClient,
     KaiwuTaskReceipt,
     KaiwuTaskResult,
     submit_kaiwu_task,
 )
+
 from .matrix import (
     IntegerPrecisionReport,
     KaiwuInteropError,
@@ -29,8 +30,8 @@ if TYPE_CHECKING:
     import numpy as np
     import torch
 
-    from ...algorithms import Hamiltonian
-    from ...algorithms.qubo import QuboProblem
+    from flagquantum.algorithms.optimization.qubo import QuboProblem
+    from flagquantum.algorithms.primitives.hamiltonian import Hamiltonian
 
 
 @dataclass(frozen=True, slots=True)
@@ -238,7 +239,7 @@ class KaiwuSampler:
 
         import numpy as np
 
-        from ...algorithms.qubo import QuboProblem, qubo_to_ising
+        from flagquantum.algorithms.optimization.qubo import QuboProblem, qubo_to_ising
 
         if not isinstance(problem, QuboProblem):
             raise TypeError("problem must be a FlagQuantum QuboProblem")

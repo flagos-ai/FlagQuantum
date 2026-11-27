@@ -32,7 +32,7 @@ except ModuleNotFoundError:  # pragma: no cover - Python 3.10 and older
 pytestmark = pytest.mark.unit
 
 _ROOT = Path(__file__).resolve().parents[2]
-_TOOLS = _ROOT / "tools"
+_TOOLS = _ROOT / "tools" / "architecture"
 _CONTRACT_PATH = _ROOT / "contracts" / "qubit-vocabulary-contract.toml"
 
 
@@ -124,7 +124,7 @@ def _wire_named_package(tmp_path: Path, identifier: str) -> Path:
 
     relative = identifier.split("::", 1)[0]
     name = identifier.rsplit("::", 1)[1]
-    source = (_ROOT / relative).read_text(encoding="utf-8")
+    source = _CENSUS.source_location(_ROOT, identifier).read_text(encoding="utf-8")
     replacement = _CENSUS.replacement_name(name)
     return _package(
         tmp_path,
@@ -151,7 +151,7 @@ def _renamed_package(tmp_path: Path, identifier: str) -> Path:
 
     relative = identifier.split("::", 1)[0]
     name = identifier.rsplit("::", 1)[1]
-    source = (_ROOT / relative).read_text(encoding="utf-8")
+    source = _CENSUS.source_location(_ROOT, identifier).read_text(encoding="utf-8")
     replacement = _CENSUS.replacement_name(name)
     return _package(
         tmp_path,
@@ -770,11 +770,11 @@ def test_a_forbidden_alternative_as_an_attribute_name_is_reported(
     package = _package(
         tmp_path,
         {
-            "flagquantum/algorithms/amplitude_estimation.py": (
+            "flagquantum/algorithms/estimation/amplitude_estimation.py": (
                 "def amplitude_estimation_circuit(n_counting_wires):\n"
                 "    return n_counting_wires\n"
             ),
-            "flagquantum/runtime/result.py": (
+            "flagquantum/runtime/results/__init__.py": (
                 "class MeasurementResult:\n    qubit_indices: tuple = ()\n"
             ),
         },
@@ -897,7 +897,7 @@ def test_an_exclusion_for_a_class_that_stopped_serializing_is_reported(
     package = _package(
         tmp_path,
         {
-            "flagquantum/algorithms/amplitude_estimation.py": (
+            "flagquantum/algorithms/estimation/amplitude_estimation.py": (
                 "def amplitude_estimation_circuit(n_counting_wires):\n"
                 "    return n_counting_wires\n"
             ),
@@ -936,7 +936,7 @@ def test_an_exclusion_for_a_class_that_still_serializes_is_not_reported(
     package = _package(
         tmp_path,
         {
-            "flagquantum/algorithms/amplitude_estimation.py": (
+            "flagquantum/algorithms/estimation/amplitude_estimation.py": (
                 "def amplitude_estimation_circuit(n_counting_wires):\n"
                 "    return n_counting_wires\n"
             ),
@@ -1119,7 +1119,7 @@ def test_an_attribute_alias_without_a_live_declaration_is_reported(
     package = _package(
         tmp_path,
         {
-            "flagquantum/algorithms/amplitude_estimation.py": (
+            "flagquantum/algorithms/estimation/amplitude_estimation.py": (
                 "from dataclasses import dataclass\n"
                 "\n"
                 "\n"
@@ -1135,7 +1135,7 @@ def test_an_attribute_alias_without_a_live_declaration_is_reported(
         "sites": [
             {
                 "site": (
-                    "flagquantum/algorithms/amplitude_estimation.py"
+                    "flagquantum/algorithms/estimation/amplitude_estimation.py"
                     "::AmplitudeEstimationResult::n_counting_wires"
                 ),
                 "replacement": "n_counting_qubits",
@@ -1403,7 +1403,7 @@ def test_a_new_wire_named_public_definition_outside_the_ledger_is_reported(
     package = _package(
         tmp_path,
         {
-            "flagquantum/algorithms/amplitude_estimation.py": (
+            "flagquantum/algorithms/estimation/amplitude_estimation.py": (
                 "def amplitude_estimation_circuit(n_counting_wires):\n"
                 "    return n_counting_wires\n"
             ),

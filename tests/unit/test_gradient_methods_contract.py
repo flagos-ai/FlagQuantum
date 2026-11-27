@@ -3,7 +3,7 @@
 ``tests/test_vector_derivatives.py`` and ``tests/integration/test_gradient_modes.py``
 own what ``fq.gradient`` computes. This file owns
 ``contracts/gradient-methods-contract.toml`` and
-``tools/check_gradient_methods_contract.py``, and asks a different question of them --
+``tools/validation/check_gradient_methods_contract.py``, and asks a different question of them --
 is the matrix still well formed, and is the gate that re-measures it still enforced?
 
 That split matters because the two artifacts fail differently. The gate answers "is the
@@ -11,7 +11,7 @@ matrix still true of the implementation": it rebuilds the reference program and 
 sixty combinations. This file answers "is the matrix still a matrix": one cell per pair,
 every refusal resolvable, every recorded phrase present in the file it names, and the
 two vocabularies the implementation's rather than the file's. The final section asks
-whether the gate is invoked by CI and by ``tools/pre_push.py`` at all, because a gate
+whether the gate is invoked by CI and by ``tools/ci/pre_push.py`` at all, because a gate
 nothing runs is a script.
 
 The middle section is a record of what the matrix refused to predict. Three groups of
@@ -31,6 +31,8 @@ from typing import Any
 import pytest
 import torch
 
+from tools.architecture.source_relocations import source_path
+
 try:
     import tomllib
 except ModuleNotFoundError:  # pragma: no cover - Python 3.10 and older
@@ -41,7 +43,7 @@ pytestmark = pytest.mark.unit
 ROOT = Path(__file__).resolve().parents[2]
 CONTRACT = ROOT / "contracts" / "gradient-methods-contract.toml"
 
-_GATE_PATH = ROOT / "tools" / "check_gradient_methods_contract.py"
+_GATE_PATH = ROOT / "tools" / "validation/check_gradient_methods_contract.py"
 _GATE_SPEC = importlib.util.spec_from_file_location(
     "check_gradient_methods_contract", _GATE_PATH
 )
@@ -159,7 +161,7 @@ def test_the_verification_paths_exist() -> None:
     contract = _contract()
     verification = contract["verification"]
     assert (ROOT / verification["contract"]).is_file()
-    assert (ROOT / verification["gate"]).is_file()
+    assert source_path(ROOT, verification["gate"]).is_file()
     for raw in contract["authorization"]:
         assert (ROOT / raw).is_file()
 
@@ -466,6 +468,6 @@ def test_the_gate_runs_in_ci_and_before_push() -> None:
     """A gate that no workflow invokes is a script, not a gate."""
 
     workflow = (ROOT / ".github/workflows/ci.yml").read_text(encoding="utf-8")
-    assert "python tools/check_gradient_methods_contract.py" in workflow
-    pre_push = (ROOT / "tools/pre_push.py").read_text(encoding="utf-8")
-    assert '"tools/check_gradient_methods_contract.py"' in pre_push
+    assert "python tools/validation/check_gradient_methods_contract.py" in workflow
+    pre_push = (ROOT / "tools/ci/pre_push.py").read_text(encoding="utf-8")
+    assert '"tools/validation/check_gradient_methods_contract.py"' in pre_push

@@ -7,18 +7,18 @@ from dataclasses import replace
 
 import pytest
 
-from flagquantum.algorithms import Hamiltonian, pauli_term
-from flagquantum.algorithms.qubo import QuboProblem
-from flagquantum.ecosystem.kaiwu import KaiwuSampler
-from flagquantum.remote.kaiwu import (
+from flagquantum.algorithms.optimization.qubo import QuboProblem
+from flagquantum.algorithms.primitives.hamiltonian import Hamiltonian, pauli_term
+from flagquantum.compute.remote.kaiwu import (
     KaiwuTaskReceipt,
     KaiwuTaskResult,
     new_receipt,
 )
-from flagquantum.remote.kaiwu.contracts import (
+from flagquantum.compute.remote.kaiwu.contracts import (
     FrozenIsingMatrix,
     KaiwuTaskMode,
 )
+from flagquantum.ecosystem.kaiwu import KaiwuSampler
 
 np = pytest.importorskip("numpy")
 

@@ -10,7 +10,7 @@ import pytest
 
 import flagquantum as fq
 from examples.remote import quafu_twin_region_holdout
-from flagquantum.remote.qpu import (
+from flagquantum.compute.remote.qpu import (
     DeploymentResult,
     ProviderTaskHandle,
     build_result_metadata,

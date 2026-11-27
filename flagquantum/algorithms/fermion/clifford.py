@@ -2,7 +2,8 @@
 
 from __future__ import annotations
 
-from ...core.algebra.pauli import PauliOperator, PauliTerm, pauli
+from flagquantum.core.operators.pauli import PauliOperator, PauliTerm, pauli
+
 from ...core.ir import Instruction
 
 

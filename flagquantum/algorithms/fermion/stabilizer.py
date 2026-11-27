@@ -5,7 +5,8 @@ from __future__ import annotations
 from collections.abc import Sequence
 from dataclasses import dataclass
 
-from ...core.algebra.pauli import PauliOperator, PauliTerm, count, pauli
+from flagquantum.core.operators.pauli import PauliOperator, PauliTerm, count, pauli
+
 from ...core.ir import Instruction
 from .clifford import conjugate_pauli, pauli_words_commute, symplectic_masks
 from .symmetry import ReductionMap, _binary_nullspace, _binary_rows
@@ -74,7 +75,7 @@ def discover_pauli_symmetries(
             multiword or dependent. Coefficients are never thresholded.
 
     Examples:
-        >>> from flagquantum.core.algebra.pauli import pauli
+        >>> from flagquantum.core.operators.pauli import pauli
         >>> from flagquantum.algorithms.fermion.stabilizer import (
         ...     discover_pauli_symmetries, reduce_stabilizers,
         ... )
@@ -263,7 +264,7 @@ def reduce_stabilizers(
     Examples:
         >>> import torch
         >>> import flagquantum as fq
-        >>> from flagquantum.core.algebra.pauli import pauli
+        >>> from flagquantum.core.operators.pauli import pauli
         >>> from flagquantum.algorithms.fermion.stabilizer import reduce_stabilizers
         >>> from flagquantum.algorithms.fermion.lowering import lift_stabilizer_state
         >>> x = pauli(factors=((0, "x"),))

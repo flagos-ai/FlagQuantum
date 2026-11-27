@@ -67,7 +67,7 @@ from __future__ import annotations
 
 import torch
 
-from flagquantum.algorithms.core import Hamiltonian, HamiltonianTerm
+from flagquantum.algorithms.primitives.hamiltonian import Hamiltonian, HamiltonianTerm
 from flagquantum.algorithms.primitives import (
     BlockEncoding,
     LinearCombinationEncoding,

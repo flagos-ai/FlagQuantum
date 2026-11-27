@@ -31,7 +31,7 @@ def test_static_dynamic_circuit_reuses_the_static_quafu_path(
         reject_dynamic_preflight,
     )
     monkeypatch.setattr(
-        "flagquantum.remote.qpu.execution.execute_quafu",
+        "flagquantum.compute.remote.qpu.execution.execute_quafu",
         execute_static,
     )
 
@@ -64,7 +64,7 @@ def test_explicit_dynamic_semantics_remain_fail_closed(
         )
 
     monkeypatch.setattr(
-        "flagquantum.remote.qpu.execution.execute_quafu",
+        "flagquantum.compute.remote.qpu.execution.execute_quafu",
         reject_static_execution,
     )
 

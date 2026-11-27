@@ -9,8 +9,9 @@ from typing import Any
 
 import torch
 
+from flagquantum.core.operators.schema import canonical_opcode, get_operator_schema
+
 from ..core.ir import Instruction
-from ..core.operator_schema import canonical_opcode, get_operator_schema
 from ..core.parameters import value_to_tensor
 from ..core.runtime_config import get_runtime_config
 from ..errors import CapabilityError, ValidationError

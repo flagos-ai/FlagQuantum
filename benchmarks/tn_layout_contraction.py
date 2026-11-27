@@ -15,7 +15,7 @@ from typing import Any, TypeAlias, TypedDict
 
 import torch
 
-from flagquantum.kernels.provenance import triton_compiler_provenance
+from flagquantum.simulation.kernels.provenance import triton_compiler_provenance
 from flagquantum.simulation.real_imag_kernels import (
     _FUSED_LAYOUT_BMM_SHAPES,
     complex_einsum_pair,
@@ -107,7 +107,9 @@ def _direct(
     right: torch.Tensor,
     shapes: LayoutShapes,
 ) -> torch.Tensor:
-    from flagquantum.kernels.triton.complex_bmm import fused_complex_layout_bmm
+    from flagquantum.simulation.kernels.triton.complex_bmm import (
+        fused_complex_layout_bmm,
+    )
 
     return fused_complex_layout_bmm(left, right, (1, 0, 3, 2), (1, 3, 0, 2), shapes)
 

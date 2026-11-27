@@ -12,16 +12,16 @@ import torch
 
 import flagquantum as fq
 from flagquantum.compiler import CouplingMap
-from flagquantum.core.target_capabilities import TargetCapabilitySnapshot
-from flagquantum.dynamic import DynamicCircuit
-from flagquantum.remote.qpu.quafu import QuafuProvider
-from flagquantum.remote.qpu.quafu_dynamic import (
+from flagquantum.compute.remote.qpu.quafu import QuafuProvider
+from flagquantum.compute.remote.qpu.quafu_dynamic import (
     _quafu_dynamic_snapshot_from_fixture,
 )
-from flagquantum.remote.qpu.quafu_dynamic_legality import (
+from flagquantum.compute.remote.qpu.quafu_dynamic_legality import (
     _preview_quafu_dynamic_request,
     _QuafuDynamicLegalityPreview,
 )
+from flagquantum.core.target_capabilities import TargetCapabilitySnapshot
+from flagquantum.dynamic import DynamicCircuit
 from flagquantum.runtime.dynamic.routing import route_dynamic_circuit
 
 pytestmark = pytest.mark.unit

@@ -9,7 +9,7 @@ closed.**
 This proposal asks for a decision, not for a code change. It adds no strategy, no
 pass, and no public name. It records what the deployment routing contract
 (`contracts/` has no v1 file for it; the schema literal lives in
-`flagquantum/deployment/routing_evidence.py`) refuses today, with a measurement
+`flagquantum/compiler/artifacts/routing_evidence.py`) refuses today, with a measurement
 for each refusal, and proposes the smallest vocabulary that would let a caller
 describe the programs the compiler already produces.
 
@@ -29,7 +29,7 @@ their questions open: obstacle 5's re-routing decision, and obstacle 1's residua
 `sabre_layout` refusal, which is obstacle 2's question wearing obstacle 1's name.
 
 The Compiler owns `flagquantum/compiler/**`. The contract below is consumed by
-`flagquantum/deployment/routing_evidence.py` and
+`flagquantum/compiler/artifacts/routing_evidence.py` and
 `flagquantum/deployment/cloud.py`, which are Remote-owned. Accepting this
 proposal is therefore an Integration decision taken with the Compiler and Remote
 maintainers, and the implementation, if approved, is a Remote change that the
@@ -73,7 +73,7 @@ Four programs per topology per strategy, on four topologies (`line4`, `ring5`,
 `flagquantum.compiler.plan_dense_layout`,
 `flagquantum.compiler.directed_topology.route_to_directed_topology` and
 `flagquantum.compiler.layout.remove_layout_restore`, validated by
-`flagquantum.deployment.routing_evidence.validate_deployment_routing_plan`.
+`flagquantum.compiler.artifacts.routing_evidence.validate_deployment_routing_plan`.
 48 routed plans, 12 reduced plans, 9 placement-routed plans, and one program
 routed against a re-ordered serialization of the same device.
 
@@ -248,7 +248,7 @@ CouplingMap(6, grid6):         ((0, 1), (1, 2), (0, 3), (1, 4), (2, 5), (3, 4), 
 Both deployment sites tested that ordered tuple:
 
 ```python
-# flagquantum/deployment/routing_evidence.py
+# flagquantum/compiler/artifacts/routing_evidence.py
 if coupling_map is not None and plan_edges != coupling_map.edges:
     raise DeploymentRoutingEvidenceError(
         "routing coupling edges do not match the deployment backend"

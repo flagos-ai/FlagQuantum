@@ -28,7 +28,7 @@ Measured:
 
 ```
 $ find flagquantum -name 'statevector_adjoint.py'
-flagquantum/kernels/triton/statevector_adjoint.py
+flagquantum/simulation/kernels/triton/statevector_adjoint.py
 ```
 
 The only match is a Triton kernel module of 406 lines, which is not a
@@ -620,9 +620,9 @@ Beyond the tests, the tool-level constants are:
 
 ```
 flagquantum/benchmarking/differentiable_simulator_corpus.py:51:_ABSOLUTE_TOLERANCE = 1e-9
-tools/validate_flagos_statevector_training.py:216:    tolerance = 6e-5 if dtype_name == "complex64" else 3e-10
-tools/diagnose_flagos_statevector_reverse.py:108:    tolerance = 3e-5 if dtype_name == "complex64" else 3e-12
-tools/diagnose_flagos_statevector_reverse.py:207:    tolerance = 6e-5 if dtype_name == "complex64" else 3e-10
+tools/validation/validate_flagos_statevector_training.py:216:    tolerance = 6e-5 if dtype_name == "complex64" else 3e-10
+tools/validation/diagnose_flagos_statevector_reverse.py:108:    tolerance = 3e-5 if dtype_name == "complex64" else 3e-12
+tools/validation/diagnose_flagos_statevector_reverse.py:207:    tolerance = 6e-5 if dtype_name == "complex64" else 3e-10
 ```
 
 Twelve distinct numbers bound an adjoint or gradient difference across those
@@ -636,8 +636,8 @@ reference each number was calibrated against, so the difference between a
 alone. In particular the two `complex64` figures disagree with each other — the
 tests assert `abs=1e-5` at
 `tests/unit/test_statevector_reverse.py:663` while
-`tools/validate_flagos_statevector_training.py:216` and
-`tools/diagnose_flagos_statevector_reverse.py:207` allow `6e-5`, a factor of six
+`tools/validation/validate_flagos_statevector_training.py:216` and
+`tools/validation/diagnose_flagos_statevector_reverse.py:207` allow `6e-5`, a factor of six
 — and the closest pair to a stated contract,
 `tests/unit/test_statevector_reverse.py:663`'s `1e-5` against
 `flagquantum/benchmarking/differentiable_simulator_corpus.py:51`'s `1e-9`, is not
@@ -869,7 +869,7 @@ double-backward-incapable with the honest marker (`once_differentiable`-style
 refusal) so that the refusal is a statement rather than an accident, rather than
 being left to produce a silent wrong second derivative. Every existing
 higher-order path in the tree that works —
-`flagquantum/kernels/triton/single_qubit_loop.py:38`,
+`flagquantum/simulation/kernels/triton/single_qubit_loop.py:38`,
 `flagquantum/algorithms/optimization.py:41` — works through
 `torch.autograd.functional.jacobian` over ordinary differentiable tensor
 operations, which is a different mechanism and is not claimed here.
@@ -1124,9 +1124,9 @@ and observing the test fail.
 - [ ] `capability-maturity.toml` is unchanged, its `gradient_support` vocabulary
       still has the 19 distinct values it has today, and `local_statevector`
       remains at line 53 with `gradient_support = "exact"` so no level moved.
-- [ ] `python tools/ci_tier.py pr-runtime` and `python tools/ci_tier.py
+- [ ] `python tools/ci/ci_tier.py pr-runtime` and `python tools/ci/ci_tier.py
       pr-default` pass, with the observed passed/failed/skipped counts recorded
-      here. `python tools/ci_tier.py gpu-scheduled` is recorded as the tier the
+      here. `python tools/ci/ci_tier.py gpu-scheduled` is recorded as the tier the
       plan row declares, and if it cannot run in this environment the reason is
       stated rather than the row being reported as satisfied.
 - [ ] `python -m mypy --strict --python-version 3.12 --ignore-missing-imports flagquantum`
@@ -1145,7 +1145,7 @@ and observing the test fail.
       documented reachability path inside the Simulation namespace, and a test
       imports them through that path rather than through
       `flagquantum.runtime.executors.statevector.*`; the import path is recorded.
-- [ ] `python tools/check_repository_language.py` reports zero files containing
+- [ ] `python tools/architecture/check_repository_language.py` reports zero files containing
       Han-script text, and the count is recorded.
 - [ ] Repository owner approves. Not yet requested; see `## Status`.
 
@@ -1166,7 +1166,7 @@ and observing the test fail.
   adjoint boundary.
 - The accelerator and multi-rank adjoint paths. `W2-03` is declared
   `pr-runtime + gpu-scheduled`, and the Triton module
-  `flagquantum/kernels/triton/statevector_adjoint.py` and the distributed
+  `flagquantum/simulation/kernels/triton/statevector_adjoint.py` and the distributed
   sharded paths (`_explicit_sharded_adjoint`,
   `flagquantum/runtime/executors/statevector/reverse_adjoint.py:238`) are
   measured here only as reachable code; no distributed or accelerator

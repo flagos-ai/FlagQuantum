@@ -41,6 +41,6 @@ Notebook delivery, deferred calibration dependency and integration checks.
 The [local acceptance report](ACCEPTANCE.md) records the fresh 216-program
 comparison run, approved source repairs and remaining workflow/release limits.
 
-Regenerate navigation with `python -m tools.synthesis_catalog --write`.
+Regenerate navigation with `python -m tools.docs.synthesis_catalog --write`.
 The separate [Circuit and framework examples](../README.md) cover gate-level
 construction, training, simulation and deployment.

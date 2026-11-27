@@ -8,14 +8,13 @@ from typing import Any
 
 import pytest
 
-from flagquantum.services import (
-    GroundStateVQERequest,
-    PauliSum,
-    PauliSumTerm,
-    execute_research_capability,
-    research_execution,
+from flagquantum.algorithms.optimization import (
+    _research_execution as research_execution,
 )
-from flagquantum.services.ground_state import (
+from flagquantum.algorithms.optimization._research_providers import (
+    ResearchProviderAvailability,
+)
+from flagquantum.algorithms.optimization.ground_state import (
     EnergyVarianceReference,
     ExactSectorReference,
     GroundStateVQEResult,
@@ -24,7 +23,12 @@ from flagquantum.services.ground_state import (
     exact_sector_reference,
     run_ground_state_vqe,
 )
-from flagquantum.services.research_providers import ResearchProviderAvailability
+from flagquantum.services import (
+    GroundStateVQERequest,
+    PauliSum,
+    PauliSumTerm,
+    execute_research_capability,
+)
 
 pytestmark = pytest.mark.unit
 

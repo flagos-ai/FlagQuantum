@@ -6,101 +6,24 @@ from collections.abc import Sequence
 from dataclasses import replace
 from typing import Any
 
-import torch
+from flagquantum.simulation.statevector.cx_adjoint import (
+    apply_cpu_cx_adjoint_segment as apply_cpu_cx_adjoint_segment,
+)
+from flagquantum.simulation.statevector.cx_adjoint import (
+    cpu_cx_permutation_images as cpu_cx_permutation_images,
+)
+from flagquantum.simulation.statevector.cx_adjoint import (
+    cpu_cx_permutation_index as cpu_cx_permutation_index,
+)
 
 from ....simulation.native_cpu import (
     compact_cpu_cx_adjoint_auxiliary_bytes,
-    fused_compact_cx_adjoint_gather,
     fused_compact_cx_adjoint_inplace_,
-    fused_cx_adjoint_gather,
     fused_cx_adjoint_inplace_,
     native_cpu_cx_rotation_adjoint_fusion_available,
     use_compact_cpu_cx_adjoint_cycles,
     use_compact_cpu_cx_mapping,
 )
-from ....simulation.native_cpu.permutation import compact_cx_permutation_images
-from ....simulation.statevector.operations import (
-    _cx_sequence_permutation_index,
-)
-
-
-def cpu_cx_permutation_index(
-    ket: torch.Tensor,
-    controls: Sequence[int],
-    targets: Sequence[int],
-    n_qubits: int,
-) -> torch.Tensor:
-    """Build the shared permutation for a local CPU CX segment."""
-
-    return _cx_sequence_permutation_index(
-        controls,
-        targets,
-        n_qubits,
-        device=ket.device,
-        dtype=ket.dtype,
-    )
-
-
-def cpu_cx_permutation_images(
-    controls: Sequence[int],
-    targets: Sequence[int],
-    n_qubits: int,
-) -> torch.Tensor:
-    """Build one compact basis image per qubit for an inverse CX mapping."""
-
-    return compact_cx_permutation_images(controls, targets, n_qubits)
-
-
-def apply_cpu_cx_adjoint_index(
-    ket: torch.Tensor,
-    adjoint: torch.Tensor,
-    index: torch.Tensor,
-) -> tuple[torch.Tensor, torch.Tensor]:
-    """Apply a precomputed CX permutation to ket and adjoint."""
-
-    gathered = fused_cx_adjoint_gather(ket, adjoint, index)
-    if gathered is not None:
-        return gathered
-    gathered_ket = torch.index_select(ket, 1, index.to(dtype=torch.int64))
-    gathered_adjoint = torch.index_select(adjoint, 1, index.to(dtype=torch.int64))
-    ket.copy_(gathered_ket)
-    adjoint.copy_(gathered_adjoint)
-    return ket, adjoint
-
-
-def apply_cpu_cx_adjoint_segment(
-    ket: torch.Tensor,
-    adjoint: torch.Tensor,
-    controls: Sequence[int],
-    targets: Sequence[int],
-    n_qubits: int,
-) -> tuple[torch.Tensor, torch.Tensor]:
-    """Apply one CX permutation to ket and adjoint, retaining a safe fallback."""
-
-    index = cpu_cx_permutation_index(ket, controls, targets, n_qubits)
-    return apply_cpu_cx_adjoint_index(ket, adjoint, index)
-
-
-def apply_cpu_compact_cx_adjoint_segment(
-    ket: torch.Tensor,
-    adjoint: torch.Tensor,
-    images: torch.Tensor,
-    controls: Sequence[int],
-    targets: Sequence[int],
-    n_qubits: int,
-) -> tuple[torch.Tensor, torch.Tensor]:
-    """Apply a compact CX mapping, retaining the existing table fallback."""
-
-    gathered = fused_compact_cx_adjoint_gather(ket, adjoint, images)
-    if gathered is not None:
-        return gathered
-    return apply_cpu_cx_adjoint_segment(
-        ket,
-        adjoint,
-        controls,
-        targets,
-        n_qubits,
-    )
 
 
 def apply_or_defer_cpu_cx_adjoint_segment(

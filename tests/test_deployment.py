@@ -10,18 +10,23 @@ import torch
 import flagquantum as fq
 import flagquantum.deployment as deployment
 import flagquantum.deployment as fqd
-from flagquantum.algorithms import Hamiltonian, pauli_term, run_vqe
+from flagquantum.algorithms.optimization.vqe import run_vqe
+from flagquantum.algorithms.primitives.hamiltonian import Hamiltonian, pauli_term
 from flagquantum.compiler import CouplingMap
+from flagquantum.compiler.artifacts.routing_evidence import (
+    DeploymentRoutingEvidenceError,
+)
 from flagquantum.compiler.qcis import emit_qcis
-from flagquantum.deployment import (
+from flagquantum.compute.remote import validate_deployment_result
+from flagquantum.compute.remote.packages import (
     CloudBackendProfile,
     DeploymentPackageIdentityError,
-    expectation_z_from_counts,
-    hamiltonian_expectation_from_counts,
     validate_deployment_package,
 )
-from flagquantum.deployment.routing_evidence import DeploymentRoutingEvidenceError
-from flagquantum.remote import validate_deployment_result
+from flagquantum.runtime.results.counts import (
+    expectation_z_from_counts,
+    hamiltonian_expectation_from_counts,
+)
 from flagquantum.testing import InMemoryRemoteTarget
 
 pytestmark = pytest.mark.integration
@@ -361,7 +366,7 @@ def test_deploy_circuit_preserves_target_compiled_ir(monkeypatch):
         raise AssertionError("target-compiled IR must not be compiled again")
 
     monkeypatch.setattr(
-        "flagquantum.deployment.cloud.compile_program", must_not_compile
+        "flagquantum.runtime.planner.deployment.compile_program", must_not_compile
     )
 
     result = fqd.deploy_circuit(compiled, provider, shots=16)

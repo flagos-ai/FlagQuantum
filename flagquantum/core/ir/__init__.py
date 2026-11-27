@@ -12,13 +12,14 @@ from dataclasses import dataclass, field
 from numbers import Real
 from typing import Any
 
-from ...errors import SerializationError, ValidationError
-from ..operator_schema import (
+from flagquantum.core.operators.schema import (
     OPERATOR_SCHEMAS,
     OperatorSchema,
     canonical_opcode,
     get_operator_schema,
 )
+
+from ...errors import SerializationError, ValidationError
 from ..parameters import Parameter, ParameterExpression
 
 IR_VERSION = "1.0"

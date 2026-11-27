@@ -40,7 +40,7 @@ and [drawer dependency matrix](../../flagquantum/drawer/README.md).
 - Black and Ruff pass on changed Python files. Strict mypy passes for the three
   new modules with imported dependencies followed silently and missing optional
   import stubs ignored. This is not a whole-repository typing certification.
-- `tools/public_api_snapshot.py` passes without regenerating any API snapshot.
+- `tools/architecture/public_api_snapshot.py` passes without regenerating any API snapshot.
 - Compiler path-scope and integration packaging scope checks pass.
 
 To reproduce the focused run with real rendering tools available:

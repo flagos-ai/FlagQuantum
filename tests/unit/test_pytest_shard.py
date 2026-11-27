@@ -4,7 +4,7 @@ import json
 
 import pytest
 
-from tools.pytest_shard import (
+from tools.ci.pytest_shard import (
     DURATION_HINTS,
     balanced_assignments,
     load_duration_hints,
@@ -93,7 +93,7 @@ def test_shard_helper_does_not_require_posix_resource_on_windows(monkeypatch):
     import sys
     from types import SimpleNamespace
 
-    from tools import pytest_shard
+    from tools.ci import pytest_shard
 
     monkeypatch.setattr(pytest_shard, "os", SimpleNamespace(name="nt"))
     monkeypatch.setitem(sys.modules, "resource", None)

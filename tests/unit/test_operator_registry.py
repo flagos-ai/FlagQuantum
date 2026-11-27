@@ -34,7 +34,7 @@ from flagquantum.compiler.operator_lowering import (
     UnsupportedLoweringError,
 )
 from flagquantum.core.ir import IRValidationError
-from flagquantum.core.operator_schema import OPERATOR_SCHEMAS, get_operator_schema
+from flagquantum.core.operators.schema import OPERATOR_SCHEMAS, get_operator_schema
 from flagquantum.operators import OperatorRegistry, register_operator
 
 pytestmark = pytest.mark.unit
@@ -218,7 +218,7 @@ def test_an_unknown_backend_is_refused_rather_than_added() -> None:
             backend="qpu",
             opcode="cphase_quarter",
             strategy="native",
-            implementation="flagquantum.remote.qpu",
+            implementation="flagquantum.compute.remote.qpu",
         )
 
     assert str(caught.value) == "unknown lowering backend 'qpu'"

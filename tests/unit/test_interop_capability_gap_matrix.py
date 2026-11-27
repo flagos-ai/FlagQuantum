@@ -5,7 +5,7 @@ from pathlib import Path
 
 import pytest
 
-from tools.check_interop_capability_gap_matrix import (
+from tools.validation.check_interop_capability_gap_matrix import (
     MATRIX_PATH,
     build_report,
     load_toml,

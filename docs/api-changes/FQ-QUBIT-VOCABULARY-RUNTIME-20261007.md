@@ -123,7 +123,7 @@ reconstructions in `ExecutionResult.to()` were updated with it.
 
 ## Acceptance Tests
 
-1. `python tools/check_qubit_vocabulary.py` exits 0 and reports
+1. `python tools/architecture/check_qubit_vocabulary.py` exits 0 and reports
    `30 of 341 baseline sites retired` with WQ-3 at `retired 14 remaining 0`, and
    `27 of 122 attribute sites retired, 3 kept as deprecated aliases` with WQ-3 at
    `retired 1 remaining 1`.
@@ -137,9 +137,9 @@ reconstructions in `ExecutionResult.to()` were updated with it.
 5. `python -m pytest tests/unit/test_census_wire_vocabulary.py
    tests/unit/test_qubit_vocabulary_contract.py -q` passes with the live counts
    `311` canonical parameters and `95` ledgered / `22` excluded attributes.
-6. `python tools/validate_required_checks.py` still passes: this change adds tests
+6. `python tools/ci/validate_required_checks.py` still passes: this change adds tests
    and contract rows, never a CI job.
-7. `python tools/public_api_snapshot.py` reports `public API migration baseline
+7. `python tools/architecture/public_api_snapshot.py` reports `public API migration baseline
    passed`, and neither `docs/public_api_v1.json` nor
    `contracts/public-api-v0.2-baseline.json` is edited.
 

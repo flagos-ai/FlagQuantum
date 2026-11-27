@@ -4,7 +4,7 @@ from pathlib import Path
 import pytest
 
 from tools.check_dependency_policy import load_toml
-from tools.ci_tier import CI_TIERS
+from tools.ci.ci_tier import CI_TIERS
 
 pytestmark = pytest.mark.unit
 
@@ -77,12 +77,12 @@ def test_testing_manual_distinguishes_required_workflows():
 def test_testing_manual_lists_current_commands():
     text = _read("docs/development/TESTING.md")
     for command in (
-        "python tools/ci_tier.py pr-default",
-        "python tools/ci_tier.py pr-runtime",
-        "python tools/ci_tier.py pr-distributed",
-        "python tools/ci_tier.py gpu-scheduled",
-        "python tools/ci_tier.py multinode-scheduled",
-        "python tools/ci_tier.py release",
+        "python tools/ci/ci_tier.py pr-default",
+        "python tools/ci/ci_tier.py pr-runtime",
+        "python tools/ci/ci_tier.py pr-distributed",
+        "python tools/ci/ci_tier.py gpu-scheduled",
+        "python tools/ci/ci_tier.py multinode-scheduled",
+        "python tools/ci/ci_tier.py release",
         'python -m pytest -m "smoke or unit" -q',
         'python -m pytest -m "integration and not slow" -q',
         'python -m pytest -m "distributed_cpu or release_gate or benchmark_contract" -q',
@@ -132,7 +132,7 @@ def test_testing_manual_matches_ci_tier_commands_and_boundaries():
     normalized = " ".join(text.split())
 
     for tier_name, tier in CI_TIERS.items():
-        assert f"python tools/ci_tier.py {tier_name}" in text
+        assert f"python tools/ci/ci_tier.py {tier_name}" in text
         for command_line in tier.command_lines():
             if tier_name in {"nightly", "release"} and command_line.startswith(
                 "python -m pytest"
@@ -173,8 +173,8 @@ def test_testing_manual_aligned_with_agents():
     docs = _read("docs/development/TESTING.md")
     agents = _read("AGENTS.md")
     normalized_docs = " ".join(docs.split())
-    assert "python tools/ci_tier.py pr-default" in agents
-    assert "python tools/ci_tier.py pr-default" in docs
+    assert "python tools/ci/ci_tier.py pr-default" in agents
+    assert "python tools/ci/ci_tier.py pr-default" in docs
     assert (
         "Never use CPU distributed tests alone as scalability release evidence"
         in agents

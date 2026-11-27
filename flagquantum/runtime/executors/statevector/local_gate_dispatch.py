@@ -19,8 +19,9 @@ import os
 
 import torch
 
-from ....kernels.catalog import KernelRequest
-from ....kernels.triton import FLAT_LOCAL_MAX_AMPLITUDES
+from flagquantum.simulation.kernels.catalog import KernelRequest
+from flagquantum.simulation.kernels.triton import FLAT_LOCAL_MAX_AMPLITUDES
+
 from .kernel_dispatch import KernelDecision, select_cataloged_triton_kernel
 
 _TRITON_LOCAL_1Q_DEFAULT_SHAPES = frozenset((1, 1 << e) for e in (10, 16, 20, 24))

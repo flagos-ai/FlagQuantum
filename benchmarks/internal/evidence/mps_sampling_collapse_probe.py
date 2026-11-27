@@ -82,8 +82,8 @@ def _measure(
 def collect_run(args: argparse.Namespace) -> dict[str, object]:
     """Execute one host/compiler lane of the fixed MPS-008 matrix."""
 
-    from flagquantum.kernels.provenance import triton_compiler_provenance
-    from flagquantum.kernels.triton.mps_sampling_collapse import (
+    from flagquantum.simulation.kernels.provenance import triton_compiler_provenance
+    from flagquantum.simulation.kernels.triton.mps_sampling_collapse import (
         fused_mps_sampling_collapse,
     )
 

@@ -102,8 +102,8 @@ def _measure_pair(
 def collect_run(args: argparse.Namespace) -> dict[str, object]:
     """Execute one host/compiler lane of the fixed SV-014 matrix."""
 
-    from flagquantum.kernels.provenance import triton_compiler_provenance
-    from flagquantum.kernels.triton.statevector_swap import (
+    from flagquantum.simulation.kernels.provenance import triton_compiler_provenance
+    from flagquantum.simulation.kernels.triton.statevector_swap import (
         apply_complex64_local_swap_sequence,
     )
 

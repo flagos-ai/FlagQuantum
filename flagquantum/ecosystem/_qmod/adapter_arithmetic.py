@@ -6,16 +6,17 @@ import math
 from dataclasses import replace
 from typing import TYPE_CHECKING
 
-from ...compiler._construction.verification.register_profile import (
-    register_type,
-    register_width,
-)
-from ...compiler._hybrid.model import (
+from flagquantum.compiler.frontends._structured.model import (
     Operation,
     Value,
     ValueId,
 )
-from ...compiler._hybrid.verifier import HybridVerificationError
+from flagquantum.compiler.frontends._structured.verifier import HybridVerificationError
+
+from ...compiler._construction.verification.register_profile import (
+    register_type,
+    register_width,
+)
 from .adapter_model import (
     _Expression,
 )

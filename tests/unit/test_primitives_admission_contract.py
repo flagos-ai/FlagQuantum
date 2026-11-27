@@ -37,12 +37,12 @@ TYPES = ROOT / "flagquantum" / "algorithms" / "primitives" / "types.py"
 
 
 def _load_gate():
-    """Import `tools/check_primitives_admission_contract.py` by path.
+    """Import `tools/validation/check_primitives_admission_contract.py` by path.
 
     `tools/` is not a package on `sys.path` in the unit-test lane, so the module is loaded from
     its file the same way the repository loads other standalone gate tools.
     """
-    path = ROOT / "tools" / "check_primitives_admission_contract.py"
+    path = ROOT / "tools" / "validation/check_primitives_admission_contract.py"
     spec = importlib.util.spec_from_file_location("_primitives_admission_gate", path)
     assert spec is not None and spec.loader is not None
     module = importlib.util.module_from_spec(spec)

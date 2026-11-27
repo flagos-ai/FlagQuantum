@@ -13,7 +13,7 @@ import torch
 
 import flagquantum.lindblad as fql
 from examples.terminal_instrument_reference import fock_reference
-from flagquantum.observables.boson import annihilate, create
+from flagquantum.core.operators.boson import annihilate, create
 from flagquantum.runtime import sample_terminal
 
 

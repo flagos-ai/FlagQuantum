@@ -10,7 +10,7 @@ from __future__ import annotations
 from twin_candidate_fit import incumbent_twin, probes, synthetic_report
 
 import flagquantum as fq
-from flagquantum.remote.qpu import (
+from flagquantum.compute.remote.qpu import (
     DeploymentResult,
     ProviderTaskHandle,
     build_result_metadata,

@@ -6,7 +6,8 @@ import ast
 from dataclasses import replace
 from typing import TYPE_CHECKING
 
-from ..._hybrid.model import Value
+from flagquantum.compiler.frontends._structured.model import Value
+
 from .numeric import has_numeric, has_numeric_reads
 from .ports import classical_parameters, program_ports
 from .python import _error, _QuantumFunction

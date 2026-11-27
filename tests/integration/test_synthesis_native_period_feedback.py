@@ -26,7 +26,7 @@ from examples.synthesis.algorithms.number_theory_and_cryptography.shor.compariso
     reference_circuit as shor_reference,
 )
 from flagquantum import synth
-from flagquantum.compiler._hybrid.verifier import HybridVerificationError
+from flagquantum.compiler.frontends._structured.verifier import HybridVerificationError
 from flagquantum.errors import PlanningError
 from flagquantum.synth import CX, H, Output, QBit, R, allocate, drop, phase, qfunc
 

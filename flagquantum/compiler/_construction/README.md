@@ -209,7 +209,7 @@ python -m pytest tests/team/compiler/test_construction_profile.py -q
 python -m pytest tests/team/compiler/test_construction_semantics.py -q
 python -m pytest tests/team/compiler/test_construction_dependencies.py -q
 python -m pytest tests/integration/test_construction_execution_boundary.py -q
-python tools/check_architecture.py
+python tools/architecture/check_architecture.py
 python tools/check_dependency_policy.py
 ```
 

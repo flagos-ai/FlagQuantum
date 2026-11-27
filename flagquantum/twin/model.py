@@ -11,8 +11,10 @@ from typing import Any
 
 import torch
 
+from flagquantum.core.noise import NoiseModel
+from flagquantum.noise import noisy_density_matrix
+
 from ..core.ir import ensure_circuit_ir
-from ..noise import NoiseModel, noisy_density_matrix
 from .evidence import TwinEvidenceEnvelope, TwinEvidenceReport, build_evidence_report
 from .prediction import TwinPrediction
 from .validation import _total_variation

@@ -119,13 +119,11 @@ from flagquantum.compiler.optimization.one_qubit_synthesis import (  # noqa: E40
     _MODULAR_FOLD_LIMIT,
     is_identity_one_qubit,
 )
-from flagquantum.compiler.pipeline import (  # noqa: E402
-    _ROTATION_PARAM,
-    _is_zero,
-    remove_identity_gates,
-)
+from flagquantum.compiler.optimization.canonicalization import _ROTATION_PARAM
+from flagquantum.compiler.optimization.canonicalization import _is_zero
+from flagquantum.compiler.pipeline import remove_identity_gates
 from flagquantum.core.ir import CircuitIR, Instruction  # noqa: E402
-from flagquantum.core.operator_schema import OPERATOR_SCHEMAS  # noqa: E402
+from flagquantum.core.operators.schema import OPERATOR_SCHEMAS  # noqa: E402
 
 SCHEMA = "flagquantum_compiler_identity_elimination_benchmark_v1"
 

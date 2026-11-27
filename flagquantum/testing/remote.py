@@ -2,19 +2,20 @@
 
 from __future__ import annotations
 
-from ..circuit import Circuit
-from ..deployment.cloud import (
+from flagquantum.compute.remote.packages import (
     CloudBackendProfile,
     DeploymentPackage,
     validate_deployment_package,
 )
-from ..remote.qpu.contracts import (
+from flagquantum.compute.remote.qpu.contracts import (
     DeploymentResult,
     ProviderTaskHandle,
     QuantumProvider,
     build_result_metadata,
     build_submission_receipt,
 )
+
+from ..circuit import Circuit
 
 
 class InMemoryRemoteTarget(QuantumProvider):

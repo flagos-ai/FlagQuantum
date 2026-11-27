@@ -35,13 +35,13 @@ from __future__ import annotations
 
 import torch
 
-from flagquantum.algorithms import (
+from flagquantum.algorithms.error_mitigation.readout import (
     plan_readout_mitigation,
     run_readout_mitigation,
     run_readout_mitigation_counts,
 )
 from flagquantum.circuit import Circuit
-from flagquantum.noise import (
+from flagquantum.core.noise import (
     CorrelatedReadoutError,
     NoiseModel,
     ReadoutError,
@@ -123,7 +123,9 @@ def main() -> None:
     report("ideal", [f"{value:.6f}" for value in ideal.tolist()])
     report("measured", [f"{value:.6f}" for value in measured.tolist()])
     report("corrected", [f"{value:.12f}" for value in corrected.probabilities.tolist()])
-    report("largest error", f"{float((corrected.probabilities - ideal).abs().max()):.3e}")
+    report(
+        "largest error", f"{float((corrected.probabilities - ideal).abs().max()):.3e}"
+    )
     print(f"  {'':<{LABEL_WIDTH}}  qubit 0 carries no rule, so it is left exactly")
     print(f"  {'':<{LABEL_WIDTH}}  where it was and is recorded as uncovered: the")
     print(f"  {'':<{LABEL_WIDTH}}  correction is the identity there rather than a")

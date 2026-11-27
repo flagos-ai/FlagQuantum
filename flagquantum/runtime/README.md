@@ -1,5 +1,7 @@
 # Runtime
 
+Training and fq.Module implementation live in `training/`; checkpoints in `checkpointing.py`; execution/trajectory results and count statistics in `results/`; profile definitions in `profiles/`; measured MPS profiling in `observability/`; evolution composition in `evolution/`. Remote deployment planning lives in `planner/deployment.py`. Per-trajectory seed ownership remains in `trajectories/rng.py`, where it belongs to execution lifecycle.
+
 Turn a quantum program or accepted execution plan into an observable execution
 attempt. The design goal is consistent program, gradient, and result semantics
 across local, distributed, and remote resources, with a direct local fast path.
@@ -177,7 +179,7 @@ MeasurementResult; no native result wrapper is introduced.
 | Representation lifecycle | [executors/](executors/README.md) |
 | Shared rank coordination | [distributed/](distributed/README.md) |
 | Stochastic work and recovery | [trajectories/](trajectories/README.md) |
-| PyTorch model and optimization loop | [module.py](module.py), [training.py](training.py) |
+| PyTorch model and optimization loop | [module.py](module.py), [training](training/__init__.py) |
 
 ## Verify a change
 
@@ -185,7 +187,7 @@ From the repository root:
 
 ```bash
 python -m pytest tests/integration/test_cpu_vertical_slice.py tests/team/runtime -q
-python tools/check_architecture.py
+python tools/architecture/check_architecture.py
 python tools/check_dependency_policy.py
 ```
 

@@ -4,8 +4,14 @@ from __future__ import annotations
 
 import pytest
 
-from flagquantum.compiler._hybrid import INDEX, capture_source, lower_dynamic_program
-from flagquantum.compiler._hybrid.dynamic_lowering import LoweredDynamicProgram
+from flagquantum.compiler.frontends._structured import (
+    INDEX,
+    capture_source,
+    lower_dynamic_program,
+)
+from flagquantum.compiler.frontends._structured.dynamic_lowering import (
+    LoweredDynamicProgram,
+)
 from flagquantum.qec.circuits.memory import (
     MeasurementRef,
     MemoryCircuit,

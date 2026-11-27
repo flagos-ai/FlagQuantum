@@ -8,8 +8,9 @@ from typing import Any
 
 import torch
 
+from flagquantum.core.noise import NoiseModel
+
 from ..core.ir import CircuitIR
-from ..noise import NoiseModel
 from .execution_plan import (
     EvolutionSemantics,
     NoisyExecutionPlan,
@@ -36,7 +37,7 @@ def _execute_density_plan(
     supported = {"bsz", "device", "dtype"}
     density_options = {key: value for key, value in options.items() if key in supported}
 
-    from ..simulation.density_matrix import density_matrix_from_ir
+    from flagquantum.simulation.density_matrix import density_matrix_from_ir
 
     return density_matrix_from_ir(ir, **density_options)
 
@@ -51,8 +52,9 @@ def noisy_density_matrix(
 ) -> torch.Tensor:
     """Lower optional noise and run the local exact density simulation."""
 
+    from flagquantum.simulation.density_matrix import density_matrix_from_ir
+
     from ..compiler import lower_noise_model
-    from ..simulation.density_matrix import density_matrix_from_ir
 
     lowered = lower_noise_model(circuit_or_ir, noise_model)
     return density_matrix_from_ir(lowered, bsz=bsz, device=device, dtype=dtype)

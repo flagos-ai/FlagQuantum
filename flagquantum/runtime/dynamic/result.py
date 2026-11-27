@@ -39,7 +39,7 @@ class DynamicExecutionResult:
     def to_execution_result(self) -> Any:
         """Project dynamic shots into the canonical execution result contract."""
 
-        from ..result import ExecutionResult, MeasurementResult
+        from flagquantum.runtime.results import ExecutionResult, MeasurementResult
 
         measurements = [
             MeasurementResult(

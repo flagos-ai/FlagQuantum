@@ -5,8 +5,9 @@ from __future__ import annotations
 import ast
 from typing import TYPE_CHECKING
 
-from ..._hybrid.unitary_effects import PURE_EFFECTS
-from ..._hybrid.verifier import HybridVerificationError
+from flagquantum.compiler.frontends._structured.unitary_effects import PURE_EFFECTS
+from flagquantum.compiler.frontends._structured.verifier import HybridVerificationError
+
 from ..program_types import reset
 from ..semantics.reset_cycles import reset_cycle_template
 from .evolution import flush_evolutions

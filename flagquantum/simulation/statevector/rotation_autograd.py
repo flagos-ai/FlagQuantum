@@ -7,7 +7,7 @@ from typing import TYPE_CHECKING, Protocol
 
 import torch
 
-from ...core.operator_schema import canonical_opcode
+from flagquantum.core.operators.schema import canonical_opcode
 
 if TYPE_CHECKING:
     from ...circuit import Circuit
@@ -28,7 +28,11 @@ class _Context(Protocol):
 
 
 def _require_fp64_kernel(state: torch.Tensor, backward: bool = False) -> None:
-    from ...kernels.catalog import KernelRequest, match_kernel_implementations
+    from flagquantum.simulation.kernels.catalog import (
+        KernelRequest,
+        match_kernel_implementations,
+    )
+
     from ..kernel_dispatch import _require_cataloged_kernel
 
     request = KernelRequest(
@@ -61,7 +65,7 @@ def _apply_real_ry(
         and not torch.is_grad_enabled()
     ):
         _require_fp64_kernel(state)
-        from ...kernels.triton.statevector_ry_fp64 import forward
+        from flagquantum.simulation.kernels.triton.statevector_ry_fp64 import forward
 
         return forward(state, matrix.reshape(-1, 2, 2), qubit, n_qubits)
     batch = state.shape[0]
@@ -112,7 +116,9 @@ class _RYRotation(torch.autograd.Function):
         state_gradient = parameter_gradient = None
         if gradient.device.type == "flagos" and not torch.is_grad_enabled():
             _require_fp64_kernel(gradient, backward=True)
-            from ...kernels.triton.statevector_ry_fp64 import backward
+            from flagquantum.simulation.kernels.triton.statevector_ry_fp64 import (
+                backward,
+            )
 
             half_angle = parameters[:, 0] * 0.5
             cosine, sine = half_angle.cos(), half_angle.sin()

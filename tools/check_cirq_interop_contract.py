@@ -15,7 +15,7 @@ except ModuleNotFoundError:  # pragma: no cover - Python 3.10 compatibility
     import tomli as tomllib
 
 from flagquantum.core.ir import IR_VERSION
-from flagquantum.core.operator_schema import OPERATOR_SCHEMAS
+from flagquantum.core.operators.schema import OPERATOR_SCHEMAS
 from flagquantum.ecosystem.cirq.conversion import _CIRQ_SYMBOL_TO_FLAGQUANTUM
 
 ROOT = Path(__file__).resolve().parents[1]

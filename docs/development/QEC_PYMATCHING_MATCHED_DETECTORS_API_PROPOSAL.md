@@ -66,7 +66,7 @@ requiring separate SDK calls to select identical mates.
    independent unique-solution references, ties and unreachable syndromes.
 3. tests/unit/test_qec_installed_profiles.py — SDK-free fake-boundary validation,
    malformed results, ownership and call-count cases; no new skips.
-4. tools/qec_installed_smoke.py — installed PyMatching/both wheel and sdist
+4. tools/release/qec_installed_smoke.py — installed PyMatching/both wheel and sdist
    checks; preserve all old sample/batch cells already on actual main.
 5. docs/development/QEC_PYMATCHING_MATCHED_DETECTORS_API_PROPOSAL.md — approved
    signature, output semantics, compatibility and shortest runnable code.
@@ -136,9 +136,9 @@ Proposed implementation validation:
 ```sh
 python -m pytest -q tests/unit/test_qec_installed_profiles.py tests/qec/test_adapters_pymatching.py tests/qec/test_pymatching_batch.py
 python tools/check_dependency_policy.py
-python -m ruff check flagquantum/qec/adapters/pymatching.py tests/qec/test_adapters_pymatching.py tests/unit/test_qec_installed_profiles.py tools/qec_installed_smoke.py
-python -m black --check flagquantum/qec/adapters/pymatching.py tests/qec/test_adapters_pymatching.py tests/unit/test_qec_installed_profiles.py tools/qec_installed_smoke.py
-python -m mypy --strict --python-version 3.12 --explicit-package-bases --follow-imports=silent flagquantum/qec/adapters/pymatching.py tests/qec/test_adapters_pymatching.py tests/unit/test_qec_installed_profiles.py tools/qec_installed_smoke.py
+python -m ruff check flagquantum/qec/adapters/pymatching.py tests/qec/test_adapters_pymatching.py tests/unit/test_qec_installed_profiles.py tools/release/qec_installed_smoke.py
+python -m black --check flagquantum/qec/adapters/pymatching.py tests/qec/test_adapters_pymatching.py tests/unit/test_qec_installed_profiles.py tools/release/qec_installed_smoke.py
+python -m mypy --strict --python-version 3.12 --explicit-package-bases --follow-imports=silent flagquantum/qec/adapters/pymatching.py tests/qec/test_adapters_pymatching.py tests/unit/test_qec_installed_profiles.py tools/release/qec_installed_smoke.py
 ```
 
 Check the actual base test file's existing typing before using the full-file

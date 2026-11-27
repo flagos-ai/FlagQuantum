@@ -9,7 +9,7 @@ from flagquantum.compiler._construction.scheduling.selection import (
     select_arithmetic,
 )
 from flagquantum.compiler._construction.verification.constraints import CircuitLimits
-from flagquantum.services._synthesis_execution import inspect_execution
+from flagquantum.runtime.planner.synthesis import inspect_execution
 
 
 def addition(x: int, y: int) -> int:

@@ -17,7 +17,7 @@ import torch
 from torch import Tensor
 
 import flagquantum as fq
-from flagquantum.core.operator_schema import OPERATOR_SCHEMAS
+from flagquantum.core.operators.schema import OPERATOR_SCHEMAS
 from flagquantum.errors import CapabilityError, ValidationError
 from flagquantum.gradients import GradientResult
 from flagquantum.gradients import gradient as module_gradient

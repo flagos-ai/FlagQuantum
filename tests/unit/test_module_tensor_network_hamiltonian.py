@@ -6,7 +6,7 @@ import pytest
 import torch
 
 import flagquantum as fq
-from flagquantum.algorithms import Hamiltonian, pauli_term
+from flagquantum.algorithms.primitives.hamiltonian import Hamiltonian, pauli_term
 from flagquantum.errors import ExecutionError
 from flagquantum.simulation.tensor_network import observables
 from flagquantum.simulation.tensor_network.state import TensorNetworkState

@@ -11,8 +11,7 @@ import torch
 import flagquantum as fq
 from examples.algorithms.fermion_fcidump_training import DEFAULT_FCIDUMP, train_adam
 from flagquantum.algorithms.chemistry import excitation_operator, uccsd_excitations
-from flagquantum.algorithms.chemistry_domain.problem import fermion_hamiltonian
-from flagquantum.algorithms.core import Hamiltonian, pauli_term
+from flagquantum.algorithms.chemistry.models.problem import fermion_hamiltonian
 from flagquantum.algorithms.fermion.clifford import pauli_words_commute
 from flagquantum.algorithms.fermion.encoding import (
     ENCODINGS,
@@ -21,10 +20,11 @@ from flagquantum.algorithms.fermion.encoding import (
 )
 from flagquantum.algorithms.fermion.observables import to_observable
 from flagquantum.algorithms.fermion.symmetry import ReducedOperator, reduce_z_parities
-from flagquantum.algorithms.trotter import trotter_circuit
+from flagquantum.algorithms.primitives.hamiltonian import Hamiltonian, pauli_term
+from flagquantum.algorithms.many_body.trotter import trotter_circuit
+from flagquantum.core.operators.fermion import FermionOperator, FermionTerm, number
+from flagquantum.core.operators.observable import Observable
 from flagquantum.ecosystem.chemistry.fcidump import read_fcidump
-from flagquantum.observables import Observable
-from flagquantum.observables.fermion import FermionOperator, FermionTerm, number
 
 
 def _h2_spin_parities(encoding: Encoding) -> tuple[tuple[int, ...], ...]:

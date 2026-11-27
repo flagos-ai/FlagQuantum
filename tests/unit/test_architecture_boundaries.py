@@ -4,7 +4,7 @@ from pathlib import Path
 
 import pytest
 
-from tools.check_architecture import (
+from tools.architecture.check_architecture import (
     CONFIG,
     _approved_module_capture_import,
     _approved_training_compile_import,
@@ -20,8 +20,8 @@ ROOT = Path(__file__).resolve().parents[2]
 
 @pytest.mark.parametrize("prefix", ("", "flagquantum."))
 def test_module_capture_permission_is_one_frontend_entry(prefix):
-    importer = "flagquantum/runtime/module.py"
-    module = prefix + "compiler.module_builder"
+    importer = "flagquantum/runtime/training/module.py"
+    module = prefix + "compiler.frontends.torch._module_builder"
     assert _approved_module_capture_import(importer, module, "capture_module_builder")
     assert _approved_module_capture_import(importer, module, "CapturedModuleBuilder")
     assert not _approved_module_capture_import(importer, module, "unreviewed_entry")
@@ -49,8 +49,8 @@ def test_checked_architecture_boundaries_pass():
 
 @pytest.mark.parametrize("prefix", ("", "flagquantum."))
 def test_training_compilation_permission_is_one_lifecycle_entry(prefix):
-    importer = "flagquantum/runtime/training.py"
-    module = prefix + "compiler.training"
+    importer = "flagquantum/runtime/training/__init__.py"
+    module = prefix + "compiler.frontends.torch._training"
     assert _approved_training_compile_import(
         importer, module, "compile_training_callable"
     )
@@ -59,7 +59,7 @@ def test_training_compilation_permission_is_one_lifecycle_entry(prefix):
         importer, prefix + "compiler", "training"
     )
     for other in (
-        "flagquantum/runtime/module.py",
+        "flagquantum/runtime/training/module.py",
         "flagquantum/runtime/executors/statevector/training.py",
         "flagquantum/simulation/statevector/program.py",
     ):
@@ -71,22 +71,25 @@ def test_training_compilation_permission_is_one_lifecycle_entry(prefix):
 
 
 def test_package_check_enforces_the_training_compilation_exception(monkeypatch):
-    import tools.check_architecture as checker
+    import tools.architecture.check_architecture as checker
 
     original = checker._imports
     admitted_name = "compile_training_callable"
 
     def with_training(path):
         imports = original(path)
-        if path.relative_to(ROOT).as_posix() == "flagquantum/runtime/training.py":
-            return imports + (("compiler.training", admitted_name),)
+        if (
+            path.relative_to(ROOT).as_posix()
+            == "flagquantum/runtime/training/__init__.py"
+        ):
+            return imports + (("compiler.frontends.torch._training", admitted_name),)
         return imports
 
     monkeypatch.setattr(checker, "_imports", with_training)
     assert architecture_errors() == ()
     admitted_name = "unreviewed_entry"
     assert any(
-        "training.py: new Runtime dependency on Compiler" in error
+        "training/__init__.py: new Runtime dependency on Compiler" in error
         for error in architecture_errors()
     )
 
@@ -95,14 +98,14 @@ def test_package_check_enforces_the_training_compilation_exception(monkeypatch):
     "importer,module,name,forbidden",
     (
         (
-            "flagquantum/runtime/training_compilation.py",
+            "flagquantum/runtime/training/compilation.py",
             "flagquantum",
             "compiler",
             True,
         ),
         (
             "flagquantum/simulation/statevector/local.py",
-            "compiler.training",
+            "compiler.frontends.torch._training",
             "compile_training_callable",
             True,
         ),
@@ -127,7 +130,7 @@ def test_compiler_permission_does_not_escape_through_root_aliases_or_simulation(
     name,
     forbidden,
 ):
-    import tools.check_architecture as checker
+    import tools.architecture.check_architecture as checker
 
     original = checker._imports
 
@@ -153,15 +156,20 @@ def test_compiler_permission_does_not_escape_through_root_aliases_or_simulation(
 
 
 def test_package_check_enforces_the_capture_exception(monkeypatch):
-    import tools.check_architecture as checker
+    import tools.architecture.check_architecture as checker
 
     original = checker._imports
     admitted_name = "capture_module_builder"
 
     def with_capture(path):
         imports = original(path)
-        if path.relative_to(ROOT).as_posix() == "flagquantum/runtime/module.py":
-            return imports + (("compiler.module_builder", admitted_name),)
+        if (
+            path.relative_to(ROOT).as_posix()
+            == "flagquantum/runtime/training/module.py"
+        ):
+            return imports + (
+                ("compiler.frontends.torch._module_builder", admitted_name),
+            )
         return imports
 
     monkeypatch.setattr(checker, "_imports", with_capture)
@@ -212,7 +220,7 @@ def test_non_jax_backend_import_check_resolves_relative_and_absolute_imports(
     path.parent.mkdir(parents=True)
     path.write_text(source, encoding="utf-8")
 
-    import tools.check_architecture as check_architecture
+    import tools.architecture.check_architecture as check_architecture
 
     monkeypatch.setattr(check_architecture, "ROOT", tmp_path)
     assert _imports_jax_executor(path)
@@ -226,11 +234,10 @@ def test_top_level_package_layout_is_explicitly_frozen():
         "runtime",
         "realtime",
         "simulation",
-        "kernels",
         "compute",
         "remote",
     } <= allowed
-    assert "providers" not in allowed
+    assert {"providers", "kernels"}.isdisjoint(allowed)
     assert {"ops", "numerics", "compilation", "_compiler"}.isdisjoint(allowed)
 
 
@@ -251,8 +258,8 @@ assert 'flagquantum.api' not in sys.modules
 def test_kernel_package_import_is_lazy_and_does_not_initialize_optional_runtimes():
     code = """
 import sys
-import flagquantum.kernels
-import flagquantum.kernels.triton
+import flagquantum.simulation.kernels
+import flagquantum.simulation.kernels.triton
 forbidden = ('triton', 'torch_fl')
 assert not any(name.startswith(forbidden) for name in sys.modules), sorted(sys.modules)
 """
@@ -271,7 +278,7 @@ def test_dependency_graph_and_architecture_policy_are_checked_in():
     graph = (ROOT / "docs" / "architecture" / "ARCHITECTURE_DEPENDENCIES.md").read_text(
         encoding="utf-8"
     )
-    policy = (ROOT / "architecture.toml").read_text(encoding="utf-8")
+    policy = (ROOT / "config/architecture.toml").read_text(encoding="utf-8")
 
     assert "flowchart TD" in graph
     assert "Executors emit backend-neutral" in graph

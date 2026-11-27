@@ -17,7 +17,8 @@ from .preparation import exponential_angles
 from .syntax import Expression, Function, Statement, Token, reject
 
 if TYPE_CHECKING:
-    from ...compiler._hybrid.model import Operation
+    from flagquantum.compiler.frontends._structured.model import Operation
+
     from .context import _Adapt
     from .phase import Location
 

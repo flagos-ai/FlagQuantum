@@ -10,11 +10,11 @@ from pathlib import Path
 
 import torch
 
-from flagquantum.kernels.triton.statevector_adjoint import (
+from flagquantum.simulation.kernels.triton.statevector_adjoint import (
     _complex64_local_1q_vjp_adjoint_kernel,
     fused_complex64_local_1q_vjp_adjoint,
 )
-from flagquantum.kernels.triton.statevector_gates import (
+from flagquantum.simulation.kernels.triton.statevector_gates import (
     _complex64_local_1q_kernel,
     apply_complex64_local_1q,
 )

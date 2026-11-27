@@ -7,7 +7,7 @@ from pathlib import Path
 
 import pytest
 
-from flagquantum.runtime.distributed.capacity_profile import (
+from flagquantum.runtime.profiles.capacity import (
     build_flagos_statevector_capacity_profile,
 )
 

@@ -139,7 +139,7 @@ def test_failure_artifact_delta_debugs_to_one_instruction():
 def test_real_watchdog_terminates_stalled_process_and_writes_cleanup_diagnosis(
     tmp_path,
 ):
-    from tools.run_with_watchdog import run
+    from tools.ci.run_with_watchdog import run
 
     diagnostics = tmp_path / "watchdog"
     status = run(

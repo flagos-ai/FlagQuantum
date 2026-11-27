@@ -11,9 +11,7 @@ from typing import Any
 
 import torch
 
-from flagquantum.algorithms import Hamiltonian, pauli_term
-from flagquantum.circuit import Circuit
-from flagquantum.services.ground_state import (
+from flagquantum.algorithms.optimization.ground_state import (
     ComplexAmplitude,
     ConvergencePoint,
     ExecutionProvenance,
@@ -24,6 +22,8 @@ from flagquantum.services.ground_state import (
     StatevectorEvidence,
     validate_ground_state_vqe_request,
 )
+from flagquantum.algorithms.primitives.hamiltonian import Hamiltonian, pauli_term
+from flagquantum.circuit import Circuit
 
 StatevectorRunner = Callable[[Circuit], torch.Tensor]
 _PARAMETER_SHIFT = math.pi / 2.0

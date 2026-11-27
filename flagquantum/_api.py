@@ -13,16 +13,17 @@ from torch import Tensor
 if TYPE_CHECKING:
     from torch import Generator
 
+    from flagquantum.core.measurement import OutputRequest
+    from flagquantum.core.noise import NoiseModel
+    from flagquantum.runtime.evolution import LindbladPlan
+    from flagquantum.runtime.results import ExecutionResult
+
     from .circuit import Circuit
     from .core.ir import CircuitIR
     from .core.ising import IsingBraidProgram
     from .gradients import GradientResult
-    from .lindblad import LindbladPlan
-    from .noise import NoiseModel
-    from .observables import OutputRequest
     from .runtime.execution_plan import ExecutionPlan
     from .runtime.options import ExecutionOptions
-    from .runtime.result import ExecutionResult
     from .synth import Program as SynthesisProgram
 
 
@@ -59,7 +60,7 @@ def compile(
             raise ValueError("target must use the form 'provider:backend'")
         if provider_name.lower() != "quafu":
             raise ValueError(f"unsupported compiler target provider {provider_name!r}")
-        provider = import_module(".remote", __package__).QuafuProvider()
+        provider = import_module(".compute.remote", __package__).QuafuProvider()
         resolved_target = {
             "provider": "quafu",
             "backend": backend,
@@ -197,7 +198,7 @@ def run(
 
     # A synthesis product has already loaded its canonical owner. Ordinary
     # circuit execution must not import application services to identify it.
-    synthesis = sys.modules.get("flagquantum.services.synthesis")
+    synthesis = sys.modules.get("flagquantum.synth._workflow")
     if synthesis is not None and isinstance(program_or_plan, synthesis.Program):
         if type(program_or_plan) is not synthesis.Program:
             raise TypeError(
@@ -223,7 +224,7 @@ def run(
 
     # A created LindbladPlan has already loaded its module. Keep ordinary
     # circuit execution free of an eager dynamics import.
-    dynamics = sys.modules.get("flagquantum.lindblad._plan")
+    dynamics = sys.modules.get("flagquantum.runtime.evolution._plan")
     if dynamics is not None and isinstance(program_or_plan, dynamics.LindbladPlan):
         if any(
             value is not None
@@ -407,7 +408,7 @@ def run(
     remote_program = cast("Circuit | CircuitIR | ExecutionPlan", program_or_plan)
 
     if target is not None and separator == ":" and provider_name.lower() == "jiuding":
-        from .remote.compute.execution import execute_jiuding
+        from flagquantum.compute.remote.compute.execution import execute_jiuding
 
         return execute_jiuding(
             program_or_plan,
@@ -441,7 +442,10 @@ def run(
                 "Azure Quantum fq.run does not accept target_qubits; "
                 "the QIR target compiler owns physical mapping"
             )
-        from .remote.qpu.execution import execute_azure, validate_azure_output
+        from flagquantum.compute.remote.qpu.execution import (
+            execute_azure,
+            validate_azure_output,
+        )
 
         output = validate_azure_output(remote_program, outputs)
         source = import_module(".core.ir", __package__).ensure_circuit_ir(
@@ -475,8 +479,11 @@ def run(
             "target='azure:<target-id>'"
         )
 
-    from .remote.qpu.execution import execute_quafu, validate_quafu_output
-    from .remote.qpu.quafu import _validate_quafu_shots
+    from flagquantum.compute.remote.qpu.execution import (
+        execute_quafu,
+        validate_quafu_output,
+    )
+    from flagquantum.compute.remote.qpu.quafu import _validate_quafu_shots
 
     output = validate_quafu_output(remote_program, outputs)
     _validate_quafu_shots(target, shots)
@@ -771,3 +778,36 @@ def from_openqasm(source: str) -> Any:
 
 
 __all__: tuple[str, ...] = ()
+
+
+def capabilities(*, refresh: bool = False) -> dict[str, Any]:
+    """Return the installed runtime capabilities in a machine-readable shape."""
+
+    from flagquantum.algorithms.optimization.ground_state import (
+        ground_state_vqe_capability,
+    )
+    from flagquantum.runtime.backend_registry import capability_summary, list_backends
+    from flagquantum.version import __version__
+
+    backends = {}
+    for name in list_backends(refresh=refresh):
+        try:
+            backends[name] = capability_summary(name, refresh=refresh)
+        except (RuntimeError, ValueError, ImportError) as exc:
+            backends[name] = {"name": name, "available": False, "reason": str(exc)}
+    return {
+        "schema": "flagquantum_service_capabilities_v1",
+        "version": __version__,
+        "backends": backends,
+        "contracts": {
+            "ir_validation": True,
+            "execution_planning": True,
+            "deployment_preflight": True,
+            "deployment_identity_validation": True,
+            "ground_state_vqe_v1": True,
+        },
+        "ground_state_vqe": ground_state_vqe_capability(),
+    }
+
+
+capabilities.__module__ = "flagquantum.services.preflight"

@@ -5,13 +5,14 @@ from __future__ import annotations
 from collections.abc import Sequence
 from typing import Any
 
-from .....simulation.jax.tensor_network.contraction import (
+from flagquantum.simulation.tensor_network.jax.contraction import (
     contract_assigned_slices as _jax_contract_assigned_tensor_slices,
 )
-from .....simulation.jax.tensor_network.contraction import (
+from flagquantum.simulation.tensor_network.jax.contraction import (
     zero_for_output as _jax_zero_for_tn_output,
 )
-from .....simulation.jax.tensor_network.models import JAXTensorNetworkNode
+from flagquantum.simulation.tensor_network.jax.models import JAXTensorNetworkNode
+
 from ..runtime_environment import (
     _jax_available_local_devices,
     _require_jax,

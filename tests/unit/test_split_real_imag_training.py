@@ -6,7 +6,7 @@ import pytest
 import torch
 
 from flagquantum import Circuit, Parameter
-from flagquantum.algorithms import Hamiltonian, pauli_term
+from flagquantum.algorithms.primitives.hamiltonian import Hamiltonian, pauli_term
 from flagquantum.core.ir import ObservableNode
 from flagquantum.runtime.capabilities import load_operator_profile
 from flagquantum.runtime.executors.statevector.split_real_imag import (

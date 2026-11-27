@@ -11,7 +11,7 @@ import torch
 import flagquantum as fq
 import flagquantum.runtime as fqr
 import flagquantum.training as fqt
-from flagquantum.algorithms import zz_chain_hamiltonian
+from flagquantum.algorithms.many_body.spin import zz_chain_hamiltonian
 from flagquantum.errors import ExecutionError
 
 pytestmark = pytest.mark.unit
@@ -44,7 +44,7 @@ def test_module_is_normal_trainable_pytorch_module() -> None:
 
 
 def test_debug_gradient_hooks_are_reused_and_removed_with_policy() -> None:
-    from flagquantum.runtime.training_state import NonFiniteTrainingError
+    from flagquantum.runtime.checkpointing import NonFiniteTrainingError
 
     module = fq.Module(build_circuit, 2)
     enabled = replace(module.policy, correctness_debug=True)

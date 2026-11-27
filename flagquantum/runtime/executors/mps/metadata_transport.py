@@ -8,7 +8,8 @@ from typing import Any
 import torch
 import torch.distributed as dist
 
-from ....compute import resolve_platform_device
+from flagquantum.compute.local import resolve_platform_device
+
 from ...distributed.flagos_runtime import current_flagos_device
 
 

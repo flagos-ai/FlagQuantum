@@ -13,7 +13,8 @@ from typing import Any
 import torch
 import torch.distributed as dist
 
-from ...compute import get_platform_runtime
+from flagquantum.compute.local import get_platform_runtime
+
 from .flagos_runtime import activate_flagos_device, is_flagos_request
 from .identity import DistributedIdentity, build_distributed_identity
 

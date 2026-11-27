@@ -44,7 +44,7 @@ jobs:
       - name: Measure the pinned Linux x86 corpus
         run: |
           mkdir -p hardware-run
-          "$BENCHMARK_VENV/bin/python" tools/run_with_watchdog.py \
+          "$BENCHMARK_VENV/bin/python" tools/ci/run_with_watchdog.py \
             --phase linux-x86-cpu-corpus \
             --stall-seconds 180 \
             --timeout-seconds 900 \

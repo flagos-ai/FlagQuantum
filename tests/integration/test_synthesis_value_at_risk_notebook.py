@@ -18,7 +18,7 @@ from examples.synthesis.applications.finance.value_at_risk.overview.workflow imp
 )
 from flagquantum import synth
 from flagquantum.compiler import ResourceEstimate
-from flagquantum.compiler._hybrid.verifier import HybridVerificationError
+from flagquantum.compiler.frontends._structured.verifier import HybridVerificationError
 from flagquantum.errors import PlanningError
 
 np = pytest.importorskip("numpy")

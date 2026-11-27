@@ -16,6 +16,7 @@ from flagquantum.compiler.formats.target_emission import emit_legalized_target
 from flagquantum.compiler.lowering.target_legalization import (
     legalize_circuit_for_target,
 )
+from flagquantum.compute.remote.validation import prepare_artifact_deployment
 from flagquantum.core._artifacts import ProgramArtifactV2
 from flagquantum.core.ir import CircuitIR, Instruction, MeasurementNode
 from flagquantum.core.target_capabilities import (
@@ -29,7 +30,6 @@ from flagquantum.core.target_capabilities import (
     TargetCapabilitySnapshot,
     TargetIdentity,
 )
-from flagquantum.deployment.artifact_dry_run import prepare_artifact_deployment
 from flagquantum.errors import ExecutionError
 
 pytestmark = pytest.mark.integration

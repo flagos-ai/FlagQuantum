@@ -19,7 +19,7 @@ import torch
 
 import flagquantum as fq
 from flagquantum.circuit import Circuit
-from flagquantum.runtime.training_state import TrainingStateError
+from flagquantum.runtime.checkpointing import TrainingStateError
 
 pytestmark = pytest.mark.unit
 

@@ -8,13 +8,16 @@ import torch
 
 import flagquantum as fq
 import flagquantum.training as fqt
-from flagquantum.models import HybridQuantumClassifier, VariationalEnergyModel
-from flagquantum.runtime.observability.acceptance import HybridAcceptanceReport
-from flagquantum.runtime.training_state import (
+from flagquantum.algorithms.quantum_ml.models import (
+    HybridQuantumClassifier,
+    VariationalEnergyModel,
+)
+from flagquantum.runtime.checkpointing import (
     TrainingStateError,
     load_training_checkpoint,
     save_training_checkpoint,
 )
+from flagquantum.runtime.observability.acceptance import HybridAcceptanceReport
 
 pytestmark = pytest.mark.unit
 

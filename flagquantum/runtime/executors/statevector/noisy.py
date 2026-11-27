@@ -10,15 +10,22 @@ from typing import Any
 
 import torch
 
+from flagquantum.core.noise import NoiseModel
+from flagquantum.runtime.results.trajectories import (
+    TrajectoryFailure,
+    TrajectoryStatistics,
+)
+from flagquantum.runtime.trajectories.rng import (
+    derive_trajectory_seed,
+    trajectory_generator,
+)
+
 from ....circuit import Circuit
 from ....core.ir import CircuitIR
-from ....noise import NoiseModel
 from ....simulation.statevector.noisy import (
     run_noisy_trajectory_batch,
 )
 from ...trajectories.ownership import owned_trajectory_ids
-from ...trajectories.result import TrajectoryFailure, TrajectoryStatistics
-from ...trajectories.rng import derive_trajectory_seed, trajectory_generator
 from ...trajectories.statistics import TensorWelford
 
 

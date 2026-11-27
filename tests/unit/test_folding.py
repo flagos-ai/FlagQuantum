@@ -32,21 +32,22 @@ import pytest
 import torch
 
 import flagquantum as fq
-from flagquantum.algorithms import (
+from flagquantum.algorithms.error_mitigation import run_zne
+from flagquantum.algorithms.error_mitigation.folding import (
     FOLD_NOISE_SCHEMA,
     FOLDING_ASSUMPTIONS,
     FOLDING_PLACEMENTS,
     FOLDING_SCHEMA,
     FOLDING_STRATEGIES,
     FoldNoiseAmplification,
-    Hamiltonian,
-    HamiltonianTerm,
+    _pair_count,
     fold_noise_amplification,
     fold_program,
-    run_zne,
 )
-from flagquantum.algorithms.folding import _pair_count
-from flagquantum.algorithms.folding import fold_program as module_fold_program
+from flagquantum.algorithms.error_mitigation.folding import (
+    fold_program as module_fold_program,
+)
+from flagquantum.algorithms.primitives.hamiltonian import Hamiltonian, HamiltonianTerm
 from flagquantum.core.ir import (
     CircuitIR,
     IRValidationError,
@@ -54,14 +55,9 @@ from flagquantum.core.ir import (
     ObservableNode,
     ensure_circuit_ir,
 )
+from flagquantum.core.noise import NoiseModel, ReadoutError, ReadoutRule
+from flagquantum.core.operators.channels import bit_flip_channel, depolarizing_channel
 from flagquantum.errors import CapabilityError
-from flagquantum.noise import (
-    NoiseModel,
-    ReadoutError,
-    ReadoutRule,
-    bit_flip_channel,
-    depolarizing_channel,
-)
 
 pytestmark = pytest.mark.unit
 
@@ -635,7 +631,7 @@ def test_the_plan_is_frozen_and_rejects_a_record_that_describes_no_fold() -> Non
             "added_pairs",
         )
     }
-    from flagquantum.algorithms.folding import FoldingPlan
+    from flagquantum.algorithms.error_mitigation.folding import FoldingPlan
 
     broken = dict(fields, strategy="linear", program=plan.program, identity="x")
     with pytest.raises(ValueError, match="unsupported folding strategy"):

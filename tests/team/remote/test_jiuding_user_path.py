@@ -11,11 +11,11 @@ import pytest
 import torch
 
 import flagquantum as fq
-import flagquantum.remote.compute as remote_compute
-from flagquantum.remote.compute import _managed_program as managed
-from flagquantum.remote.compute import _workspace_executor as executor
-from flagquantum.remote.compute import execution
-from flagquantum.remote.compute.jiuding import JiudingClient
+import flagquantum.compute.remote.compute as remote_compute
+from flagquantum.compute.remote.compute import _managed_program as managed
+from flagquantum.compute.remote.compute import _workspace_executor as executor
+from flagquantum.compute.remote.compute import execution
+from flagquantum.compute.remote.compute.jiuding import JiudingClient
 
 pytestmark = pytest.mark.unit
 

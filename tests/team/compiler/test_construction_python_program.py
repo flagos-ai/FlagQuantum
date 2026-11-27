@@ -11,7 +11,7 @@ from flagquantum.compiler._construction.frontend.python import _QuantumFunction
 from flagquantum.compiler._construction.verification.register_profile import (
     verify_register_program,
 )
-from flagquantum.compiler._hybrid.verifier import HybridVerificationError
+from flagquantum.compiler.frontends._structured.verifier import HybridVerificationError
 
 pytestmark = pytest.mark.unit
 PREFIX = """from __future__ import annotations

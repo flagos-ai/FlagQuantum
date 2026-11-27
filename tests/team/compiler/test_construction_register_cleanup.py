@@ -16,7 +16,7 @@ from flagquantum.compiler._construction.frontend.python import capture
 from flagquantum.compiler._construction.verification.register_profile import (
     verify_register_program,
 )
-from flagquantum.compiler._hybrid.model import (
+from flagquantum.compiler.frontends._structured.model import (
     QUANTUM_EFFECT,
     Block,
     HybridProgram,
@@ -25,7 +25,7 @@ from flagquantum.compiler._hybrid.model import (
     Value,
     ValueId,
 )
-from flagquantum.compiler._hybrid.verifier import HybridVerificationError
+from flagquantum.compiler.frontends._structured.verifier import HybridVerificationError
 from flagquantum.core.ir import Instruction
 from tests.register_program_cases import Registers, pressure
 from tools.synthesis_compiler_examples.register_cleanup.main import (

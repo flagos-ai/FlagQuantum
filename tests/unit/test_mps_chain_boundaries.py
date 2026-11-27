@@ -3,7 +3,7 @@
 import pytest
 import torch
 
-from flagquantum.algorithms import Hamiltonian, pauli_term
+from flagquantum.algorithms.primitives.hamiltonian import Hamiltonian, pauli_term
 from flagquantum.simulation.mps.state import MPSState
 
 pytestmark = pytest.mark.unit

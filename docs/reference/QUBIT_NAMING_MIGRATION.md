@@ -120,7 +120,7 @@ is the same attribute and moves with the rename.
 ## Scope of the rename
 
 The migration covers four surfaces, all measured by
-`tools/census_wire_vocabulary.py` and reconciled against
+`tools/architecture/census_wire_vocabulary.py` and reconciled against
 `contracts/qubit-vocabulary-contract.toml` on every run:
 
 | Surface | Count | Disposition |

@@ -12,8 +12,8 @@ the supported lowering set for every backend.
 Regenerate and verify it with:
 
 ```bash
-python tools/operator_manifest.py
-python tools/operator_manifest.py --check
+python tools/docs/operator_manifest.py
+python tools/docs/operator_manifest.py --check
 ```
 
 Compiler and serializer internals call

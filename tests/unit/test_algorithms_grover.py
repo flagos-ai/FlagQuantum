@@ -2,12 +2,12 @@ from __future__ import annotations
 
 import pytest
 
-from flagquantum.algorithms.grover import (
+from flagquantum.algorithms.primitives.oracle import marked_states
+from flagquantum.algorithms.search.grover import (
     grover_circuit,
     optimal_iterations,
     run_grover,
 )
-from flagquantum.algorithms.primitives.oracle import marked_states
 
 pytestmark = pytest.mark.unit
 

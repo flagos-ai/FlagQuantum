@@ -5,7 +5,8 @@ from __future__ import annotations
 from collections.abc import Sequence
 from typing import TYPE_CHECKING
 
-from ...core.operator_schema import canonical_opcode
+from flagquantum.core.operators.schema import canonical_opcode
+
 from .operations import _diagonal_region
 from .program import (
     _StatevectorCliffordMatchingStep,

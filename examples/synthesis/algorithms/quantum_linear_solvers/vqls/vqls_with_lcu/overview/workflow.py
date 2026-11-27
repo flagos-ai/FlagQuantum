@@ -10,7 +10,7 @@ from examples.synthesis.algorithms.quantum_linear_solvers.vqls.vqls_with_lcu.mai
     build_program as build_solution,
 )
 from flagquantum import synth
-from flagquantum.algorithms import CobylaOptimizer
+from flagquantum.algorithms.optimizers.cobyla import CobylaOptimizer
 
 from .quantum import MATRIX, TARGET, build_objective
 

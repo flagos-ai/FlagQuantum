@@ -25,7 +25,7 @@ from flagquantum.compiler.lowering.target_legalization import (
 )
 from flagquantum.compiler.qir import ENTRY_POINT_NAME, emit_qir
 from flagquantum.core.ir import CircuitIR, Instruction, MeasurementNode
-from flagquantum.core.operator_schema import OPERATOR_SCHEMAS
+from flagquantum.core.operators.schema import OPERATOR_SCHEMAS
 from flagquantum.core.target_capabilities import (
     CapabilityFact,
     CapabilityScope,

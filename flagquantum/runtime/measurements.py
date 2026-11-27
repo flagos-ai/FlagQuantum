@@ -9,9 +9,10 @@ from typing import Any, cast
 
 import torch
 
+from flagquantum.runtime.results import MeasurementResult
+
 from ..core.ir import MeasurementNode
 from ..errors import CapabilityError
-from .result import MeasurementResult
 
 _SUPPORTED_KINDS = {
     "counts",
@@ -89,7 +90,7 @@ class _DensityMatrixTarget:
         return ((indices.unsqueeze(-1) >> shifts) & 1).to(torch.int64)
 
     def expectation_z(self, wires: Sequence[int] | int | None = None) -> torch.Tensor:
-        from ..simulation.density_matrix import expectation_z_density
+        from flagquantum.simulation.density_matrix import expectation_z_density
 
         values = expectation_z_density(self.density, wires)
         if self.noise_model is not None:
@@ -811,7 +812,10 @@ def _density_matrix_output(
     matrix means.
     """
 
-    from ..simulation.density_matrix import density_matrix, reduced_density_matrix
+    from flagquantum.simulation.density_matrix import (
+        density_matrix,
+        reduced_density_matrix,
+    )
 
     if getattr(noise_model, "readout_rules", ()):
         raise ValueError(
@@ -877,7 +881,7 @@ def _vn_entropy_output(
     state that had readout folded in would describe a state the engine never prepared.
     """
 
-    from ..simulation.entropy import (
+    from flagquantum.simulation.entropy import (
         contiguous_ascending_run,
         entropy_from_density_matrix,
         entropy_from_probabilities,
@@ -906,7 +910,10 @@ def _vn_entropy_output(
             )
 
     if isinstance(output, torch.Tensor):
-        from ..simulation.density_matrix import density_matrix, reduced_density_matrix
+        from flagquantum.simulation.density_matrix import (
+            density_matrix,
+            reduced_density_matrix,
+        )
 
         if output.is_complex() and output.ndim == 2 and output.shape[-1] == 2**n_qubits:
             return entropy_from_density_matrix(
@@ -923,7 +930,10 @@ def _vn_entropy_output(
         )
 
     if callable(getattr(output, "state", None)):
-        from ..simulation.density_matrix import density_matrix, reduced_density_matrix
+        from flagquantum.simulation.density_matrix import (
+            density_matrix,
+            reduced_density_matrix,
+        )
 
         return entropy_from_density_matrix(
             reduced_density_matrix(density_matrix(output), qubits),

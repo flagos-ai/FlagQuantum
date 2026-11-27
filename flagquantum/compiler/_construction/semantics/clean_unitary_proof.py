@@ -4,8 +4,9 @@ from collections.abc import Sequence
 
 import torch
 
+from flagquantum.compiler.frontends._structured.model import HybridProgram
+
 from ....core.ir import Instruction
-from ..._hybrid.model import HybridProgram
 from ...optimization.one_qubit_optimization import (
     _instruction_matrix as one_qubit_matrix,
 )

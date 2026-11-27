@@ -10,8 +10,8 @@ import torch
 
 import flagquantum as fq
 from flagquantum.core.ir import CircuitIR, Instruction
+from flagquantum.core.operators.channels import bit_flip_channel
 from flagquantum.errors import CapabilityError, ValidationError
-from flagquantum.noise import bit_flip_channel
 from flagquantum.simulation.stabilizer import _embedded_sampler, engine
 from flagquantum.simulation.stabilizer.engine import _EngineOperation
 

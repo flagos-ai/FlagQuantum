@@ -8,7 +8,7 @@ from collections.abc import Mapping
 from dataclasses import dataclass
 from types import MappingProxyType
 
-from ..._hybrid.model import (
+from flagquantum.compiler.frontends._structured.model import (
     INDEX,
     Block,
     HybridProgram,
@@ -18,6 +18,7 @@ from ..._hybrid.model import (
     Value,
     ValueId,
 )
+
 from ..verification.profile import _fail, _positive_integer, verify_construction
 from .bit_facts import BitFacts, add_facts, constant_facts, facts, multiply_facts
 from .lifetimes import LifetimeAnalysis

@@ -9,11 +9,11 @@ import pytest
 import torch
 
 import flagquantum as fq
+from flagquantum.compute.remote.compute import _workspace_executor as executor
+from flagquantum.compute.remote.compute._workspace_results import decode_tensor
+from flagquantum.compute.remote.compute.jiuding import JiudingClient
 from flagquantum.errors import ExecutionError
-from flagquantum.remote.compute import _workspace_executor as executor
-from flagquantum.remote.compute._workspace_results import decode_tensor
-from flagquantum.remote.compute.jiuding import JiudingClient
-from flagquantum.runtime.result import ExecutionResult
+from flagquantum.runtime.results import ExecutionResult
 
 pytestmark = pytest.mark.unit
 
@@ -47,7 +47,7 @@ def test_cpu_executor_runs_bell_state_and_reports_actual_path():
 
 
 def test_cpu_executor_returns_measurements_without_statevector():
-    from flagquantum.observables import lower_outputs
+    from flagquantum.core.measurement import lower_outputs
 
     ir = fq.Circuit(2).h(0).cx(0, 1).to_ir()
     measurements = lower_outputs(
@@ -85,7 +85,7 @@ def test_cpu_executor_returns_measurements_without_statevector():
 
 
 def test_cpu_executor_returns_samples_and_counts_without_statevector():
-    from flagquantum.observables import lower_outputs
+    from flagquantum.core.measurement import lower_outputs
 
     ir = fq.Circuit(2).h(0).cx(0, 1).to_ir()
     measurements = lower_outputs(
@@ -122,7 +122,7 @@ def test_cpu_executor_returns_samples_and_counts_without_statevector():
 
 
 def test_cpu_executor_runs_measurement_batch_in_one_request():
-    from flagquantum.observables import lower_outputs
+    from flagquantum.core.measurement import lower_outputs
 
     measurements = lower_outputs(fq.expectation(fq.Z(0)), n_qubits=1, shots=None)
     assert measurements is not None
@@ -159,7 +159,7 @@ def test_cpu_executor_runs_measurement_batch_in_one_request():
 
 
 def test_cpu_executor_rejects_invalid_batch_before_execution(monkeypatch):
-    from flagquantum.observables import lower_outputs
+    from flagquantum.core.measurement import lower_outputs
 
     measurements = lower_outputs(fq.expectation(fq.Z(0)), n_qubits=1, shots=None)
     assert measurements is not None
@@ -317,7 +317,7 @@ def test_run_statevector_returns_normal_execution_result(monkeypatch):
 
 
 def test_default_workspace_client_is_reused(monkeypatch):
-    from flagquantum.remote.compute import execution
+    from flagquantum.compute.remote.compute import execution
 
     execution._CLIENTS.clear()
     monkeypatch.setenv("JIUDING_WORKSPACE", "flagquantum-runtime")

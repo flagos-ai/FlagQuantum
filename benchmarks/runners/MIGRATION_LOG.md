@@ -15,7 +15,7 @@ payload, and reproducibility checks passing.
 Runtime namespace migrations are enforced by:
 
 ```bash
-python tools/check_architecture.py
+python tools/architecture/check_architecture.py
 ```
 
 The checker rejects both reintroduction of the removed compatibility package

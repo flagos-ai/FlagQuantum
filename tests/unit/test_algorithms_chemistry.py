@@ -37,7 +37,7 @@ from flagquantum.algorithms.chemistry import (
     uccsd_excitations,
     uccsd_factors,
 )
-from flagquantum.observables.fermion import annihilate, create, jordan_wigner
+from flagquantum.core.operators.fermion import annihilate, create, jordan_wigner
 from flagquantum.simulation.pauli import pauli_product_operator
 from flagquantum.simulation.unitary import get_unitary
 
@@ -94,7 +94,7 @@ def _generator(occupied: tuple[int, ...], virtual: tuple[int, ...]) -> object:
 def _product(degrees: tuple[int, ...], *, creating: bool) -> object:
     """Return one ladder-operator product, or the identity when it is empty."""
 
-    from flagquantum.observables.fermion import FermionOperator, FermionTerm
+    from flagquantum.core.operators.fermion import FermionOperator, FermionTerm
 
     if not degrees:
         return FermionOperator((FermionTerm(1.0, (), ()),))
@@ -455,7 +455,7 @@ def test_the_coupler_ansatz_defaults_to_the_nearest_neighbour_chain() -> None:
 def test_the_two_hardware_efficient_ansatze_are_different_circuits() -> None:
     """The coupler ansatz and ``algorithms.core``'s ansatz are not interchangeable."""
 
-    from flagquantum.algorithms.core import (
+    from flagquantum.algorithms.primitives.ansatz import (
         hardware_efficient_ansatz,
         hardware_efficient_parameter_count,
     )

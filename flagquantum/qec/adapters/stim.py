@@ -6,7 +6,8 @@ numerical execution and text conversion; no vendor object leaves that boundary.
 
 from __future__ import annotations
 
-from ...noise import NoiseModel
+from flagquantum.core.noise import NoiseModel
+
 from ...simulation.stabilizer.engine import (
     _annotated_stim_text,
     _prepare_stim_experiment,

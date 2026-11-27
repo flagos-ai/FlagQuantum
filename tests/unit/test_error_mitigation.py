@@ -14,7 +14,6 @@ import math
 import pytest
 import torch
 
-from flagquantum.algorithms import Hamiltonian, HamiltonianTerm
 from flagquantum.algorithms.error_mitigation import (
     EXTRAPOLATION_METHODS,
     ZNE_ASSUMPTIONS,
@@ -28,11 +27,10 @@ from flagquantum.algorithms.error_mitigation import (
     run_zne,
     scale_noise_model,
 )
+from flagquantum.algorithms.primitives.hamiltonian import Hamiltonian, HamiltonianTerm
 from flagquantum.circuit import Circuit
-from flagquantum.noise import (
-    CorrelatedReadoutError,
-    NoiseModel,
-    ReadoutError,
+from flagquantum.core.noise import CorrelatedReadoutError, NoiseModel, ReadoutError
+from flagquantum.core.operators.channels import (
     amplitude_damping_channel,
     bit_flip_channel,
     coherent_overrotation_channel,

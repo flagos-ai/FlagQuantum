@@ -173,7 +173,7 @@ def main(argv: Sequence[str] | None = None) -> int:
     report = output / "native.xml"
     command = [
         sys.executable,
-        "tools/run_with_watchdog.py",
+        "tools/ci/run_with_watchdog.py",
         "--phase",
         "ascend-native-regression",
         "--stall-seconds",

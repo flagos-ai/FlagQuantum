@@ -18,7 +18,7 @@ from examples.synthesis.algorithms.number_theory_and_cryptography.discrete_log.m
 from examples.synthesis.compare_states import compare_states
 from flagquantum import synth
 from flagquantum.compiler import ResourceEstimate
-from flagquantum.compiler._hybrid.verifier import HybridVerificationError
+from flagquantum.compiler.frontends._structured.verifier import HybridVerificationError
 from flagquantum.errors import PlanningError
 
 pytestmark = pytest.mark.integration

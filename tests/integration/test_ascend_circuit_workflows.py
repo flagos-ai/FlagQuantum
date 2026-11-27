@@ -14,8 +14,8 @@ import torch
 
 import flagquantum as fq
 import flagquantum.noise as noise
-from flagquantum.algorithms import transverse_field_ising
-from flagquantum.core.operator_schema import OPERATOR_SCHEMAS
+from flagquantum.algorithms.many_body.spin import transverse_field_ising
+from flagquantum.core.operators.schema import OPERATOR_SCHEMAS
 from flagquantum.qec import DetectorErrorModel, get_decoder
 from flagquantum.qec.decoders._ai.predecoder import Predecoder
 from flagquantum.qec.decoders._ai.training import Trainer

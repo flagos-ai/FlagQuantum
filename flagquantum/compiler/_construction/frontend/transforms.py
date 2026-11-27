@@ -5,7 +5,8 @@ from __future__ import annotations
 import ast
 from typing import TYPE_CHECKING
 
-from ..._hybrid.model import Value
+from flagquantum.compiler.frontends._structured.model import Value
+
 from ..program_types import qct_qst_type1, qct_qst_type2, qft, qst_type2
 from ..verification.register_profile import register_width
 from .python import _error

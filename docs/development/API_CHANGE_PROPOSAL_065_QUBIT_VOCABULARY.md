@@ -186,15 +186,15 @@ covers it.
 
 ## Verification
 
-1. `python tools/check_qubit_vocabulary.py` exits 0 and reports `0 of 341 baseline
+1. `python tools/architecture/check_qubit_vocabulary.py` exits 0 and reports `0 of 341 baseline
    sites retired`.
-2. `python tools/census_wire_vocabulary.py` reproduces 341 canonical, 11 aliases,
+2. `python tools/architecture/census_wire_vocabulary.py` reproduces 341 canonical, 11 aliases,
    397 private, 102 public attribute names, and 1291 string literals.
 3. `tests/unit/test_qubit_vocabulary_contract.py` proves the gate fails on: a
    newly added `wire` parameter, a fabricated retirement entry, a baseline line
    deleted without a retirement entry, an alias forwarding to the wrong name, and a
    slice whose declared count is wrong.
-4. `python tools/validate_required_checks.py` still passes — the gate is added as
+4. `python tools/ci/validate_required_checks.py` still passes — the gate is added as
    a CI **step** inside the existing `quality` job, not as a new job.
 5. No Stable Core export, default, or serialized key changes: `fq.__all__`
    membership and `docs/public_api_v1.json` are untouched by WQ-1.

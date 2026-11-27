@@ -9,7 +9,8 @@ import pytest
 import torch
 
 import flagquantum as fq
-from flagquantum.algorithms import (
+from flagquantum.algorithms.error_mitigation import cdr as cdr_module
+from flagquantum.algorithms.error_mitigation.cdr import (
     CDR_ASSUMPTIONS,
     CDR_LIMITATIONS,
     CDR_SNAP_OPCODES,
@@ -17,12 +18,10 @@ from flagquantum.algorithms import (
     CliffordFit,
     CliffordTrainingPoint,
     CliffordVariant,
-    Hamiltonian,
-    HamiltonianTerm,
     clifford_variants,
     run_cdr,
 )
-from flagquantum.algorithms import cdr as cdr_module
+from flagquantum.algorithms.primitives.hamiltonian import Hamiltonian, HamiltonianTerm
 from flagquantum.core import OPERATOR_SCHEMAS
 from flagquantum.core.ir import (
     CircuitIR,
@@ -31,15 +30,12 @@ from flagquantum.core.ir import (
     MeasurementNode,
     ObservableNode,
 )
-from flagquantum.errors import CapabilityError
-from flagquantum.noise import (
-    NoiseModel,
-    NoiseRule,
-    ReadoutError,
-    ReadoutRule,
+from flagquantum.core.noise import NoiseModel, NoiseRule, ReadoutError, ReadoutRule
+from flagquantum.core.operators.channels import (
     depolarizing_channel,
     two_qubit_depolarizing_channel,
 )
+from flagquantum.errors import CapabilityError
 from flagquantum.simulation.density_matrix import density_matrix_from_ir
 from flagquantum.simulation.stabilizer import require_clifford_program
 from flagquantum.simulation.stabilizer.engine import CLIFFORD_GATE_NAMES
@@ -851,6 +847,6 @@ def test_the_package_reexports_the_unit() -> None:
     assert algorithms.run_cdr is run_cdr
     assert algorithms.clifford_variants is clifford_variants
     assert algorithms.CdrResult is CdrResult
-    assert algorithms.cdr is cdr_module
+    assert algorithms.cdr.run_cdr is cdr_module.run_cdr
     for name in cdr_module.__all__:
         assert name in algorithms.__all__, name

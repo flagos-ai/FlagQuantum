@@ -7,7 +7,7 @@ from collections.abc import Callable
 import pytest
 
 import flagquantum.deployment as deployment
-from flagquantum.algorithms import Hamiltonian, pauli_term
+from flagquantum.algorithms.primitives.hamiltonian import Hamiltonian, pauli_term
 from flagquantum.errors import CapabilityError
 from flagquantum.experimental.simulation import RydbergProgram
 
@@ -39,9 +39,13 @@ def test_package_intake_refuses_before_target_compilation_and_emission(
     measurement_plan: bool,
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
-    monkeypatch.setattr("flagquantum.deployment.cloud.compile_program", forbidden)
-    monkeypatch.setattr("flagquantum.deployment.cloud.emit_openqasm", forbidden)
-    monkeypatch.setattr("flagquantum.deployment.cloud.emit_qcis", forbidden)
+    monkeypatch.setattr(
+        "flagquantum.runtime.planner.deployment.compile_program", forbidden
+    )
+    monkeypatch.setattr(
+        "flagquantum.runtime.planner.deployment.emit_openqasm", forbidden
+    )
+    monkeypatch.setattr("flagquantum.runtime.planner.deployment.emit_qcis", forbidden)
     monkeypatch.setattr(deployment.CloudBackendProfile, "simulator", forbidden)
     source = program.to_ir() if as_record else program
     if measurement_plan:

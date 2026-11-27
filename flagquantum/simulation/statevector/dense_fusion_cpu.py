@@ -9,7 +9,8 @@ from numbers import Real
 
 import torch
 
-from ...core.operator_schema import canonical_opcode
+from flagquantum.core.operators.schema import canonical_opcode
+
 from ..native_cpu.permutation import (
     compact_cx_rzz_swap_images,
     fused_compact_cx_rzz_swap_out,

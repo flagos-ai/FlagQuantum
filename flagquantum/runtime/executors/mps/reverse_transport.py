@@ -16,7 +16,8 @@ import torch
 import torch.distributed as dist
 from torch.profiler import record_function
 
-from ....compute import get_platform_runtime
+from flagquantum.compute.local import get_platform_runtime
+
 from ....core.ir import Instruction
 from ...distributed.context import resolve_local_world_size
 from .records import MPSReverseContractError

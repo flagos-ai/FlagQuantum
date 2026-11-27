@@ -70,7 +70,7 @@ have these actual consumers; no new provider abstraction is justified.
    small-model oracle; retain current optional guard and integration marker.
 3. tests/unit/test_qec_installed_profiles.py: SDK-free pure contract/malformed
    output/ownership tests, reachable without NumPy or optional SDK imports.
-4. tools/qec_installed_smoke.py: weighted call checks for PyMatching/both wheel
+4. tools/release/qec_installed_smoke.py: weighted call checks for PyMatching/both wheel
    and sdist profiles, preserving every existing sample and packed check.
 5. docs/development/QEC_PYMATCHING_BATCH_WEIGHTS_API_PROPOSAL.md: approved
    signature, migration-free compatibility analysis, shortest user code.
@@ -147,9 +147,9 @@ Proposed local commands after implementation:
 ```sh
 python -m pytest -q tests/unit/test_qec_installed_profiles.py tests/qec/test_pymatching_batch.py tests/qec/test_adapters_pymatching.py tests/qec/test_independent_batch_decoding.py
 python tools/check_dependency_policy.py
-python -m ruff check flagquantum/qec/adapters/pymatching.py tests/qec/test_pymatching_batch.py tests/unit/test_qec_installed_profiles.py tools/qec_installed_smoke.py
-python -m black --check flagquantum/qec/adapters/pymatching.py tests/qec/test_pymatching_batch.py tests/unit/test_qec_installed_profiles.py tools/qec_installed_smoke.py
-python -m mypy --strict --python-version 3.12 --explicit-package-bases --follow-imports=silent flagquantum/qec/adapters/pymatching.py tests/qec/test_pymatching_batch.py tests/unit/test_qec_installed_profiles.py tools/qec_installed_smoke.py
+python -m ruff check flagquantum/qec/adapters/pymatching.py tests/qec/test_pymatching_batch.py tests/unit/test_qec_installed_profiles.py tools/release/qec_installed_smoke.py
+python -m black --check flagquantum/qec/adapters/pymatching.py tests/qec/test_pymatching_batch.py tests/unit/test_qec_installed_profiles.py tools/release/qec_installed_smoke.py
+python -m mypy --strict --python-version 3.12 --explicit-package-bases --follow-imports=silent flagquantum/qec/adapters/pymatching.py tests/qec/test_pymatching_batch.py tests/unit/test_qec_installed_profiles.py tools/release/qec_installed_smoke.py
 ```
 
 Use existing environments and preserve all prior logs. Relevant owner,

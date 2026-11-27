@@ -108,8 +108,8 @@ through the existing `optimize` entry point, with exact operator and phase rules
 ```sh
 python -m pytest tests/unit/test_compilation_one_qubit_optimization.py \
   tests/unit/test_compilation_wire_local_optimization.py -q
-python tools/ci_tier.py pr-default
-python tools/ci_tier.py pr-runtime
+python tools/ci/ci_tier.py pr-default
+python tools/ci/ci_tier.py pr-runtime
 ```
 
 The archive retains the exact measurement driver and baseline source revision.

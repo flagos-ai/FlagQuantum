@@ -20,7 +20,7 @@ import torch
 import flagquantum as fq
 import flagquantum.lindblad as fql
 from flagquantum.core.ir.state_space import ExplicitBasisSpace
-from flagquantum.simulation.lindblad import EvolutionResult
+from flagquantum.simulation.dynamics.lindblad import EvolutionResult
 
 pytestmark = pytest.mark.unit
 

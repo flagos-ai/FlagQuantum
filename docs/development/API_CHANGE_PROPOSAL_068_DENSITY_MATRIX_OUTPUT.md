@@ -175,7 +175,7 @@ reduction three wrong ways still produces a `(1, 2, 2)` complex tensor:
 | contract correctly but always answer in ascending qubit order | the right matrix under the wrong index meaning | the permutation measurement |
 
 The contract therefore records four dimensions and
-[`tools/check_density_matrix_output_contract.py`](../../tools/check_density_matrix_output_contract.py)
+[`tools/validation/check_density_matrix_output_contract.py`](../../tools/validation/check_density_matrix_output_contract.py)
 re-measures them on every run:
 
 | Dimension | Measurement |
@@ -315,7 +315,7 @@ absorbing it silently. No test assertion was relaxed to make this pass; the
 count in `tests/unit/test_public_api_candidate.py` moved with the budget, and the
 reviewed signature in
 `contracts/observable-outputs-v1-candidate.json` is what
-`tools/public_api_snapshot.py` checks the live export against.
+`tools/architecture/public_api_snapshot.py` checks the live export against.
 
 ## 11. Open questions
 
@@ -335,7 +335,7 @@ reviewed signature in
 ## Verification
 
 ```bash
-python tools/check_density_matrix_output_contract.py
+python tools/validation/check_density_matrix_output_contract.py
 # Density-matrix output contract passed: 5 recorded matrices trace to one, agree with the
 # observable path, reproduce under the caller's qubit order as a basis permutation and across
 # 4 execution modes; 6 recorded refusals raise the sentence the contract states
@@ -344,13 +344,13 @@ python -m pytest tests/unit/test_density_matrix_output.py \
     tests/unit/test_density_matrix_output_contract.py -q
 # 37 passed
 
-python -m tools.public_api_snapshot
+python -m tools.architecture.public_api_snapshot
 # public API migration baseline passed
 
 python -m pytest tests/api_contract/test_observable_outputs.py -q
 # 61 passed
 
-python tools/validate_required_checks.py
+python tools/ci/validate_required_checks.py
 # validated 6 externally configured required checks
 ```
 

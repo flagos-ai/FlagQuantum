@@ -6,8 +6,8 @@ from typing import Any
 import pytest
 import torch
 
-from flagquantum.algorithms.chemistry_domain.active_space import select_active_space
-from flagquantum.algorithms.chemistry_domain.problem import (
+from flagquantum.algorithms.chemistry.models.active_space import select_active_space
+from flagquantum.algorithms.chemistry.models.problem import (
     MolecularProblem,
     fermion_hamiltonian,
 )

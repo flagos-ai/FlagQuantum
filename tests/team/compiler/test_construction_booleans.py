@@ -8,7 +8,7 @@ from flagquantum.compiler._construction.verification.profile import (
     uint_type,
     verify_construction,
 )
-from flagquantum.compiler._hybrid.verifier import HybridVerificationError
+from flagquantum.compiler.frontends._structured.verifier import HybridVerificationError
 from tests.team.compiler.test_construction_python import _cell
 
 pytestmark = pytest.mark.unit

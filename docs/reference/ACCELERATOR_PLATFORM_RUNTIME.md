@@ -73,7 +73,7 @@ Torch-FL's CUDA backend provides the executable reference path. In a fresh
 Torch-FL CUDA environment, run:
 
 ```bash
-python tools/validate_flagos_cuda_reference.py
+python tools/validation/validate_flagos_cuda_reference.py
 ```
 
 or enable the opt-in integration test:
@@ -107,7 +107,7 @@ container, pinned Torch-FL wheel, and identity environment. The workflow does
 not manufacture those identity fields from the repository lock; missing or
 different provisioner metadata fails closed. The job runs bounded focused
 tests, emits a raw JSON artifact, and applies
-[`tools/validate_flagos_reference_evidence.py`](../../tools/validate_flagos_reference_evidence.py).
+[`tools/validation/validate_flagos_reference_evidence.py`](../../tools/validation/validate_flagos_reference_evidence.py).
 The ordinary CPU CI also validates the checked-in artifact so documentation or
 capability changes cannot silently promote it into hardware certification.
 

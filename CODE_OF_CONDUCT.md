@@ -76,4 +76,4 @@ It also does not claim an independent moderation body, an appeals committee, or 
 confidential reporting system. None of those exists. What exists is one maintainer, one
 email address, and the process above.
 
-This file is a protected integration path (`team-ownership.toml`).
+This file is a protected integration path (`config/team-ownership.toml`).

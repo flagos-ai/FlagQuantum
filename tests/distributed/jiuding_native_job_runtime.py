@@ -13,12 +13,14 @@ if str(ROOT) not in sys.path:
     sys.path.insert(0, str(ROOT))
 
 import flagquantum as fq  # noqa: E402
-from flagquantum.remote.compute._distributed_job import _response  # noqa: E402
-from flagquantum.remote.compute._workspace_executor import (  # noqa: E402
+from flagquantum.compute.remote.compute._distributed_job import _response  # noqa: E402
+from flagquantum.compute.remote.compute._workspace_executor import (  # noqa: E402
     SCHEMA,
     VERSION,
 )
-from flagquantum.remote.compute._workspace_results import decode_tensor  # noqa: E402
+from flagquantum.compute.remote.compute._workspace_results import (  # noqa: E402
+    decode_tensor,
+)
 from flagquantum.runtime.distributed import (  # noqa: E402
     destroy_torch_distributed,
     init_torch_distributed,

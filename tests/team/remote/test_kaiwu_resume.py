@@ -10,13 +10,13 @@ from examples.qdiffusion_kaiwu.qboson_resume import (
     RESUME_RECORD_FIELDS,
     run_resume,
 )
-from flagquantum.remote.kaiwu import (
+from flagquantum.compute.remote.kaiwu import (
     KaiwuRemoteJob,
     KaiwuTaskReceipt,
     KaiwuTaskResult,
     new_receipt,
 )
-from flagquantum.remote.kaiwu.contracts import FrozenIsingMatrix, KaiwuTaskMode
+from flagquantum.compute.remote.kaiwu.contracts import FrozenIsingMatrix, KaiwuTaskMode
 
 pytestmark = pytest.mark.unit
 

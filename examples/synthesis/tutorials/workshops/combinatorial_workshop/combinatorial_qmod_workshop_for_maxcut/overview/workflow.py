@@ -15,7 +15,7 @@ from examples.synthesis.tutorials.workshops.combinatorial_workshop.combinatorial
     main,
 )
 from flagquantum import synth
-from flagquantum.algorithms import CobylaOptimizer
+from flagquantum.algorithms.optimizers.cobyla import CobylaOptimizer
 from flagquantum.compiler import ResourceEstimate
 
 if TYPE_CHECKING:

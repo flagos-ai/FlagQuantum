@@ -4,13 +4,14 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING
 
+from flagquantum.compiler.frontends._structured.model import (
+    Value,
+)
+
 from ...compiler._construction.verification.register_profile import (
     equatorial_rotation,
     euler_rotation,
     register_width,
-)
-from ...compiler._hybrid.model import (
-    Value,
 )
 from .adapter_model import (
     _GATE_CALLS,

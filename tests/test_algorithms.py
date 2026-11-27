@@ -6,18 +6,14 @@ import torch
 import flagquantum as fq
 import flagquantum.runtime as fqr
 import flagquantum.simulation.mps as fqmps
-from flagquantum.algorithms import (
-    Hamiltonian,
+from flagquantum.algorithms.many_body.spin import zz_chain_hamiltonian
+from flagquantum.algorithms.optimization.qaoa_circuits import qaoa_circuit, qaoa_loss
+from flagquantum.algorithms.optimization.vqe import run_adapt_vqe, run_vqe, vqe_loss
+from flagquantum.algorithms.primitives.ansatz import (
     hardware_efficient_ansatz,
     hardware_efficient_parameter_count,
-    pauli_term,
-    qaoa_circuit,
-    qaoa_loss,
-    run_adapt_vqe,
-    run_vqe,
-    vqe_loss,
-    zz_chain_hamiltonian,
 )
+from flagquantum.algorithms.primitives.hamiltonian import Hamiltonian, pauli_term
 
 pytestmark = pytest.mark.integration
 

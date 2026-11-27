@@ -7,7 +7,7 @@ import torch
 
 import flagquantum as fq
 from examples.synthesis.graph_optimization import Evaluation
-from flagquantum.algorithms import CobylaOptimizer
+from flagquantum.algorithms.optimizers.cobyla import CobylaOptimizer
 from flagquantum.compiler import ResourceEstimate, estimate_resources
 from flagquantum.compiler.basis_conversion import convert_basis
 

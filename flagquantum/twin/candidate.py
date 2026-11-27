@@ -10,8 +10,9 @@ from dataclasses import dataclass
 from datetime import datetime
 from typing import Any, Literal, cast
 
+from flagquantum.compute.remote.qpu import DeploymentResult, ProviderTaskHandle
+
 from ..core.ir import ensure_circuit_ir
-from ..remote.qpu import DeploymentResult, ProviderTaskHandle
 from ._statistics import finite_shot_tv_radius
 from .experiment import TwinExperiment, TwinHardwareReport
 from .model import QPUDigitalTwin, TwinSnapshot

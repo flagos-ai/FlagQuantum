@@ -20,7 +20,7 @@ def test_flagos_statevector_2_4_8_scale_ladder(tmp_path: Path):
     completed = subprocess.run(
         (
             sys.executable,
-            "tools/validate_flagos_statevector_scale.py",
+            "tools/validation/validate_flagos_statevector_scale.py",
             "--output",
             str(output),
             "--timeout-seconds",

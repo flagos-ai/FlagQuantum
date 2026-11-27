@@ -16,7 +16,7 @@ from flagquantum.compiler._construction.scheduling.selection import (
 from flagquantum.core.ir import CircuitIR, Instruction
 from flagquantum.ecosystem._qmod.source import load_qmod
 from flagquantum.runtime.execution_plan_contract import plan_from_dict, plan_to_dict
-from flagquantum.runtime.mps_result import native_mps
+from flagquantum.runtime.results.mps import native_mps
 from flagquantum.simulation.mps.state import MPSState
 from tests.team.compiler.test_construction_python_program import program_definition
 

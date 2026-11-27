@@ -9,7 +9,7 @@ from flagquantum.compiler._construction.semantics._sparse_predicate import (
     sparse_predicate,
 )
 from flagquantum.compiler._construction.verification.profile import uint_type
-from flagquantum.compiler._hybrid.model import Value, ValueId
+from flagquantum.compiler.frontends._structured.model import Value, ValueId
 
 pytestmark = pytest.mark.unit
 

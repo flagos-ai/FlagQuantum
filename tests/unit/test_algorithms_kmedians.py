@@ -3,14 +3,14 @@ from __future__ import annotations
 import pytest
 import torch
 
-from flagquantum.algorithms.kmedians import (
+from flagquantum.algorithms.primitives.oracle import marked_states
+from flagquantum.algorithms.quantum_ml.kmedians import (
     _MAX_CENTROIDS,
     KMediansResult,
     _nearest_centroid,
     _strictly_better,
     kmedians,
 )
-from flagquantum.algorithms.primitives.oracle import marked_states
 
 pytestmark = pytest.mark.unit
 

@@ -4,7 +4,7 @@ import pytest
 import torch
 
 from flagquantum.compiler import optimize
-from flagquantum.compiler._hybrid import (
+from flagquantum.compiler.frontends._structured import (
     CircuitStructureCache,
     SpecializationError,
     capture_source,

@@ -7,7 +7,11 @@ import torch
 
 import flagquantum as fq
 from flagquantum import synth
-from tools.validate_qmod_exact_amplification import FIXTURES, corrected_source, validate
+from tools.validation.validate_qmod_exact_amplification import (
+    FIXTURES,
+    corrected_source,
+    validate,
+)
 
 pytestmark = pytest.mark.integration
 

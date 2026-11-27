@@ -4,7 +4,7 @@
 ``batched_parameter_shift_gradient``: which circuit it accepts, what value it
 returns, and what it refuses. This file owns
 ``contracts/parameter-shift-coverage-contract.toml`` and
-``tools/check_parameter_shift_coverage_contract.py``, and asks one question of
+``tools/validation/check_parameter_shift_coverage_contract.py``, and asks one question of
 them -- is the profile still derived from the opcode declaration rather than from
 a gate list that happens to agree with it today?
 
@@ -13,7 +13,7 @@ declaration moves, so the tests here move it: a synthetic three-frequency opcode
 must leave the derived set, a hardcoded list must be found by the source scan,
 and a contract row that misstates an opcode's pair count must be refused by the
 gate. The final section asks whether the gate is wired into CI and
-``tools/pre_push.py`` at all.
+``tools/ci/pre_push.py`` at all.
 """
 
 from __future__ import annotations
@@ -29,7 +29,7 @@ import torch
 
 import flagquantum as fq
 from flagquantum.core import OPERATOR_SCHEMAS
-from flagquantum.core.operator_schema import OperatorSchema
+from flagquantum.core.operators.schema import OperatorSchema
 from flagquantum.gradients import (
     _BATCH_PROFILE_CONSTANT_GATES,
     _BATCH_PROFILE_GATES,
@@ -48,7 +48,7 @@ ROOT = Path(__file__).resolve().parents[2]
 CONTRACT = ROOT / "contracts" / "parameter-shift-coverage-contract.toml"
 IMPLEMENTATION = ROOT / "flagquantum" / "gradients.py"
 
-_GATE_PATH = ROOT / "tools" / "check_parameter_shift_coverage_contract.py"
+_GATE_PATH = ROOT / "tools" / "validation/check_parameter_shift_coverage_contract.py"
 _GATE_SPEC = importlib.util.spec_from_file_location(
     "check_parameter_shift_coverage_contract", _GATE_PATH
 )
@@ -353,7 +353,7 @@ def test_a_shift_that_is_not_the_declared_one_names_the_declared_one() -> None:
 
 
 # --------------------------------------------------------------------------------------
-# The gate: `tools/check_parameter_shift_coverage_contract.py`
+# The gate: `tools/validation/check_parameter_shift_coverage_contract.py`
 # --------------------------------------------------------------------------------------
 #
 # The tests above ask whether the contract is true of the code. This section asks
@@ -369,9 +369,11 @@ def test_the_gate_runs_in_ci_and_before_push() -> None:
     """A gate that no workflow invokes is a script, not a gate."""
 
     workflow = (ROOT / ".github/workflows/ci.yml").read_text(encoding="utf-8")
-    assert "python tools/check_parameter_shift_coverage_contract.py" in workflow
-    pre_push = (ROOT / "tools/pre_push.py").read_text(encoding="utf-8")
-    assert '"tools/check_parameter_shift_coverage_contract.py"' in pre_push
+    assert (
+        "python tools/validation/check_parameter_shift_coverage_contract.py" in workflow
+    )
+    pre_push = (ROOT / "tools/ci/pre_push.py").read_text(encoding="utf-8")
+    assert '"tools/validation/check_parameter_shift_coverage_contract.py"' in pre_push
 
 
 def _misstate_a_pair_count(contract: dict[str, Any]) -> None:

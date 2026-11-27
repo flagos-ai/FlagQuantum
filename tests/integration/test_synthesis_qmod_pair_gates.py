@@ -10,7 +10,7 @@ import torch
 
 import flagquantum as fq
 from flagquantum import synth
-from flagquantum.compiler._hybrid.verifier import HybridVerificationError
+from flagquantum.compiler.frontends._structured.verifier import HybridVerificationError
 from flagquantum.ecosystem import InteropConversionError
 from flagquantum.synth import CRX, CX, SWAP, Output, QBit, allocate, qfunc
 from tests.synthesis_workflow_helpers import check_state

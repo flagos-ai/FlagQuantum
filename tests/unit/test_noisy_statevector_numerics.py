@@ -9,9 +9,9 @@ import torch
 from flagquantum import Circuit
 from flagquantum.compiler import lower_noise_model
 from flagquantum.core.ir import CircuitIR, Instruction
-from flagquantum.noise import (
+from flagquantum.core.noise import NoiseModel
+from flagquantum.core.operators.channels import (
     KrausChannel,
-    NoiseModel,
     bit_flip_channel,
     two_qubit_depolarizing_channel,
 )

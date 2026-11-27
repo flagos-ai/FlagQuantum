@@ -11,12 +11,13 @@ from ..errors import CapabilityError
 from .execution_plan import ExecutionPlan
 
 if TYPE_CHECKING:
+    from flagquantum.core.noise import NoiseModel
+    from flagquantum.runtime.results import ExecutionResult
+
     from ..circuit import Circuit
     from ..core.ir import CircuitIR, MeasurementNode
     from ..core.ising import IsingBraidProgram
-    from ..noise import NoiseModel
     from .options import ExecutionOptions
-    from .result import ExecutionResult
 
 
 def run(

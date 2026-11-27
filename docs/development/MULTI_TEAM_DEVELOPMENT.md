@@ -8,7 +8,7 @@
 >
 > Ordinary work is therefore a short-lived branch off `main` merged by pull request.
 > Do not cut a team branch or a `FlagQuantum-vNext*` worktree because this document
-> describes one: `team-ownership.toml` marks those names as reserved, and `AGENTS.md`
+> describes one: `config/team-ownership.toml` marks those names as reserved, and `AGENTS.md`
 > states the reservation where an agent will read it first.
 >
 > See [Integration workflow](INTEGRATION_WORKFLOW.md) for the workflow actually in
@@ -25,13 +25,13 @@ only in its own linked worktree and branch. Ordinary work does not use that mode
 see [Integration workflow](INTEGRATION_WORKFLOW.md) for the flow that reaches
 `main` today.
 
-The root `team-ownership.toml` is the machine-readable authority for teams and path
+The root `config/team-ownership.toml` is the machine-readable authority for teams and path
 ownership, and it carries the reserved `branch` and `worktree` names for this mode.
 This document does not maintain a second roster.
 
 ## Workspace Model
 
-Read branch names and suggested worktree names from `team-ownership.toml`. The
+Read branch names and suggested worktree names from `config/team-ownership.toml`. The
 integration branch is `refactor/flagquantum-vnext-architecture`; every value there is a
 reserved name for this optional mode, not a branch that exists today.
 Worktree names are local layout conventions, not required absolute paths;
@@ -57,14 +57,14 @@ Before work, every session must:
 5. Run team-scope preflight before editing.
 
 In this optional mode, also verify that the current branch matches the team's entry
-in `team-ownership.toml`. That check applies to a staffed coordinated round, where
+in `config/team-ownership.toml`. That check applies to a staffed coordinated round, where
 the team branches exist; ordinary work is a short-lived branch off `main` and has
 no team branch to match.
 
 Explicit-file preflight:
 
 ```bash
-python tools/check_team_scope.py \
+python tools/architecture/check_team_scope.py \
   --team compiler \
   --files flagquantum/compiler/pipeline.py tests/team/compiler/test_compiler_pipeline_replacement.py
 ```
@@ -72,7 +72,7 @@ python tools/check_team_scope.py \
 Completed-branch check, in this optional mode, against the integration branch:
 
 ```bash
-python tools/check_team_scope.py \
+python tools/architecture/check_team_scope.py \
   --team compiler \
   --base refactor/flagquantum-vnext-architecture
 ```
@@ -83,14 +83,14 @@ Use `FLAGQUANTUM_GIT` to specify a Git executable when system Git is unavailable
 
 ### Teams May Edit Directly
 
-- Their most-specific `owns` paths in `team-ownership.toml`.
+- Their most-specific `owns` paths in `config/team-ownership.toml`.
 - Related tests, examples, benchmarks, and unprotected documentation.
 - Internal module implementations that do not change cross-domain contracts.
 
 ### Integration Must Coordinate
 
 - Stable Core, public APIs, and serialized schemas.
-- `contracts/`, `architecture.toml`, `team-ownership.toml`, and root `AGENTS.md`.
+- `contracts/`, `config/architecture.toml`, `config/team-ownership.toml`, and root `AGENTS.md`.
 - Overall architecture and ADRs.
 - Dependency manifests, CI, and release configuration.
 - New cross-domain contracts, Compute/Remote types, or long-term compatibility layers.
@@ -167,11 +167,11 @@ referenced by other sessions.
 Before delivery:
 
 ```bash
-python tools/check_team_scope.py \
+python tools/architecture/check_team_scope.py \
   --team TEAM \
   --base refactor/flagquantum-vnext-architecture
 
-python tools/check_architecture.py
+python tools/architecture/check_architecture.py
 ```
 
 Use `TEAM_HANDOFF_TEMPLATE.md`. Include the shared baseline, team branch, final
@@ -213,8 +213,8 @@ merge passes.
 
 Immediately run:
 
-1. `python tools/check_team_scope.py --validate`.
-2. `python tools/check_architecture.py`.
+1. `python tools/architecture/check_team_scope.py --validate`.
+2. `python tools/architecture/check_architecture.py`.
 3. Public API and serialization contract checks.
 4. The merged team's module tests.
 5. Tests for affected consumers.

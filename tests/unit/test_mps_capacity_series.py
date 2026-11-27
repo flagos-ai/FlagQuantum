@@ -10,7 +10,7 @@ from pathlib import Path
 import pytest
 import yaml
 
-from tools import run_mps_capacity_series as series
+from tools.validation import run_mps_capacity_series as series
 
 pytestmark = pytest.mark.unit
 

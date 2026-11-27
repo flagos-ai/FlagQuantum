@@ -9,6 +9,8 @@ from collections.abc import Mapping
 from dataclasses import dataclass
 from types import MappingProxyType
 
+from flagquantum.core.operators.schema import get_operator_schema
+
 from ._compilation_evidence import (
     _DEPENDENCY_KINDS,
     _MAX_BUNDLE_BYTES,
@@ -32,7 +34,6 @@ from ._compilation_evidence import (
     _sha256,
     _swap_layout,
 )
-from .operator_schema import get_operator_schema
 
 _NATIVE_FIELDS = {
     "instruction_index",

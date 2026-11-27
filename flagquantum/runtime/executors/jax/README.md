@@ -27,7 +27,7 @@ may recognize and lower circuit structure, but delegates tensor initialization,
 updates, contraction, and observable evaluation to Simulation.
 
 For MPS differentiation, local parameter VJPs, boundary-gate adjoints, and
-QR/SVD pullbacks live in `flagquantum/simulation/jax/mps/pullbacks.py`.
+QR/SVD pullbacks live in `flagquantum/simulation/mps/jax/pullbacks.py`.
 The Runtime modules `mps/backward.py`, `mps/pullbacks.py`, and
 `mps/canonicalization.py` retain the constrained rank protocol, device
 placement, parameter ownership, collective exchange, truncation policy,
@@ -44,7 +44,7 @@ adapter, despite its historical name. It converts instructions and Runtime
 plans, selects local, pair-exchange, all-to-all, `pmap`, or `shard_map`
 execution, and owns collective sequencing. Initial-state, local-gate,
 pair-combination, all-to-all delta, and observable/loss mathematics live in
-`flagquantum/simulation/jax/statevector/kernels.py`. This is the
+`flagquantum/simulation/statevector/jax/kernels.py`. This is the
 statevector stopping point: do not move plan-aware collective code into
 Simulation or create mirror shard records just to empty the Runtime file.
 
@@ -52,7 +52,7 @@ For sliced parameterized tensor networks, `tensor_network/gradients.py` owns
 the Runtime-facing circuit/parameter adaptation, slicing tasks, backend and
 collective selection, gradient lifecycle, and result evidence. The numerical
 node record and local greedy/sliced contraction live in
-`flagquantum/simulation/jax/tensor_network/models.py` and `contraction.py`;
+`flagquantum/simulation/tensor_network/jax/models.py` and `contraction.py`;
 lower-level kernels and observable/loss mathematics live beside them in
 `kernels.py`. Runtime retains rank assignment, `pmap`/`shard_map` selection,
 collective reduction, and evidence. A numerical operation should move only when

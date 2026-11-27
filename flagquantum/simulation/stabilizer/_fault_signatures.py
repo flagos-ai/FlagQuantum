@@ -10,10 +10,11 @@ from __future__ import annotations
 from functools import lru_cache
 from numbers import Integral
 
+from flagquantum.core.operators.channels import KrausChannel
+from flagquantum.core.operators.schema import canonical_opcode, get_operator_schema
+
 from ...core.ir import CircuitIR, Instruction, ensure_circuit_ir
-from ...core.operator_schema import canonical_opcode, get_operator_schema
 from ...errors import CapabilityError
-from ...noise import KrausChannel
 from .engine import (
     _ADJOINT_GATES,
     _GATE_NAMES,

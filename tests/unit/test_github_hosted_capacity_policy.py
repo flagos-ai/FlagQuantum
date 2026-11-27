@@ -222,7 +222,7 @@ def test_cpu_pytest_tiers_use_sixteen_bounded_work_stealing_workers() -> None:
             "-n ${{ env.FQ_PYTEST_WORKERS }} --dist=worksteal --durations=50 "
             "--junitxml=${{ env.FQ_CI_REPORT_DIR }}/pytest.xml"
         )
-    from tools.ci_cpu_budget import GIB, select_workers
+    from tools.ci.ci_cpu_budget import GIB, select_workers
 
     assert select_workers(24, 64 * GIB, shared=True, dedicated=True) == 16
     assert select_workers(24, 64 * GIB, shared=False, dedicated=True) == 2
@@ -270,7 +270,7 @@ def test_migrated_cpu_jobs_keep_frameworks_and_processes_isolated(job: str) -> N
             in _document("ci.yml")["jobs"]["coverage-plan"]["env"]["FQ_COVERAGE_SHARDS"]
         )
     else:
-        assert "python tools/ci_tier.py pr-distributed" in commands
+        assert "python tools/ci/ci_tier.py pr-distributed" in commands
 
 
 def test_dependency_bounds_retain_the_full_matrix_on_isolated_cpu_runners() -> None:
@@ -310,7 +310,7 @@ def test_pull_requests_use_compatibility_smoke_on_older_python() -> None:
     }
     assert commands == {
         "github.event_name == 'pull_request'": "python -m pytest -m smoke -q",
-        "github.event_name != 'pull_request'": "python tools/ci_tier.py pr-default",
+        "github.event_name != 'pull_request'": "python tools/ci/ci_tier.py pr-default",
     }
 
 
@@ -346,7 +346,7 @@ def test_expensive_cpu_runtime_proofs_run_once_on_the_newest_python() -> None:
         step for step in expensive_steps if "ci_tier.py pr-runtime" in step["run"]
     )
     assert runtime["run"] == (
-        "python tools/ci_tier.py pr-runtime --shard-count 8 "
+        "python tools/ci/ci_tier.py pr-runtime --shard-count 8 "
         "--shard-index ${{ matrix.shard }}"
     )
     for step in expensive_steps:
@@ -383,9 +383,9 @@ def test_coverage_uses_the_same_bounded_work_stealing_policy() -> None:
         ):
             assert token in command
         for token in (
-            "-p tools.pytest_shard",
+            "-p tools.ci.pytest_shard",
             '"@$plan"',
-            'python -m tools.ci_coverage_plan "$FQ_COVERAGE_PLAN" ${{ matrix.shard }}',
+            'python -m tools.ci.ci_coverage_plan "$FQ_COVERAGE_PLAN" ${{ matrix.shard }}',
         ):
             assert token in command
 
@@ -444,7 +444,7 @@ def test_coverage_shards_are_combined_before_the_policy_is_enforced() -> None:
     )
     assert 'coverage combine "$FQ_COVERAGE_INPUTS"' in commands
     assert commands.index('coverage combine "$FQ_COVERAGE_INPUTS"') < commands.index(
-        "tools/check_coverage.py"
+        "tools/ci/check_coverage.py"
     )
 
 
@@ -627,12 +627,12 @@ def test_full_ci_runs_once_per_pr_and_remains_manually_available() -> None:
     [
         (
             "Require every changed path to have an owner",
-            "tools/check_team_scope.py",
+            "tools/architecture/check_team_scope.py",
             ["--require-classified"],
         ),
         (
             "Require retention metadata for new benchmark evidence",
-            "tools/check_evidence_retention.py",
+            "tools/release/check_evidence_retention.py",
             [],
         ),
     ],
@@ -697,7 +697,7 @@ def test_queue_uses_full_integration_suites_and_preserves_required_check_names()
         assert job.get("if") in (None, expected)
     core_steps = _steps("ci.yml", "cpu-core")
     full = next(
-        s for s in core_steps if s.get("run") == "python tools/ci_tier.py pr-default"
+        s for s in core_steps if s.get("run") == "python tools/ci/ci_tier.py pr-default"
     )
     assert full["if"] == "github.event_name != 'pull_request'"
     coverage = next(

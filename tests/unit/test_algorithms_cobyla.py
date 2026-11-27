@@ -34,13 +34,11 @@ import pytest
 import torch
 
 import flagquantum as fq
-from flagquantum.algorithms import (
+from flagquantum.algorithms.optimizers.cobyla import (
     COBYLA_ASSUMPTIONS,
     COBYLA_LIMITATIONS,
     CobylaOptimizer,
     CobylaResult,
-)
-from flagquantum.algorithms.cobyla import (
     _AffineModel,
     _largest_violation,
     _trust_region_step,
@@ -874,7 +872,7 @@ def test_the_local_method_limitation_is_the_one_this_unit_measures() -> None:
 def test_the_unit_is_reachable_from_the_algorithms_namespace() -> None:
     """The unit is an ``algorithms`` name; a root promotion is a separate change."""
     import flagquantum.algorithms as algorithms
-    from flagquantum.algorithms import cobyla as cobyla_module
+    from flagquantum.algorithms.optimizers import cobyla as cobyla_module
 
     assert algorithms.CobylaOptimizer is CobylaOptimizer
     assert algorithms.CobylaResult is CobylaResult

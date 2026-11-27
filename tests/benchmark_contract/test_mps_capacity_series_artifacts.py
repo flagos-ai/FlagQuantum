@@ -11,7 +11,7 @@ import pytest
 
 from benchmarks.audit_results import audit_paths
 from flagquantum.runtime.observability.evidence import verify_evidence_artifact
-from tools.sanitize_public_evidence import sanitize_text
+from tools.release.sanitize_public_evidence import sanitize_text
 
 pytestmark = [pytest.mark.benchmark_contract, pytest.mark.release_gate]
 ROOT = Path(__file__).resolve().parents[2]

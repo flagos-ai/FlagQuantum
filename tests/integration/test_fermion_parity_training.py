@@ -15,8 +15,8 @@ from flagquantum.algorithms.fermion.symmetry import (
     discover_z_parities,
     reduce_z_parities,
 )
-from flagquantum.observables import FermionOperator, FermionTerm
-from flagquantum.observables.fermion import annihilate, create, number
+from flagquantum.core.operators.fermion import annihilate, create, number
+from flagquantum.core.operators.observable import FermionOperator, FermionTerm
 
 pytestmark = pytest.mark.integration
 

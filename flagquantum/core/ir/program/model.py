@@ -22,7 +22,8 @@ from collections.abc import Mapping
 from dataclasses import dataclass, field
 from typing import Any
 
-from ...operator_schema import get_operator_schema
+from flagquantum.core.operators.schema import get_operator_schema
+
 from ..diagnostics import LevelContractError, LevelDiagnostic
 from .physical import (
     IsingContext,

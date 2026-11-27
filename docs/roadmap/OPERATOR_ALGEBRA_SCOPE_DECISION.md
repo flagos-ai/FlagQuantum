@@ -209,7 +209,7 @@ its reason to stay `partial` rather than removing work from it.
 not a way out of a hard row, because the two rows differ in kind: a row that is
 `unsupported` is capability this programme still owes, and a row that is `out_of_scope` is
 capability the programme has decided not to owe. The generator already treats the second
-as outside the open-gap count — `tools/parity_matrix.py` counts `unsupported` and
+as outside the open-gap count — `tools/architecture/parity_matrix.py` counts `unsupported` and
 `partial` only — so the scoreboard reports the smaller target rather than an unfinished
 one. That is the honest report, but it is also a target that shrank, and § 3 of
 [`CUDAQ_PARITY_STRATEGY.md`](CUDAQ_PARITY_STRATEGY.md) is where the replacement

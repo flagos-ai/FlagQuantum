@@ -14,12 +14,12 @@ import torch
 
 import flagquantum as fq
 import flagquantum.lindblad as fql
+from flagquantum.core.operators.boson import annihilate, create
 from flagquantum.errors import CapabilityError, SerializationError
-from flagquantum.lindblad._plan import _complex_tensor_payload, _identity
-from flagquantum.observables.boson import annihilate, create
-from flagquantum.simulation import lindblad as engine
-from flagquantum.simulation.lindblad import EvolutionValidationError
-from flagquantum.simulation.lindblad_adjoint import adjoint_gradient as initial_adjoint
+from flagquantum.runtime.evolution._plan import _complex_tensor_payload, _identity
+from flagquantum.simulation.dynamics import lindblad as engine
+from flagquantum.simulation.dynamics.adjoint import adjoint_gradient as initial_adjoint
+from flagquantum.simulation.dynamics.lindblad import EvolutionValidationError
 
 pytestmark = pytest.mark.unit
 LABELS = ((0, 1), (1, 0))

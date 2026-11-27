@@ -2,7 +2,7 @@
 
 A release payload is only worth what the strict audit says it is worth, so these
 tests take the documents the campaign runner actually emits, seal them exactly as
-``tools/seal_runtime_evidence.py`` does, and require the sealed result to clear
+``tools/release/seal_runtime_evidence.py`` does, and require the sealed result to clear
 both the distributed claim audit and the ISSUE-044 release gate. A change to the
 runner that produced a payload the audit rejects fails here rather than on two
 borrowed hosts.

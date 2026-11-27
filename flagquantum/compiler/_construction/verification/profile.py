@@ -11,8 +11,18 @@ from collections.abc import Sequence
 from types import MappingProxyType
 from typing import NoReturn
 
-from ..._hybrid.model import INDEX, HybridProgram, IRType, Operation, ValueId
-from ..._hybrid.verifier import Diagnostic, HybridVerificationError
+from flagquantum.compiler.frontends._structured.model import (
+    INDEX,
+    HybridProgram,
+    IRType,
+    Operation,
+    ValueId,
+)
+from flagquantum.compiler.frontends._structured.verifier import (
+    Diagnostic,
+    HybridVerificationError,
+)
+
 from ..analysis.ranges import bitwise_width, unsigned_width
 
 _ATTRIBUTES = MappingProxyType(

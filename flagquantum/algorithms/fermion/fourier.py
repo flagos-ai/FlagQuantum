@@ -7,7 +7,8 @@ import math
 
 import torch
 
-from ...core.algebra.pauli import count
+from flagquantum.core.operators.pauli import count
+
 from .decomposition import AdjacentRotation, OrbitalDecomposition
 
 

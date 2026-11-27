@@ -19,10 +19,10 @@ import torch
 import flagquantum as fq
 import flagquantum.lindblad as fql
 from flagquantum.core.ir import MeasurementNode
+from flagquantum.core.measurement import OutputRequest, expectation, lower_outputs
 from flagquantum.errors import CapabilityError
-from flagquantum.lindblad._plan import build_lindblad_plan
-from flagquantum.observables import OutputRequest, expectation, lower_outputs
-from flagquantum.simulation.lindblad import EvolutionValidationError
+from flagquantum.runtime.evolution._plan import build_lindblad_plan
+from flagquantum.simulation.dynamics.lindblad import EvolutionValidationError
 
 pytestmark = pytest.mark.unit
 
@@ -236,7 +236,7 @@ def test_spin_mode_expectation_reuses_product_order(
     expectation_factory: Callable[..., _Output],
     plan_factory: Callable[..., fql.LindbladPlan],
 ) -> None:
-    from flagquantum.observables.boson import annihilate
+    from flagquantum.core.operators.boson import annihilate
 
     lower = torch.tensor([[0.0, 1.0], [0.0, 0.0]], dtype=torch.complex128)
     ladder = annihilate(0).to_matrix({0: 3})
@@ -401,7 +401,7 @@ def test_ordinary_numeric_matrix_keeps_the_live_input(
 def test_quantized_matrix_and_nonmatrix_values_are_refused(
     expectation_factory: Callable[..., _Output],
 ) -> None:
-    from flagquantum.observables.boson import annihilate
+    from flagquantum.core.operators.boson import annihilate
 
     operator = torch.quantize_per_tensor(torch.eye(3), 0.1, 0, torch.quint8)
     for value in (operator, None, [[1.0, 0.0], [0.0, 1.0]], annihilate(0)):

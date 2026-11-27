@@ -68,7 +68,7 @@ _BASIS_CASE_COUNT = 60
 
 # The strategies the automatic selection may resolve to. Read from the constant
 # the selection itself minimizes over, because that constant is also what
-# ``flagquantum/deployment/routing_evidence.py`` accepts, so a name cannot reach
+# ``flagquantum/compiler/artifacts/routing_evidence.py`` accepts, so a name cannot reach
 # the choice without reaching the deployment contract.
 _CANDIDATES = tuple(DEPLOYABLE_ROUTING_STRATEGIES)
 

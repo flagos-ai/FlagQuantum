@@ -20,7 +20,7 @@ import torch
 import flagquantum as fq
 from flagquantum.core import OPERATOR_SCHEMAS, POWER_RULES, Parameter
 from flagquantum.core.ir import Instruction
-from flagquantum.core.operator_schema import MAX_POWER_REPEATS
+from flagquantum.core.operators.schema import MAX_POWER_REPEATS
 from flagquantum.errors import CapabilityError
 
 pytestmark = pytest.mark.unit

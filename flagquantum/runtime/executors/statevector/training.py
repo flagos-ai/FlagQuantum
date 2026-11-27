@@ -19,8 +19,9 @@ from typing import Any, Literal
 import torch
 import torch.distributed as dist
 
-from ....compute import get_platform_runtime, resolve_platform_device
-from ....compute._memory import _peak_allocated_memory
+from flagquantum.compute.local import get_platform_runtime, resolve_platform_device
+from flagquantum.compute.local._memory import _peak_allocated_memory
+
 from ....core.ir import ensure_circuit_ir
 from ....testing.watchdog import PhaseAwareWatchdog, ProgressSnapshot
 from ...distributed.context import resolve_local_world_size, resolve_node_count

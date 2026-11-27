@@ -11,7 +11,7 @@ import torch
 
 import flagquantum as fq
 import flagquantum.runtime as fqr
-from flagquantum.compute.flaggems import (
+from flagquantum.compute.local.flaggems import (
     flaggems_preflight,
     operator_backend,
     plan_operator_replacements,

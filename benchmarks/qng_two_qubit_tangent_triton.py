@@ -10,7 +10,7 @@ from pathlib import Path
 
 import torch
 
-from flagquantum.kernels.triton.two_qubit_pauli_tangent import (
+from flagquantum.simulation.kernels.triton.two_qubit_pauli_tangent import (
     _reference,
     repeated_rxx_ryy_rzz_tangents,
 )
@@ -25,8 +25,10 @@ def reference_tangents(state, angles):
     )
     jacobian = torch.complex(real, imag)
     indices = torch.arange(int(state.shape[0]), device=state.device)
-    return jacobian[indices, :, :, indices].movedim((-2, -1), (0, 1)).reshape(
-        3 * angles.shape[1], *state.shape
+    return (
+        jacobian[indices, :, :, indices]
+        .movedim((-2, -1), (0, 1))
+        .reshape(3 * angles.shape[1], *state.shape)
     )
 
 
@@ -79,13 +81,23 @@ def main():
     torch.cuda.synchronize()
     cold = time.perf_counter() - cold_started
     expected = reference_tangents(state, angles)
-    actual_metric, expected_metric = metric(_reference(state, angles), actual), metric(_reference(state, angles), expected)
-    gradient = torch.randn(3 * args.depth, device="cuda", generator=torch.Generator(device="cuda").manual_seed(args.seed + 1))
+    actual_metric, expected_metric = metric(_reference(state, angles), actual), metric(
+        _reference(state, angles), expected
+    )
+    gradient = torch.randn(
+        3 * args.depth,
+        device="cuda",
+        generator=torch.Generator(device="cuda").manual_seed(args.seed + 1),
+    )
     identity = torch.eye(3 * args.depth, device="cuda")
     actual_direction = torch.linalg.solve(actual_metric + 1e-3 * identity, gradient)
     expected_direction = torch.linalg.solve(expected_metric + 1e-3 * identity, gradient)
-    triton_result = measure(lambda: repeated_rxx_ryy_rzz_tangents(state, angles), args.warmup, args.repeats)
-    reference_result = measure(lambda: reference_tangents(state, angles), args.warmup, args.repeats)
+    triton_result = measure(
+        lambda: repeated_rxx_ryy_rzz_tangents(state, angles), args.warmup, args.repeats
+    )
+    reference_result = measure(
+        lambda: reference_tangents(state, angles), args.warmup, args.repeats
+    )
     payload = {
         "schema": "flagquantum.qng_two_qubit_tangent_triton.v1",
         "execution_semantics": "single_device_fast_path",
@@ -97,15 +109,30 @@ def main():
         "parameter_count": 3 * args.depth,
         "triton_cold_seconds": cold,
         "maximum_tangent_error": float(torch.max(torch.abs(actual - expected))),
-        "relative_l2_tangent_error": float(torch.linalg.vector_norm(actual - expected) / torch.linalg.vector_norm(expected)),
-        "relative_l2_metric_error": float(torch.linalg.vector_norm(actual_metric - expected_metric) / torch.linalg.vector_norm(expected_metric)),
-        "qng_direction_cosine_similarity": float(torch.dot(actual_direction, expected_direction) / (torch.linalg.vector_norm(actual_direction) * torch.linalg.vector_norm(expected_direction))),
+        "relative_l2_tangent_error": float(
+            torch.linalg.vector_norm(actual - expected)
+            / torch.linalg.vector_norm(expected)
+        ),
+        "relative_l2_metric_error": float(
+            torch.linalg.vector_norm(actual_metric - expected_metric)
+            / torch.linalg.vector_norm(expected_metric)
+        ),
+        "qng_direction_cosine_similarity": float(
+            torch.dot(actual_direction, expected_direction)
+            / (
+                torch.linalg.vector_norm(actual_direction)
+                * torch.linalg.vector_norm(expected_direction)
+            )
+        ),
         "triton": triton_result,
         "vectorized_reverse": reference_result,
-        "speedup_vectorized_reverse_over_triton": reference_result["median_seconds"] / triton_result["median_seconds"],
+        "speedup_vectorized_reverse_over_triton": reference_result["median_seconds"]
+        / triton_result["median_seconds"],
     }
     args.output.parent.mkdir(parents=True, exist_ok=True)
-    args.output.write_text(json.dumps(payload, indent=2, sort_keys=True) + "\n", encoding="utf-8")
+    args.output.write_text(
+        json.dumps(payload, indent=2, sort_keys=True) + "\n", encoding="utf-8"
+    )
     print(json.dumps(payload, indent=2))
 
 

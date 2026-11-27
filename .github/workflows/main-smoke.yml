@@ -8,7 +8,7 @@ on:
     paths:
       - .github/workflows/main-smoke.yml
       - tests/smoke/test_smoke_baseline.py
-      - tools/check_main_smoke_qec_wheel.py
+      - tools/release/check_main_smoke_qec_wheel.py
       - examples/qec/ai_predecoder.py
 
 permissions:
@@ -64,7 +64,7 @@ jobs:
           "$smoke_python" -m pip install pytest
           "$smoke_python" -m pip install --no-deps dist/*.whl
           "$smoke_python" -m pip check
-          cp tests/smoke/test_smoke_baseline.py tools/check_main_smoke_qec_wheel.py \
+          cp tests/smoke/test_smoke_baseline.py tools/release/check_main_smoke_qec_wheel.py \
             examples/qec/ai_predecoder.py "$smoke_dir/"
           cd "$smoke_dir"
           "$smoke_python" -I - <<'PYTHON'

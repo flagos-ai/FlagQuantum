@@ -5,7 +5,7 @@ import itertools
 import pytest
 import torch
 
-from flagquantum.algorithms import Hamiltonian, pauli_term
+from flagquantum.algorithms.primitives.hamiltonian import Hamiltonian, pauli_term
 from flagquantum.ecosystem.kaiwu import (
     KaiwuMatrixValidationError,
     KaiwuPrecisionError,

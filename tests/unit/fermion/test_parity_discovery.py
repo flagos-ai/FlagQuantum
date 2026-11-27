@@ -16,8 +16,8 @@ from flagquantum.algorithms.fermion.symmetry import (
     discover_z_parities,
     reduce_z_parities,
 )
-from flagquantum.core.algebra.pauli import PauliOperator, pauli
-from flagquantum.observables import annihilate, create, number
+from flagquantum.core.operators.observable import annihilate, create, number
+from flagquantum.core.operators.pauli import PauliOperator, pauli
 
 pytestmark = pytest.mark.unit
 

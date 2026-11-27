@@ -5,8 +5,9 @@ from __future__ import annotations
 import math
 from collections.abc import Iterable
 
+from flagquantum.compiler.frontends._structured.model import Operation
+
 from ....core.ir import Instruction
-from ..._hybrid.model import Operation
 from ..verification.profile import _fail
 
 _MAX_OPERATIONS = 100_000

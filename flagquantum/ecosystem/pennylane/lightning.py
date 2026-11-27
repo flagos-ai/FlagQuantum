@@ -10,7 +10,7 @@ from typing import Any, Literal, cast
 import torch
 
 from flagquantum.core import CircuitIR, ensure_circuit_ir, parameter_names_in_value
-from flagquantum.observables import OutputRequest
+from flagquantum.core.measurement import OutputRequest
 from flagquantum.runtime import ExecutionOptions, ExecutionResult, MeasurementResult
 
 OutputKind = Literal["statevector", "samples", "counts"]

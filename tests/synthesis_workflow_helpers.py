@@ -13,9 +13,9 @@ from flagquantum.compiler._construction.scheduling.selection import (
 from flagquantum.compiler._construction.verification.constraints import CircuitLimits
 from flagquantum.ecosystem._qmod.adapter import SUPPORTED_SOURCE_VERSION, parse_qmod
 from flagquantum.runtime.execution_plan import ExecutionPlan
-from flagquantum.runtime.result import ExecutionResult
-from flagquantum.services._synthesis_registers import synthesize_registers
-from flagquantum.services.synthesis import Program
+from flagquantum.runtime.results import ExecutionResult
+from flagquantum.synth._program import synthesize_registers
+from flagquantum.synth._workflow import Program
 
 MEMORY = 512 * 1024**2
 Values = TypeVar("Values", bound=tuple[int, ...])

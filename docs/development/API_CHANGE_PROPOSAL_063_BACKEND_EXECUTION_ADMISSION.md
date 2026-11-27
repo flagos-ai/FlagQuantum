@@ -172,7 +172,7 @@ no migration and no deprecation cycle.
 - [ ] A backend record that declares sharded distribution cannot be used to
       promote a scalability claim without the evidence required for that
       classification.
-- [ ] `python tools/ci_tier.py pr-runtime` and the `distributed_cpu` tier pass.
+- [ ] `python tools/ci/ci_tier.py pr-runtime` and the `distributed_cpu` tier pass.
 - [ ] `docs/public_api_v1.json` and `IR_VERSION` are unchanged.
 - [ ] Repository owner authorizes the wiring change.
 

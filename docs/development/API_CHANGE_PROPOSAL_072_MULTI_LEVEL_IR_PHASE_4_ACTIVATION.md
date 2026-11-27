@@ -63,7 +63,7 @@ CUDA-Q adapter is one-way by design.
 Two things currently block that work.
 
 **Authorization.** `flagquantum/core/ir/**` is listed as a protected path in
-`team-ownership.toml`, so the new internal level packages fall under integration
+`config/team-ownership.toml`, so the new internal level packages fall under integration
 control and cannot be created by the Core team alone. `IR-001` through `IR-006`
 cover the importer, linear values, identity layers, custom matrices, parameter
 binding, and the Phase 1 static scope — not the Phase 4 surface, which is what
@@ -77,7 +77,7 @@ directory and does not match a sibling module, so the two spellings protect
 disjoint sets of files.
 
 **Re-measured at approval, because the proposal could not inspect the matcher
-when it was written.** `tools/check_team_scope.py` matches protected paths with
+when it was written.** `tools/architecture/check_team_scope.py` matches protected paths with
 `fnmatch.fnmatchcase`, measured directly on the spellings and on files created for
 the measurement. Before the split, the module path matched the literal entry and
 not the glob. After the split, `flagquantum/core/ir/__init__.py` matches the glob
@@ -92,7 +92,7 @@ The correction could not be applied ahead of the split, and that is a property o
 the validator rather than a preference: `protected_path_errors` rejects a
 protected entry that matches no file in the worktree, precisely so that an
 unprotected surface cannot look protected, so adding `flagquantum/core/ir/**`
-while the directory did not exist would fail `--validate`. `team-ownership.toml`
+while the directory did not exist would fail `--validate`. `config/team-ownership.toml`
 recorded the module alone and carried a comment explaining why the package
 pattern had been removed. The gate is therefore satisfied by **two coordinated
 edits at the moment the directory appears**: the first file under
@@ -109,13 +109,13 @@ candidate ways to make them agree failed measurement differently.
   the single source of truth behind a new name for no capability gain.
 - **`flagquantum/_compiler/`, which `MULTI_LEVEL_IR_ARCHITECTURE.md` § 19.13
   fixes as the internal layout, cannot be created in this tree.** Measured:
-  creating `flagquantum/_compiler/__init__.py` makes `tools/check_architecture.py`
+  creating `flagquantum/_compiler/__init__.py` makes `tools/architecture/check_architecture.py`
   fail with `flagquantum/_compiler: unreviewed top-level package directory is
   forbidden`, because the directory is absent from
-  `architecture.toml` `package_layout.allowed_top_level_directories`; adding a
+  `config/architecture.toml` `package_layout.allowed_top_level_directories`; adding a
   single `from .._compiler import ...` line under `flagquantum/compiler/` fails
   the same gate with `compiler imports forbidden layer _compiler`, because
-  `_compiler` is listed in `boundaries.compiler_forbidden`. `team-ownership.toml`
+  `_compiler` is listed in `boundaries.compiler_forbidden`. `config/team-ownership.toml`
   independently records `flagquantum/_compiler` as one of five patterns removed
   for matching no tracked path. § 19.13's layout is therefore a design sketch
   written against a tree that never had it, and correcting it is a policy change
@@ -259,7 +259,7 @@ instead.
       actionable blocker.
 - [ ] Sharded dynamic execution either preserves feedback semantics or fails closed
       and reports the blocker; no replicated execution is described as distributed.
-- [ ] `python tools/ci_tier.py pr-runtime` and the relevant `distributed_cpu` tier
+- [ ] `python tools/ci/ci_tier.py pr-runtime` and the relevant `distributed_cpu` tier
       pass.
 - [ ] Static batched execution shows no regression against the recorded baseline.
 - [ ] `IR_VERSION`, `CircuitIR` schema, and `docs/public_api_v1.json` are unchanged.

@@ -5,7 +5,7 @@ dump. A dump is diagnostic rather than a process timeout. An isolated complete
 Rainbow reference passed on the affected Linux host and locked image after the
 same 300-second dump. The original CI exits remain unexplained.
 
-The existing `tools.pytest_shard` plugin now emits `CI worker exit:` followed
+The existing `tools.ci.pytest_shard` plugin now emits `CI worker exit:` followed
 by a JSON object when xdist reports a worker error. It records the worker ID,
 transport error, available local process exit status, and negative-status POSIX
 signal number. It polls without waiting, killing, retrying, or restarting the
@@ -24,7 +24,7 @@ are unchanged. This is evidence collection, not a fix for the original crash.
 Run the process-backed scenarios and existing shard tests with:
 
 ```bash
-python -m pytest tests/unit/test_pytest_worker_exit_diagnostics.py tests/unit/test_pytest_shard.py -q -p tools.pytest_shard
+python -m pytest tests/unit/test_pytest_worker_exit_diagnostics.py tests/unit/test_pytest_shard.py -q -p tools.ci.pytest_shard
 ```
 
 Expected: ordinary subprocess exit 17 and POSIX SIGTERM are distinguished, a

@@ -23,7 +23,8 @@ from pathlib import Path
 import pytest
 import yaml
 
-import tools.multinode_launch_plan as plan
+import tools.validation.multinode_launch_plan as plan
+from tools.architecture.source_relocations import source_path
 
 pytestmark = pytest.mark.unit
 
@@ -194,7 +195,7 @@ def _literal(path: str, name: str) -> int:
     the two widths its refusals are written in terms of. This is what keeps the
     two copies from drifting: the numbers are read from the probe sources.
     """
-    tree = ast.parse((ROOT / path).read_text(encoding="utf-8"), filename=path)
+    tree = ast.parse(source_path(ROOT, path).read_text(encoding="utf-8"), filename=path)
     for node in tree.body:
         if isinstance(node, ast.Assign):
             targets = [t.id for t in node.targets if isinstance(t, ast.Name)]
@@ -204,9 +205,12 @@ def _literal(path: str, name: str) -> int:
 
 
 def test_the_widths_the_lane_refuses_on_are_the_probes_own() -> None:
-    assert _literal("tools/probe_cuda_multinode_mps.py", "N_WIRES") == plan.MPS_WIRES
     assert (
-        _literal("tools/probe_cuda_multinode_tn.py", "EXPECTED_SLICE_COUNT")
+        _literal("tools/validation/probe_cuda_multinode_mps.py", "N_WIRES")
+        == plan.MPS_WIRES
+    )
+    assert (
+        _literal("tools/validation/probe_cuda_multinode_tn.py", "EXPECTED_SLICE_COUNT")
         == plan.TN_SLICE_COUNT
     )
 
@@ -611,9 +615,9 @@ def test_every_probe_takes_the_device_its_local_rank_names() -> None:
     # else. A probe that read a device number from anywhere else would be one
     # this launcher's pin could not reach.
     for probe in sorted(plan.PROBES):
-        source = (ROOT / "tools" / f"probe_cuda_multinode_{probe}.py").read_text(
-            encoding="utf-8"
-        )
+        source = (
+            ROOT / "tools" / "validation" / f"probe_cuda_multinode_{probe}.py"
+        ).read_text(encoding="utf-8")
         assert 'torch.device("cuda", local_rank)' in source, probe
 
 
@@ -1010,7 +1014,8 @@ def test_a_refused_preflight_exits_nonzero_and_names_the_checks(capsys) -> None:
 
 
 @pytest.mark.parametrize(
-    "module", ["tools/multinode_launch_plan.py", "tools/run_multinode_watchdog.py"]
+    "module",
+    ["tools/validation/multinode_launch_plan.py", "tools/ci/run_multinode_watchdog.py"],
 )
 def test_the_lane_runs_before_anything_is_installed(module: str) -> None:
     """The lane's own tools import nothing outside the standard library.
@@ -1020,7 +1025,9 @@ def test_the_lane_runs_before_anything_is_installed(module: str) -> None:
     torch here would work in every lane that installs first and fail in this
     one.
     """
-    tree = ast.parse((ROOT / module).read_text(encoding="utf-8"), filename=module)
+    tree = ast.parse(
+        source_path(ROOT, module).read_text(encoding="utf-8"), filename=module
+    )
     imported: set[str] = set()
     for node in ast.walk(tree):
         if isinstance(node, ast.Import):
@@ -1052,7 +1059,7 @@ def test_the_workflow_runs_the_lane_this_module_drives() -> None:
     ]
     joined = "\n".join(runs)
 
-    assert f"tools/{Path(plan.__file__).name} --run" in joined
+    assert f"{Path(plan.__file__).relative_to(ROOT).as_posix()} --run" in joined
     assert "--staging" in joined and "--report-directory" in joined
     assert any("rm -rf" in run and "STAGING" in run for run in runs), runs
 

@@ -9,12 +9,12 @@ import flagquantum as fq
 from examples.synthesis.applications.chemistry.lih_chemistry.overview.variational import (
     ansatz,
 )
-from flagquantum.algorithms import CobylaOptimizer
 from flagquantum.algorithms.fermion.encoding import encode_fermion
 from flagquantum.algorithms.fermion.lowering import lift_stabilizer_state
 from flagquantum.algorithms.fermion.observables import to_observable
-from flagquantum.core.algebra.pauli import PauliOperator
-from flagquantum.observables.fermion import annihilate, create
+from flagquantum.algorithms.optimizers.cobyla import CobylaOptimizer
+from flagquantum.core.operators.fermion import annihilate, create
+from flagquantum.core.operators.pauli import PauliOperator
 
 from .model import OCCUPIED, WIDTH, Model, trim
 

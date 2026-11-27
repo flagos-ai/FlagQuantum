@@ -3,7 +3,7 @@ import torch
 
 pytest.importorskip("triton")
 
-from flagquantum.kernels.triton.mps_two_site import (
+from flagquantum.simulation.kernels.triton.mps_two_site import (
     fused_mps_range_projection,
     fused_mps_two_site,
 )

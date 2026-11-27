@@ -7,7 +7,7 @@ from pathlib import Path
 import pytest
 
 from flagquantum.ecosystem.braket import BraketDependencyError, conversion
-from tools.check_architecture import CONFIG, architecture_errors
+from tools.architecture.check_architecture import CONFIG, architecture_errors
 
 pytestmark = pytest.mark.unit
 ROOT = Path(__file__).resolve().parents[2]
@@ -38,7 +38,7 @@ def test_missing_braket_fails_only_when_conversion_is_requested(monkeypatch) -> 
 def test_architecture_isolates_braket_imports() -> None:
     assert CONFIG["interop_boundaries"]["braket_import_allowed_prefixes"] == [
         "flagquantum/ecosystem/braket/",
-        "flagquantum/remote/qpu/",
+        "flagquantum/compute/remote/qpu/",
     ]
     assert architecture_errors() == ()
 
@@ -49,7 +49,10 @@ def test_ci_runs_both_braket_versions_and_the_braket_suite() -> None:
     assert 'OPTIONAL_VERSIONS: "1.117.0 1.127.1"' in workflow
     assert "for version in ${OPTIONAL_VERSIONS}" in workflow
     assert '"amazon-braket-sdk==${version}"' in workflow
-    assert "python tools/check_braket_interop_contract.py --verify-sdk" in workflow
+    assert (
+        "python tools/validation/check_braket_interop_contract.py --verify-sdk"
+        in workflow
+    )
     assert (
         "tests/test_amazon_braket_provider.py tests/test_braket_iqm_dynamic.py"
         in workflow

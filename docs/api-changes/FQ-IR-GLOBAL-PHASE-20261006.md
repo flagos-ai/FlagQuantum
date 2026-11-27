@@ -331,7 +331,7 @@ than a fix.
   this document records the question and does not answer it.
 - **No root export is added, removed, or renamed.** `docs/public_api_v1.json`
   freezes `CircuitIR` as a name, not its fields, so
-  `tools/public_api_snapshot.py` is unaffected.
+  `tools/architecture/public_api_snapshot.py` is unaffected.
 - **`contracts/qiskit-interop-contract.toml` line 19 (`global_phase =
   "preserved"`) becomes true through execution, not only through a second
   conversion.** When the field lands, the adapter should read and write it rather
@@ -368,8 +368,8 @@ acceptance criteria because this document does not implement the change.
 - **The instrument's contract still passes.** `python -m pytest
   tests/benchmark_contract/test_compiler_one_qubit_decomposition.py -q` — 7
   passed, with the two columns unchanged.
-- **The contract gates agree.** `python tools/check_architecture.py`,
-  `python tools/check_team_scope.py --validate`, and the eight
+- **The contract gates agree.** `python tools/architecture/check_architecture.py`,
+  `python tools/architecture/check_team_scope.py --validate`, and the eight
   `python tools/check_*_interop_contract.py` scripts pass with the regenerated
   `ir_version`.
 
@@ -443,7 +443,7 @@ not after.
 
 ## Owner and approvals
 
-Owner: FlagQuantum integration team (`integration` in `team-ownership.toml`,
+Owner: FlagQuantum integration team (`integration` in `config/team-ownership.toml`,
 which owns `flagquantum/core/ir.py` as a protected path).
 
 Approval requested by this document: the field name `global_phase`, its unit

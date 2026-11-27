@@ -11,8 +11,8 @@ from flagquantum.compiler._construction.verification.register_profile import (
     register_ports,
     verify_register_program,
 )
-from flagquantum.compiler._hybrid.model import HybridProgram
-from flagquantum.compiler._hybrid.verifier import HybridVerificationError
+from flagquantum.compiler.frontends._structured.model import HybridProgram
+from flagquantum.compiler.frontends._structured.verifier import HybridVerificationError
 from tests.register_program_cases import Registers
 
 pytestmark = pytest.mark.unit

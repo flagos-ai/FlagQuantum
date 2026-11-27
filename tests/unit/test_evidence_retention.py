@@ -4,7 +4,7 @@ from pathlib import Path
 
 import pytest
 
-from tools.check_evidence_retention import SCHEMA, retention_errors
+from tools.release.check_evidence_retention import SCHEMA, retention_errors
 
 pytestmark = pytest.mark.unit
 

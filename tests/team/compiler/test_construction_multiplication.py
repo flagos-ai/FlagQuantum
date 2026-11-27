@@ -4,7 +4,7 @@ import pytest
 
 from flagquantum.compiler._construction.codegen.arithmetic import lower_arithmetic
 from flagquantum.compiler._construction.verification.profile import uint_type
-from flagquantum.compiler._hybrid.model import (
+from flagquantum.compiler.frontends._structured.model import (
     INDEX,
     Block,
     HybridProgram,
@@ -14,7 +14,7 @@ from flagquantum.compiler._hybrid.model import (
     Value,
     ValueId,
 )
-from flagquantum.compiler._hybrid.verifier import HybridVerificationError
+from flagquantum.compiler.frontends._structured.verifier import HybridVerificationError
 from flagquantum.compiler.registers._arithmetic_kernels import multiply_accumulate
 from flagquantum.core.ir import CircuitIR
 

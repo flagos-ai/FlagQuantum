@@ -9,7 +9,7 @@ from numpy.typing import NDArray
 
 import flagquantum as fq
 from flagquantum import synth
-from flagquantum.observables import X, Z
+from flagquantum.core.operators.observable import X, Z
 from flagquantum.synth import PHASE, Output, QBit, R, U, allocate, qfunc, suzuki_trotter
 
 HYPOTHESES = (("x", 1), ("x", 2), ("z", 1), ("z", 2))

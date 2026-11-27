@@ -101,7 +101,7 @@ The v0.1 device-coupled encoding API has been removed. Parameterized
 | Amazon Braket SDK | `remote/qpu/braket.py` | Provider discovery/submission | Correct provider boundary; SDK objects should never enter IR/runtime records |
 | Quafu/QuarkCircuit | `remote/qpu/quafu.py` and its calibration helpers | Provider discovery/submission | Correct provider boundary; keep device/job objects local |
 
-`architecture.toml` already confines direct Qiskit and PennyLane imports to
+`config/architecture.toml` already confines direct Qiskit and PennyLane imports to
 their interop namespaces. The new team tests additionally scan Core, Compiler,
 Runtime, and Simulation for external SDK imports and confine JAX imports to the
 optional JAX backend.
@@ -271,12 +271,12 @@ Compiler-owned fixtures here would create a second test specification.
 Executed on 2026-09-03:
 
 - team scope preflight and branch-diff scope check: passed;
-- `tools/check_architecture.py`: passed;
+- `tools/architecture/check_architecture.py`: passed;
 - focused boundary/contract suite: 36 passed;
 - Qiskit 2.5.2, Qiskit Aer 0.17.2, and PennyLane 0.45.1 real interop suite:
   51 passed, including the new team tests;
 - Ruff and Black over `tests/team/ecosystem/`: passed;
-- `tools/ci_tier.py pr-default`: 1807 passed, 12 skipped, 3 failed in the
+- `tools/ci/ci_tier.py pr-default`: 1807 passed, 12 skipped, 3 failed in the
   first container run. Two failures were caused by the linked-worktree Git path
   not being mounted and passed after an absolute-path remount. The remaining
   pre-existing `tests/internal_ir/test_performance_budget.py::test_approved_import_verify_budget_is_machine_enforced`

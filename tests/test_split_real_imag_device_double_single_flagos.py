@@ -21,7 +21,7 @@ def test_split_real_imag_device_double_single_runs_on_torch_fl_flagos_device() -
     completed = subprocess.run(
         [
             sys.executable,
-            "tools/validate_split_real_imag_device_double_single_flagos.py",
+            "tools/validation/validate_split_real_imag_device_double_single_flagos.py",
         ],
         cwd=ROOT,
         check=True,

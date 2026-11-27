@@ -17,7 +17,7 @@ def test_flagquantum_runs_on_torch_fl_cuda_backed_flagos_device() -> None:
         pytest.skip("set FLAGQUANTUM_TEST_FLAGOS_CUDA=1 in a Torch-FL CUDA environment")
 
     completed = subprocess.run(
-        [sys.executable, "tools/validate_flagos_cuda_reference.py"],
+        [sys.executable, "tools/validation/validate_flagos_cuda_reference.py"],
         cwd=ROOT,
         check=True,
         capture_output=True,

@@ -5,8 +5,8 @@ import torch
 
 pytest.importorskip("triton")
 
-import flagquantum.kernels.triton.mps_sampling_collapse as sampling_collapse
-from flagquantum.kernels.triton.mps_sampling_collapse import (
+import flagquantum.simulation.kernels.triton.mps_sampling_collapse as sampling_collapse
+from flagquantum.simulation.kernels.triton.mps_sampling_collapse import (
     fused_mps_sampling_collapse,
 )
 

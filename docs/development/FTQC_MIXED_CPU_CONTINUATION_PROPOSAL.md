@@ -36,7 +36,7 @@ first." This authorizes the exact budget above, including cumulative 193
 attempts, without widening the monitoring policy. It does not authorize another
 recovery round after a new failure.
 
-`tools/collect_ftqc_mixed_continuation.py` is a separately named private controller.
+`tools/validation/collect_ftqc_mixed_continuation.py` is a separately named private controller.
 The original task-local collector and original campaign remain untouched. This
 replacement reads/hashes the watchdog first and retains its complete report;
 monitoring failure keeps supervision as the primary cause, with producer state
@@ -64,7 +64,7 @@ After review and mainline acceptance, the one admitted invocation was as follows
 It is retained as command provenance, not authorization to run another campaign:
 
 ```bash
-python tools/collect_ftqc_mixed_continuation.py \
+python tools/validation/collect_ftqc_mixed_continuation.py \
   --evidence-root /path/to/retained-evidence \
   --output /path/to/retained-evidence/fts10-cpu-continuation-20261025 \
   --watchdog /path/to/unchanged/run_with_watchdog.py \

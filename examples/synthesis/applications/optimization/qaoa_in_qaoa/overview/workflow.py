@@ -7,7 +7,7 @@ import networkx as nx
 import torch
 
 from examples.synthesis.graph_optimization import Evaluation, lower_tail_cost
-from flagquantum.algorithms import CobylaOptimizer
+from flagquantum.algorithms.optimizers.cobyla import CobylaOptimizer
 from flagquantum.compiler import ResourceEstimate
 
 from .model import (

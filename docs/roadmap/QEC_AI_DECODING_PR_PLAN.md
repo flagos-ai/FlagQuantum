@@ -800,7 +800,7 @@ the offline product scope until the queueing problem is resolved.
 
 Each PR must include a runnable user workflow, support/refusal scope, focused
 behavioral tests, relevant API/compatibility checks and exact validation results.
-Use `python tools/ci_tier.py pr-default` plus the relevant integration tier;
+Use `python tools/ci/ci_tier.py pr-default` plus the relevant integration tier;
 report timeouts, skips and baseline failures without relabeling them as passes.
 Do not lower CI gates or alter stable exports to accommodate an experimental
 implementation. Changes and conclusions must name the tested commit/environment.

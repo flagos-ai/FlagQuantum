@@ -28,7 +28,7 @@ except ModuleNotFoundError:  # pragma: no cover - Python 3.10 and older
 pytestmark = pytest.mark.unit
 
 _ROOT = Path(__file__).resolve().parents[2]
-_CENSUS_PATH = _ROOT / "tools" / "census_wire_vocabulary.py"
+_CENSUS_PATH = _ROOT / "tools" / "architecture" / "census_wire_vocabulary.py"
 _CONTRACT_PATH = _ROOT / "contracts" / "qubit-vocabulary-contract.toml"
 
 _SPEC = importlib.util.spec_from_file_location("census_wire_vocabulary", _CENSUS_PATH)

@@ -9,7 +9,9 @@ from pathlib import Path
 import pytest
 
 pytestmark = pytest.mark.unit
-NOTEBOOKS = Path(__file__).resolve().parents[2] / "workshops/flagos2026/notebooks"
+NOTEBOOKS = (
+    Path(__file__).resolve().parents[2] / "examples/workshops/flagos2026/notebooks"
+)
 SCRIPT = NOTEBOOKS.parent / "scripts/verify_inline_plots.py"
 SPEC = importlib.util.spec_from_file_location("verify_inline_plots", SCRIPT)
 assert SPEC is not None and SPEC.loader is not None

@@ -11,7 +11,8 @@ from .python import _error
 from .views import gate_target, packed_locations
 
 if TYPE_CHECKING:
-    from ..._hybrid.model import Value
+    from flagquantum.compiler.frontends._structured.model import Value
+
     from .program import _Body
 
 

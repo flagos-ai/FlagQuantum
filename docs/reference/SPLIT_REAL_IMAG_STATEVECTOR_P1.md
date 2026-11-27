@@ -58,7 +58,7 @@ pytest tests/test_split_real_imag_training_conformance.py
 In a Torch-FL CUDA-reference environment:
 
 ```bash
-python tools/validate_split_real_imag_training_flagos.py --device flagos:0
+python tools/validation/validate_split_real_imag_training_flagos.py --device flagos:0
 ```
 
 The FlagOS report proves logical `flagos:0` residency and records that
@@ -72,7 +72,7 @@ Validate the checked-in source, environment, route, coverage, numerical, and
 claim boundaries without accelerator access:
 
 ```bash
-python tools/validate_split_real_imag_training_evidence.py
+python tools/validation/validate_split_real_imag_training_evidence.py
 ```
 
 ## Gradient semantics

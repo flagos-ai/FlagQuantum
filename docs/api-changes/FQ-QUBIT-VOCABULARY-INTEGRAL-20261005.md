@@ -53,7 +53,7 @@ no gate can enforce it. **The whole-package boundary needs no query at all.**
 
 ## Measured scope
 
-Measured on the WQ-1 base commit by `tools/census_wire_vocabulary.py`:
+Measured on the WQ-1 base commit by `tools/architecture/census_wire_vocabulary.py`:
 
 | Surface | Count | Disposition |
 |---|---:|---|
@@ -199,7 +199,7 @@ is to reject the first new `wire` parameter.
 
 ## Acceptance Tests
 
-1. `python tools/check_qubit_vocabulary.py` exits 0 on the baseline commit, and
+1. `python tools/architecture/check_qubit_vocabulary.py` exits 0 on the baseline commit, and
    reports 0 retired of 341.
 2. The gate fails when a `wire`-named parameter is added to a module in the
    ledger's scope, demonstrated by running it against a fixture package that
@@ -209,7 +209,7 @@ is to reject the first new `wire` parameter.
 4. The gate fails when a retirement entry still exists in the live scan.
 5. Removing a baseline line without adding the matching retirement entry fails.
 6. The gate is wired into the `quality` job as a **step**, not a job, and into
-   `tools/pre_push.py`; `tools/validate_required_checks.py` still passes, because
+   `tools/ci/pre_push.py`; `tools/ci/validate_required_checks.py` still passes, because
    the required-check roster is unchanged.
 7. No Stable Core export, default, or serialized key changes, verified by the
    existing contract and public-API gates.

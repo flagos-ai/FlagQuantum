@@ -48,7 +48,7 @@ registry for a new physical route.
 normalization, specialization, and static/dynamic lowering for bounded
 quantum-classical profiles. It is absent from the root public exports and does
 not replace public `CircuitIR`. Read its
-[implementation details](../../flagquantum/compiler/_hybrid/IMPLEMENTATION.md)
+[implementation details](../../flagquantum/compiler/frontends/_structured/IMPLEMENTATION.md)
 for supported constructs, parameter flow, and lowering restrictions.
 
 The existence of this private path must not be summarized as either “ProgramIR

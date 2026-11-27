@@ -6,13 +6,14 @@ import math
 from collections.abc import Sequence
 from typing import TYPE_CHECKING
 
-from ...compiler._hybrid.model import Operation, Value
-from ...compiler._hybrid.unitary_effects import (
+from flagquantum.compiler.frontends._structured.model import Operation, Value
+from flagquantum.compiler.frontends._structured.unitary_effects import (
     PURE_EFFECTS as PURE_EFFECTS,
 )
-from ...compiler._hybrid.unitary_effects import (
+from flagquantum.compiler.frontends._structured.unitary_effects import (
     inverse_effects as _compiler_inverse_effects,
 )
+
 from .syntax import Statement, Token, reject
 
 if TYPE_CHECKING:

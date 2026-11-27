@@ -17,12 +17,12 @@ from examples.qdiffusion_kaiwu.qdiffusion_portability_replay_live import (
     run_portability_replay,
 )
 from examples.qdiffusion_kaiwu.stable_source_tree import capture_regular_file
-from flagquantum.remote.kaiwu import (
+from flagquantum.compute.remote.kaiwu import (
     KaiwuTaskReceipt,
     KaiwuTaskResult,
     new_receipt,
 )
-from flagquantum.remote.kaiwu.contracts import FrozenIsingMatrix, KaiwuTaskMode
+from flagquantum.compute.remote.kaiwu.contracts import FrozenIsingMatrix, KaiwuTaskMode
 
 np = pytest.importorskip("numpy")
 

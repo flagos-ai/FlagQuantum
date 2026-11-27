@@ -4,7 +4,8 @@ from __future__ import annotations
 
 import pytest
 
-from flagquantum.noise import NoiseModel, bit_flip_channel, phase_flip_channel
+from flagquantum.core.noise import NoiseModel
+from flagquantum.core.operators.channels import bit_flip_channel, phase_flip_channel
 from flagquantum.qec import (
     DetectorErrorModel,
     RepetitionCode,

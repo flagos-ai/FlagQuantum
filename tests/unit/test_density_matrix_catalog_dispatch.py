@@ -6,16 +6,6 @@ import pytest
 import torch
 
 import flagquantum.simulation.kernel_dispatch as kernel_dispatch
-from flagquantum.kernels.catalog import (
-    EVIDENCE,
-    IMPLEMENTATIONS,
-    SEMANTICS,
-    KernelEvidence,
-    KernelImplementation,
-    KernelMatchResult,
-    KernelRequest,
-    match_kernel_implementations,
-)
 from flagquantum.simulation import density_matrix_dispatch as dispatch
 from flagquantum.simulation.density_matrix import (
     apply_kraus_density,
@@ -32,6 +22,16 @@ from flagquantum.simulation.density_matrix_dispatch import (
 from flagquantum.simulation.kernel_dispatch import (
     _catalog_declares_kernel,
     _operand_kernel_axis,
+)
+from flagquantum.simulation.kernels.catalog import (
+    EVIDENCE,
+    IMPLEMENTATIONS,
+    SEMANTICS,
+    KernelEvidence,
+    KernelImplementation,
+    KernelMatchResult,
+    KernelRequest,
+    match_kernel_implementations,
 )
 
 pytestmark = pytest.mark.unit
@@ -199,7 +199,7 @@ def test_declaring_a_cpu_implementation_moves_the_route_without_a_code_edit(
         implementation_id="FQKI-PYTORCH-NUM-001-B",
         semantic_id="numerics.matmul.complex_batched",
         provider="pytorch",
-        module="flagquantum.kernels.pytorch.complex_bmm",
+        module="flagquantum.simulation.kernels.pytorch.complex_bmm",
         symbol="fused_cpu_complex_bmm",
         devices=("cpu",),
         dtypes=("complex64",),

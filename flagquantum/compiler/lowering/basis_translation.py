@@ -79,8 +79,9 @@ from dataclasses import dataclass
 from types import MappingProxyType
 from typing import Any
 
+from flagquantum.core.operators.schema import canonical_opcode, get_operator_schema
+
 from ...core.ir import Instruction
-from ...core.operator_schema import canonical_opcode, get_operator_schema
 from ...errors import CompilationError
 from ..optimization.one_qubit_synthesis import _synthesize_u3, synthesize_one_qubit
 from .angle_synthesis import quarter_turn_words

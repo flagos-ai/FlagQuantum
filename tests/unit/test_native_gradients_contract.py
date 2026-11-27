@@ -4,7 +4,7 @@
 artifacts describe *how*: the split real/imag statevector executor summaries, the P5
 autograd bridge summary, and the reversible adjoint behind the distributed statevector
 reverse executor. This file owns ``contracts/native-gradients-contract.toml`` and
-``tools/check_native_gradients_contract.py``, and asks two questions of them.
+``tools/validation/check_native_gradients_contract.py``, and asks two questions of them.
 
 The first is whether the registration is still a registration. One row per
 ``gradient_method`` / ``backward_method`` declaration site in the package, every row
@@ -13,7 +13,7 @@ the public method it corresponds to, and the public method vocabulary read from 
 implementation rather than from the file.
 
 The second is whether the gate is still enforced. A gate that no workflow invokes is a
-script, so the last section asserts that both CI and ``tools/pre_push.py`` run it.
+script, so the last section asserts that both CI and ``tools/ci/pre_push.py`` run it.
 
 The middle sections are the mutation record. Each one changes the file the way a real
 edit would -- a new declaration in an executor, a value reworded, an alias dropped, a
@@ -41,7 +41,7 @@ pytestmark = pytest.mark.unit
 ROOT = Path(__file__).resolve().parents[2]
 CONTRACT = ROOT / "contracts" / "native-gradients-contract.toml"
 
-_GATE_PATH = ROOT / "tools" / "check_native_gradients_contract.py"
+_GATE_PATH = ROOT / "tools" / "validation/check_native_gradients_contract.py"
 _GATE_SPEC = importlib.util.spec_from_file_location(
     "check_native_gradients_contract", _GATE_PATH
 )
@@ -573,7 +573,9 @@ def test_the_gate_refuses_a_verification_flag_that_is_not_read() -> None:
 
 def test_the_gate_refuses_a_gate_path_that_is_not_this_gate() -> None:
     contract = _contract()
-    contract["verification"]["gate"] = "tools/check_opcode_gradient_exactness.py"
+    contract["verification"][
+        "gate"
+    ] = "tools/validation/check_opcode_gradient_exactness.py"
     assert any("not enforced by it" in error for error in _errors(contract))
 
 
@@ -598,6 +600,6 @@ def test_the_gate_runs_in_ci_and_before_push() -> None:
     """A gate that no workflow invokes is a script, not a gate."""
 
     workflow = (ROOT / ".github/workflows/ci.yml").read_text(encoding="utf-8")
-    assert "python tools/check_native_gradients_contract.py" in workflow
-    pre_push = (ROOT / "tools/pre_push.py").read_text(encoding="utf-8")
-    assert '"tools/check_native_gradients_contract.py"' in pre_push
+    assert "python tools/validation/check_native_gradients_contract.py" in workflow
+    pre_push = (ROOT / "tools/ci/pre_push.py").read_text(encoding="utf-8")
+    assert '"tools/validation/check_native_gradients_contract.py"' in pre_push

@@ -12,7 +12,10 @@ import torch
 
 import flagquantum as fq
 from flagquantum import synth
-from flagquantum.algorithms import NelderMeadOptimizer, NelderMeadResult
+from flagquantum.algorithms.optimizers.nelder_mead import (
+    NelderMeadOptimizer,
+    NelderMeadResult,
+)
 
 INITIAL_PARAMETERS = (0.13, -0.27, 0.19, 0.22, 0.31, -0.17)
 

@@ -134,7 +134,7 @@ def test_invalid_source_combinations_refuse_before_loading(monkeypatch, options)
     ],
 )
 def test_python_does_not_ignore_native_options(monkeypatch, options):
-    from flagquantum.services import synthesis
+    from flagquantum.synth import _workflow as synthesis
 
     monkeypatch.setattr(
         synthesis,

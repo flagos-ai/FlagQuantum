@@ -10,8 +10,8 @@ from flagquantum.algorithms.chemistry import uccsd_ansatz, uccsd_excitations
 from flagquantum.algorithms.fermion.encoding import encode_fermion
 from flagquantum.algorithms.fermion.hubbard import fermi_hubbard_ring
 from flagquantum.algorithms.fermion.observables import to_observable
-from flagquantum.observables import Observable
-from flagquantum.observables.fermion import FermionOperator, number
+from flagquantum.core.operators.fermion import FermionOperator, number
+from flagquantum.core.operators.observable import Observable
 
 
 def energy(parameters: torch.Tensor, hamiltonian: Observable) -> torch.Tensor:

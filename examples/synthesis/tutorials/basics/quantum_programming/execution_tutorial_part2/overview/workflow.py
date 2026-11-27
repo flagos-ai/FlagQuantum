@@ -9,7 +9,7 @@ import flagquantum as fq
 from examples.synthesis.tutorials.basics.quantum_programming.execution_tutorial_part2.main import (
     main as native_bell,
 )
-from flagquantum.algorithms import CobylaOptimizer
+from flagquantum.algorithms.optimizers.cobyla import CobylaOptimizer
 from flagquantum.synth import synthesize
 
 SHOTS = 2048

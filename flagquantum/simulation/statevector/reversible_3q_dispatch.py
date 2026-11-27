@@ -8,12 +8,13 @@ from functools import lru_cache
 
 import torch
 
-from ...kernels.catalog import (
+from flagquantum.simulation.kernels.catalog import (
     KernelImplementation,
     KernelMatchResult,
     KernelRequest,
     match_kernel_implementations,
 )
+
 from ..kernel_dispatch import _require_cataloged_kernel
 
 _IMPLEMENTATION_ID = "FQKI-TRITON-SV-013-A"
@@ -128,7 +129,7 @@ def _apply_cataloged_reversible_3q(
         device_type=state.device.type,
         dtype=str(state.dtype).removeprefix("torch."),
     )
-    from ...kernels.triton.statevector_reversible_3q import (
+    from flagquantum.simulation.kernels.triton.statevector_reversible_3q import (
         apply_complex64_local_reversible_3q,
     )
 

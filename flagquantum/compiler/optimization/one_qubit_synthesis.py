@@ -40,8 +40,9 @@ from collections.abc import Callable, Mapping
 from types import MappingProxyType
 from typing import Any
 
+from flagquantum.core.operators.schema import canonical_opcode, get_operator_schema
+
 from ...core.ir import Instruction
-from ...core.operator_schema import canonical_opcode, get_operator_schema
 from .canonicalization import _is_zero
 
 #: A 2x2 matrix of Python complex numbers, rows first.

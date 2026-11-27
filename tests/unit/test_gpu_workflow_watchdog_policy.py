@@ -5,9 +5,9 @@ from pathlib import Path
 import pytest
 import yaml
 
-from tools.run_with_watchdog import run
-from tools.validate_required_checks import _produced_checks, unproduced_checks
-from tools.validate_required_checks import main as validate_checks
+from tools.ci.run_with_watchdog import run
+from tools.ci.validate_required_checks import _produced_checks, unproduced_checks
+from tools.ci.validate_required_checks import main as validate_checks
 
 pytestmark = pytest.mark.unit
 

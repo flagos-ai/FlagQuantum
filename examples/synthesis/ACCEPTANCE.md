@@ -88,7 +88,7 @@ Use each case's comparison command from the [catalog](CATALOG.md), for example:
 ```sh
 python -m examples.synthesis.applications.cybersecurity.whitebox_fuzzing.comparisons.circuit
 python -m examples.synthesis.tutorials.basics.grover_graph_coloring.comparisons.circuit
-python -m tools.synthesis_catalog
+python -m tools.docs.synthesis_catalog
 ```
 
 Run the complete documented module list for a fresh corpus claim; the catalog

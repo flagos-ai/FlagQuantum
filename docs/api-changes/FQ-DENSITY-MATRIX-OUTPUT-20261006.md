@@ -129,7 +129,7 @@ circuit-level read.
 A signature check cannot tell a correct matrix from a plausible one, so the
 contract records what the matrix *is* and the gate re-measures it on every run.
 [`contracts/density-matrix-output-contract.toml`](../../contracts/density-matrix-output-contract.toml)
-and [`tools/check_density_matrix_output_contract.py`](../../tools/check_density_matrix_output_contract.py)
+and [`tools/validation/check_density_matrix_output_contract.py`](../../tools/validation/check_density_matrix_output_contract.py)
 cover four dimensions:
 
 | Dimension | What would pass a signature check and fail here |
@@ -191,18 +191,18 @@ family.
 ## Verification
 
 ```bash
-python tools/check_density_matrix_output_contract.py
+python tools/validation/check_density_matrix_output_contract.py
 # Density-matrix output contract passed: 5 recorded matrices trace to one, agree with the
 # observable path, reproduce under the caller's qubit order as a basis permutation and across
 # 4 execution modes; 6 recorded refusals raise the sentence the contract states
 
-python -m tools.public_api_snapshot
+python -m tools.architecture.public_api_snapshot
 # public API migration baseline passed
 
 python -m pytest tests/unit/test_density_matrix_output.py \
     tests/unit/test_density_matrix_output_contract.py -q
 # 37 passed
 
-python tools/validate_required_checks.py
+python tools/ci/validate_required_checks.py
 # validated 6 externally configured required checks
 ```

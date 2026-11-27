@@ -18,7 +18,7 @@ from examples.synthesis.applications.chemistry.protein_folding.protein_folding_w
 from examples.synthesis.compare_states import compare_states
 from flagquantum import synth
 from flagquantum.compiler import ResourceEstimate
-from tools.validate_qmod_records import RecordCost
+from tools.validation.validate_qmod_records import RecordCost
 
 pytestmark = pytest.mark.integration
 ROOT = Path(__file__).resolve().parents[2]

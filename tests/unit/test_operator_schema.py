@@ -18,7 +18,7 @@ from flagquantum.core import (
     OperatorSchema,
     canonical_opcode,
 )
-from flagquantum.core.operator_schema import parameter_shift_rule
+from flagquantum.core.operators.schema import parameter_shift_rule
 from flagquantum.simulation import matrices
 
 pytestmark = pytest.mark.unit

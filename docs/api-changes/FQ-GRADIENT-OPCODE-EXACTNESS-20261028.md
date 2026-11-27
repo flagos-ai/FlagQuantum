@@ -48,7 +48,7 @@ The plan's opcode axis becomes a measured contract with an independent third rou
 measured observability floor.
 
 ```console
-$ python tools/check_opcode_gradient_exactness.py
+$ python tools/validation/check_opcode_gradient_exactness.py
 Opcode gradient exactness contract passed: 14 differentiable opcodes x 5 modes = 70 cells
 re-measured against an independent difference scheme, 1 excluded mode, 3 opcodes split
 off by the batch profile
@@ -246,12 +246,12 @@ would not hold for every refused opcode.
 
 ## Verification
 
-`tools/check_opcode_gradient_exactness.py` rebuilds the reference program for every
+`tools/validation/check_opcode_gradient_exactness.py` rebuilds the reference program for every
 differentiable opcode, runs all 70 cells, and compares each measured triple against the
 cell's record. It re-derives the opcode and mode vocabularies from the implementation,
 re-derives the batch-profile split from that contract's file, drives every excluded mode,
 and recomputes the four aggregate figures from the cells rather than trusting them. It
-runs in `.github/workflows/ci.yml` as a **step** and in `tools/pre_push.py`.
+runs in `.github/workflows/ci.yml` as a **step** and in `tools/ci/pre_push.py`.
 
 The gate is negative-tested, so a zero finding is evidence rather than silence. Every
 mutation below was applied to the contract in memory, `contract_errors` was called, and

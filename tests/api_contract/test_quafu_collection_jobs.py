@@ -9,10 +9,10 @@ from types import SimpleNamespace
 import pytest
 
 import flagquantum as fq
+from flagquantum.compute.remote import jobs
+from flagquantum.compute.remote.qpu import _quafu_sdk
+from flagquantum.compute.remote.qpu.quafu import QuafuProvider
 from flagquantum.errors import ExecutionError, ValidationError
-from flagquantum.remote import jobs
-from flagquantum.remote.qpu import _quafu_sdk
-from flagquantum.remote.qpu.quafu import QuafuProvider
 
 pytestmark = pytest.mark.unit
 

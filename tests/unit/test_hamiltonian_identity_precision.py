@@ -4,7 +4,7 @@ import pytest
 import torch
 
 import flagquantum as fq
-from flagquantum.algorithms import pauli_term
+from flagquantum.algorithms.primitives.hamiltonian import pauli_term
 from flagquantum.simulation.mps.state import MPSState
 
 pytestmark = pytest.mark.unit

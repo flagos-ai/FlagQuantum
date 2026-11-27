@@ -6,7 +6,7 @@ import pytest
 import torch
 
 import flagquantum as fq
-from flagquantum.compiler.module_builder import capture_module_builder
+from flagquantum.compiler.frontends.torch._module_builder import capture_module_builder
 from flagquantum.core.parameters import Parameter
 
 pytestmark = pytest.mark.unit

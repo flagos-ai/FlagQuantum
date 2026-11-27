@@ -3,7 +3,7 @@
 import pytest
 
 import flagquantum as fq
-from flagquantum.remote import DeploymentResult, ProviderTaskHandle
+from flagquantum.compute.remote import DeploymentResult, ProviderTaskHandle
 
 pytestmark = pytest.mark.unit
 
@@ -35,7 +35,7 @@ def test_fq_compile_resolves_quafu_target_for_named_plugin(monkeypatch):
         captured.update(extension=extension, target=target)
         return program
 
-    monkeypatch.setattr("flagquantum.remote.QuafuProvider", Provider)
+    monkeypatch.setattr("flagquantum.compute.remote.QuafuProvider", Provider)
     monkeypatch.setattr(
         "flagquantum.ecosystem.extensions.compile_with_extension",
         compile_with_extension,
@@ -90,9 +90,11 @@ def test_fq_run_compiles_packages_and_executes_one_remote_target(monkeypatch):
         )
 
     monkeypatch.setattr("flagquantum._api.compile", compile_target)
-    monkeypatch.setattr("flagquantum.remote.qpu.execution.QuafuProvider", Provider)
     monkeypatch.setattr(
-        "flagquantum.remote.qpu.execution.deploy_circuit", deploy_target
+        "flagquantum.compute.remote.qpu.execution.QuafuProvider", Provider
+    )
+    monkeypatch.setattr(
+        "flagquantum.compute.remote.qpu.execution.deploy_circuit", deploy_target
     )
 
     result = fq.run(
@@ -170,7 +172,9 @@ def test_fq_run_uses_resident_jiuding_workspace(monkeypatch):
         captured.update(program=program, target=target, outputs=outputs, shots=shots)
         return expected
 
-    monkeypatch.setattr("flagquantum.remote.compute.execution.execute_jiuding", run)
+    monkeypatch.setattr(
+        "flagquantum.compute.remote.compute.execution.execute_jiuding", run
+    )
 
     output = fq.expectation(fq.Z(0))
     result = fq.run(circuit, target="jiuding:gpu", outputs=output)
@@ -199,7 +203,9 @@ def test_fq_run_passes_jiuding_sampling_controls(monkeypatch):
         captured.update(target=target, outputs=outputs, shots=shots)
         return expected
 
-    monkeypatch.setattr("flagquantum.remote.compute.execution.execute_jiuding", run)
+    monkeypatch.setattr(
+        "flagquantum.compute.remote.compute.execution.execute_jiuding", run
+    )
     output = fq.counts()
 
     result = fq.run(

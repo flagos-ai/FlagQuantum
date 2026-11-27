@@ -15,7 +15,7 @@ from flagquantum.compiler._construction.analysis.arithmetic_rewrites import (
 from flagquantum.compiler._construction.analysis.lifetimes import analyze_lifetimes
 from flagquantum.compiler._construction.frontend.python import capture
 from flagquantum.compiler._construction.verification.profile import uint_type
-from flagquantum.compiler._hybrid.model import (
+from flagquantum.compiler.frontends._structured.model import (
     Block,
     HybridProgram,
     Operation,
@@ -23,7 +23,7 @@ from flagquantum.compiler._hybrid.model import (
     Value,
     ValueId,
 )
-from flagquantum.compiler._hybrid.verifier import HybridVerificationError
+from flagquantum.compiler.frontends._structured.verifier import HybridVerificationError
 
 pytestmark = pytest.mark.unit
 
@@ -294,7 +294,7 @@ def test_real_depth_regression_keeps_original_candidate_for_later_selection() ->
 
 
 def test_explicit_ssa_helper_call_sites_survive_sharing() -> None:
-    from flagquantum.compiler._hybrid.model import SourceLocation
+    from flagquantum.compiler.frontends._structured.model import SourceLocation
 
     x = Value(ValueId("entry", 0), uint_type(2))
     a = Value(ValueId("entry", 1), uint_type(4))
@@ -349,7 +349,7 @@ def test_optional_flattened_node_budget_keeps_a_valid_original_schedule() -> Non
     from flagquantum.compiler._construction.codegen.arithmetic import (
         schedule_arithmetic,
     )
-    from flagquantum.compiler._hybrid.model import INDEX
+    from flagquantum.compiler.frontends._structured.model import INDEX
 
     arguments = tuple(Value(ValueId("wide_entry", i), uint_type(1)) for i in range(254))
     helper_arg = Value(ValueId("constant_helper", 0), uint_type(1))

@@ -14,9 +14,10 @@ from __future__ import annotations
 import pytest
 import torch
 
-from flagquantum.noise import (
+from flagquantum.core.operators.channels import (
     KrausChannel,
     UnitaryMixture,
+    _scaled_unitary,
     amplitude_damping_channel,
     bit_flip_channel,
     coherent_overrotation_channel,
@@ -27,7 +28,6 @@ from flagquantum.noise import (
     thermal_relaxation_channel,
     two_qubit_depolarizing_channel,
 )
-from flagquantum.noise.channels import _scaled_unitary
 
 pytestmark = pytest.mark.unit
 

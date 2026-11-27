@@ -6,7 +6,7 @@ from dataclasses import replace
 import pytest
 
 import flagquantum as fq
-from flagquantum.remote.qpu import (
+from flagquantum.compute.remote.qpu import (
     DeploymentResult,
     ProviderTaskHandle,
     build_result_metadata,

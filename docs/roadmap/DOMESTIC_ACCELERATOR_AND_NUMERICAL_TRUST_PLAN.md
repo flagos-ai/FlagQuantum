@@ -493,7 +493,7 @@ flagquantum/
     cirq/
 ```
 
-Respect `architecture.toml` budgets and single responsibilities; do not create
+Respect `config/architecture.toml` budgets and single responsibilities; do not create
 empty packages merely to complete the tree.
 
 ## 13. User API Target

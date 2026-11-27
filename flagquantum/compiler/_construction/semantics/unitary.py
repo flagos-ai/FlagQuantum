@@ -5,10 +5,11 @@ import math
 
 import torch
 
+from flagquantum.compiler.frontends._structured.model import Operation
+
 from ....core._composition import controlled_instruction
 from ....core.controlled import _clean_mcx_instructions
 from ....core.ir import Instruction
-from ..._hybrid.model import Operation
 from ...optimization.one_qubit_optimization import (
     _instruction_matrix as _one_qubit_matrix,
 )

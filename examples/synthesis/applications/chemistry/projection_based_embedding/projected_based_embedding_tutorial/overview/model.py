@@ -5,14 +5,14 @@ from dataclasses import dataclass
 import numpy as np
 import torch
 
+from flagquantum.algorithms.chemistry.molecular import second_quantized_hamiltonian
 from flagquantum.algorithms.fermion.encoding import encode_fermion
 from flagquantum.algorithms.fermion.stabilizer import (
     StabilizerReduction,
     reduce_stabilizers,
 )
-from flagquantum.algorithms.molecular import second_quantized_hamiltonian
-from flagquantum.core.algebra.pauli import PauliOperator, pauli
-from flagquantum.observables.fermion import FermionOperator
+from flagquantum.core.operators.fermion import FermionOperator
+from flagquantum.core.operators.pauli import PauliOperator, pauli
 
 WIDTH, OCCUPIED, VIRTUALS = 16, 5, 3
 THRESHOLD, MU, WEIGHT_CUTOFF = 0.1, 1e6, 0.3

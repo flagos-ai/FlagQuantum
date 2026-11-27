@@ -30,7 +30,7 @@ import argparse
 
 import torch
 
-from flagquantum.algorithms.kmedians import kmedians
+from flagquantum.algorithms.quantum_ml.kmedians import kmedians
 
 POINTS = torch.tensor(
     [[0.0, 0.0], [1.0, 0.0], [5.0, 0.0], [5.2, 0.1], [0.2, 1.5], [4.9, -0.4]],
@@ -74,10 +74,18 @@ def main() -> None:
     print()
     print("take away")
     print("  the assignment is sampled, one Grover-style minimum search at a time, and")
-    print("  the centroid update is classical arithmetic. Six points cost one round each")
-    print("  that finds nothing and ends that point's loop, and four further rounds moved")
-    print("  a point's threshold: ten searches in all. A sample small enough to miss the")
-    print("  indices a round marked ends a search early, at an index it has not finished")
+    print(
+        "  the centroid update is classical arithmetic. Six points cost one round each"
+    )
+    print(
+        "  that finds nothing and ends that point's loop, and four further rounds moved"
+    )
+    print(
+        "  a point's threshold: ten searches in all. A sample small enough to miss the"
+    )
+    print(
+        "  indices a round marked ends a search early, at an index it has not finished"
+    )
     print("  improving.")
 
 

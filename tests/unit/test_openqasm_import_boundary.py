@@ -16,15 +16,13 @@ from pathlib import Path
 import pytest
 
 from flagquantum.compiler.openqasm_import import import_openqasm
-from tools.check_openqasm_import_contract import (
+from tools.ci.pre_push import checks
+from tools.validation.check_openqasm_import_contract import (
     IMPORTER,
     gate_tables_defined_once,
     ir_version_unchanged,
 )
-from tools.check_openqasm_import_contract import (
-    ROOT as TOOL_ROOT,
-)
-from tools.pre_push import checks
+from tools.validation.check_openqasm_import_contract import ROOT as TOOL_ROOT
 
 pytestmark = pytest.mark.unit
 
@@ -76,10 +74,10 @@ def test_the_interchange_did_not_move_the_ir_version() -> None:
 
 def test_the_contract_gate_is_a_required_pre_push_check() -> None:
     commands = {check.command for check in checks("python")}
-    assert ("python", "tools/check_openqasm_import_contract.py") in commands
+    assert ("python", "tools/validation/check_openqasm_import_contract.py") in commands
 
 
 def test_ci_runs_the_contract_gate() -> None:
     workflow = (ROOT / ".github" / "workflows" / "ci.yml").read_text(encoding="utf-8")
-    assert "python tools/check_openqasm_import_contract.py" in workflow
+    assert "python tools/validation/check_openqasm_import_contract.py" in workflow
     assert "Verify OpenQASM import contract" in workflow

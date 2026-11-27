@@ -10,15 +10,12 @@ import pytest
 import flagquantum as fq
 import flagquantum.deployment as deployment
 from flagquantum.compiler import CouplingMap
+from flagquantum.compute.remote.packages import CloudBackendProfile
 from flagquantum.core.target_capabilities import (
     CapabilityFact,
     FactExposure,
     FactSource,
     SupportStatus,
-)
-from flagquantum.deployment import CloudBackendProfile
-from flagquantum.deployment.dynamic_rematch import (
-    evaluate_dynamic_routing_rematch,
 )
 from flagquantum.dynamic import DynamicCircuit
 from flagquantum.runtime.dynamic.conformance import DynamicFeatureSet
@@ -27,6 +24,9 @@ from flagquantum.runtime.dynamic.remote_capabilities import (
     dynamic_remote_snapshot,
 )
 from flagquantum.runtime.dynamic.routing import route_dynamic_circuit
+from flagquantum.runtime.dynamic.routing_rematch import (
+    evaluate_dynamic_routing_rematch,
+)
 
 pytestmark = pytest.mark.unit
 

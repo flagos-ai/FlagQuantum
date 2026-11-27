@@ -9,7 +9,7 @@ import torch
 
 import flagquantum as fq
 from flagquantum.compiler import optimize
-from flagquantum.observables import X
+from flagquantum.core.operators.observable import X
 
 pytestmark = pytest.mark.integration
 

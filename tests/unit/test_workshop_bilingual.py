@@ -8,10 +8,14 @@ from pathlib import Path
 
 import pytest
 
-from tools.check_repository_language import CHINESE_NOTEBOOK_NAMES, HAN, violations
+from tools.architecture.check_repository_language import (
+    CHINESE_NOTEBOOK_NAMES,
+    HAN,
+    violations,
+)
 
 pytestmark = pytest.mark.unit
-WORKSHOP = Path(__file__).resolve().parents[2] / "workshops/flagos2026"
+WORKSHOP = Path(__file__).resolve().parents[2] / "examples/workshops/flagos2026"
 
 
 def test_chinese_edition_has_exactly_the_six_approved_examples() -> None:

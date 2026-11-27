@@ -18,8 +18,8 @@ import flagquantum as fq
 from flagquantum.core.ir import IRValidationError
 from flagquantum.errors import CapabilityError, ExecutionError
 from flagquantum.runtime import measurements
-from flagquantum.runtime.result import ExecutionResult
-from flagquantum.simulation.lindblad import EvolutionValidationError
+from flagquantum.runtime.results import ExecutionResult
+from flagquantum.simulation.dynamics.lindblad import EvolutionValidationError
 
 pytestmark = pytest.mark.unit
 DTYPE = torch.complex128
@@ -34,7 +34,7 @@ def presence_source() -> Callable[..., Any]:
 
 @pytest.fixture
 def presence_plan() -> Callable[..., Any]:
-    from flagquantum.lindblad import plan
+    from flagquantum.runtime.evolution import plan
 
     return plan
 
@@ -46,7 +46,7 @@ def presence_run() -> Callable[..., ExecutionResult]:
 
 @pytest.fixture
 def presence_read() -> Callable[[str], Any]:
-    from flagquantum.lindblad import LindbladPlan
+    from flagquantum.runtime.evolution import LindbladPlan
 
     return LindbladPlan.from_json
 

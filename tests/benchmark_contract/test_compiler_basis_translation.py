@@ -27,7 +27,7 @@ from benchmarks.compiler_basis_translation import (
 )
 from benchmarks.compiler_two_qubit_synthesis import DEFAULT_BASES
 from flagquantum.compiler.basis_translation import EQUIVALENCE_RULES
-from flagquantum.core.operator_schema import OPERATOR_SCHEMAS
+from flagquantum.core.operators.schema import OPERATOR_SCHEMAS
 
 pytestmark = pytest.mark.benchmark_contract
 

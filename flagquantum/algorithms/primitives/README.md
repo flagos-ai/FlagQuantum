@@ -1,5 +1,7 @@
 # Algorithms primitives
 
+General Hamiltonian construction/evaluation lives in `hamiltonian.py`, hardware-efficient ansatzes in `ansatz.py`, and reusable arithmetic in `arithmetic.py`. Spin models belong to Many Body. Public names are unchanged.
+
 Reusable quantum primitives that the algorithm modules share. This layer owns
 the quantum Fourier transform, phase estimation, state preparation, oracle
 synthesis, and block encoding, and all five of them ship today.
@@ -95,5 +97,5 @@ independent reference, and run:
 ```bash
 python -m pytest tests/unit/test_algorithms_qft.py \
   tests/unit/test_algorithms_package.py -q
-python tools/check_architecture.py
+python tools/architecture/check_architecture.py
 ```

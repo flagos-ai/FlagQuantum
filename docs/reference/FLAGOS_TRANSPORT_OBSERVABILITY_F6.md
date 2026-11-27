@@ -65,7 +65,7 @@ isolated CUDA-boxing reference environment with FlagGems disabled.
 On an isolated eight-device FlagOS environment, run:
 
 ```bash
-python tools/observe_flagos_transport.py \
+python tools/validation/observe_flagos_transport.py \
   --output artifacts/flagos_transport_observability_f6_a800_20260827.json
 ```
 

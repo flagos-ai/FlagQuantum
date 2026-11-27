@@ -6,6 +6,8 @@ from collections.abc import Mapping, Sequence
 from dataclasses import replace
 from typing import TYPE_CHECKING
 
+from flagquantum.runtime.results import ExecutionResult
+
 from ..core._artifacts import (
     ArtifactKind,
     CircuitArtifactBindingResult,
@@ -14,10 +16,10 @@ from ..core._artifacts import (
 from ..core.ir import CircuitIR, MeasurementNode
 from ..errors import ExecutionError
 from .execution import run
-from .result import ExecutionResult
 
 if TYPE_CHECKING:
-    from ..noise import NoiseModel
+    from flagquantum.core.noise import NoiseModel
+
     from .options import ExecutionOptions
 
 

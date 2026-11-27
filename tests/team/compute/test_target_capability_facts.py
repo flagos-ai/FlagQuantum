@@ -16,7 +16,7 @@ from typing import Any
 import pytest
 import torch
 
-from flagquantum.compute import (
+from flagquantum.compute.local import (
     MemorySnapshot,
     PlatformDevice,
     PlatformIdentity,
