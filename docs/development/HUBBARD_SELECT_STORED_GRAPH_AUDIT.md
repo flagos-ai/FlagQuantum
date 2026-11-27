@@ -197,3 +197,52 @@ compared recursively, while native outer composition is independently verified;
 the failing source root and its two source peak queries are not counted as
 executable equivalence. Generic Majorana/spin-up controls and wider external
 capture remain outside this SELECT constructor closure.
+
+
+## Complete source acceptance (2026-11-28)
+
+The approved faithful-migration closure rule supersedes historical open status
+for Q-0353. The complete three-class source ownership table in the linked
+[qubitization file audit](HUBBARD_QUBITIZATION_FILE_AUDIT.md) includes all
+properties, generators/builders, analytical calls, specialized control/adjoint,
+symbol/drawing methods, strings, five factories and three DocSpecs. Existing
+Compiler and Algorithms owners provide the eleven-call SELECT schedule,
+Majorana X/Y traversal, spin-up indexed Z, scalar correction, typed views and
+exact inverse. No implementation or source admission is changed here.
+
+SELECT specialized positive/negative/grouped/shaped/packed controls and generic
+Adjoint remain verified separately from direct source specialized-adjoint
+serialization. The twelve generic Majorana/SpinUp combinations (existing absent
+or positive control, outer zero/one/mixed controls) were freshly captured through
+the actual unchanged source. All reach `C[And†]`, which explicitly has neither
+unitary nor executable decomposition. Their root serialization/decomposition
+success alone is not physical execution. Native rejection remains explicit;
+no invented controlled erasure or source gate-for-gate claim closes that gap.
+These are source unavailable physical recipes, distinct from the supported
+SELECT specialized-control path.
+
+Singleton/zero-width failures, Majorana zero losing its control, spin-up zero
+using a positive body, nested concatenate-axis failure, enum/NumPy codecs and
+SDK-specific CY cost classification remain separate. The accepted CY bit-view
+repair handles both SDK port representations without modifying source operands.
+Large source stage streams are compared structurally and on bounded coherent
+states; only small applicable histories are exhausted, with all-history channel
+certificates and separate private-zero checks. Logical targets, selectors and
+controls remain live; work leases alone are not a quantum-state proof.
+
+
+Batch validation completes 350 distinct primary cases: the initial bounded run
+completed the PREPARE constructor (83), SELECT constructor (59) and external
+control (58) files before timing out in symbolic weights at 360 seconds, with
+no assertion failure. Those 200 completed cases are retained; the interrupted
+file is not counted from that run. A separate continuation passes all remaining
+150 cases, including the complete symbolic-weight file. The whole initial
+invocation is recorded as timed out, not green. The independent Cirq 1.6
+constructor/control/symbolic profile passes all 139 cases.
+
+All 60 frozen source/dependency/asset blobs remain unchanged. Twelve fresh
+actual-source generic child-control captures preserve their explicit missing
+controlled-erasure diagnostics. Algorithms scope, language, links, architecture,
+IR, protected API baseline and whitespace pass. Strict Python, 32 local
+integration and real Kickmix Simulator checks from the preceding accepted
+batches are reused because this closure changes no Python implementation.
