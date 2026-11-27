@@ -5,18 +5,26 @@
 
 """Classical register-value evaluation for XOR lookup and checked erasure."""
 
-from collections.abc import Mapping
+from __future__ import annotations
+
+from collections.abc import Callable, Mapping
 from operator import xor
-from typing import TypeAlias, cast
+from typing import TYPE_CHECKING, TypeAlias, cast
 
 import numpy as np
 from numpy.typing import NDArray
 
-LookupValue: TypeAlias = int | np.int_ | NDArray[np.int_]
+from ..core.value_math import SymbolicInt
+from .classical_bitwise import IntegerValue
+
+if TYPE_CHECKING:
+    from sympy import Basic
+
+LookupValue: TypeAlias = "IntegerValue | Basic"
 
 
 def lookup_classical_values(
-    data: tuple[NDArray[np.int_], ...] | None,
+    data: tuple[NDArray[np.generic], ...] | None,
     selection_shape: tuple[int, ...],
     values: Mapping[str, LookupValue],
     *,
@@ -55,7 +63,48 @@ def lookup_classical_values(
             return vals
         controls = {"control": control}
 
-    dimensions = sum(n > 1 for n in selection_shape)
+    return controls | _lookup_values(
+        data, sum(n > 1 for n in selection_shape), vals, erase=erase
+    )
+
+
+def source_lookup_classical_values(
+    data: tuple[NDArray[np.generic], ...] | None,
+    selection_axes: Callable[[], tuple[SymbolicInt, ...]],
+    values: Mapping[str, LookupValue],
+    *,
+    num_controls: SymbolicInt = 0,
+    erase: bool = False,
+) -> dict[str, LookupValue]:
+    """Evaluate source metadata, reading deferred axes only after activation.
+
+    Negative control metadata follows the source's uncontrolled callback. Boolean
+    and symbolic control metadata retain its comparison and bypass behavior.
+    This host-value protocol does not authorize physical negative-width storage.
+    """
+    if data is None:
+        raise NotImplementedError(
+            "Unknown-data lookup cannot evaluate classical values"
+        )
+    if type(erase) is not bool:
+        raise ValueError("Classical lookup erasure must be boolean")
+    vals = dict(values)
+    controls: dict[str, LookupValue] = {}
+    if num_controls > 0:
+        control = vals["control"]
+        if control != 2**num_controls - 1:
+            return vals
+        controls = {"control": control}
+    return controls | _lookup_values(data, len(selection_axes()), vals, erase=erase)
+
+
+def _lookup_values(
+    data: tuple[NDArray[np.generic], ...],
+    dimensions: int,
+    vals: dict[str, LookupValue],
+    *,
+    erase: bool,
+) -> dict[str, LookupValue]:
     selections: dict[str, LookupValue]
     index: int | tuple[int, ...]
     if dimensions == 0:
@@ -82,4 +131,4 @@ def lookup_classical_values(
                     f"Found values {value}"
                 )
         targets = {}
-    return controls | selections | targets
+    return selections | targets
