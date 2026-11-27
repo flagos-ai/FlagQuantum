@@ -21,7 +21,6 @@ def test_canonical_bit_storage(fraction: int) -> None:
 @pytest.mark.parametrize(
     "dtype",
     [
-        fixed_point_register_type(0, -2, True),
         fixed_point_register_type(-1, -2),
         RegisterType(
             "fixed_point", True, parameters=(("fractional_width", 1), ("signed", False))
@@ -63,3 +62,10 @@ def test_symbolic_storage_retains_physical_refusal() -> None:
     ):
         with pytest.raises(ValueError):
             executable_register_width(dtype)
+
+
+@pytest.mark.parametrize("fraction", (-1, -2, -7))
+def test_approved_signed_empty_storage_retains_negative_fraction(fraction: int) -> None:
+    assert executable_register_width(fixed_point_register_type(0, fraction, True)) == 0
+    with pytest.raises(ValueError):
+        fixed_point_register_type(0, 0, True)

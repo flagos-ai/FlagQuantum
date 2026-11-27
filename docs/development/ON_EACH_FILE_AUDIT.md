@@ -173,8 +173,8 @@ evidence is in `SIGNED_EMPTY_FIXED_POINT_STORAGE.md`.
 The extended audit also found source-valid signed zero-width words with negative
 fractional widths. Their Split/Join and real H/T spectator context execute in
 the original source, but Proposal 116 explicitly excludes them. Proposal 124
-records that additional approval requirement and native refusal. Q-0246 remains
-open for this exact profile. Original unsupported child decompositions, symbolic
+was explicitly approved on 2026-11-27 and the shared validator now admits
+that exact profile. The complete-file disposition is reviewed separately. Original unsupported child decompositions, symbolic
 physical dimensions and serialized symbol-assumption loss remain documented
 source boundaries.
 
@@ -183,5 +183,4 @@ cases. All 109 foreign/body/presentation cases also pass with Cirq 1.6.1, and
 all four unchanged source tests pass. Strict typing of both new Python files,
 Black, Ruff, Compiler scope, architecture, multilevel IR and the public API
 baseline pass. The 248 original resource-deprecation warnings in concentrated
-regression remain visible. No native physical support is claimed for the pending
-Proposal 116 cases.
+regression remain visible. Proposals 116 and 124 now provide their separately approved storage profiles.

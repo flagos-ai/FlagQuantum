@@ -49,4 +49,16 @@ composition and binding; Simulation retains numerical meanings and errors.
 
 Root `AGENTS.md` rule 8, `Core/AGENTS.md` and `PUBLIC_API_PROTECTION.md`
 require explicit approval for this additional admitted profile. Proposal 116
-does not authorize it. Before approval, keep the native signed-zero rejection.
+did not authorize it; the separate user approval above now authorizes this scope.
+
+
+## Implementation
+
+The existing executable quantum storage validator now accepts canonical signed
+zero-width words after logical validation, so only negative concrete fractional
+widths qualify. No descriptor, call, binding or numerical runtime is added.
+Focused storage checks pass 89 cases; strict typing passes all three changed
+Python files. New source comparisons cover fractional widths -1, -2 and -7,
+forward and exact inverse spectator operators, shaped views, ownership creation
+and consumption, and actual OnEach constructor transport at depths 0/1/2.
+The source standalone empty-tensor failure remains separately recorded.

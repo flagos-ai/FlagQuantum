@@ -24,9 +24,10 @@ pytestmark = [pytest.mark.unit, pytest.mark.ftqc_reference]
 def test_cast_split_join_retains_metadata_shape_and_raw_word_ownership(
     width: int, signed: bool, fraction: int, shape: tuple[int, ...]
 ) -> None:
-    from qualtran import QFxp, QUInt
+    from qualtran._infra.data_types import QFxp, QUInt
     from qualtran.bloqs.bookkeeping.cast import Cast
-    from qualtran.resource_counting import QECGatesCost, get_cost_value
+    from qualtran.resource_counting._bloq_counts import QECGatesCost
+    from qualtran.resource_counting._costing import get_cost_value
 
     dtype = fixed_point_register_type(width, fraction, signed)
     original = dtype
@@ -94,16 +95,22 @@ def test_create_and_consume_preserve_caller_spectator_and_empty_handles(
     assert all(width not in event.wires for event in (*forward.events, *inverse.events))
 
 
-@pytest.mark.parametrize("fraction", (0, -2))
+@pytest.mark.parametrize(
+    "fraction,signed", ((0, False), (-2, False), (-1, True), (-2, True), (-7, True))
+)
 @pytest.mark.parametrize("inverse", (False, True))
 def test_empty_source_word_complex_operator_in_a_real_spectator_context(
-    fraction: int, inverse: bool
+    fraction: int, signed: bool, inverse: bool
 ) -> None:
-    from qualtran import BloqBuilder, QBit, QFxp
-    from qualtran import Register as SourceRegister
-    from qualtran import Signature as SourceSignature
-    from qualtran.bloqs.basic_gates import Hadamard, OnEach, TGate
-    from qualtran.resource_counting import QECGatesCost, get_cost_value
+    from qualtran._infra.composite_bloq import BloqBuilder
+    from qualtran._infra.data_types import QBit, QFxp
+    from qualtran._infra.registers import Register as SourceRegister
+    from qualtran._infra.registers import Signature as SourceSignature
+    from qualtran.bloqs.basic_gates.hadamard import Hadamard
+    from qualtran.bloqs.basic_gates.on_each import OnEach
+    from qualtran.bloqs.basic_gates.t_gate import TGate
+    from qualtran.resource_counting._bloq_counts import QECGatesCost
+    from qualtran.resource_counting._costing import get_cost_value
 
     from examples.algorithms.binary_field_arithmetic import FieldOperation
     from flagquantum import Circuit
@@ -111,7 +118,7 @@ def test_empty_source_word_complex_operator_in_a_real_spectator_context(
     from tests.unit.test_on_each_foreign_file import native_declaration
     from tests.unit.test_register_on_each import bit_child
 
-    dtype = QFxp(0, fraction)
+    dtype = QFxp(0, fraction, signed=signed)
     original = OnEach(0, TGate(), dtype)
     source = original.adjoint() if inverse else original
     assert len(source.decompose_bloq().bloq_instances) == 2
@@ -150,7 +157,8 @@ def test_empty_source_word_complex_operator_in_a_real_spectator_context(
 def test_signed_control_keeps_source_and_native_refusal(
     width: int, fraction: int, activation: int
 ) -> None:
-    from qualtran import CtrlSpec, QFxp
+    from qualtran._infra.controlled import CtrlSpec
+    from qualtran._infra.data_types import QFxp
     from qualtran.bloqs.mcmt.ctrl_spec_and import CtrlSpecAnd
 
     from examples.algorithms.controlled_programs import controlled_x_program
@@ -163,4 +171,25 @@ def test_signed_control_keeps_source_and_native_refusal(
     with pytest.raises(ValueError, match="single-bit"):
         controlled_x_program(
             (Register("ctrl", dtype),), (ControlRegister(width, (activation,)),)
+        )
+
+
+@pytest.mark.parametrize("fraction", (-1, -2, -7))
+def test_signed_empty_storage_reuses_views_lifetimes_and_actual_foreign_binding(
+    fraction: int,
+) -> None:
+    for shape in ((), (2,), (1, 2), (0, 2)):
+        test_cast_split_join_retains_metadata_shape_and_raw_word_ownership(
+            0, True, fraction, shape
+        )
+    test_create_and_consume_preserve_caller_spectator_and_empty_handles(
+        0, fraction, True
+    )
+    if fraction == -2:
+        from tests.unit.test_on_each_foreign_file import (
+            test_generic_declaration_and_actual_foreign_library_resolution,
+        )
+
+        test_generic_declaration_and_actual_foreign_library_resolution(
+            0, "signed_fixed"
         )

@@ -89,7 +89,8 @@ def executable_register_width(dtype: RegisterType) -> int:
     including packed polynomials (Proposals 109 and 125). Nonbinary storage
     does not admit numerical field arithmetic or control interpretations.
     Proposals 113 through 116 admit concrete unsigned fixed-point storage,
-    including empty words, and positive-width signed fixed-point words.
+    including empty words, and signed fixed-point words. Proposal 124 admits
+    signed empty words only when their concrete fractional width is negative.
     Canonical parameters retain their metadata identity during binding.
     """
     if not isinstance(dtype, RegisterType):
@@ -103,7 +104,6 @@ def executable_register_width(dtype: RegisterType) -> int:
         if (
             type(width) is int
             and width >= 0
-            and (width > 0 or parameters["signed"] is False)
             and type(parameters["fractional_width"]) is int
             and parameters["fractional_width"] <= width
         ):

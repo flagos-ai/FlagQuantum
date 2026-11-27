@@ -5,7 +5,7 @@
 Explicitly approved by the user on 2026-11-25. This proposal supersedes Proposal
 115's signed and zero-width fixed-point storage rejection in the narrow profiles
 below. Implementation and local acceptance are documented in
-`SIGNED_EMPTY_FIXED_POINT_STORAGE.md`. Signed zero-width remains separate.
+`SIGNED_EMPTY_FIXED_POINT_STORAGE.md`. Signed zero-width is separately authorized by approved Proposal 124.
 
 ## Requirement and frozen evidence
 

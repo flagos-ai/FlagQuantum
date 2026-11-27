@@ -5,7 +5,9 @@ Proposal 116 was explicitly approved on 2026-11-25. Core's existing
 fixed-point words and zero-width unsigned words. Logical descriptor validation
 still checks parameter order, boolean sign, fractional constraints and nominal
 identity. Physical storage still requires concrete integer widths/fractions and
-zero classical width. Signed zero-width remains outside Proposal 116.
+zero classical width. Signed zero-width remains outside Proposal 116 itself; the user separately
+approved Proposal 124 on 2026-11-27 and its negative-fraction storage is now
+implemented through this same validator.
 
 No arithmetic, value codec, gate, public entry or serialized vocabulary changes.
 Compiler continues owning typed calls, Split/Join, casts and linear allocation.
@@ -63,8 +65,9 @@ Receipts under the reference environment:
 The complete OnEach audit additionally found that the unchanged source admits
 signed zero-width QFxp at negative fractional widths. It decomposes into
 Split/Join and its real spectator context executes. Proposal 116 excludes that
-profile, so native rejection is retained. Proposal 124 records the exact new
-approval requirement and receipt; Q-0246 stays open for it. Existing invalid
+profile. The user separately approved Proposal 124 on 2026-11-27; the native
+validator now admits canonical negative-fraction signed-zero storage. Q-0246
+requires a final complete-file disposition before its checkbox changes. Existing invalid
 child, symbolic physical shape and source serialization boundaries remain in
 `ON_EACH_FILE_AUDIT.md`. No broader acceptance is inferred from this storage
 dependency delivery.
