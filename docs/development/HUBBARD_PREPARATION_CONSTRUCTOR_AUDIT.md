@@ -200,3 +200,48 @@ factory boundaries. Parameter compatibility and SDK cases are recorded in
 `test_parameter_expression_contract.py`, `test_nonlinear_parameter_binding.py`
 and `test_nonlinear_sdk_parameters.py`. Original singleton, tuple/enum codecs,
 atomic ModAddK pricing and unrelated pending contracts remain explicit.
+
+
+## Complete source acceptance (2026-11-28)
+
+Under the approved faithful-migration closure rule, Q-0350 covers the complete
+PrepareHubbard source: constructor/square-lattice validation, all selection,
+junk, signature and normalization properties, complete generator, original
+factory and DocSpec. Existing numerical and symbolic angle conversion, typed
+uniform/swap/increment/conjunction calls and exact inverse owners provide the
+implementation. Proposal 128's symbolic acos/floor path is implemented; it is
+not a pending missing numerical recipe. No new algorithm is added in this
+acceptance entry.
+
+Selection and caller-owned temp remain MSB-first THRU words. Normalization
+keeps the original integer/floor evaluation order. Source-success negative
+constructor weights do not broaden the public numerical operation's admission.
+Source-ordered operations, copy moment barrier, feedback and explicit
+inverse pairs remain verified. Existing all-eight-history complete complex
+states include dirty logical temp, separate private zero, restored inverse and
+source-free append. Symbolic numerical binding and native branch gradients
+retain the existing finite-difference evidence.
+
+Source singleton zero-width export/model and deeper acos/tuple/enum codec
+failures remain recorded upstream boundaries. Atomic ModAddK is not presented
+as an upstream primitive decomposition. Source model categories, measured native
+instructions, private simultaneous work and supplied pool capacity remain
+separate. Existing complete source/test/notebook, dimensions 2/3/4/5/8/9 and
+coefficient boundary evidence is reused without altering reference code.
+
+
+Batch validation completes 350 distinct primary cases: the initial bounded run
+completed the PREPARE constructor (83), SELECT constructor (59) and external
+control (58) files before timing out in symbolic weights at 360 seconds, with
+no assertion failure. Those 200 completed cases are retained; the interrupted
+file is not counted from that run. A separate continuation passes all remaining
+150 cases, including the complete symbolic-weight file. The whole initial
+invocation is recorded as timed out, not green. The independent Cirq 1.6
+constructor/control/symbolic profile passes all 139 cases.
+
+All 60 frozen source/dependency/asset blobs remain unchanged. Twelve fresh
+actual-source generic child-control captures preserve their explicit missing
+controlled-erasure diagnostics. Algorithms scope, language, links, architecture,
+IR, protected API baseline and whitespace pass. Strict Python, 32 local
+integration and real Kickmix Simulator checks from the preceding accepted
+batches are reused because this closure changes no Python implementation.
