@@ -120,3 +120,36 @@ The first concentrated run passed 406 cases and exposed the TensorProduct
 zero-width test's obsolete adapter-rejection assertion. The corrected test
 checks the original missing-system TypeError now reached after scalar admission.
 The unchanged upstream failure is retained rather than repaired or suppressed.
+
+
+## Faithful complete-source acceptance (2026-11-28)
+
+The approved faithful-migration closure rule supersedes the historical open
+status for Q-0289. Complete source review covers all metadata and signal
+forwarding, packed signature, scalar/child call graph, complete composite body,
+caption, original factory and DocSpec. The later [constructor audit](PHASE_BLOCK_CONSTRUCTOR_AUDIT.md)
+adds source-ordered exact ordinary/positive owners and predicate controls.
+The forward controlled source visits child then phase; controlling an inverse
+and inverting a controlled graph remain distinct recipes. Existing implementations
+and full-complex/branch evidence cover those paths; no new algorithm is added.
+
+The wire-free scalar stays a logical atomic boundary. Its actual native carrier
+instructions and clean work are reported separately from the source's zero QEC
+cost. Child through ports and private work keep their original ownership.
+Complete small operators, measured-child history certificates, numerical
+private-zero checks, nonlinear phase binding, source-free append and IR
+restoration are reused. Unknown children require explicit owned exact pairs;
+matching signatures alone never establish their bodies or inverses.
+
+Original packed Phase with named SELECT/LCU ports, missing-system scalar
+Unitary, related QubitCount and deep tuple-codec failures remain unchanged.
+Independent child-plus-scalar execution is not called successful whole-source
+execution for those failures. Unresolved symbolic numerical/SDK boundaries
+remain explicit. The modern native profile and source analytical categories
+are not inferred from counts of physical phase instructions.
+
+Batch validation passes 256 concentrated LCU/Phase/rewrite cases and 44
+independent Cirq 1.6 constructor/snapshot cases. All 76 reviewed frozen blobs
+are unchanged. Existing strict production, 32 local integration, unchanged
+original tests/notebook and actual Kickmix Simulator evidence is reused because
+no Python implementation changes in this acceptance entry.
