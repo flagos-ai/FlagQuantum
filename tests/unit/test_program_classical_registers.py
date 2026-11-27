@@ -2,7 +2,12 @@
 
 from dataclasses import replace
 
-import numpy as np
+from tests._reference_dependencies import unavailable_reference
+
+try:
+    import numpy as np
+except ModuleNotFoundError as _reference_import_error:
+    unavailable_reference(_reference_import_error)
 import pytest
 
 from flagquantum.compiler.registers.component_bindings import RegisterBindingError
@@ -208,10 +213,11 @@ def test_classical_identity_stays_outside_physical_quantum_lowering() -> None:
 
 @pytest.mark.ftqc_reference
 def test_nested_cbit_identity_calls_match_original_cast_ownership() -> None:
-    from qualtran import BloqBuilder, CBit
-    from qualtran import Register as SourceRegister
-    from qualtran import Signature as SourceSignature
-    from qualtran.bloqs.bookkeeping import Cast
+    from qualtran._infra.composite_bloq import BloqBuilder
+    from qualtran._infra.data_types import CBit
+    from qualtran._infra.registers import Register as SourceRegister
+    from qualtran._infra.registers import Signature as SourceSignature
+    from qualtran.bloqs.bookkeeping.cast import Cast
 
     signature = Signature((Register("reg", classical_bit_type()),))
     native = ComponentProgramBuilder(signature, [identity("cast", tuple(signature))])
