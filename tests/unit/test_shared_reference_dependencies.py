@@ -39,8 +39,8 @@ sys.meta_path.insert(0, MissingSDK())
 try:
     module = import_module(module_name)
     if entry:
-        arguments = (3, 4) if entry == 'source_encoder' else ()
-        getattr(module, entry)(*arguments)
+        entry_name, arguments = json.loads(entry)
+        getattr(module, entry_name)(*arguments)
 except pytest.skip.Exception as error:
     result = {'outcome': 'explicit_skip', 'reason': str(error)}
 except ModuleNotFoundError as error:
@@ -73,6 +73,26 @@ print(json.dumps(result))
         ("test_register_component_calls", "numpy", None),
         ("test_register_rebinding_contract", "numpy", None),
         ("test_register_tensor_binding", "numpy", None),
+        (
+            "test_basic_rotation_source_binding",
+            "cirq",
+            ("test_original_radian_adapter_round_trips", ("x",)),
+        ),
+        ("test_complex_phase_component_library", "numpy", None),
+        (
+            "test_generalized_qsp_component_library",
+            "cirq",
+            ("_check", (None, None, None)),
+        ),
+        ("test_generalized_qsp_entangling_unitary", "cirq", None),
+        ("test_generalized_qsp_shaped_unitary", "cirq", None),
+        ("test_generalized_qsp_stored_unitary", "cirq", None),
+        ("test_hamiltonian_gqsp", "numpy", None),
+        (
+            "test_hamiltonian_gqsp_component_library",
+            "cirq",
+            ("_bound_check", (None, None, None)),
+        ),
         ("test_classical_action_tensor", "numpy", None),
         ("test_component_add_calls", "numpy", None),
         ("test_component_call_boundaries", "numpy", None),
@@ -101,9 +121,14 @@ def test_actual_fixture_dependency_absence(
     tmp_path: Path,
     module: str,
     root: str,
-    entry: str | None,
+    entry: str | tuple[str, tuple[object, ...]] | None,
     required: bool,
 ) -> None:
+    invocation = (
+        (entry, (3, 4) if entry == "source_encoder" else ())
+        if isinstance(entry, str)
+        else entry
+    )
     result = subprocess.run(
         [
             sys.executable,
@@ -111,7 +136,7 @@ def test_actual_fixture_dependency_absence(
             _IMPORT_WITHOUT_SDK,
             "tests.unit." + module,
             root,
-            entry or "",
+            json.dumps(invocation) if invocation is not None else "",
             "1" if required else "0",
             json.dumps(sys.path),
         ],
