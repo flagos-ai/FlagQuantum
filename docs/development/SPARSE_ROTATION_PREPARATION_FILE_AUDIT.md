@@ -103,3 +103,43 @@ representation integration cases, strict typing of both touched production
 adapters and the shared branch proof, and an independent LCU notebook kernel.
 The detailed counts, differences between local-matrix and measured permutation
 lowerings, and the source-frame lifetime fix are recorded in the linked audit.
+
+
+## Faithful full-file acceptance (2026-11-28)
+
+The approved faithful-migration closure rule supersedes the historical open
+status above. Q-0697 covers the entire locked source file: constructor and
+width defaults, all three factories, symbolic declarations, signature,
+partition, normalized dense child, permutation, direct call graph, composite
+body and both original examples. This batch reuses the existing implementation
+and execution evidence; it does not claim a new sparse algorithm.
+
+The later [source constructor audit](RESOLVER_SPARSE_ROTATION_AUDIT.md)
+supersedes the earlier partial-permutation rejection description above. The
+literal compiler profile preserves the original `(3, 0)` partial-map behavior;
+the independent optimized Algorithms injection has a separate contract.
+Singleton and unresolved-dimension source decomposition failures, CSR's early
+`len` failure, malformed rank-two input and symbolic serialization failures
+remain recorded boundaries. None is repaired in the reference or described as
+successful source execution. Symbolic phase alone retains the valid parent
+root with a declared dense child, without fabricating a physical recipe.
+
+Existing complete small complex operators, applicable measurement histories,
+clean private work, spectator and eight-bit angle/gradient evidence are reused
+and covered by the concentrated source/binding regression. Literal constructor
+precision preserves float32/complex64 normalization; the stable extreme-norm
+Algorithms path remains separate. Atomic AddIntoPhaseGrad model calls are not
+reported as primitive decomposition. The recorded 4/6-target source models and
+measured native gate inventories remain separate, including allocator and
+permutation-lowering differences. No large all-history result is extrapolated
+from small-case certificates.
+
+
+Batch verification: 108 concentrated source/execution cases, 30 independent
+Cirq 1.6 cases and 32 local integration cases pass. The two Python files pass
+strict typing, Black and Ruff; Algorithms scope, architecture, IR, protected
+API baseline, required checks, language, links and whitespace pass. All 42
+frozen source/dependency blobs are unchanged. Fourteen actual dependency-absence
+cases distinguish optional skips from mandatory propagation of the original
+error. The dependency-policy scan still has 570 existing findings in 362 files;
+none belongs to the new test consumer. That workflow remains open.
