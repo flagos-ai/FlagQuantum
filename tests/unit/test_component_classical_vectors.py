@@ -1,9 +1,17 @@
 """Classical flank graphs preserve source sequencing and complex overlaps."""
 
+from __future__ import annotations
+
 from collections.abc import Mapping
 from dataclasses import replace
+from typing import TYPE_CHECKING
 
-import numpy as np
+from tests._reference_dependencies import unavailable_reference
+
+try:
+    import numpy as np
+except ModuleNotFoundError as _reference_import_error:
+    unavailable_reference(_reference_import_error)
 import pytest
 import torch
 
@@ -21,6 +29,9 @@ from tests.unit.component_vector_checks import contract, tracked_flank
 from tests.unit.test_component_bit_values import identity_record
 from tests.unit.test_component_zero_initialization import phase_fixture
 
+if TYPE_CHECKING:
+    from qualtran.simulation.classical_sim import ClassicalValT
+
 pytestmark = [pytest.mark.unit, pytest.mark.ftqc_reference]
 
 
@@ -29,15 +40,15 @@ pytestmark = [pytest.mark.unit, pytest.mark.ftqc_reference]
 def test_shapes_call_order_and_complete_complex_overlap(
     monkeypatch: pytest.MonkeyPatch, width: int, shape: tuple[int, ...]
 ) -> None:
-    from qualtran.bloqs.basic_gates import IntEffect, IntState
+    from qualtran.bloqs.basic_gates.z_basis import IntEffect, IntState
     from qualtran.simulation.xcheck_classical_quimb import flank_with_classical_vectors
 
     record, source = phase_fixture(width, shape)
-    inputs: dict[str, object] = {
+    inputs: dict[str, ClassicalValT] = {
         "q": np.array([1, 0]),
         "idle": np.zeros(shape, dtype=int) if shape else 0,
     }
-    outputs: dict[str, object] = {
+    outputs: dict[str, ClassicalValT] = {
         "q": np.array([0, 1]),
         "idle": np.zeros(shape, dtype=int) if shape else 0,
     }
@@ -172,7 +183,8 @@ def test_measured_add_all_inputs_histories_work_and_resource_accounts(
     from collections import Counter
     from itertools import product
 
-    from qualtran.resource_counting import QECGatesCost, get_cost_value
+    from qualtran.resource_counting._bloq_counts import QECGatesCost
+    from qualtran.resource_counting._costing import get_cost_value
     from qualtran.simulation.xcheck_classical_quimb import flank_with_classical_vectors
 
     from tests.unit.measurement_checks import forced_branch
@@ -184,7 +196,7 @@ def test_measured_add_all_inputs_histories_work_and_resource_accounts(
     initial = torch.zeros(256, dtype=torch.complex128)
     initial[0] = torch.tensor(1j, dtype=torch.complex128)
     for a, b, spectator in product(range(4), range(8), range(2)):
-        inputs = {"a": a, "b": b, "spectator": spectator}
+        inputs: dict[str, ClassicalValT] = {"a": a, "b": b, "spectator": spectator}
         outputs = source.on_classical_vals(**inputs)
         native, _ = tracked_flank(
             monkeypatch,
@@ -251,7 +263,7 @@ def test_automatic_outputs_compose_existing_native_classical_evaluator(
 def test_directional_child_and_explicit_empty_outputs(
     monkeypatch: pytest.MonkeyPatch, state: bool
 ) -> None:
-    from qualtran.bloqs.basic_gates import IntEffect, IntState
+    from qualtran.bloqs.basic_gates.z_basis import IntEffect, IntState
     from qualtran.simulation.xcheck_classical_quimb import flank_with_classical_vectors
 
     from flagquantum.compiler.registers.component_basis_vectors import (
@@ -262,8 +274,8 @@ def test_directional_child_and_explicit_empty_outputs(
         (integer_basis_function("main", RegisterType("uint", 2), 2, state=state),)
     )
     source = (IntState if state else IntEffect)(2, 2)
-    inputs = {} if state else {"val": 2}
-    outputs = {"val": 2} if state else {}
+    inputs: dict[str, ClassicalValT] = {} if state else {"val": 2}
+    outputs: dict[str, ClassicalValT] = {"val": 2} if state else {}
     native, vectors = tracked_flank(
         monkeypatch,
         record,
@@ -305,8 +317,9 @@ def test_invalid_and_untyped_graphs_are_refused_before_evaluator() -> None:
 def test_original_xgate_inference_and_mismatched_tensor_effect(
     monkeypatch: pytest.MonkeyPatch, output: int | None
 ) -> None:
-    from qualtran.bloqs.basic_gates import XGate
-    from qualtran.resource_counting import QECGatesCost, get_cost_value
+    from qualtran.bloqs.basic_gates.x_basis import XGate
+    from qualtran.resource_counting._bloq_counts import QECGatesCost
+    from qualtran.resource_counting._costing import get_cost_value
     from qualtran.simulation.xcheck_classical_quimb import flank_with_classical_vectors
 
     from examples.algorithms.binary_field_arithmetic import FieldOperation
@@ -333,7 +346,7 @@ def test_original_xgate_inference_and_mismatched_tensor_effect(
             for f in record.functions
         ),
     )
-    outputs = None if output is None else {"q": output}
+    outputs: dict[str, ClassicalValT] | None = None if output is None else {"q": output}
     native, vectors = tracked_flank(
         monkeypatch, record, {"q": 0}, outputs, evaluate=lambda values: {"q": 1}
     )
