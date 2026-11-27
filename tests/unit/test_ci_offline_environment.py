@@ -76,6 +76,7 @@ def test_container_wrapper_preserves_offline_runtime_and_read_only_wheels(
             "FQ_DISTRIBUTED_WORKERS": "1",
             "MAX_JOBS": "2",
             "COVERAGE_CORE": "sysmon",
+            "MALLOC_MMAP_THRESHOLD_": "131072",
             "FQ_COVERAGE_SHARDS": "2",
             "FQ_COVERAGE_INPUTS": str(temporary / "coverage-inputs"),
         },
@@ -104,6 +105,7 @@ def test_container_wrapper_preserves_offline_runtime_and_read_only_wheels(
     assert "FQ_DISTRIBUTED_WORKERS" in environment
     assert "MAX_JOBS" in environment
     assert "COVERAGE_CORE" in environment
+    assert "MALLOC_MMAP_THRESHOLD_" in environment
     assert "FQ_COVERAGE_SHARDS" in environment
     assert "FQ_COVERAGE_INPUTS" in environment
     assert "GLOO_SOCKET_IFNAME=lo" in environment
@@ -117,7 +119,9 @@ def test_container_wrapper_preserves_offline_runtime_and_read_only_wheels(
 @pytest.mark.skipif(
     os.name == "nt", reason="Linux container cancellation uses POSIX signals"
 )
-def test_cancelled_wrapper_removes_exact_container_and_preserves_failure(tmp_path):
+def test_cancelled_wrapper_removes_exact_container_and_preserves_failure(
+    tmp_path: Path,
+) -> None:
     import signal
     import sys
     import time
@@ -433,6 +437,7 @@ def test_coverage_aggregation_uses_the_producers_locked_environment() -> None:
             "${{ runner.environment == 'self-hosted' }}"
         )
         assert not any("pip install" in step.get("run", "") for step in steps)
+    assert jobs["coverage-shard"]["env"]["MALLOC_MMAP_THRESHOLD_"] == "131072"
     aggregate = jobs["coverage"]
     assert aggregate["needs"] == ["prepare-source", "coverage-plan", "coverage-shard"]
     assert aggregate["timeout-minutes"] == 20

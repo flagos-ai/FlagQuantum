@@ -11,6 +11,9 @@ evidence.
 - Start in `batching.py` for parameter windows and rotation-region angle packing.
   Compiled real scalar slots with matching dtype/device are packed together;
   other forms retain the existing per-gate parameter conversion and validation.
+- Start in `reversible_cpu.py` for exact CPU Toffoli permutations. Only the
+  executor may authorize reuse of owned state storage; differentiable states
+  always retain the out-of-place route.
 - Start in `two_qubit_cpu.py` for the CPU kernels that apply a dense two-qubit
   gate directly to the contiguous four-amplitude blocks of an index-adjacent
   qubit pair.

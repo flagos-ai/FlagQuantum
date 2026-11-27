@@ -84,6 +84,7 @@ docker run --rm --pull never --cidfile "$cidfile" \
   --env PET_LOCAL_ADDR=127.0.0.1 --env GLOO_SOCKET_IFNAME=lo \
   --env OMP_NUM_THREADS --env MKL_NUM_THREADS --env OPENBLAS_NUM_THREADS \
   --env CUDA_VISIBLE_DEVICES --env JAX_PLATFORMS --env COVERAGE_FILE --env COVERAGE_CORE --env PYTEST_ADDOPTS \
+  --env MALLOC_MMAP_THRESHOLD_ \
   --env FQ_COVERAGE_SHARDS --env FQ_COVERAGE_INPUTS \
   "$FQ_CI_IMAGE" "${command[@]}" &
 docker_pid=$!

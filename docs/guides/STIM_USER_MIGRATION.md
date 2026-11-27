@@ -20,6 +20,21 @@ model-reading examples remain supported below.
 | `circuit.compile_detector_sampler(...)` | Native `circuit.compile_detector_sampler(detector_map=..., observable_map=...)` for admitted circuits; DEM sampling remains separate |
 | `pymatching.Matching.from_detector_error_model(...)` | `get_decoder("minimum_weight_matching", model)` |
 
+## Current SDK-free memory workflow
+
+An opt-in embedded wheel can construct and export a native memory circuit,
+sample its original noisy text, derive a strict DEM and decode without either
+Python SDK. Run `python -m examples.qec.embedded_memory_export`; the fixed-seed
+example reports 64 shots, zero observed logical failures and source
+`stim_circuit`. A small zero-failure observation is not threshold evidence.
+Marker-free wheels retain the optional Stim requirement. Public APIs, source
+limits and refusal rules are unchanged.
+
+The [current capability inventory](../development/QEC_STIM_REMAINING_CAPABILITIES.md)
+distinguishes this route from external measurement-record conversion, which
+still requires the SDK. The older migration examples below describe their own
+SDK prerequisites and do not imply that every operation needs the SDK.
+
 ## Read the model text
 
 Start from a circuit exactly as you would without FlagQuantum.

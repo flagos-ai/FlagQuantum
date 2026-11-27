@@ -2387,6 +2387,8 @@ jobs:
       # Python 3.12 line coverage: retain the same measured lines without
       # tracing every repeated optimizer instruction through CTracer.
       COVERAGE_CORE: sysmon
+      # Return large temporary arrays instead of retaining them in the heap.
+      MALLOC_MMAP_THRESHOLD_: "131072"
       OMP_NUM_THREADS: "1"
       MKL_NUM_THREADS: "1"
       OPENBLAS_NUM_THREADS: "1"

@@ -268,20 +268,10 @@ def _apply_gate_matrix(
     uses_diagonal_kernel: bool,
     layout: tuple[tuple[int, ...], tuple[int, ...]] | None = None,
 ) -> torch.Tensor:
-    """Apply one already-built gate matrix with the kernel that fits it.
+    """Apply a built matrix through the supported single-qubit or layout kernel.
 
-    ``_apply_matrix`` lays the state out, permutes the gate's qubits to the front
-    and permutes back, which a single-qubit gate does not need.
-    ``_apply_diagonal_matrix`` keeps the layout but replaces the batched matmul
-    with an elementwise multiply, which only a diagonal matrix may take.
-
-    ``uses_diagonal_kernel`` says the matrix is known to be diagonal, so the
-    diagonal kernel is available here. It is not a preference: where the
-    elementwise single-qubit kernel applies as well, that kernel wins, because it
-    drops the layout permutation the diagonal kernel still pays for, and it
-    agrees with both of them to under an ulp on every shape measured. It is not
-    bitwise equal to either, which is why the switch licensing it is off by
-    default.
+    A proven diagonal may use elementwise multiplication. The optional CPU
+    single-qubit route takes precedence because it avoids layout permutations.
     """
 
     if _use_elementwise_single_wire(state, wires):
@@ -844,10 +834,15 @@ def _execute_statevector_program(
                 output = dispatched
                 continue
         carries_matrix = instruction.matrix is not None
-        if not carries_matrix and name in {"x", "cx", "swap"}:
+        if not carries_matrix and (
+            name in {"x", "cx", "swap"}
+            or (name == "ccx" and output.device.type == "cpu")
+        ):
             output = _apply_fixed_permutation(
-                output, name, instruction.wires, circuit.n_qubits
+                output, name, instruction.wires, circuit.n_qubits, inplace=owns_output
             )
+            if name == "ccx":
+                owns_output = True
         elif not carries_matrix and name == "y":
             output = _apply_single_qubit_fixed(
                 output, name, instruction.wires[0], circuit.n_qubits

@@ -1819,8 +1819,11 @@ Stim text reports without the Stim Python package. Source and
 expanded-instruction limits, strict DEM conversion, deterministic reference
 parities, and the existing detector and observable requirements apply. The report samples the
 original noisy circuit and decodes its detector records using the selected
-decoder. The SDK remains required for the memory-circuit text exporter and
-for external-text reports in marker-free builds.
+decoder. The memory-circuit text exporter also uses the embedded engine after #1235.
+Marker-free builds still require the SDK for export and external-text reports.
+External text measurement-record conversion remains SDK-only; compiled native
+record conversion does not accept sweep files. See the
+[operation inventory](../development/QEC_STIM_REMAINING_CAPABILITIES.md).
 
 Linux x86_64 verification used a local `cp310-abi3-linux_x86_64` wheel built
 with GCC 12.2 and Torch 2.10.0 CPU, then installed under CPython 3.12 and

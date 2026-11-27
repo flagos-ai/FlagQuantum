@@ -1,5 +1,33 @@
 # QEC Stim and PyMatching delivery plan
 
+## Actual-main acceptance after #1235 — 2026-11-20
+
+PR #1235 is merged at `e399353303bd4b752c88686fe572cf0943e8801e`.
+A fresh offline macOS arm64 embedded wheel was built from that exact main
+checkout and installed separately without dependencies. Every packaged Python
+member was checked against the checkout and installed copy. No SDK package
+was available in the acceptance processes.
+
+The installed example returned `64 0 stim_circuit`. Repetition, Surface,
+Color and Toric d=3 workflows passed export, original noisy sampling, strict
+DEM construction and decoding. All 28 Toric configurations additionally
+passed at d=3,5,7,9,11,13,15, X/Z readout and independent/correlated noise;
+all 64 syndromes per configuration were reconstructed. Strict mechanism
+targets and probabilities were compared with retained Stim 1.16.0 references.
+This was a new main-installed run, not a relabelled PR run; prior full
+smoke/unit, integration and CI/GPU were not repeated. Fixed-shot residuals
+are observations, not a threshold or performance claim.
+
+The [receipt](../../artifacts/development/qec_sdk_free_main_acceptance_20261120.json)
+records the wheel/native hashes, environment and individual results. An
+independent conversion probe confirmed the next gap: the existing external
+measurement-table converter still requires the Stim Python SDK. The same
+sweep-controlled fixed records return the expected zero detector/logical
+flips with Stim 1.16.0. See the
+[remaining capability inventory](../development/QEC_STIM_REMAINING_CAPABILITIES.md)
+for the proposed bounded follow-up; no new API or implementation is approved
+by this entry.
+
 ## SDK-free memory export candidate — 2026-11-19
 
 The opt-in embedded profile now exports owned memory circuits through the same

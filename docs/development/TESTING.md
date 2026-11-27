@@ -701,6 +701,27 @@ by estimated duration. Batches contain at most 16 tests, so a large untimed file
 can use several runners instead of creating one long tail. The plan's union is the original marker selection. Raw
 coverage is written outside the source tree, then combined before the unchanged
 coverage policy runs. Unmeasured tests receive the same positive default weight.
+Coverage workers report long tests through
+`tools.pytest_stack_watchdog` with `--fq-stack-dump-after=300` and
+`faulthandler_timeout=0`. It holds Python references to the thread frames
+while formatting their stacks, avoiding CPython's native asynchronous frame
+traversal, which stalled a local reproduction after its assertions passed and
+coincided with the worker exit in #1253. The original worker exit signal was
+not retained. These Python diagnostics require the GIL; a native call holding
+it may prevent the timed report. Fatal-signal faulthandler support remains
+enabled, and the job timeout still bounds such hangs. Test selection, coverage
+requirements, worker quotas, and job time limits are unchanged.
+The Linux coverage process sets `MALLOC_MMAP_THRESHOLD_=131072`, forwarded
+explicitly into its offline container. This keeps large temporary statevector
+arrays eligible for direct release instead of allowing the allocator's dynamic
+threshold to retain them in the heap. The setting changes allocation strategy,
+not the memory limit or numerical workload. During #1253 diagnosis, the original
+four-worker glued-trees selection reached about 12 GiB despite only about
+176 MiB of live tensor storage in a separate lifetime probe; garbage collection
+found no cyclic objects to reclaim. The fixed-threshold comparison retains the
+same source, image, tests and 300-second diagnostic interval: all six original
+glued-trees tests passed with four workers in 498.65 seconds, with the wide
+worker below 0.7 GiB at sampled points.
 Pull requests run complete smoke/unit coverage once on
 Python 3.12 while Python 3.10 and 3.11 run the compatibility smoke; manual
 full CI retains complete smoke/unit coverage on all supported interpreters. The
