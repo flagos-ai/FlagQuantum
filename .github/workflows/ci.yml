@@ -428,20 +428,20 @@ jobs:
 
   native-fermion:
     needs: prepare-source
-    runs-on: ${{ (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository) && 'flagquantum-cpu-general' || 'ubuntu-latest' }}
-    # Cold science wheels measured over 16 minutes across shared runners.
+    runs-on: ubuntu-latest
+    # Fresh science wheels use hosted networking, not an offline CPU cache.
     timeout-minutes: 45
     permissions:
       contents: read
     concurrency:
-      group: flagquantum-${{ (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository) && format('a100-cpu-{0}-native-fermion-{1}', github.run_id, strategy.job-index || 0) || 'gh' }}-4
+      group: flagquantum-gh-${{ matrix.hosted-bucket }}
       queue: max
     strategy:
       fail-fast: false
       matrix:
         include:
-          - {python: "3.10", torch: "2.10.0", pyscf: "2.8.0", h5py: "3.11.0"}
-          - {python: "3.12", torch: "2.14.1", pyscf: "2.15.0", h5py: "3.16.0"}
+          - {python: "3.10", torch: "2.10.0", pyscf: "2.8.0", h5py: "3.11.0", hosted-bucket: 3}
+          - {python: "3.12", torch: "2.14.1", pyscf: "2.15.0", h5py: "3.16.0", hosted-bucket: 4}
     env:
       OMP_NUM_THREADS: "1"
       MKL_NUM_THREADS: "1"

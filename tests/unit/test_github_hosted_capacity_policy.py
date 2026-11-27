@@ -625,7 +625,10 @@ def test_openfermion_validation_does_not_wait_for_container_builds() -> None:
 
 def test_native_fermion_uses_isolated_cpu_capacity_for_trusted_changes() -> None:
     job = _document("ci.yml")["jobs"]["native-fermion"]
-    assert job["runs-on"] == TRUSTED_CPU_ROUTE
+    assert job["runs-on"] == "ubuntu-latest"
+    assert _groups(job) == {"flagquantum-gh-3", "flagquantum-gh-4"}
+    assert job["concurrency"]["queue"] == "max"
+    assert job["timeout-minutes"] == 45
     assert len(job["strategy"]["matrix"]["include"]) == 2
     isolated = next(
         step

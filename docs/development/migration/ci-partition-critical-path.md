@@ -316,3 +316,49 @@ Ubuntu in bucket 2, preserving the same complete requirements snapshot, strict
 no-resolver audit, sixty-second request timeout, eight-minute audit step, Bandit,
 SBOM checks and twenty-minute total safety budget. This correction changes its
 execution placement rather than weakening the audit or increasing its timeout.
+
+
+## Qualified parent and artifact SDK follow-up
+
+Parent PR 1344 head `f3329a61bf9f867647f93b5cd2eb81789dc03109` passes
+432 checks with four conditional skips; all three applicable workflows succeed
+on attempt 1. Its actual source tree and all 384 original CPU report artifacts
+are retained and verified. Runtime executes the original 14,260 selected nodes
+once; coverage executes the 38,468 planned nodes once. Main CI job timestamps
+show a peak of 213 overlapping assigned jobs.
+
+| Group | Partitions | Maximum whole-job seconds | Jobs above 600 seconds |
+| --- | ---: | ---: | ---: |
+| Runtime | 128 | 759 | 4 |
+| Coverage | 256 | 832 | 6 |
+| Python 3.12 unit | 4 | 451 | 0 |
+| Distributed CPU | 6 | 571 | 0 |
+
+Those durations include setup, tests and upload, excluding queue time. A green
+correctness gate does not establish the remaining elapsed-time target. Several
+late artifact steps spend 203–331 seconds fetching/preparing the official action
+and uploading reports. The existing bounded upload wrapper now uses the same
+pinned official SDK locally. Its raw upstream metadata, MIT license, bundle,
+Git object identities and SHA-256 values are retained under the wrapper's
+`vendor/` directory. The three-attempt graph, final failure, service protocol,
+inputs, outputs, overwrite and retention semantics remain unchanged. Source
+restoration must include the complete local action before the first upload;
+regression tests restore its exact entry point and bytes from a fresh archive.
+The SDK is absent from the inspected Python source distribution and wheel.
+Real successor CI upload/download and source-binding acceptance remain pending.
+
+The native-fermion Python 3.12 job on `fq-a100-cpu10` started at 14:15:20 UTC
+and reached its real-driver test step at 14:49:46 UTC: 34 minutes 26 seconds
+before scientific execution. This lane intentionally installs fresh certified
+science dependencies, so it now uses hosted Ubuntu networking in existing
+bounded buckets 3 and 4. Both original Python/Torch/PySCF/h5py combinations,
+fresh isolated environments, exact source restoration, real RHF tests and the
+45-minute finite safety budget remain unchanged. The hosted ceiling stays at
+eight shared groups. This routing change still needs actual CI timing evidence.
+
+The remaining five compute-heavy coverage outliers already own sole-test slots
+and twelve admitted threads: the complete Maxwell case spends 635 seconds in
+its call; four projection-embedding cases each spend 695–734 seconds repeating
+the module fixture. Additional fan-out alone cannot shorten them. Their original
+workloads, complete amplitudes, optimizer budgets and assertions remain intact;
+fixture/resource optimization requires separate measured verification.
