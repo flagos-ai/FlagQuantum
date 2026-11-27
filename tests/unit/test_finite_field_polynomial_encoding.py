@@ -6,7 +6,12 @@ from functools import partial
 from itertools import product
 from typing import Any
 
-import numpy as np
+from tests._reference_dependencies import unavailable_reference
+
+try:
+    import numpy as np
+except ModuleNotFoundError as _reference_import_error:
+    unavailable_reference(_reference_import_error)
 import pytest
 import torch
 
@@ -23,7 +28,7 @@ CASES = [(2, 1, 0), (2, 1, 2), (2, 2, 1), (2, 3, 1), (3, 1, 1), (3, 2, 0)]
 def pair(
     p: int, m: int, degree: SymbolicInt, classical: bool
 ) -> tuple[FiniteFieldPolynomialEncoding, Any]:
-    from qualtran import QGF, CGFPoly, QGFPoly
+    from qualtran._infra.data_types import QGF, CGFPoly, QGFPoly
 
     return FiniteFieldPolynomialEncoding(degree, FiniteFieldEncoding(p, m)), (
         CGFPoly if classical else QGFPoly
@@ -148,7 +153,8 @@ def test_symbolic_degree_keeps_metadata_and_original_failures() -> None:
 
 def test_existing_polynomial_add_consumer_uses_native_coefficients() -> None:
     from qualtran.bloqs.gf_poly_arithmetic.gf2_poly_add import GF2PolyAdd
-    from qualtran.resource_counting import QECGatesCost, get_cost_value
+    from qualtran.resource_counting._bloq_counts import QECGatesCost
+    from qualtran.resource_counting._costing import get_cost_value
 
     from examples.algorithms.binary_field_arithmetic import FieldOperation
     from flagquantum.circuit import Circuit
