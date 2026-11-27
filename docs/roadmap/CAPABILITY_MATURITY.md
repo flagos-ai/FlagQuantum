@@ -279,6 +279,13 @@ without a rewrite, existing version 1–3 identities and encodings remain intact
 The scope and runnable checks are documented in
 [Compiler artifacts](../../flagquantum/compiler/artifacts/README.md).
 
+The [approved v4 capacity change](../api-changes/FQ-V4-NATIVE-LINEAGE-CAPACITY-20261123.md)
+independently bounds native input records and aggregate block memberships at
+8,192. All other record, ancestry, block and byte limits remain unchanged.
+Upgrade readers before sending expanded evidence; older readers reject it.
+The [development validation](../development/V4_NATIVE_LINEAGE_CAPACITY_VALIDATION.md)
+does not promote this capability or establish comparative performance.
+
 This does not promote depth, compilation time, memory or hardware performance,
 nor does it change the maturity of other compiler capabilities. Unchanged
 SDKBench protocols and held-out workload qualification remain pending. Directed

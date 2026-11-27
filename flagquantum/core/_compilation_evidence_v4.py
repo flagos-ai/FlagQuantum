@@ -34,6 +34,9 @@ from ._compilation_evidence import (
 )
 from .operator_schema import get_operator_schema
 
+_MAX_NATIVE_INPUT_RECORDS = 8192
+_MAX_BLOCK_MEMBERSHIPS = 8192
+
 _NATIVE_FIELDS = {
     "instruction_index",
     "source_instruction_index",
@@ -338,7 +341,15 @@ class PhysicalPlanEvidenceV4:
             ("native_input_instructions", NativeInputInstructionEvidence),
             ("block_rewrites", BlockRewriteEvidence),
         ):
-            records = _array(getattr(self, name), name)
+            records = _array(
+                getattr(self, name),
+                name,
+                (
+                    _MAX_NATIVE_INPUT_RECORDS
+                    if name == "native_input_instructions"
+                    else _MAX_RECORDS
+                ),
+            )
             if any(not isinstance(item, record_type) for item in records):
                 raise TypeError(f"{name} must contain typed evidence records")
             object.__setattr__(self, name, records)
@@ -511,7 +522,7 @@ class PhysicalPlanEvidenceV4:
             len(block.input_instruction_indices) + len(block.output_instruction_indices)
             for block in self.block_rewrites
         )
-        if membership_size > _MAX_RECORDS:
+        if membership_size > _MAX_BLOCK_MEMBERSHIPS:
             raise ValueError("nested block memberships exceed record limit")
         used_inputs: set[int] = set()
         used_outputs: set[int] = set()
@@ -720,7 +731,9 @@ class PhysicalPlanEvidenceV4:
         values = _closed(payload, _PLAN_FIELDS_V4, "physical plan evidence")
         coupling = values.pop("coupling")
         native = _array(
-            values.pop("native_input_instructions"), "native_input_instructions"
+            values.pop("native_input_instructions"),
+            "native_input_instructions",
+            _MAX_NATIVE_INPUT_RECORDS,
         )
         blocks = _array(values.pop("block_rewrites"), "block_rewrites")
         outputs = _array(values.pop("instructions"), "instructions")
@@ -734,7 +747,7 @@ class PhysicalPlanEvidenceV4:
             membership_size += len(
                 _array(record["output_instruction_indices"], "block outputs", 96)
             )
-            if membership_size > _MAX_RECORDS:
+            if membership_size > _MAX_BLOCK_MEMBERSHIPS:
                 raise ValueError("nested block memberships exceed record limit")
         return cls(
             target_snapshot_id=target_snapshot_id,

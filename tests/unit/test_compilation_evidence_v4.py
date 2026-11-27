@@ -380,7 +380,7 @@ def test_nested_membership_budget_applies_before_record_construction(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     payload = _unsealed()
-    monkeypatch.setattr(v4, "_MAX_RECORDS", 1)
+    monkeypatch.setattr(v4, "_MAX_BLOCK_MEMBERSHIPS", 1)
     with pytest.raises(ValueError, match="nested block memberships"):
         _read(payload)
 
@@ -534,7 +534,7 @@ def test_direct_construction_and_reader_apply_the_same_membership_bound(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     original = _reducing_bundle()
-    monkeypatch.setattr(v4, "_MAX_RECORDS", 50)
+    monkeypatch.setattr(v4, "_MAX_BLOCK_MEMBERSHIPS", 50)
     with pytest.raises(ValueError, match="nested block memberships"):
         replace(original.physical_plan, plan_identity="")
     with pytest.raises(ValueError, match="nested block memberships"):

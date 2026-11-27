@@ -1208,3 +1208,12 @@ path = "docs/development/evidence/compiler-installed-wheel-controls.json"
 value = "9cb8f184825e658f7378763a1f3a39c57720233d"
 origin = "external_dependency"
 repository = "sdkbench-org/sdkbench"
+
+# SDKBench owns the independent evaluator used by the approved v4 capacity check.
+[[artifact]]
+path = "docs/development/evidence/v4-native-lineage-capacity-workflows.json"
+
+[[artifact.revision]]
+value = "5ba03de33f8a9193f86b26d2cb3fa841ede7c98a"
+origin = "external_dependency"
+repository = "sdkbench-org/sdkbench"
