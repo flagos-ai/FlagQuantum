@@ -155,8 +155,8 @@ def test_thermal_reset_matches_independent_complete_density(
     limits = dict(max_qubits=11, max_workspace=1, max_operations=25_000)
     if rounds == 50:
         program = synth.synthesize(path, **limits)
-        assert program.report["resources"].n_operations == 22200
-        assert program.report["resources"].depth == 19901
+        assert program.report["resources"].n_operations == 22100
+        assert program.report["resources"].depth == 19801
     else:
         modified = source.replace("repeat (i: 50)", f"repeat (i: {rounds})")
         modified = modified.replace(

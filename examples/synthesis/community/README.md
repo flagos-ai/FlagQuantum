@@ -1,5 +1,9 @@
 # Community
 
+Start with the [FlagQuantum learning path](../tutorials/learning_path/README.md).
+These cases retain migration acceptance separately from the
+[teaching review](../NOTEBOOK_UX_PLAN.md).
+
 Native FlagQuantum programs currently available:
 
 - [periodic_laplacian_1d](paper_implementation_project/block_encoding_nd_laplacian/periodic_laplacian_1d/README.md)
@@ -17,23 +21,23 @@ Native FlagQuantum programs currently available:
 
 ## Validated local Notebook workflows
 
-- [overview](hackathons/qinnovision_2025/advection_equation/second_place/overview/README.md)
-- [overview](hackathons/qinnovision_2025/advection_equation/winning/overview/README.md)
-- [overview](hackathons/iquhack_2025/challenge_template/overview/README.md)
-- [overview](hackathons/iquhack_2025/gaussian_reference/overview/README.md)
-- [overview](hackathons/iquhack_2025/winning_gaussian/overview/README.md)
-- [overview](hackathons/iquhack_2025/workshop/overview/README.md)
-- [overview](basic_examples/hw_aware_synthesis/hw_aware_synthesis/overview/README.md)
-- [overview](basic_examples/logical_qubits/logical_qubits_by_alice_and_bob/overview/README.md)
+- [advection_equation_2nd_place_submission](hackathons/qinnovision_2025/advection_equation/second_place/overview/README.md)
+- [advection_equation_winning_submission](hackathons/qinnovision_2025/advection_equation/winning/overview/README.md)
+- [classiq_iQuHack_2025_final](hackathons/iquhack_2025/challenge_template/overview/README.md)
+- [classiq_iQuHack_2025_final_sol](hackathons/iquhack_2025/gaussian_reference/overview/README.md)
+- [classiq_iQuHack_2025_quantum_tree_sol](hackathons/iquhack_2025/winning_gaussian/overview/README.md)
+- [WS_iQuHack_2025_final](hackathons/iquhack_2025/workshop/overview/README.md)
+- [hw_aware_synthesis](basic_examples/hw_aware_synthesis/hw_aware_synthesis/overview/README.md)
+- [logical_qubits_by_alice_and_bob](basic_examples/logical_qubits/logical_qubits_by_alice_and_bob/overview/README.md)
 - [superposition](basic_examples/superposition/README.md)
-- [overview](basics/vqe/overview/README.md)
-- [overview](paper_implementation_project/block_encoding_nd_laplacian/overview/README.md)
-- [overview](paper_implementation_project/bb84/bb84_implementation/overview/README.md)
-- [overview](paper_implementation_project/block_encoding/select_structures_be/overview/README.md)
-- [overview](paper_implementation_project/bpde/overview/README.md)
-- [overview](paper_implementation_project/explicit_quantum_circuits_for_block_encoding/quantum_walks_via_efficient_blockencoding/overview/README.md)
-- [overview](paper_implementation_project/quantum_algo_for_solving_linear_differential_equations/harmonic_oscillator/overview/README.md)
-- [overview](paper_implementation_project/quantum_compression_algorithm_for_symmetric_states/overview/README.md)
-- [overview](paper_implementation_project/quantum_state_preparation_without_coherent_arithmetic/stateprep_guassian_using_qsvt/overview/README.md)
+- [vqe](basics/vqe/overview/README.md)
+- [ND_Laplacian_BE](paper_implementation_project/block_encoding_nd_laplacian/overview/README.md)
+- [bb84_implementation](paper_implementation_project/bb84/bb84_implementation/overview/README.md)
+- [select_structures_BE](paper_implementation_project/block_encoding/select_structures_be/overview/README.md)
+- [bpde](paper_implementation_project/bpde/overview/README.md)
+- [quantum_walks_via_efficient_blockencoding](paper_implementation_project/explicit_quantum_circuits_for_block_encoding/quantum_walks_via_efficient_blockencoding/overview/README.md)
+- [harmonic_oscillator](paper_implementation_project/quantum_algo_for_solving_linear_differential_equations/harmonic_oscillator/overview/README.md)
+- [quantum_compression_algorithm_for_symmetric_states](paper_implementation_project/quantum_compression_algorithm_for_symmetric_states/overview/README.md)
+- [stateprep_guassian_using_qsvt](paper_implementation_project/quantum_state_preparation_without_coherent_arithmetic/stateprep_guassian_using_qsvt/overview/README.md)
 
 See the [full migration inventory](../MIGRATION_STATUS.md).

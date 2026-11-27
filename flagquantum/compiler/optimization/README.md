@@ -42,6 +42,29 @@ python -m pytest -q tests/hybrid_compiler/test_passes.py tests/unit/test_compile
 The example checks numerical equivalence and the recorded optimization level.
 The tests exercise analyses, admitted passes, convergence, and failure behavior.
 
+## State-preparation angle transform
+
+`state_preparation_synthesis.py` uses a normalized Walsh butterfly for the
+uniformly controlled rotation ladders. It preserves natural Walsh index order;
+the existing ladder emitter supplies Gray order. For N branch angles the
+classical transform uses O(N log N) arithmetic and O(N) temporary storage.
+The real-state path retains signed amplitudes and their absolute global phase.
+The complex target-basis path retains its existing global-phase convention.
+
+```bash
+python -m pytest -q tests/team/compiler/test_real_state_preparation_transform.py tests/team/compiler/test_state_preparation_synthesis.py tests/integration/test_synthesis_native_preparation_bindings.py
+```
+
+The tests compare independent character sums, an 8192-entry Walsh character,
+signed complete states on permuted ports, target-basis conformance and native
+preparation ownership/budget checks. A local diagnostic of private 14-qubit
+real-state lowering retained 32765 instructions and a maximum absolute state
+error below 1.2e-15. It measured construction at 10.60 seconds before and 0.092
+seconds with the butterfly while other acceptance jobs ran. These are diagnostic
+observations, not an isolated benchmark or a public capacity claim. The native
+frontend's protected 256-entry preparation profile is unchanged; admitting
+larger user vectors requires a separate approved contract.
+
 The [shared CZ synthesis experiment](../../../docs/development/COMPILER_SHARED_CZ_SYNTHESIS.md)
 was withdrawn after failing its fixed complete-workflow resource admission.
 

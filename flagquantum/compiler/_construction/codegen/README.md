@@ -7,6 +7,7 @@ The Compiler team owns conversion of verified construction programs into
 | --- | --- |
 | `register_expansion.py` | Static register call expansion and inverse composition |
 | `arithmetic.py` | Arithmetic gate emission and retain/recompute scheduling |
+| `borrowed_sum.py` | Root-input affine-sum recognition for the work-free Fourier XOR writer |
 | `registers.py` | Register-effect composition, allocation and segment cleanup evidence |
 | `boolean.py` | Boolean truth-table lowering |
 | `gate_tape.py` | Checked gate-tape expansion |

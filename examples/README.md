@@ -86,7 +86,7 @@ These examples do not use that alias:
   `arithmetic.py`, `arithmetic_candidate.py`, `benchmark.py`, `classical.py`,
   `datasets.py`, `even_phases.py`, `exact_basis.py`, `fitting.py`,
   `graph_optimization_plot.py`, `iterative.py`, `kaliski.py`, `measurements.py`,
-  `model.py`, `phases.py`, `phasing.py`, `plots.py`, `plotting.py`,
+  `model.py`, `native.py`, `phases.py`, `phasing.py`, `plots.py`, `plotting.py`,
   `portfolio_programs.py`, `presentation.py`, `problem.py`, `program.py`,
   `quantum.py`, `reference_programs.py`, `reference_rotation_basis.py`,
   `symmetry.py`, `synthesis.py`, and `workflow.py`. Their workflow entry points

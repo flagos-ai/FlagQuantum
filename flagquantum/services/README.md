@@ -66,6 +66,15 @@ separate. SynthesisError exposes checked candidate reports and flat repair
 arguments for explicit retry. No alternative constraints object can conflict
 with those ceilings.
 
+When an execution result contains the identical checked plan object,
+`CheckedExecution.verify_result` reuses that call's inspection instead of
+reconstructing and hashing the same plan twice. This reuse lasts only within
+the call: later reads validate mutable controls again, and a distinct result
+plan receives its own inspection even if its serialized identity matches.
+Resource, layout, result-shape and precision checks remain in the same boundary.
+The shared-plan mutation and distinct-plan tests are in
+`tests/team/services/test_synthesis_plan_checks.py`.
+
 `_synthesis_execution` is the private CS06-A plan-checking seam. It combines
 existing sealed-plan validation, Compiler resource limits, basis membership,
 topology and replayed layout evidence. It neither plans nor executes and contains
@@ -171,3 +180,12 @@ python -m pytest tests/team/services tests/test_service_preflight.py -q
 python tools/check_architecture.py
 python tools/check_dependency_policy.py
 ```
+
+Plan inspection also retains the identity and program fingerprint from its
+current validated Runtime payload. Immediate cost/result checking uses those
+values after checking the actual instruction layers, rather than serializing
+and hashing the same plan again through its identity property. Every later
+inspection still validates the payload, raw controls, layers, layout and costs;
+a different result plan is independently inspected. An overridden identity
+property cannot associate a result from another valid plan. No identities or
+inspection results are cached between public calls.

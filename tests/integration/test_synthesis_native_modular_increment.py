@@ -18,7 +18,7 @@ pytestmark = pytest.mark.integration
 
 
 @pytest.mark.parametrize("width", [1, 2, 3, 5])
-@pytest.mark.parametrize("offset", [-256, -9, -1, 0, 1, 3, 256])
+@pytest.mark.parametrize("offset", [-256, -17, -9, -8, -7, -1, 0, 1, 3, 7, 8, 17, 256])
 @pytest.mark.parametrize("helper", [False, True])
 def test_every_basis_wraps_without_changing_work(
     width: int, offset: int, helper: bool
@@ -38,13 +38,15 @@ def test_every_basis_wraps_without_changing_work(
         )
 
 
-@pytest.mark.parametrize("offset", [-3, -1, 0, 1, 3])
+@pytest.mark.parametrize("offset", [-17, -8, -7, -3, -1, 0, 1, 3, 7, 8, 17])
 @pytest.mark.parametrize("condition", ["coin", "coin>=2"])
+@pytest.mark.parametrize("position_width", [3, 5])
 def test_controlled_helper_matches_independent_complex_permutation(
-    offset: int, condition: str
+    offset: int, condition: str, position_width: int
 ) -> None:
     coin_width = 1 if condition == "coin" else 2
-    width = 3 + coin_width
+    width = position_width + coin_width
+    positions = 1 << position_width
     helper = (
         "@qfunc\ndef update(k:int,word:QNum):\n    word += k\n"
         "@qfunc\ndef step(direction:QNum,position:QNum):\n"
@@ -52,17 +54,17 @@ def test_controlled_helper_matches_independent_complex_permutation(
     )
     program = synth.synthesize(
         definition(
-            f"coin:Output[QNum[{coin_width}]],x:Output[QNum[3]]",
+            f"coin:Output[QNum[{coin_width}]],x:Output[QNum[{position_width}]]",
             "allocate(coin)\nallocate(x)\nhadamard_transform(coin)\nhadamard_transform(x)\n"
             "phase(0.19*coin+0.23*x+0.31,1)\nstep(coin,x)",
             helper,
         )
     )
     permutation = torch.zeros((1 << width, 1 << width), dtype=torch.complex128)
-    for coin, word in product(range(1 << coin_width), range(8)):
+    for coin, word in product(range(1 << coin_width), range(positions)):
         active = bool(coin) if coin_width == 1 else coin >= 2
-        after = (word + offset) % 8 if active else word
-        permutation[coin * 8 + after, coin * 8 + word] = torch.tensor(
+        after = (word + offset) % positions if active else word
+        permutation[coin * positions + after, coin * positions + word] = torch.tensor(
             cmath.exp(1j * (0.19 * coin + 0.23 * word + 0.31)),
             dtype=torch.complex128,
         )

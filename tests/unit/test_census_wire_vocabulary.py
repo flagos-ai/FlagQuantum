@@ -14,6 +14,7 @@ from __future__ import annotations
 import ast
 import importlib.util
 import os
+import subprocess
 import sys
 from pathlib import Path
 from typing import Any
@@ -1246,6 +1247,64 @@ def test_the_prose_noun_reading_separates_the_adr_bucket() -> None:
     assert 0 < files <= occurrences
 
 
+def test_markdown_scans_use_the_requested_tree_despite_git_worktree_config(
+    tmp_path: Path,
+) -> None:
+    root = tmp_path / "requested tree"
+    other = tmp_path / "other"
+    root.mkdir()
+    other.mkdir()
+    (root / "README.md").write_text("One wire; call(q, wires=1).\n", encoding="utf-8")
+    (root / "untracked.md").write_text("Another wire.\n", encoding="utf-8")
+    (other / "foreign.md").write_text("Foreign wires=2.\n", encoding="utf-8")
+    for arguments in (
+        ("init", "--quiet"),
+        ("add", "README.md"),
+        ("config", "core.worktree", str(other)),
+    ):
+        subprocess.run(
+            ("git", *arguments), cwd=root, check=True, capture_output=True, timeout=10
+        )
+
+    assert _CENSUS.documentation_files(root) == ("README.md", "untracked.md")
+    assert _CENSUS.documentation_census(root).sites == ("README.md::wires=",)
+    rows = dict(
+        (bucket, (occurrences, files))
+        for bucket, occurrences, files in _CENSUS.prose_noun_census(root)
+    )
+    assert rows["everything else"] == (3, 2)
+    # Selection is local to the command: the scanner does not rewrite shared Git
+    # configuration or change which tree the caller uses outside this scan.
+    configured = subprocess.run(
+        ("git", "config", "--get", "core.worktree"),
+        cwd=root,
+        check=True,
+        capture_output=True,
+        text=True,
+        timeout=10,
+    )
+    assert configured.stdout.strip() == str(other)
+
+
+@pytest.mark.parametrize("scanner", ["documentation_census", "prose_noun_census"])
+def test_markdown_scan_does_not_hide_a_missing_tracked_document(
+    tmp_path: Path, scanner: str
+) -> None:
+    document = tmp_path / "README.md"
+    document.write_text("A tracked wire.\n", encoding="utf-8")
+    for arguments in (("init", "--quiet"), ("add", "README.md")):
+        subprocess.run(
+            ("git", *arguments),
+            cwd=tmp_path,
+            check=True,
+            capture_output=True,
+            timeout=10,
+        )
+    document.unlink()
+    with pytest.raises(FileNotFoundError):
+        getattr(_CENSUS, scanner)(tmp_path)
+
+
 def test_the_prose_noun_reading_agrees_with_a_file_by_file_recount() -> None:
     """The bucket totals are a partition, so an independent recount must match.
 
@@ -1255,13 +1314,20 @@ def test_the_prose_noun_reading_agrees_with_a_file_by_file_recount() -> None:
     rather than trusted, and the two must agree exactly.
     """
 
-    import subprocess
-
     listed = subprocess.run(
-        ["git", "ls-files", "--cached", "--others", "--exclude-standard", "-z"],
+        [
+            "git",
+            f"--work-tree={_ROOT}",
+            "ls-files",
+            "--cached",
+            "--others",
+            "--exclude-standard",
+            "-z",
+        ],
         cwd=_ROOT,
         capture_output=True,
         check=True,
+        timeout=60,
     ).stdout.decode("utf-8")
     occurrences = 0
     files = 0

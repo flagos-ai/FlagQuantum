@@ -21,6 +21,11 @@ if TYPE_CHECKING:
 
 def capture_qpe(owner: _Body, node: ast.Call) -> None:
     """Keep numerical phase formats separate from raw mutable helper borrowing."""
+    owner.owner.effect_limit = 4096
+    if len(owner.operations) >= 4096:
+        _error(
+            owner.source, node, "budget", "QPE programs retain 4096 effect operations"
+        )
     require_root_storage(owner, node, unitary_region=True)
     if len(node.args) != 2:
         _error(

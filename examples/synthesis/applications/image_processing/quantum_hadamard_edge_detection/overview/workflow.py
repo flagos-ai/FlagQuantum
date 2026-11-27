@@ -97,18 +97,14 @@ def run() -> Result:
     prepared: torch.Tensor = preparation.state().flatten()
     preparation_error = float((prepared - pixels.flatten()).abs().max())
 
-    detector = build_edges()
-    coordinates = (*detector.registers["x"], *detector.registers["y"])
+    detector = build_edges(pixels.flatten().tolist())
+    coordinates = detector.registers["image"]
     wires = (*coordinates, *detector.registers["flags"])
-    width = detector.circuit.n_wires
-    circuit = fq.Circuit(width, dtype=torch.complex128)
-    circuit.compose(preparation, qubits=coordinates)
-    circuit.compose(detector.circuit, qubits=tuple(range(width)))
-    resources = estimate_resources(circuit.to_ir())
+    resources = estimate_resources(detector.circuit)
     if resources.n_qubits > 20 or resources.n_operations > 35_000:
         raise ValueError("The complete detector exceeded its declared resource bounds")
 
-    native = align_state(circuit.state(), wires)
+    native = align_state(fq.run(detector).statevector(), wires)
     exact = reference_state(pixels, native.shape[-1])
     state_error = float((native - exact).abs().max())
     work_probability = float(native[..., 1:].abs().square().sum())

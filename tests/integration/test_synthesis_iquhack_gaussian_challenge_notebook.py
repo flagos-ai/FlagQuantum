@@ -16,7 +16,12 @@ def test_original_eight_bit_starter_and_exact_reference() -> None:
     stage = workflow.build(1)
     observed = workflow.compare(stage)
     assert workflow.resources(stage.starter) == (8, 8, 1, 0)
-    assert workflow.resources(stage.reference) == (8, 509, 502, 254)
+    # Host math can make one symmetry-cancelled Walsh angle exactly zero or
+    # a roundoff-sized nonzero value. Both retain all 254 entanglers; verify the
+    # emitted sequence's exact count and its independent absolute state below.
+    width, operations, depth, entanglers = workflow.resources(stage.reference)
+    assert (width, entanglers) == (8, 254)
+    assert (operations, depth) in ((508, 501), (509, 502))
     assert len(observed.grid) == len(observed.starter) == len(observed.reference) == 256
     assert observed.starter_mse > 1e-6
     assert observed.reference_mse < 1e-25

@@ -13,7 +13,11 @@ from ..program_types import (
     prepare_bell_state,
     prepare_ghz_state,
 )
-from ..verification.register_profile import MAX_PREPARED_AMPLITUDES, register_width
+from ..verification.register_profile import (
+    MAX_FRESH_PREPARED_AMPLITUDES,
+    MAX_PREPARED_AMPLITUDES,
+    register_width,
+)
 from .python import _error
 from .views import locations, packed_locations
 
@@ -110,14 +114,17 @@ def capture_preparation(owner: _Body, node: ast.Call, function: object) -> None:
             "program.prepare",
             "use a literal real vector or a bound classical real array",
         )
-    if not 2 <= vector_size <= MAX_PREPARED_AMPLITUDES or vector_size & (
-        vector_size - 1
-    ):
+    limit = (
+        MAX_FRESH_PREPARED_AMPLITUDES
+        if function not in (inplace_prepare_amplitudes, inplace_prepare_state)
+        else MAX_PREPARED_AMPLITUDES
+    )
+    if not 2 <= vector_size <= limit or vector_size & (vector_size - 1):
         _error(
             owner.source,
             vector,
             "program.prepare",
-            "use a real vector of power-of-two length in 2..256",
+            f"use a real vector of power-of-two length in 2..{limit}",
         )
     if isinstance(vector, (ast.List, ast.Tuple)):
         values = tuple(_number(owner, item) for item in vector.elts)

@@ -162,3 +162,44 @@ def test_kernels_reject_output_alias_and_incorrect_scratch(kernel: str) -> None:
 def test_constant_kernel_does_not_coerce_invalid_integers(constant: object) -> None:
     with pytest.raises((TypeError, ValueError)):
         tuple(constant_multiply_accumulate((0,), constant, (1, 2), (3, 4)))
+
+
+@pytest.mark.parametrize(
+    "left, right",
+    [((0, 0, 0, 1), (2, 3)), ((0, 0, 0, 1), (0, 1)), ((0, 0, 1), (0, 0, 1))],
+)
+def test_read_only_xor_add_sign_aliases_full_state_and_arbitrary_targets(
+    left: tuple[int, ...], right: tuple[int, ...]
+) -> None:
+    output, scratch = (4, 5, 6, 7), (() if left == right else (8, 9, 10))
+    prefix, writes = xor_add_parts(left, right, output, scratch)
+    n = 8 + len(scratch)
+    gates = (*prefix, *writes, *reversed(prefix))
+    circuit = CircuitIR(n, gates)
+    amplitudes = torch.randn(
+        256, dtype=torch.complex128, generator=torch.Generator().manual_seed(431)
+    )
+    amplitudes /= amplitudes.norm()
+    initial = torch.zeros(1 << n, dtype=torch.complex128)
+    expected = torch.zeros_like(initial)
+    inputs = (0, 1, 2, 3)
+    for amplitude, (word, target) in zip(
+        amplitudes, product(range(16), range(16)), strict=True
+    ):
+        values = {wire: (word >> (3 - wire)) & 1 for wire in inputs}
+        a = sum(values[wire] << shift for shift, wire in enumerate(reversed(left)))
+        b = sum(values[wire] << shift for shift, wire in enumerate(reversed(right)))
+        basis = encode((word, target), (inputs, output))
+        destination = encode((word, target ^ ((a + b) & 15)), (inputs, output))
+        assert classical_apply(circuit, basis) == destination
+        assert classical_apply(circuit, destination) == basis
+        initial[int(f"{basis:0{n}b}"[::-1], 2)] = amplitude
+        expected[int(f"{destination:0{n}b}"[::-1], 2)] = amplitude
+    observed = (
+        fq.Circuit.from_ir(circuit, inputs=initial, dtype=torch.complex128)
+        .state()
+        .flatten()
+    )
+    torch.testing.assert_close(observed, expected, atol=1e-12, rtol=0)
+    with pytest.raises(ValueError, match="injective"):
+        tuple(square_accumulate(left, output, (8, 9, 10, 11)))

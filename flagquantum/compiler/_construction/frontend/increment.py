@@ -42,11 +42,20 @@ def _emit(
                     (control[0], target[0][0]),
                     indices=(control[1], target[0][1]),
                 )
-    for _ in range(abs(offset)):
-        bits = range(width) if offset < 0 else reversed(range(width))
+    # Signed binary places update only their suffix: e.g. 7 = 8 - 1. The
+    # arithmetic is modulo the word width, so a carry beyond it is discarded.
+    remaining = offset
+    for shift in range(width):
+        if not remaining:
+            break
+        digit = 2 - remaining % 4 if remaining % 2 else 0
+        remaining = (remaining - digit) // 2
+        if not digit:
+            continue
+        bits = range(shift, width) if digit < 0 else reversed(range(shift, width))
         for bit in bits:
             selected = (() if control is None else (control,)) + tuple(
-                target[lower] for lower in range(bit)
+                target[lower] for lower in range(shift, bit)
             )
             if selected:
                 selected += (target[bit],)

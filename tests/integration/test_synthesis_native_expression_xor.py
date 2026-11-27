@@ -295,6 +295,36 @@ def test_borrowed_xor_budgets_use_lowered_resources(constraint: str) -> None:
             synth.synthesize(entry, memory_limit_bytes=16)
 
 
+def test_unsigned_xor_zero_work_candidate_preserves_every_target_column() -> None:
+    entry = definition(
+        "a:Output[QNum[2]],b:Output[QNum[2]],result:Output[QNum[3]]",
+        "allocate(a)\nallocate(b)\nallocate(result)\nresult ^= a+b",
+    )
+    default = synth.synthesize(entry)
+    constrained = synth.synthesize(entry, max_qubits=7, max_workspace=0)
+    assert constrained.report["workspace_qubits"] == 0
+    assert constrained.report["resources"].n_qubits == 7
+    assert (
+        constrained.report["resources"].n_operations
+        > default.report["resources"].n_operations
+    )
+    actual = (
+        fq.Circuit.from_ir(
+            constrained.circuit,
+            inputs=torch.eye(128, dtype=torch.complex128),
+            bsz=128,
+            dtype=torch.complex128,
+        )
+        .state()
+        .reshape(128, 128)
+    )
+    indices = torch.arange(128)
+    a, b, target = indices >> 5, (indices >> 3) & 3, indices & 7
+    expected = torch.zeros_like(actual)
+    expected[indices, (indices & ~7) | (target ^ (a + b))] = 1
+    torch.testing.assert_close(actual, expected, atol=1e-12, rtol=0)
+
+
 def test_xor_write_invalidates_a_dependent_cleanup_proof() -> None:
     builder, x, _, flag, graph = pending()
     identity = capture(flag_value, {"flag": 1})
@@ -343,7 +373,7 @@ def test_verifier_refuses_formatted_words_without_trusting_capture() -> None:
         verify_register_program(forged, functions)
 
 
-@pytest.mark.parametrize("constraint", ["operations", "qubits", "workspace", "memory"])
+@pytest.mark.parametrize("constraint", ["operations", "qubits", "memory"])
 def test_xor_budgets_use_actual_lowering(constraint: str) -> None:
     entry = definition(
         "a:Output[QNum[2]],b:Output[QNum[2]],result:Output[QNum[3]]",
@@ -354,7 +384,5 @@ def test_xor_budgets_use_actual_lowering(constraint: str) -> None:
             synth.synthesize(entry, max_operations=1)
         elif constraint == "qubits":
             synth.synthesize(entry, max_qubits=6)
-        elif constraint == "workspace":
-            synth.synthesize(entry, max_workspace=0)
         else:
             synth.synthesize(entry, memory_limit_bytes=16)

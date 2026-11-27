@@ -47,7 +47,8 @@ def _check_limits(limits: CircuitLimits, resources: ResourceEstimate) -> None:
 _UNBOUNDED_LIMITS = CircuitLimits()
 
 
-def _program(plan: ExecutionPlan) -> CircuitIR:
+def _program_identity(plan: ExecutionPlan) -> tuple[CircuitIR, str, str]:
+    """Validate the current plan and retain this call's checked identity values."""
     if not isinstance(plan, ExecutionPlan):
         raise TypeError("inspection requires an existing ExecutionPlan from fq.plan")
     payload = plan_to_dict(plan)  # Validate through Runtime, not a subclass override.
@@ -80,6 +81,9 @@ def _program(plan: ExecutionPlan) -> CircuitIR:
             "require one exact local CPU torch statevector without noise or fallback",
         )
     program_fingerprint = fingerprints["program"]
+    plan_identity = payload["identity"]
+    assert isinstance(program_fingerprint, str)
+    assert isinstance(plan_identity, str)
     del payload, fingerprints
     if plan.state_bytes != decision["state_bytes"]:
         raise ExecutionContractError(
@@ -221,7 +225,7 @@ def _program(plan: ExecutionPlan) -> CircuitIR:
         raise ExecutionContractError(
             "execution.profile", "density execution needs a checked full reset"
         )
-    return actual
+    return actual, plan_identity, program_fingerprint
 
 
 def _controls(plan: ExecutionPlan, program: CircuitIR) -> str:
@@ -371,10 +375,10 @@ class CheckedExecution:
     numeric_formats: tuple[tuple[str, bool, int], ...] = ()
 
     def _check(self, plan: ExecutionPlan) -> CircuitIR:
-        program = _program(plan)
+        program, identity, program_hash = _program_identity(plan)
         if (
-            plan.identity != self._identity
-            or program.content_hash != self._program_hash
+            identity != self._identity
+            or program_hash != self._program_hash
             or _controls(plan, program) != self._controls_json
         ):
             raise ExecutionContractError(
@@ -393,12 +397,15 @@ class CheckedExecution:
 
     def verify_result(self, result: ExecutionResult) -> ResourceEstimate:
         """Verify association and actual executable costs without planning or running."""
-        self._check(self.plan)
+        program = self._check(self.plan)
         if not isinstance(result.plan, ExecutionPlan):
             raise ExecutionContractError(
                 "execution.identity", "result has no matching executable plan"
             )
-        program = self._check(result.plan)
+        # A normal execution returns the same sealed plan. Reuse this call's
+        # inspection only; a later call still reads every mutable control again.
+        if result.plan is not self.plan:
+            program = self._check(result.plan)
         state = result.state
         expected_dtype = (
             torch.complex128
@@ -490,7 +497,7 @@ def _inspect_execution_with_resources(
     """
     if not isinstance(limits, CircuitLimits):
         raise TypeError("limits must be CircuitLimits")
-    program = _program(plan)
+    program, identity, program_hash = _program_identity(plan)
     gates = None if basis is None else require_basis(basis)
     _check_basis(program, gates)
     layout = _layout(program, plan, coupling)
@@ -525,8 +532,8 @@ def _inspect_execution_with_resources(
         gates,
         coupling,
         MappingProxyType(mapped),
-        plan.identity,
-        program.content_hash,
+        identity,
+        program_hash,
         _controls(plan, program),
     )
     return checked, resources

@@ -5,7 +5,9 @@ import math
 from pathlib import Path
 
 import pytest
+import torch
 
+import flagquantum as fq
 from examples.synthesis.community.hackathons.iquhack_2025.winning_gaussian.overview import (
     workflow,
 )
@@ -22,6 +24,28 @@ def test_generative_window_and_full_signed_state() -> None:
     assert actual.mse < 3e-8
     assert actual.source_state_error < 3e-12 and actual.converted_state_error < 3e-12
     assert actual.sample in actual.grid
+
+
+@pytest.mark.parametrize("width", [2, 5, 8])
+def test_native_logical_ports_match_independent_circuit_and_complex_reference(
+    width: int,
+) -> None:
+    program = workflow.native_program(width)
+    state = fq.run(program)
+    expected = workflow.reference_circuit(width).state().flatten()
+    torch.testing.assert_close(
+        state.statevector().flatten(), expected, atol=3e-12, rtol=0
+    )
+    torch.testing.assert_close(expected, workflow._reference(width), atol=3e-12, rtol=0)
+    assert program.circuit.n_wires == width
+    assert sum(
+        program.probabilities(state, registers=("q",)).values()
+    ) == pytest.approx(1)
+
+
+def test_native_execution_budget_is_distinct_from_large_compile_only_stage() -> None:
+    with pytest.raises(ValueError, match="2 through 18"):
+        workflow.native_program(127)
 
 
 def test_127_wire_full_schedule_and_export(tmp_path: Path) -> None:

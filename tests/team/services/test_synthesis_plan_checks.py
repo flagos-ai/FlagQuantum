@@ -254,6 +254,36 @@ def test_changed_raw_controls_cannot_hide_behind_the_sealed_payload() -> None:
         inspect_execution(replace(plan, state_mode="density_matrix"))
 
 
+def test_repeated_result_checks_revalidate_shared_plan_controls() -> None:
+    plan = fq.plan(fq.Circuit(1).h(0), options=_options())
+    checked = inspect_execution(plan)
+    result = fq.run(plan)
+    assert result.plan is plan
+    assert checked.verify_result(result).n_operations == 1
+    assert checked.verify_result(result).n_operations == 1
+
+    assert plan.runtime_config is not None
+    plan.runtime_config["drawing_style"] = "changed_after_readout"
+    with pytest.raises(ExecutionContractError, match="execution.identity"):
+        checked.verify_result(result)
+
+
+def test_distinct_equivalent_result_plan_retains_its_own_checks() -> None:
+    plan = fq.plan(fq.Circuit(1).h(0), options=_options())
+    checked = inspect_execution(plan)
+    result = fq.run(plan)
+    replay = ExecutionPlan.from_json(plan.to_json())
+    assert replay is not plan
+    replayed_result = replace(result, plan=replay)
+    assert checked.verify_result(replayed_result).n_operations == 1
+
+    assert replay.runtime_config is not None
+    replay.runtime_config["drawing_style"] = "changed_foreign_plan"
+    with pytest.raises(ExecutionContractError, match="execution.identity"):
+        checked.verify_result(replayed_result)
+    assert checked.verify_result(result).n_operations == 1
+
+
 @pytest.mark.parametrize("damage", ["program", "fingerprint", "decision", "extension"])
 @pytest.mark.parametrize("boundary", ["inspection", "resources", "result"])
 def test_each_boundary_revalidates_changed_sealed_payload(
@@ -421,3 +451,25 @@ def test_inspection_never_plans_compiles_or_executes(
     assert checked.resources == compiler.estimate_resources(
         plan_execution_program(plan)
     )
+
+
+def test_identity_override_cannot_associate_a_different_valid_plan() -> None:
+    source = fq.Circuit(1).h(0)
+    plan = fq.plan(source, options=_options(memory_limit_bytes=1024**2))
+    other = fq.plan(source, options=_options(memory_limit_bytes=2 * 1024**2))
+    assert plan.identity != other.identity
+    assert plan.program_fingerprint == other.program_fingerprint
+    checked = inspect_execution(plan)
+    result = fq.run(plan)
+
+    class MisleadingIdentityPlan(ExecutionPlan):
+        @property
+        def identity(self) -> str:
+            return plan.identity
+
+    misleading = MisleadingIdentityPlan(
+        **{field.name: getattr(other, field.name) for field in fields(other)}
+    )
+    with pytest.raises(ExecutionContractError, match="execution.identity"):
+        checked.verify_result(replace(result, plan=misleading))
+    assert checked.verify_result(result).n_operations == 1

@@ -7,9 +7,12 @@ from pathlib import Path
 import torch
 
 import flagquantum as fq
+from flagquantum import synth
 from flagquantum.compiler import ResourceEstimate, estimate_resources
 from flagquantum.compiler.basis_conversion import convert_basis
 from flagquantum.core.ir import CircuitIR
+
+from .quantum import gaussian_tree
 
 SIMULATED_WIDTH = 8
 SYNTHESIS_WIDTH = 127
@@ -42,12 +45,26 @@ def _angle(index: int) -> float:
     return 2 * math.atan(math.exp(-2.5 * index**2))
 
 
-def build(resolution: int, *, ceiling: int) -> Compiled:
-    """Keep the tuned product preparation and truncated Fourier gate schedule."""
-    if type(resolution) is not int or not 2 <= resolution <= ceiling <= SYNTHESIS_WIDTH:
-        raise ValueError(
-            "the original solution needs a width within its declared stage cap"
-        )
+def native_program(resolution: int) -> synth.Program:
+    """Build a bounded executable stage through named logical qfunc ports."""
+    if type(resolution) is not int or not 2 <= resolution <= 18:
+        raise ValueError("native executable stages support 2 through 18 qubits")
+    return synth.synthesize(
+        gaussian_tree,
+        classical_inputs={
+            "width": resolution,
+            "rotations": [_angle(i) for i in range(resolution)],
+            "phases": [math.ldexp(math.tau, -(i + 2)) for i in range(8)],
+            "tweak": TWEAK,
+        },
+        max_qubits=resolution,
+        max_workspace=0,
+        memory_limit_bytes=16 * 2**18,
+    )
+
+
+def reference_circuit(resolution: int) -> fq.Circuit:
+    """Retain the independent Circuit schedule and original compile-only stage."""
     output = fq.Circuit(resolution, dtype=torch.complex128)
     little_endian = tuple(range(resolution - 1, -1, -1))
     for i, wire in enumerate(little_endian):
@@ -65,6 +82,20 @@ def build(resolution: int, *, ceiling: int) -> Compiled:
             if phase > PHASE_FLOOR:
                 output.cphase(little_endian[k], wire, theta=phase)
     output.x(little_endian[0])
+    return output
+
+
+def build(resolution: int, *, ceiling: int) -> Compiled:
+    """Use qfunc for executable widths; retain the explicit large Circuit stage."""
+    if type(resolution) is not int or not 2 <= resolution <= ceiling <= SYNTHESIS_WIDTH:
+        raise ValueError(
+            "the original solution needs a width within its declared stage cap"
+        )
+    output = (
+        fq.Circuit.from_ir(native_program(resolution).circuit, dtype=torch.complex128)
+        if resolution <= 18
+        else reference_circuit(resolution)
+    )
     program = convert_basis(output, gates=BASIS, max_added_operations=20_000).program
     return Compiled(output, program, estimate_resources(program))
 

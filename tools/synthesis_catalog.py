@@ -313,6 +313,11 @@ def render(catalog: Catalog) -> dict[Path, str]:
     lines = [
         "# Native FlagQuantum example library",
         "",
+        "Start with the [FlagQuantum learning path](tutorials/learning_path/README.md).",
+        "The case library below records algorithm reproductions and migration acceptance;",
+        "it is not a certificate that every case is a finished introductory tutorial.",
+        "See the [teaching review plan](NOTEBOOK_UX_PLAN.md).",
+        "",
         "User examples contain native Python programs and independent Circuit comparisons.",
         "Original source files and importer launchers are test/development evidence, not examples.",
         "",
@@ -332,6 +337,10 @@ def render(catalog: Catalog) -> dict[Path, str]:
         lines += [f"## {category.capitalize()} ({len(entries)} native programs)", ""]
         category_lines = [
             "# " + category.capitalize(),
+            "",
+            "Start with the [FlagQuantum learning path](../tutorials/learning_path/README.md).",
+            "These cases retain migration acceptance separately from the",
+            "[teaching review](../NOTEBOOK_UX_PLAN.md).",
             "",
             "Native FlagQuantum programs currently available:",
             "",
@@ -369,10 +378,9 @@ def render(catalog: Catalog) -> dict[Path, str]:
             lines += ["", "Validated local Notebook workflows:", ""]
             for group in workflows:
                 path = Path(group["native_program"]["path"]).with_name("README.md")
-                category_lines.append(
-                    "- " + _link(str(path), base / category, path.parent.name)
-                )
-                lines.append("- " + _link(str(path), base, path.parent.name))
+                label = Path(group["id"]).name
+                category_lines.append("- " + _link(str(path), base / category, label))
+                lines.append("- " + _link(str(path), base, label))
             lines.append("")
         tracked = {case["native_example"] for case in available}
         tracked.update(group["native_program"]["path"] for group in workflows)

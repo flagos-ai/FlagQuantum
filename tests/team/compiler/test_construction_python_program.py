@@ -213,8 +213,8 @@ def test_captured_call_specialization_and_effect_budgets_are_bounded() -> None:
     definitions.append("@qfunc\ndef main(x: Output[QNum]):\n    f0(x)\n")
     with pytest.raises(HybridVerificationError, match="32"):
         capture_program(program_definition("\n".join(definitions)))
-    body = "    hadamard_transform(x)\n" * 16
-    with pytest.raises(HybridVerificationError, match="4096"):
+    body = "    hadamard_transform(x)\n" * 64
+    with pytest.raises(HybridVerificationError, match="16384"):
         capture_program(
             program_definition(
                 "@qfunc\ndef main(x: Output[QNum[256]]):\n    allocate(x)\n" + body

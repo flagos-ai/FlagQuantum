@@ -3,6 +3,11 @@
 Write computation, quantum data and constraints in FlagQuantum Python. The compiler
 constructs the circuit; examples expose named registers rather than physical wires.
 
+Start with the [six-lesson FlagQuantum learning path](tutorials/learning_path/README.md).
+The catalogs below retain algorithm reproductions and migration evidence;
+acceptance is separate from tutorial quality. See the
+[improvement plan](NOTEBOOK_UX_PLAN.md) and [teaching-surface audit](NOTEBOOK_UX_AUDIT.md).
+
 - [Algorithms](algorithms/README.md)
 - [Applications](applications/README.md)
 - [Community](community/README.md)

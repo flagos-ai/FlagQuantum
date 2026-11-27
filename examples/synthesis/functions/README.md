@@ -1,5 +1,9 @@
 # Functions
 
+Start with the [FlagQuantum learning path](../tutorials/learning_path/README.md).
+These cases retain migration acceptance separately from the
+[teaching review](../NOTEBOOK_UX_PLAN.md).
+
 Native FlagQuantum programs currently available:
 
 - [arithmetic_expression](arithmetic/arithmetic_expression/README.md)
@@ -61,35 +65,35 @@ Native FlagQuantum programs currently available:
 ## Validated local Notebook workflows
 
 - [arithmetic_expression_example](arithmetic/arithmetic_expression/arithmetic_expression_example/README.md)
-- [overview](arithmetic/bitwise_and/overview/README.md)
+- [bitwise_and_example](arithmetic/bitwise_and/overview/README.md)
 - [bitwise_invert_example](arithmetic/bitwise_invert/bitwise_invert_example/README.md)
-- [overview](arithmetic/bitwise_or/overview/README.md)
-- [overview](arithmetic/bitwise_xor/overview/README.md)
-- [overview](arithmetic/comparator/overview/README.md)
-- [overview](arithmetic/extremum/overview/README.md)
+- [bitwise_or_example](arithmetic/bitwise_or/overview/README.md)
+- [bitwise_xor_example](arithmetic/bitwise_xor/overview/README.md)
+- [comparator_example](arithmetic/comparator/overview/README.md)
+- [extremum_example](arithmetic/extremum/overview/README.md)
 - [modular_exp_example](arithmetic/modular_exp/modular_exp_example/README.md)
 - [modulo_example](arithmetic/modulo/modulo_example/README.md)
-- [overview](arithmetic/multiplication/overview/README.md)
-- [overview](arithmetic/negation/overview/README.md)
-- [overview](arithmetic/subtraction/overview/README.md)
-- [overview](mcx/mcx_example/overview/README.md)
+- [multiplication](arithmetic/multiplication/overview/README.md)
+- [negation_example](arithmetic/negation/overview/README.md)
+- [subtraction_example](arithmetic/subtraction/overview/README.md)
+- [mcx_example](mcx/mcx_example/overview/README.md)
 - [exact_amplitude_amplification](amplitude_amplification/exact_amplitude_amplification/README.md)
-- [overview](grover_operator/overview/README.md)
+- [grover_operator](grover_operator/overview/README.md)
 - [hadamard_transform](hadamard_transform/README.md)
-- [overview](linear_pauli_rotations/overview/README.md)
-- [overview](qct_qst/overview/README.md)
+- [linear_pauli_rotations](linear_pauli_rotations/overview/README.md)
+- [qct_qst](qct_qst/overview/README.md)
 - [qft](qft/README.md)
-- [overview](qpe/overview/README.md)
-- [overview](qsvt/overview/README.md)
+- [qpe](qpe/overview/README.md)
+- [qsvt](qsvt/overview/README.md)
 - [prepare_bell_state](state_preparation/prepare_bell_state/README.md)
-- [overview](state_preparation/prepare_exponential_state/overview/README.md)
+- [prepare_exponential_state](state_preparation/prepare_exponential_state/overview/README.md)
 - [prepare_ghz_state](state_preparation/prepare_ghz_state/README.md)
-- [overview](state_preparation/prepare_partial_uniform_state/overview/README.md)
-- [overview](data_encoding/variational_data_encoding/overview/README.md)
-- [overview](hamiltonian_evolution/qdrift/overview/README.md)
+- [prepare_partial_uniform_state](state_preparation/prepare_partial_uniform_state/overview/README.md)
+- [variational_data_encoding](data_encoding/variational_data_encoding/overview/README.md)
+- [qdrift](hamiltonian_evolution/qdrift/overview/README.md)
 - [suzuki_trotter](hamiltonian_evolution/suzuki_trotter/README.md)
 - [prepare_state_and_amplitudes](state_preparation/prepare_state_and_amplitudes/README.md)
-- [overview](standard_gates/overview/README.md)
+- [standard_gates](standard_gates/overview/README.md)
 - [unitary](unitary/README.md)
 
 See the [full migration inventory](../MIGRATION_STATUS.md).

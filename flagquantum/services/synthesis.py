@@ -377,8 +377,9 @@ class Program:
             raise ValueError(
                 "numeric reading requires verified native numeric declarations for every selected register"
             )
-        raw = self.probabilities(
+        raw = _probabilities(
             result,
+            checked=self._checked,
             registers=registers,
             max_bits=max_bits,
             max_keys=max_keys,

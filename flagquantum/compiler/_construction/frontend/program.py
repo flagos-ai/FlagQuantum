@@ -123,6 +123,7 @@ class _Capture:
         self.inline_calls = 0
         self.loop_steps = 0
         self.expanded_callbacks = 0
+        self.effect_limit = 16384
         self.unitary_templates: dict[
             tuple[int, tuple[_Port, ...], tuple[tuple[str, ClassicalValue], ...]],
             HybridProgram,
@@ -366,9 +367,12 @@ class _Body:
         **attributes: object,
     ) -> None:
         flush_evolutions(self)
-        if len(self.operations) >= 4096:
+        if len(self.operations) >= self.owner.effect_limit:
             _error(
-                self.source, node, "budget", "program exceeds 4096 effect operations"
+                self.source,
+                node,
+                "budget",
+                f"program exceeds {self.owner.effect_limit} effect operations",
             )
         following = Value(ValueId(self.name, self.counter), QUANTUM_EFFECT)
         self.counter += 1
@@ -1236,5 +1240,5 @@ def capture_program(
     owner = _Capture(definition, bind_inputs(definition, classical_inputs))
     program, _ = owner.build(definition, root=True)
     functions = tuple(owner.functions)
-    verify_register_program(program, functions)
+    verify_register_program(program, functions, max_effects=owner.effect_limit)
     return program, functions

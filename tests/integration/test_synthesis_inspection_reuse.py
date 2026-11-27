@@ -16,15 +16,15 @@ pytestmark = pytest.mark.integration
 def test_native_construction_inspects_each_required_boundary_once(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
-    inspect = execution._program
+    inspect = execution._program_identity
     calls = 0
 
-    def observed(plan: fq.ExecutionPlan) -> CircuitIR:
+    def observed(plan: fq.ExecutionPlan) -> tuple[CircuitIR, str, str]:
         nonlocal calls
         calls += 1
         return inspect(plan)
 
-    monkeypatch.setattr(execution, "_program", observed)
+    monkeypatch.setattr(execution, "_program_identity", observed)
     workload = NativeWorkload("qaoa")
     program = workload.build()
     # Initial admission and final product validation remain separate checks;

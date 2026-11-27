@@ -692,6 +692,26 @@ views, array writes, formatted arithmetic and mutable-helper control/inverse
 remain explicit gaps. No additional native corpus coverage is credited merely
 for this primitive.
 
+## Work-free native affine sums
+
+Maturity remains `development_evidence`. When the default ripple sum exceeds a
+requested work/width ceiling, a verified affine sum of distinct root inputs may
+borrow and restore one operand using an untruncated Fourier XOR writer. It uses
+one arbitrary output overflow bit and no extra clean work. Full masks, unsigned
+power-of-two shifts and one-bit signed extension are recognized from verified
+SSA; temporary operands, aliases and unproved widths are not admitted.
+
+The original signed workshop now executes at 14 total qubits with 89 logical
+instructions, including preparation. Its default remains 20 qubits with 47
+instructions. This resource trade-off is not a runtime or hardware-performance
+claim. Only native logical targets are admitted for the Fourier writer; basis
+conversion and routing remain refused until absolute phase is established.
+Tests cover every original arbitrary XOR target, full complex coherence,
+smaller complete signed/unsigned unitary domains, inverse cleanup and a native
+compute/phase/uncompute workflow. See
+`tests/team/compiler/test_construction_borrowed_sum.py` and
+`tests/integration/test_synthesis_iquhack_workshop_notebook.py`.
+
 ## Native modular walk updates
 
 Maturity: `development_evidence`. Native bounded static modular increments and
@@ -831,3 +851,36 @@ in `tests/integration/test_synthesis_register_addition.py`. Existing compiler
 MCX workspace and budget checks remain authoritative. Signed/fractional words,
 compound addends, aliasing and two-register controlled helpers remain outside
 this profile. This primitive does not itself credit a complete Notebook.
+
+
+## Approved bounded native preparation and composition
+
+Maturity: `development_evidence`, local `single_device_fast_path`. The user
+approved the two bounded capacity proposals on November 21, 2026. Fresh native
+real amplitude/probability preparation and each root classical array admit up to
+16384 entries; the aggregate root binding budget is also 16384 including scalars.
+Helper bindings retain 4096 elements. Existing Qmod and in-place preparation
+limits remain unchanged; this is not arbitrary-sized state loading.
+
+Ordinary native composition separates at most 16384 expanded effects from the
+4096 structural-node guard. QPE, Qmod and direct register callers retain the
+previous combined limit. Static source, loop, helper, matrix, qubit, operation
+and memory guards still apply. Closed composition reuses exact rotation merging,
+identity removal and self-inverse cancellation before the next bounded emission.
+No new public entry point or generic QSVT algorithm API is introduced.
+
+The original 128x128 image executes one native qfunc with twenty total qubits,
+three work bits and 33130 logical instructions. Both original nozzle inverses
+also execute complete native streams: degree 101 uses thirteen qubits/four work
+bits/40447 instructions, and degree 255 uses twelve/three/87012. Full complex
+states include absolute phases and non-success branches; work bits return to zero.
+The unchanged 100000-instruction ceiling remains in force. Process lifetime RSS
+is measured separately from the Runtime planned-state memory budget; neither
+logical counts nor local diagnostics establish hardware efficiency or speedup.
+
+See `tests/integration/test_synthesis_native_preparation_capacity.py`,
+`tests/integration/test_synthesis_native_effect_capacity.py`,
+`tests/integration/test_synthesis_image_edge_detection_notebook.py` and
+`tests/integration/test_synthesis_cfd_qsvt_notebook.py`. The 212 migrated workflows,
+six teaching lessons and 216 original/six alternative Qmod paths remain separate
+acceptance denominators. Prior smaller-capacity records above are historical.

@@ -31,15 +31,17 @@ def print_report(label: str, result: Result) -> None:
     )
     print(f"{label} direct solution L2 error:", result.solution_l2)
     print(f"{label} projection probability:", result.projection_probability)
+    print(f"{label} residual work probability:", result.workspace_probability)
     print(
         f"{label} physical bits and represented operations:",
         result.resources.n_qubits,
         result.resources.n_operations,
     )
     print(
-        f"{label} build and execution seconds:",
+        f"{label} build, execution and named-readout seconds:",
         result.build_seconds,
         result.execute_seconds,
+        result.readout_seconds,
     )
 
 

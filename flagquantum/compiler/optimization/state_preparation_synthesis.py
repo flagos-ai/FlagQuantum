@@ -244,15 +244,20 @@ def _walsh(angles: Sequence[float], n_controls: int) -> list[float]:
     is therefore the Walsh transform `2**-k * sum_q (-1)**popcount(p & q) *
     gamma[q]` of the branch angles.
     """
-    scale = float(2**n_controls)
-    return [
-        sum(
-            (-1.0 if bin(step & branch).count("1") % 2 else 1.0) * angles[branch]
-            for branch in range(2**n_controls)
-        )
-        / scale
-        for step in range(2**n_controls)
-    ]
+    # Butterfly stages preserve the Walsh index order; the caller applies Gray
+    # order when emitting the ladder. Work is O(N log N), with O(N) storage.
+    length = 1 << n_controls
+    transformed = [angles[index] for index in range(length)]
+    stride = 1
+    while stride < length:
+        for start in range(0, length, 2 * stride):
+            for offset in range(stride):
+                left = start + offset
+                right = left + stride
+                low, high = transformed[left], transformed[right]
+                transformed[left], transformed[right] = low + high, low - high
+        stride *= 2
+    return [value / length for value in transformed]
 
 
 def _control_walk(controls: Sequence[int]) -> tuple[list[int], list[int]]:

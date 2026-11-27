@@ -1,17 +1,21 @@
 """Exact arithmetic with retained or dependency-aware cleanup/recomputation.
 
-Only verified unsigned expressions enter here. Both schedules compute into an
-arbitrary XOR target and restore every supplied zero workspace qubit. The same
-X/CX/CCX kernels serve forward and inverse computation without hidden phase.
+Only verified raw-word expressions enter here. Both schedules compute into an
+arbitrary XOR target and restore every supplied zero workspace qubit. Default
+X/CX/CCX kernels serve forward and inverse computation without hidden phase. A
+width-constrained affine sum may use an untruncated Fourier writer that borrows
+and restores a root input word without clean workspace.
 """
 
 from __future__ import annotations
 
+import math
 from collections import Counter
 from collections.abc import Iterable, Mapping, Sequence
 from dataclasses import dataclass, field, replace
 from typing import Literal
 
+from ....core._composition import inverted_instruction
 from ....core.ir import CircuitIR, Instruction
 from ..._hybrid.model import INDEX, HybridProgram, Operation, ValueId
 from ..._hybrid.verifier import Diagnostic, HybridVerificationError
@@ -31,6 +35,7 @@ from ..analysis.lifetimes import LifetimeAnalysis, analyze_lifetimes
 from ..analysis.ranges import unsigned_width
 from ..verification.bindings import OutputMode, verify_bindings
 from ..verification.profile import _fail, _positive_integer, uint_type
+from .borrowed_sum import borrowed_sum_instructions
 
 _WireValue = tuple[int, ...] | int
 Schedule = Literal["retain", "recompute"]
@@ -117,7 +122,26 @@ def adjoint_value_candidate(candidate: ArithmeticCandidate) -> ArithmeticCandida
     """Reverse the selected clean value circuit and its actual allocation events."""
     computes = Counter(e.value for e in candidate.events if e.action == "compute")
     cleans = Counter(e.value for e in candidate.events if e.action == "uncompute")
-    if not _self_adjoint_gates(candidate.circuit.instructions) or computes != cleans:
+    gates = candidate.circuit.instructions
+    borrowed_sum = any(
+        rule == "terminal_borrowed_fourier_sum"
+        for _, rule in candidate.implementation_rules
+    )
+    fourier_gates = borrowed_sum and all(
+        gate.matrix is None
+        and not gate.metadata
+        and (
+            (gate.name in {"h", "cx", "swap"} and not gate.params)
+            or (
+                gate.name == "cphase"
+                and set(gate.params) == {"theta"}
+                and isinstance(gate.params["theta"], float)
+                and math.isfinite(gate.params["theta"])
+            )
+        )
+        for gate in gates
+    )
+    if not (_self_adjoint_gates(gates) or fourier_gates) or computes != cleans:
         _fail("register.adjoint", "cleanup requires a clean exact value candidate")
     events = tuple(
         replace(event, action="uncompute" if event.action == "compute" else "compute")
@@ -127,7 +151,11 @@ def adjoint_value_candidate(candidate: ArithmeticCandidate) -> ArithmeticCandida
         candidate,
         circuit=replace(
             candidate.circuit,
-            instructions=tuple(reversed(candidate.circuit.instructions)),
+            instructions=(
+                tuple(inverted_instruction(gate) for gate in reversed(gates))
+                if fourier_gates
+                else tuple(reversed(gates))
+            ),
         ),
         events=events,
         recomputations=(
@@ -209,6 +237,40 @@ def _bitwise(
             yield Instruction(("x", "cx", "ccx")[len(ports) - 1], ports)
 
 
+def _terminal_addends(
+    operations: Sequence[Operation],
+) -> tuple[ValueId, ValueId] | None:
+    if len(operations) < 2:
+        return None
+    final = operations[-2]
+    if final.results[0].id != operations[-1].operands[0].id:
+        return None
+    if final.name == "qint.add":
+        return final.operands[0].id, final.operands[1].id
+    if final.name != "qint.subtract_mod":
+        return None
+    definitions = {op.results[0].id: op for op in operations[:-1]}
+    negative = definitions.get(final.operands[1].id)
+    if (
+        negative is None
+        or negative.name != "qint.subtract_mod"
+        or negative.results[0].type != final.results[0].type
+    ):
+        return None
+    zero = definitions.get(negative.operands[0].id)
+    if zero is None or zero.name != "arith.constant" or zero.attributes["value"] != 0:
+        return None
+    # Equal moduli make a - (0 - b) exactly (a + b) mod 2**width.
+    # Keep both original operand maps within that width; no numeric narrowing.
+    width = final.results[0].type.parameters[0]
+    addends = final.operands[0], negative.operands[1]
+    if any(
+        value.type != INDEX and value.type.parameters[0] > width for value in addends
+    ):
+        return None
+    return addends[0].id, addends[1].id
+
+
 def _emit_arithmetic(
     functions: Sequence[HybridProgram],
     inputs: Mapping[ValueId, Sequence[int]],
@@ -260,17 +322,35 @@ def _emit_arithmetic(
     events: list[ScheduleEvent] = []
     active: dict[ValueId, _Allocation] = {}
     bound_inputs = {key: tuple(value) for key, value in inputs.items()}
+    immutable_inputs = frozenset(
+        wire for bits in bound_inputs.values() for wire in bits
+    )
     counts: dict[ValueId, int] = {}
     ensuring: set[ValueId] = set()
     returned = block.operations[-1].operands[0].id
     final = block.operations[-2] if len(block.operations) > 1 else None
+    terminal_addends = _terminal_addends(block.operations)
     direct_output = (
         implementation == "arithmetic"
         and output_mode == "value"
-        and final is not None
-        and final.name == "qint.add"
-        and final.results[0].id == returned
+        and terminal_addends is not None
     )
+    needed: set[ValueId] | None = None
+    if (
+        direct_output
+        and terminal_addends is not None
+        and final is not None
+        and final.name == "qint.subtract_mod"
+    ):
+        # The terminal writer bypasses the modular negation. Retain any shared
+        # dependency still read by an addend, including a separately used negation.
+        needed = set()
+        pending = list(terminal_addends)
+        while pending:
+            key = pending.pop()
+            if key not in needed:
+                needed.add(key)
+                pending.extend(analysis.values[key].dependencies)
     rules: list[tuple[ValueId, str]] = []
     phase_product = (
         final
@@ -374,7 +454,65 @@ def _emit_arithmetic(
             return "constant_shift_add"
         return None
 
+    def borrowed_input_bits(op: Operation) -> tuple[int, ...] | None:
+        # Root inputs outlive every compute and cleanup. Borrowing temporary SSA
+        # storage would require pinning it across recompute erasures.
+        if (
+            implementation != "arithmetic"
+            or op.name != "qint.bitwise"
+            or op.attributes["operator"] != "&"
+        ):
+            return None
+        width = op.results[0].type.parameters[0]
+        signs = op.attributes.get("signed", (False, False))
+        for position in (0, 1):
+            variable, mask = op.operands[position], op.operands[1 - position]
+            if (
+                variable.id not in bound_inputs
+                or mask.type != INDEX
+                or bound(mask.id) != (1 << width) - 1
+            ):
+                continue
+            bits = bound_inputs[variable.id][-width:]
+            if signs[position] and width > len(bits):
+                # Copy-based readers and the read-only terminal XOR writer
+                # accept sign aliases. In-place kernels still require copies.
+                if any(
+                    block.operations[use].name
+                    not in {"qint.bitwise", "qint.subtract_mod", "qint.return"}
+                    and not (direct_output and block.operations[use] is final)
+                    for use in analysis.values[op.results[0].id].uses
+                ):
+                    return None
+                bits = (bits[0],) * (width - len(bits)) + bits
+            return bits
+        return None
+
     def reserve(key: ValueId, op: Operation) -> _Allocation:
+        borrowed = borrowed_input_bits(op)
+        if borrowed is not None:
+            rules.append((key, "borrowed_input_bits"))
+            return _Allocation((), borrowed)
+        shifted = shifted_multiply(op) if implementation == "arithmetic" else None
+        if (
+            shifted is not None
+            and direct_output
+            and terminal_addends is not None
+            and key in terminal_addends
+            and all(block.operations[use] is final for use in analysis.values[key].uses)
+        ):
+            variable, shift = shifted
+            width = unsigned_width(bound(key))
+            if set(variable) <= immutable_inputs and len(variable) + shift <= width:
+                # Only immutable root bits may outlive a rematerialized operand.
+                # The terminal XOR reader accepts repeated zero/sign controls;
+                # one owned zero qubit supplies every padding position.
+                zero = allocate(1, op)
+                result = (
+                    zero * (width - len(variable) - shift) + variable + zero * shift
+                )
+                rules.append((key, "borrowed_input_shift"))
+                return _Allocation(zero, result)
         if op.name in {
             "qint.equal",
             "qint.less",
@@ -397,6 +535,8 @@ def _emit_arithmetic(
         key: ValueId, allocation: _Allocation, op: Operation, scratch: tuple[int, ...]
     ) -> Iterable[Instruction]:
         if op.name == "qint.bitwise":
+            if not allocation.owned:
+                return ()
             return _bitwise(
                 op.attributes["operator"],
                 tuple(encoding(value.id) for value in op.operands),
@@ -439,6 +579,9 @@ def _emit_arithmetic(
         shifted = shifted_multiply(op)
         if shifted is not None:
             variable, shift = shifted
+            if len(allocation.owned) < len(allocation.result):
+                # Root-input shift views own only their unchanged zero padding.
+                return ()
             return _copy(variable, allocation.result[:-shift])
         if op.name in {"qint.equal", "qint.less"}:
             borrowed = borrowed_comparison(op)
@@ -577,8 +720,10 @@ def _emit_arithmetic(
 
     for position, op in enumerate(block.operations[:-1]):
         key = op.results[0].id
-        if op.name == "arith.constant" or (
-            (phase_product is not None or direct_output) and key == returned
+        if (
+            (needed is not None and key not in needed)
+            or op.name == "arith.constant"
+            or ((phase_product is not None or direct_output) and key == returned)
         ):
             continue
         ensure(key)
@@ -639,10 +784,10 @@ def _emit_arithmetic(
                 counts[event.value] = counts.get(event.value, 0) + 1
     else:
         if direct_output:
-            assert final is not None
-            for dependency in analysis.values[returned].dependencies:
+            assert final is not None and terminal_addends is not None
+            for dependency in terminal_addends:
                 ensure(dependency)
-            left, right = operands(final)
+            left, right = (encoding(key) for key in terminal_addends)
             target = tuple(output)[-unsigned_width(bound(returned)) :]
             disjoint = carry_free_add(final)
             scratch_count = 0 if left == right or disjoint else len(target) - 1
@@ -669,7 +814,16 @@ def _emit_arithmetic(
             )
             occupied.difference_update(scratch)
             counts[returned] = 1
-            rules.append((returned, "terminal_xor_add"))
+            rules.append(
+                (
+                    returned,
+                    (
+                        "terminal_modular_sum"
+                        if needed is not None
+                        else "terminal_xor_add"
+                    ),
+                )
+            )
         else:
             emit(_copy(encoding(returned), tuple(output)), block.operations[-1])
         # Restoration order is not dependency order. Clean descendants first so a
@@ -693,6 +847,45 @@ def _emit_arithmetic(
 def _logical_cost(candidate: ArithmeticCandidate) -> tuple[int, int, int]:
     resource = estimate_resources(candidate.circuit)
     return candidate.peak_workspace, resource.n_operations, resource.depth
+
+
+def _borrowed_sum_candidate(
+    normalization: ArithmeticNormalization,
+    inputs: Mapping[ValueId, Sequence[int]],
+    output: Sequence[int],
+    *,
+    n_qubits: int,
+    scheduling: Schedule,
+    max_operations: int,
+) -> ArithmeticCandidate | None:
+    analysis = analyze_lifetimes(
+        (normalization.program,), entry=normalization.program.name
+    )
+    operations = analysis.program.body.blocks[0].operations
+    addends = _terminal_addends(operations)
+    if addends is None:
+        return None
+    gates = borrowed_sum_instructions(
+        analysis, inputs, addends, output, max_operations=max_operations
+    )
+    if gates is None:
+        return None
+    returned = operations[-1].operands[0].id
+    # The entire oracle restores its borrowed roots internally. These paired
+    # events describe an external XOR write without owned storage or scratch.
+    return ArithmeticCandidate(
+        CircuitIR(n_wires=n_qubits, instructions=gates),
+        scheduling,
+        analysis,
+        (
+            ScheduleEvent("compute", returned, (), (), 0, len(gates)),
+            ScheduleEvent("uncompute", returned, (), (), 0, 0),
+        ),
+        0,
+        0,
+        implementation="arithmetic",
+        implementation_rules=((returned, "terminal_borrowed_fourier_sum"),),
+    )
 
 
 def _schedule_normalized_arithmetic(
@@ -879,7 +1072,7 @@ def schedule_arithmetic(
     else:
         normalization = normalize_arithmetic(analyze_lifetimes(functions, entry=entry))
     operations = normalization.program.body.blocks[0].operations
-    eligible = operations[-2].name == "qint.add" if len(operations) > 1 else False
+    eligible = _terminal_addends(operations) is not None
     eligible |= any(
         op.name == "qint.multiply"
         and (
@@ -890,6 +1083,7 @@ def schedule_arithmetic(
     )
     if not eligible and conservative is not None:
         return conservative
+    optimized: ArithmeticCandidate | None
     try:
         optimized = _emit_arithmetic(
             (normalization.program,),
@@ -905,15 +1099,35 @@ def schedule_arithmetic(
             output_mode=output_mode,
         )
     except HybridVerificationError as error:
-        if conservative is None or not all(
+        if not all(
             d.code.startswith("construction.lowering.") for d in error.diagnostics
         ):
             raise
-        return replace(
-            conservative,
-            conservative=conservative,
-            implementation_errors=error.diagnostics,
+        # A Fourier writer trades operations for width. Probe it only after the
+        # ripple candidate exhausts work; the existing Pareto guard still applies
+        # whenever the conservative circuit fits. Other failures are not hidden.
+        optimized = (
+            _borrowed_sum_candidate(
+                normalization,
+                inputs,
+                output,
+                n_qubits=n_qubits,
+                scheduling=scheduling,
+                max_operations=max_operations,
+            )
+            if all(
+                d.code == "construction.lowering.workspace" for d in error.diagnostics
+            )
+            else None
         )
+        if optimized is None:
+            if conservative is None:
+                raise
+            return replace(
+                conservative,
+                conservative=conservative,
+                implementation_errors=error.diagnostics,
+            )
     new_cost = _logical_cost(optimized)
     if conservative is None:
         assert refusal is not None

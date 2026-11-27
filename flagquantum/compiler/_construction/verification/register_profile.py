@@ -24,8 +24,10 @@ from ..._hybrid.model import (
 )
 from ..codegen.register_expansion import expand_register_calls, is_register_function
 from .profile import _fail, _positive_integer, verify_construction
+from .register_budget import check_register_budget
 
 MAX_PREPARED_AMPLITUDES = 256
+MAX_FRESH_PREPARED_AMPLITUDES = 16384
 _MAX_INPLACE_AMPLITUDES = 4096
 MAX_TRANSFORM_WIDTH = 4
 
@@ -107,11 +109,15 @@ def _check_real_preparation(op: Operation, width: int) -> None:
     amplitudes = op.attributes["amplitudes"]
     bound = op.attributes["bound"]
     limit = (
-        _MAX_INPLACE_AMPLITUDES
-        if op.name == "qreg.inplace_prepare_amplitudes"
-        and "indices" in op.attributes
-        and not op.attributes.get("control_count")
-        else MAX_PREPARED_AMPLITUDES
+        MAX_FRESH_PREPARED_AMPLITUDES
+        if op.name == "qreg.prepare_amplitudes"
+        else (
+            _MAX_INPLACE_AMPLITUDES
+            if op.name == "qreg.inplace_prepare_amplitudes"
+            and "indices" in op.attributes
+            and not op.attributes.get("control_count")
+            else MAX_PREPARED_AMPLITUDES
+        )
     )
     if (
         not isinstance(amplitudes, tuple)
@@ -436,6 +442,7 @@ def verify_register_program(
     *,
     max_qubits: int = 256,
     max_nodes: int = 4096,
+    max_effects: int = 4096,
 ) -> HybridProgram:
     """Verify fresh outputs, initialization, effect order and borrowed arithmetic.
 
@@ -459,13 +466,9 @@ def verify_register_program(
         not isinstance(f, HybridProgram) for f in functions
     ):
         raise TypeError("use the existing HybridProgram records")
-    nodes = sum(
-        len(b.arguments) + len(b.operations)
-        for f in (program, *functions)
-        for b in f.body.blocks
+    check_register_budget(
+        (program, *functions), max_nodes=max_nodes, max_effects=max_effects
     )
-    if nodes > max_nodes:
-        _fail("register.budget", "register and expression source exceeds node budget")
     if len({f.name for f in functions}) != len(functions):
         _fail("register.callee", "function definitions require unique names")
     arithmetic = tuple(f for f in functions if not is_register_function(f))
@@ -513,7 +516,9 @@ def verify_register_program(
     for name in helpers:
         visit(name)
     _verify_body(program, arithmetic, helpers, max_qubits)
-    expanded = expand_register_calls(program, functions, max_nodes=max_nodes)
+    expanded = expand_register_calls(
+        program, functions, max_nodes=max_nodes, max_effects=max_effects
+    )
     if expanded is not program:
         _verify_body(expanded, arithmetic, helpers, max_qubits)
     return program

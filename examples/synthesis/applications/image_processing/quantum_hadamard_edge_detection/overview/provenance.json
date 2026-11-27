@@ -11,8 +11,8 @@
       "git_blob_sha1": "f86210067707ea7098d564afa4b72e8e4df1139b"
     }
   ],
-  "scope": "All 17 original stages, unmodified 128-by-128 RGB input, all 16,384 amplitudes with explicit gates, two coherent cyclic differences and 200,000 finite samples.",
-  "native_semantic_adaptations": "Use fast Walsh coefficients for the positive real preparation and compose a native qfunc for the detector. Keep direction bits to verify the complete state, then take their marginal for the source readout. Report exact diagnostics separately from finite draws. Float64 normalization; reproducible local seed. Local instruction metrics replace hosted resources and viewer.",
+  "scope": "All 17 original stages, unmodified 128-by-128 RGB input, all 16,384 amplitudes in one native qfunc, two coherent cyclic differences and 200,000 finite samples.",
+  "native_semantic_adaptations": "Prepare the full real vector through native prepare_amplitudes and compose controlled numeric slices in the same qfunc. Retain the separate Walsh Circuit loader as an independent reference. Keep direction bits to verify the complete state, then take their marginal for the source readout. Report exact diagnostics separately from finite draws. Float64 normalization; reproducible local seed. Local instruction metrics replace hosted resources and viewer.",
   "native_entrypoint": "examples.synthesis.applications.image_processing.quantum_hadamard_edge_detection.overview.main",
   "native_notebook": "examples/synthesis/applications/image_processing/quantum_hadamard_edge_detection/overview/walkthrough.ipynb",
   "acceptance_test": "tests/integration/test_synthesis_image_edge_detection_notebook.py",

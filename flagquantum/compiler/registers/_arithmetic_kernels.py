@@ -97,7 +97,7 @@ def multiply_accumulate(
 
 
 def _multiplication_bits(
-    value: tuple[int, ...] | int,
+    value: tuple[int, ...] | int, *, allow_repeated: bool = False
 ) -> tuple[tuple[int, int | None], ...]:
     if isinstance(value, bool):
         raise TypeError("multiplication constants must be Python integers")
@@ -107,7 +107,7 @@ def _multiplication_bits(
         return tuple((i, None) for i in range(value.bit_length()) if value & (1 << i))
     if any(isinstance(q, bool) or not isinstance(q, int) for q in value):
         raise TypeError("multiplication operand labels must be Python integers")
-    if not value or len(set(value)) != len(value):
+    if not value or (not allow_repeated and len(set(value)) != len(value)):
         raise ValueError("multiplication operand maps must be nonempty and injective")
     return tuple(enumerate(reversed(value)))
 
@@ -212,8 +212,12 @@ def xor_add_parts(
     c[i+1]=a[i]b[i] XOR a[i]c[i] XOR b[i]c[i]. Target is arbitrary,
     disjoint from operands/zero carries, and must not enter the prefix.
     Equal operand maps implement x+x as a shift with no carry allocation.
+    Read-only addends may repeat physical controls for exact sign extension.
     """
-    left, right = _multiplication_bits(a), _multiplication_bits(b)
+    # XOR writes only read addends. Repeated sign-bit controls across logical
+    # positions are valid here; in-place multiplication operands remain injective.
+    left = _multiplication_bits(a, allow_repeated=True)
+    right = _multiplication_bits(b, allow_repeated=True)
     required = 0 if a == b else len(target) - 1
     _validate_product_maps((*left, *right), target, scratch, required)
     left_bits, right_bits = dict(left), dict(right)

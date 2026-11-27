@@ -20,8 +20,15 @@ from ....noise import amplitude_damping_channel
 from ..._hybrid.model import Block, HybridProgram, Operation, Region, Value, ValueId
 from ..._hybrid.verifier import Diagnostic
 from ...lowering.noise import _encode_channel_instruction
-from ...optimization.canonicalization import merge_self_inverse
-from ...optimization.commutation_cancellation import cancel_commuting_self_inverse
+from ...optimization.canonicalization import (
+    merge_adjacent_rotations,
+    merge_self_inverse,
+    remove_identity_gates,
+)
+from ...optimization.commutation_cancellation import (
+    cancel_commuting_self_inverse,
+    merge_commuting_rotations,
+)
 from ...optimization.state_preparation_synthesis import _synthesize_real_state
 from ...registers._fourier_kernels import qft_instructions
 from ..semantics.borrowed_unitary import owned_unitary_layout
@@ -42,6 +49,7 @@ from .arithmetic import (
     BoundArithmetic,
     Schedule,
     ScheduleEvent,
+    _borrowed_sum_candidate,
     _copy,
     adjoint_value_candidate,
 )
@@ -78,18 +86,21 @@ def schedule_register_program(
     boolean_values: bool = False,
     _allow_empty_boolean: bool = False,
     _clean_qubits: int | None = None,
+    _max_effects: int = 4096,
 ) -> RegisterCandidate:
     """Lower verified fresh outputs without executing or inspecting any state."""
     _positive_integer(max_operations, "max_operations")
     if max_operations > 100_000 or scheduling not in {"retain", "recompute"}:
         _fail("register.budget", "use a known schedule and at most 100000 operations")
-    verify_register_program(program, functions, max_qubits=n_qubits)
+    verify_register_program(
+        program, functions, max_qubits=n_qubits, max_effects=_max_effects
+    )
     if _clean_qubits is not None and (
         type(_clean_qubits) is not int or _clean_qubits < 0
     ):
         raise ValueError("clean decomposition capacity requires a nonnegative integer")
     clean_qubits = n_qubits if _clean_qubits is None else min(n_qubits, _clean_qubits)
-    program = expand_register_calls(program, functions)
+    program = expand_register_calls(program, functions, max_effects=_max_effects)
     register_templates = {f.name: f for f in functions if is_register_function(f)}
     functions = tuple(f for f in functions if not is_register_function(f))
     labels, bindings, output_width = register_ports(program)
@@ -124,7 +135,13 @@ def schedule_register_program(
         start = max(normalization_cursor - 128, len(instructions) - 4096, 0)
         tail = CircuitIR(n_qubits, tuple(instructions[start:]), dtype="complex128")
         for _ in range(2):
-            reduced = merge_self_inverse(cancel_commuting_self_inverse(tail))
+            reduced = merge_self_inverse(
+                cancel_commuting_self_inverse(
+                    remove_identity_gates(
+                        merge_adjacent_rotations(merge_commuting_rotations(tail))
+                    )
+                )
+            )
             if len(reduced.instructions) == len(tail.instructions):
                 break
             tail = reduced
@@ -700,6 +717,25 @@ def schedule_register_program(
                         max_operations=remaining,
                         scheduling=scheduling,
                     )
+                    if (
+                        not phase
+                        and segment.peak_workspace > max(0, clean_qubits - position)
+                        and segment.normalization is not None
+                    ):
+                        constrained = _borrowed_sum_candidate(
+                            segment.normalization,
+                            inputs,
+                            output,
+                            n_qubits=n_qubits,
+                            scheduling=scheduling,
+                            max_operations=remaining,
+                        )
+                        if constrained is not None:
+                            segment = replace(
+                                constrained,
+                                normalization=segment.normalization,
+                                conservative=segment,
+                            )
                     if segment_refusal is not None:
                         segment = replace(
                             segment,
