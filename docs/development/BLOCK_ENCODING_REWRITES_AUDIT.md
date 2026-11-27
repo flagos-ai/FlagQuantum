@@ -131,3 +131,41 @@ links, architecture, IR and public API checks pass. Four frozen source blobs,
 Qualtran 0.7.0 and the actual Kickmix 0.1 Simulator are verified. The initially
 overbroad unrelated coefficient-grid replay was stopped and archived as
 superseded; it is not cited as a completed regression.
+
+
+## Complete source algorithm and identity disposition (2026-11-28)
+
+Q-0294 is accepted under the approved faithful-migration closure rule after
+reviewing every branch of the complete `collect_like_terms` source. Atomic
+Unitary/SparseMatrix return, Phase/Product/TensorProduct recursion, nested LCU
+weight multiplication, first occurrence, zero coefficients, precision maximum,
+minimum-arity refusal, default oracle reconstruction and unknown-type return
+all have existing native owners and source evidence. The source-faithful
+supplied-oracle profile explicitly uses `rebuild_oracles=True`; the native
+opaque-oracle default is a different documented profile.
+
+The historical arbitrary-callback boundary needs precise interpretation. The
+original uses Python hash/equality; it does not prove that independently
+supplied callbacks compute the same operator. Two fresh source extension
+fixtures retain the same X unitary with either a shared callback or distinct
+callbacks. The unchanged source rewrite merges only the shared callback case.
+The existing native `term_key` path reproduces both identities using owned
+integer tokens supplied by the conversion caller, retaining coefficients,
+precision and the first representative. No external function enters Algorithms.
+
+Equal captured CircuitIR snapshots alone can lose that original callback
+identity. Their default value equality is therefore not claimed to reproduce
+all source extension identities. Exact source identity requires the existing
+explicit key mapping when transport erases identity. The two new receipts prove
+that supported path; they are not a semantic-equivalence solver or automatic
+foreign-object matching. Existing full-complex/all-small-history snapshot and
+explicit-key execution/resource evidence is reused. Unknown callback equality
+is never inferred by executing it on sample inputs.
+
+Both unchanged original tests and source/custom-oracle resource views remain
+recorded. The current batch passes 256 concentrated LCU/Phase/rewrite cases,
+44 independent Cirq 1.6 constructor/snapshot cases and the two actual-source
+callback-identity dispositions. All 76 frozen source/dependency/asset blobs are
+unchanged. Existing strict production, 32 local integration and actual Kickmix
+Simulator evidence is reused; no Python implementation or public contract
+changes in this acceptance entry.
