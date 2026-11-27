@@ -23,7 +23,10 @@ from ...compiler._component_trace.resource_model import ComponentCost
 from ...compiler.registers.bits.bitwise import on_each_ir
 from ...compiler.registers.bits.on_each import on_each_word_program
 from ...compiler.registers.component_adjoint import adjoint_component_hierarchy
-from ...compiler.registers.component_builder import ComponentProgramBuilder
+from ...compiler.registers.component_builder import (
+    BindingCollection,
+    ComponentProgramBuilder,
+)
 from ...compiler.registers.component_definition_match import (
     matches_component_definition,
 )
@@ -51,7 +54,10 @@ from ...core.value_math import pi as symbolic_pi
 from ._block_binding import _BoundBlockOperation, _validate_block_work
 from .black_box_prepare import BlackBoxPrepare, PackedPrepareDeclaration
 from .phase_estimation_window import PhaseEstimationWindow
-from .prepared_state_reflection import PreparedStateReflection
+from .prepared_state_reflection import (
+    PreparedStateReflection,
+    zero_state_reflection_program,
+)
 
 
 def luis_perina_interim_program(width: int, *, adjoint: bool = False) -> ProgramRecord:
@@ -124,6 +130,67 @@ def luis_perina_interim_program(width: int, *, adjoint: bool = False) -> Program
     return adjoint_component_hierarchy(
         replace(record, functions=tuple(definitions)), adjoints
     )
+
+
+def luis_perina_state_program(width: int) -> ProgramRecord:
+    """Compose the complete output-only LP graph with explicit private lifetimes.
+
+    The fractional phase word is an MSB-first logical output. Ancilla, flag and
+    reflection work are private. This is the source forward preparation; it
+    does not identify the source's generic adjoint with a corrected inverse.
+    """
+    if type(width) is not int or width < 1:
+        raise ValueError("LP Program requires a concrete positive width")
+    state = LuisPerinaState(width)
+    bit = Register("q", quantum_bit_type())
+    angle = acos(1 / (1 + 2**width))
+    rotate = bit_gate_function(
+        "flag_rotate",
+        (bit,),
+        CircuitIR(1, (Instruction("ry", (0,), params={"theta": angle}),)),
+    )
+    unrotate = bit_gate_function(
+        "flag_unrotate",
+        (bit,),
+        CircuitIR(1, (Instruction("ry", (0,), params={"theta": -angle}),)),
+    )
+    flip = bit_gate_function("flip", (bit,), CircuitIR(1, (Instruction("x", (0,)),)))
+    mark = bit_gate_function(
+        "mark",
+        (Register("q1", quantum_bit_type()), Register("q2", quantum_bit_type())),
+        CircuitIR(2, (Instruction("cz", (0, 1)),)),
+    )
+    builder = ComponentProgramBuilder(state.signature, (rotate, unrotate, flip, mark))
+    m: BindingCollection = builder.allocate(dtype=state.m_qdtype)
+    anc: BindingCollection = builder.allocate(dtype=quantum_bit_type())
+    flag: BindingCollection = builder.allocate(dtype=quantum_bit_type())
+    flag = builder.call_dict(rotate.name, {"q": flag})["q"]
+    interim = luis_perina_interim_program(width)
+    inverse = luis_perina_interim_program(width, adjoint=True)
+    values = builder.call_program(interim, {"m": m, "anc": anc})
+    m, anc = values["m"], values["anc"]
+    values = builder.call_dict(mark.name, {"q1": flag, "q2": anc})
+    flag, anc = values["q1"], values["q2"]
+    values = builder.call_program(inverse, {"m": m, "anc": anc})
+    m, anc = values["m"], values["anc"]
+    flag = builder.call_dict(unrotate.name, {"q": flag})["q"]
+    reflection = zero_state_reflection_program(
+        PreparedStateReflection.around_zero((1, 1, width), global_phase=1j)
+    )
+    values = builder.call_program(reflection, {"reg0_": flag, "reg1_": anc, "reg2_": m})
+    flag, anc, m = values["reg0_"], values["reg1_"], values["reg2_"]
+    values = builder.call_program(interim, {"m": m, "anc": anc})
+    m, anc = values["m"], values["anc"]
+    flag = builder.call_dict(rotate.name, {"q": flag})["q"]
+    flag = builder.call_dict(flip.name, {"q": flag})["q"]
+    anc = builder.call_dict(flip.name, {"q": anc})["q"]
+    assert isinstance(flag, RegisterBinding) and isinstance(anc, RegisterBinding)
+    builder.free(flag)
+    builder.free(anc)
+    assert isinstance(m, RegisterBinding)
+    # Shared calls use QAny views; retain the declared fractional output type.
+    m = builder.join(builder.split(m), dtype=state.m_qdtype)
+    return builder.finalize({"qpe_reg": m})
 
 
 @dataclass(frozen=True)
