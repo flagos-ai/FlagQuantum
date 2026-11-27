@@ -1,6 +1,7 @@
 """Coverage fan-out preserves the complete selection and source identity."""
 
 import json
+from pathlib import Path
 
 import pytest
 
@@ -339,3 +340,96 @@ def test_only_indivisible_measured_heavy_cases_use_qualified_cpu_pool(
     assert write_plan((heavy, ordinary), tmp_path / "mixed-plan", 1) == 1
     mixed = json.loads((tmp_path / "mixed-output").read_text().split("matrix=", 1)[1])
     assert mixed["include"][0]["a800"] is False
+
+
+def test_serial_embedding_cases_keep_complete_sole_workloads_on_qualified_slots(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    from tools.ci import ci_coverage_plan
+
+    targets = ci_coverage_plan._SERIAL_BW_RUNNERS
+    maxwell = (
+        "tests/integration/test_synthesis_maxwell_notebook.py::"
+        "test_fresh_original_degree_and_original_size_workflow"
+    )
+    nodes = (*targets, maxwell, "tests/test_small.py::test_original")
+    monkeypatch.setenv("GITHUB_SHA", "b" * 40)
+    monkeypatch.setenv("GITHUB_OUTPUT", str(tmp_path / "output"))
+    monkeypatch.setattr(
+        ci_coverage_plan,
+        "load_duration_hints",
+        lambda: (0.05, dict.fromkeys((*targets, maxwell), 800.0)),
+    )
+    directory = tmp_path / "plan"
+    assert write_plan(nodes, directory, len(nodes)) == len(nodes)
+    rows = json.loads((tmp_path / "output").read_text().split("matrix=", 1)[1])[
+        "include"
+    ]
+    selected = {}
+    for row in rows:
+        shard = verify_plan(directory, row["shard"]).read_text().splitlines()
+        assert len(shard) == 1
+        selected[shard[0]] = row
+    assert set(selected) == set(nodes)
+    qualified = json.loads(ci_coverage_plan._CPU_QUALIFICATION.read_text())
+    assert set(targets.values()) <= {
+        r["selector"] for r in qualified["qualified_slots"]
+    }
+    assert len({runner.split("-cpu")[0] for runner in targets.values()}) == len(targets)
+    for node, runner in targets.items():
+        assert selected[node]["runner"] == runner
+        assert selected[node]["exclusive"] is True
+        assert selected[node]["a800"] is False
+        assert selected[node]["timeout-minutes"] == 60
+    assert selected[maxwell]["a800"] is True
+    assert selected[maxwell]["runner"] == ""
+
+
+@pytest.mark.parametrize("missing", ["profile", "slot"])
+def test_serial_coverage_rejects_unqualified_resource_targets(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, missing: str
+) -> None:
+    from tools.ci import ci_coverage_plan
+
+    node = next(iter(ci_coverage_plan._SERIAL_BW_RUNNERS))
+    data = json.loads(ci_coverage_plan._CPU_QUALIFICATION.read_text())
+    if missing == "profile":
+        data["profiles"].remove("coverage-py3.12")
+    else:
+        data["qualified_slots"] = []
+    proof = tmp_path / "qualification.json"
+    proof.write_text(json.dumps(data))
+    monkeypatch.setattr(ci_coverage_plan, "_CPU_QUALIFICATION", proof)
+    monkeypatch.setenv("GITHUB_SHA", "b" * 40)
+    monkeypatch.setattr(
+        ci_coverage_plan, "load_duration_hints", lambda: (0.05, {node: 800.0})
+    )
+    with pytest.raises(ValueError, match="verified locked coverage profile"):
+        write_plan((node,), tmp_path / "plan", 1)
+
+
+def test_mixed_partition_retains_original_routing_without_unused_qualification(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    from tools.ci import ci_coverage_plan
+
+    nodes = tuple(ci_coverage_plan._SERIAL_BW_RUNNERS)
+    monkeypatch.setenv("GITHUB_SHA", "b" * 40)
+    monkeypatch.setenv("GITHUB_OUTPUT", str(tmp_path / "output"))
+    monkeypatch.setattr(
+        ci_coverage_plan, "_CPU_QUALIFICATION", tmp_path / "absent.json"
+    )
+    monkeypatch.setattr(
+        ci_coverage_plan,
+        "load_duration_hints",
+        lambda: (0.05, dict.fromkeys(nodes, 800.0)),
+    )
+    directory = tmp_path / "plan"
+    assert write_plan(nodes, directory, 1) == 1
+    assert set(verify_plan(directory, 0).read_text().splitlines()) == set(nodes)
+    row = json.loads((tmp_path / "output").read_text().split("matrix=", 1)[1])[
+        "include"
+    ][0]
+    assert row["runner"] == ""
+    assert row["exclusive"] is False
+    assert row["a800"] is False

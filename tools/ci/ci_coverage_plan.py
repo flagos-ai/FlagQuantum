@@ -24,6 +24,24 @@ EXCLUSIVE_TEST_SECONDS = 120.0
 MAX_FILE_BATCH_TESTS = 16
 MAX_FILE_BATCH_SECONDS = 60.0
 DEFAULT_TIMEOUT_MINUTES = 60
+# Original module-fixture reports used 1.09 CPU cores out of twelve admitted.
+# Spread these unchanged serial workloads across already-qualified BW services;
+# Maxwell remains on A800 because its original run actually used seven cores.
+_EMBEDDING_TEST = "tests/integration/test_synthesis_projection_embedding_notebook.py::"
+_SERIAL_BW_RUNNERS: dict[str, str] = {
+    _EMBEDDING_TEST
+    + "test_original_chemistry_and_four_embedding_validations": "fq-bw1100-10-cpu16-validation",
+    _EMBEDDING_TEST
+    + "test_native_frame_and_all_complete_nonzero_state_amplitudes": "fq-bw1100-11-cpu16-validation",
+    _EMBEDDING_TEST
+    + "test_actual_full_optimizer_budget_and_unrepaired_estimates": "fq-bw1100-12-cpu16-validation",
+    _EMBEDDING_TEST
+    + "test_invalid_singles_angles_fail_before_execution": "fq-bw1100-14-cpu16-validation",
+}
+_CPU_QUALIFICATION = (
+    Path(__file__).resolve().parents[2]
+    / "docs/development/migration/ci-cpu-cache-qualification.json"
+)
 # Original optimization workloads remain indivisible. These are finite job
 # budgets, not measured duration hints; reserve separate slots when available.
 LONG_TEST_TIMEOUT_MINUTES = {
@@ -121,6 +139,22 @@ def write_plan(nodeids: tuple[str, ...], directory: Path, requested: int) -> int
         ],
     }
     (directory / "plan.json").write_text(json.dumps(payload, indent=2) + "\n")
+    sole_nodes = {nodes[0] for nodes in shards if len(nodes) == 1}
+    bw_runners = {
+        node: runner
+        for node, runner in _SERIAL_BW_RUNNERS.items()
+        if node in sole_nodes
+    }
+    if bw_runners:
+        qualification = json.loads(_CPU_QUALIFICATION.read_text())
+        qualified = {row["selector"] for row in qualification["qualified_slots"]}
+        if (
+            "coverage-py3.12" not in qualification["profiles"]
+            or not set(bw_runners.values()) <= qualified
+        ):
+            raise ValueError(
+                "Serial coverage runners need the verified locked coverage profile"
+            )
     matrix = {
         "include": [
             {
@@ -135,7 +169,10 @@ def write_plan(nodeids: tuple[str, ...], directory: Path, requested: int) -> int
                 # These indivisible cases already occupy their own partition.
                 # Both existing A800 hosts qualify the locked coverage image;
                 # reuse their admitted CPU pool instead of adding empty shards.
-                "a800": len(nodes) == 1 and hints.get(nodes[0], default) >= 300.0,
+                "a800": len(nodes) == 1
+                and hints.get(nodes[0], default) >= 300.0
+                and nodes[0] not in bw_runners,
+                "runner": bw_runners.get(nodes[0], "") if len(nodes) == 1 else "",
                 "timeout-minutes": max(
                     DEFAULT_TIMEOUT_MINUTES,
                     sum(LONG_TEST_TIMEOUT_MINUTES.get(node, 0) for node in nodes),

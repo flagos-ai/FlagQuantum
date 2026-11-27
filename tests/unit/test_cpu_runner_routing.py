@@ -50,11 +50,7 @@ def test_cpu_pool_routes_require_a_same_repository_pull_request() -> None:
                 '\'["self-hosted","linux","x64","flagquantum-cpu"]\'',
                 'format(\'["self-hosted","linux","x64","flagquantum-cpu","{0}"]\', matrix.runner)',
             ),
-            FULL_CPU_ROUTE.replace(
-                '&& \'["self-hosted","linux","x64","flagquantum-cpu"]\'',
-                '&& (matrix.a800 && \'["self-hosted","linux","x64","flagquantum-cpu",'
-                '"flagquantum-a800-cpu"]\' || \'["self-hosted","linux","x64","flagquantum-cpu"]\')',
-            ),
+            '${{ fromJSON((github.event_name != \'pull_request\' || github.event.pull_request.head.repo.full_name == github.repository) && (matrix.runner && format(\'["self-hosted","linux","x64","flagquantum-cpu","{0}"]\', matrix.runner) || matrix.a800 && \'["self-hosted","linux","x64","flagquantum-cpu","flagquantum-a800-cpu"]\' || \'["self-hosted","linux","x64","flagquantum-cpu"]\') || \'["ubuntu-latest"]\') }}',
             FULL_CPU_ROUTE.replace(
                 '"flagquantum-cpu"]', '"flagquantum-cpu","flagquantum-a800-cpu"]'
             ),

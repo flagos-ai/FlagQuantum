@@ -2530,7 +2530,8 @@ jobs:
     runs-on: >-
       ${{ fromJSON(
         (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository)
-        && (matrix.a800 && '["self-hosted","linux","x64","flagquantum-cpu","flagquantum-a800-cpu"]'
+        && (matrix.runner && format('["self-hosted","linux","x64","flagquantum-cpu","{0}"]', matrix.runner)
+          || matrix.a800 && '["self-hosted","linux","x64","flagquantum-cpu","flagquantum-a800-cpu"]'
           || '["self-hosted","linux","x64","flagquantum-cpu"]') || '["ubuntu-latest"]'
       ) }}
     permissions:

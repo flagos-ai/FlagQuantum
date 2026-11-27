@@ -385,3 +385,55 @@ Trusted and fork sources both remain on hosted publication capacity. Scientific
 CPU/GPU consumers keep their existing qualified routes and source checks.
 The eight-group hosted ceiling is unchanged. Actual new-head publication and
 whole-job timing still require CI verification.
+
+
+## Ordinary single-GPU placement and frozen campaigns
+
+At successor head `2d77f841`, ordinary `one-gpu-local` failed twice on the 171
+host before scientific execution because no physical device satisfied the
+existing idle threshold. Original jobs `140609266692` and `140615033371`
+remain failed evidence. The same commit's two-GPU job `140609268286` passed on
+172, with its digest-verified original hardware artifact recording NVIDIA
+A800-SXM4-80GB devices, driver 580.126.20, Torch 2.13.0+cu130, and actual
+selected devices 0 and 1. No GPU process was stopped or reconfigured.
+
+Ordinary single-GPU CI now uses this already provisioned A800 172 host.
+The precision-frontier and QNG-ablation manual inputs still select the original
+171 host and physical device zero; their frozen commands and environments do
+not change. Single- and two-GPU CI retain the same accelerator concurrency lock,
+so their real computations and measurements cannot overlap. The one-GPU
+20-minute budget, idle memory/utilization thresholds, all correctness tests,
+benchmark warmups/repetitions/inner loops, performance evaluation and evidence
+collection remain unchanged. This is a resource-placement change, not a relaxed
+admission check or a performance/scalability promotion. The new head must pass
+the original single-GPU tests and measurement gate on the selected hardware.
+
+
+## Spread serial embedding fixtures without changing scientific work
+
+The original four projection-embedding reports each used 761–803 process CPU
+seconds in 698–737 wall seconds: about 1.09 cores despite a twelve-core
+admission. Their utilization of that allowance was about nine percent. The
+Maxwell report differs: 4,561 process CPU seconds in 638 wall seconds uses about
+7.15 cores, so it retains its existing A800 placement. These measurements are
+original parent-run evidence, not predictions relabeled as new timings.
+
+In the successor run, the final embedding partition did not start until
+16:21:11 UTC, even after nearly all other pools finished. Four unchanged full
+embedding cases now use four distinct, online and idle, positively qualified
+BW registrations: cpu16 on hosts 10, 11, 12 and 14. Their existing source-bound
+qualification receipt covers all four locked images, including coverage-py3.12.
+The planner refuses the override if that profile or any target receipt is
+missing. Only already-sole partitions receive the override; mixed partitions
+keep their existing placement. Other heavy cases and all Maxwell work remain
+under the existing A800 rule.
+
+The five-field plan schema, every selected node and per-shard digest, full
+chemistry/state/energy/100-query optimizer workflows, assertions, independent
+references, coverage policy and finite timeouts remain unchanged. The matrix
+adds a private explicit selector; forks still use hosted capacity and all
+self-hosted cached-image/resource checks stay enabled. Resource admission must
+report the BW service's actual four-core budget rather than the A800 allowance.
+No service, label, quota, dependency or numerical algorithm is changed. Actual
+whole-job timing and all original scientific results on these targets remain
+required before calling the bottleneck resolved.

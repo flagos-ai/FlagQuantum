@@ -153,7 +153,8 @@ jobs:
   one-gpu-local:
     if: ${{ !inputs.validate_pool && !inputs.validate_mc550_pool }}
     needs: prepare-source
-    runs-on: [self-hosted, linux, gpu, flagquantum-local, a800-171]
+    runs-on: ${{ fromJSON((inputs.qng_ablation || inputs.precision_frontier) && '["self-hosted","linux","gpu","flagquantum-local","a800-171"]' || '["self-hosted","linux","gpu","flagquantum-local","a800-172"]') }}
+    # Ordinary CI uses the qualified 172 host; frozen manual campaigns keep 171.
     # The multi-node lane uses both A800 hosts. Keep their local and scheduled
     # jobs in one group until that lane can reserve both hosts independently.
     concurrency:

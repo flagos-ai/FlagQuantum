@@ -263,11 +263,7 @@ def test_migrated_cpu_jobs_keep_frameworks_and_processes_isolated(job: str) -> N
         )
     if job == "coverage-shard":
         assert " ".join(definition["runs-on"].split()) == (
-            "${{ fromJSON( (github.event_name != 'pull_request' || "
-            "github.event.pull_request.head.repo.full_name == github.repository) "
-            '&& (matrix.a800 && \'["self-hosted","linux","x64","flagquantum-cpu",'
-            '"flagquantum-a800-cpu"]\' || \'["self-hosted","linux","x64","flagquantum-cpu"]\') '
-            "|| '[\"ubuntu-latest\"]' ) }}"
+            '${{ fromJSON( (github.event_name != \'pull_request\' || github.event.pull_request.head.repo.full_name == github.repository) && (matrix.runner && format(\'["self-hosted","linux","x64","flagquantum-cpu","{0}"]\', matrix.runner) || matrix.a800 && \'["self-hosted","linux","x64","flagquantum-cpu","flagquantum-a800-cpu"]\' || \'["self-hosted","linux","x64","flagquantum-cpu"]\') || \'["ubuntu-latest"]\' ) }}'
         )
         assert any(
             step.get("uses") == "./.github/actions/offline-cpu"
