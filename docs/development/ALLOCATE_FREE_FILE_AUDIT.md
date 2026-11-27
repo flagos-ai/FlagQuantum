@@ -7,9 +7,9 @@ Reference: Qualtran v0.7.0 at
 | Item | Source file | Frozen Git blob | Disposition |
 | --- | --- | --- | --- |
 | Q-0310 | `allocate.ipynb` | `8d91513e62d1015fcbd97c0601442916e3ba6796` | Closed by the complete native Allocate and Free tutorial. |
-| Q-0311 | `allocate.py` | `e459095285de98c1468b661afdbcbe58238ff1ad` | Approved 116/125 storage, direct SDK lifetime hooks and symbolic drawing verified. Open for signed-empty 124 and symbolic field declaration 126; original field codec and empty callback failures retained. |
+| Q-0311 | `allocate.py` | `e459095285de98c1468b661afdbcbe58238ff1ad` | Complete source owner accepted after approved 124/126 dependency closure; source field codec and empty classical callback failures remain independent diagnostics. |
 | Q-0312 | `allocate_test.py` | `96f411955b10a466d37e8ba3b0698a0823d42ba9` | Closed for the runnable source scenarios and notebook. |
-| Q-0323 | `free.py` | `8a0c73db71e1d8ffa31b2c7a15d246f02f8f4f63` | Approved 116/125 storage, direct SDK lifetime hooks and symbolic drawing verified. Open for signed-empty 124 and symbolic field declaration 126; original field codec failures retained. |
+| Q-0323 | `free.py` | `8a0c73db71e1d8ffa31b2c7a15d246f02f8f4f63` | Complete source owner accepted after approved 124/126 dependency closure; source field codec failures remain independent diagnostics. |
 | Q-0324 | `free_test.py` | `63ffa89314718cfaa94bfb0104953e52fd1c518e` | Closed for the runnable symbolic fixture and ten-wire utility round trip. |
 | Q-0309 | `_bookkeeping_bloq.py` | `32b9b7498417c20ee8ca86c8e53f16b2d63bada4` | Complete base control protocol accepted in 6d6460528; see BOOKKEEPING_CONTROL_FILE_AUDIT.md. |
 
@@ -264,8 +264,10 @@ spectator-only H/T matrix is distinct from the full borrowed-state SDK identity.
 | Fixed-point Allocate/Free, both flags | No gates or measurements; same word allocated and released; empty word has no physical wires | Zero QEC gates; peak word width, excluding the caller spectator |
 | Raw field lifetime plus spectator H/T | One H and one T on spectator; word has no gates or feedback; clean/borrowed pool unchanged after release | One Clifford and one T; DAG peak word width, physical caller capacity is width plus one |
 
-Q-0311 and Q-0323 remain open for the separately pending signed zero-width
-storage (124) and symbolic field declarations (126). Ordinary symbolic physical
+At that publication, Q-0311 and Q-0323 remained open for signed zero-width
+storage (124) and symbolic field declarations (126). Both proposals were
+explicitly approved and implemented on 2026-11-27; the closure below supersedes
+that blocker. Ordinary symbolic physical
 widths remain explicitly unexecutable. Classical descriptor interpretation is
 not expanded by this quantum storage evidence. Original QGF/QGFPoly wire codec
 failures remain unchanged. Neither approved 116 nor approved 125 remains a
@@ -278,3 +280,57 @@ Both changed Python modules pass strict typing, Black and Ruff; Compiler scope,
 language, links, architecture, multilevel IR and protected API checks pass.
 The preceding 145-case local integration result is reused from the identical
 production tree: this reconciliation changes only tests and documentation.
+
+
+## Complete source acceptance after 124/126 dependency closure
+
+Q-0311 and Q-0323 are individually accepted under the user-approved
+[G2 faithful-migration rule](G2_FAITHFUL_MIGRATION_CLOSURE_PROPOSAL.md).
+All original definitions, factories/DocSpecs, tests and notebook assets have the
+source-to-owner dispositions above. The direct bookkeeping base is already
+accepted. The last protected admission dependencies are implemented and tested;
+no new lifetime interpreter, numerical kernel or public entry is needed.
+
+Additional original foreign consumers cover signed-empty QFxp at fractional
+widths -1, -2 and -7 under both dirty flags. Actual source serialization and
+reconstruction, typed factory resolution, qalloc/qborrow/qfree hooks, empty
+ownership events, both PennyLane no-operation hooks and ordinary append all
+pass. Complete complex spectator amplitudes are retained. No primitive or
+measurement is emitted, and no physical work wire exists for the empty word.
+The independent original model separately reports zero QEC cost and zero
+logical width; the caller's spectator remains a real physical wire.
+
+All six symbolic field/poly profiles additionally build valid unchanged-source
+Allocate/Free graphs under both flags. Native graphs preserve exact dtype,
+ordered allocation/release and explicit dirty metadata through the existing
+shared helpers. Source adjoints exchange the same two leaves. Source QEC cost
+is zero. Native logical verification succeeds, while physical binding still
+refuses unresolved dimensions before execution. This is logical call evidence,
+not a symbolic physical simulation or an amplitude certificate.
+
+The raw source failures remain owning follow-ups: QGF/QGFPoly serialization is
+unsupported; empty unsigned fixed-point classical initialization raises its
+original ValueError; empty signed fixed-point initialization raises IndexError
+while accessing its nonexistent sign bit. Free still accepts zero. The source
+dirty tensor hook projects zero rather than restoring an arbitrary borrowed
+state, so its tensor projection and SDK/pool identity remain distinct in the
+previous full-state evidence. Migration acceptance makes no new claim of
+corrected source behavior or hardware/performance equivalence.
+
+Reuse the published complete source, display, model, clean/borrowed restoration
+and concentrated/integration evidence above. This batch changes only the two
+consumer tests and this audit; the production tree is unchanged from 89aa7ddf8.
+The new lifetime/declaration checks initially distinguished the signed-empty
+IndexError from the unsigned failure, and the native test was corrected to pass
+the already-required explicit dirty flag when freeing a borrowed word. No
+production release semantics or original reference was changed.
+
+
+Final acceptance passes 201 concentrated lifetime, exact workspace scheduling,
+constructor and declaration cases; the changed direct consumers also pass all
+77 cases under Cirq 1.6.1. Strict typing passes both changed Python files.
+Black/Ruff, scope, language/links, architecture, multilevel IR and whitespace
+checks pass. Five complete lifetime/base source files retain frozen Git blobs.
+The production tree is byte-identical to 89aa7ddf8, so published full-state,
+primitive/model and local integration evidence is reused rather than rerun.
+Receipts are `ftqc-reference-env/g2-lifetime-final-*` outside the repository.
