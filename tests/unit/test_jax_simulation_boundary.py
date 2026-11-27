@@ -3,7 +3,6 @@
 import pytest
 
 from flagquantum.runtime.executors.jax import (
-    array_conversions,
     kernel,
 )
 from flagquantum.runtime.executors.jax.mps import (
@@ -15,6 +14,9 @@ from flagquantum.runtime.executors.jax.mps import (
 )
 from flagquantum.runtime.executors.jax.mps import lowering as mps_lowering
 from flagquantum.runtime.executors.jax.mps import pullbacks as mps_pullbacks
+from flagquantum.runtime.executors.jax.statevector import (
+    execution as statevector_execution,
+)
 from flagquantum.runtime.executors.jax.statevector import (
     gradient_records as statevector_gradient_records,
 )
@@ -55,10 +57,7 @@ def test_runtime_reuses_simulation_owned_jax_gate_primitives():
         statevector_kernels.jax_sharded_statevector_loss
         is jax_statevector.jax_sharded_statevector_loss
     )
-    assert (
-        array_conversions._jax_basis_indices_for_qubits
-        is jax_statevector.jax_basis_indices_for_qubits
-    )
+    assert statevector_execution._statevector_numerics is jax_statevector
     assert (
         statevector_kernels.jax_apply_local_statevector_gate
         is jax_statevector.jax_apply_local_statevector_gate
