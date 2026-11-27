@@ -25,7 +25,7 @@ from .control_predicate import ControlRegister
 def adjoint_component_control_system(
     record: ProgramRecord,
     controls: tuple[Register, ...],
-    patterns: tuple[ControlRegister, ...],
+    patterns: tuple[ControlRegister, ...] | None,
     specialize_on: frozenset[int],
     forward_control: ComponentControlSystem,
     inverse_fallback: ComponentControlSystem,
@@ -41,10 +41,16 @@ def adjoint_component_control_system(
     delegate unchanged to inverse_fallback, which owns generic inverse control.
     No numerical execution or new graph representation is introduced.
     """
-    count = validate_control_ports(controls, patterns)
     if any(type(value) is not int or value not in (0, 1) for value in specialize_on):
         raise ValueError("specialized adjoint activations must be binary integers")
-    if count != 1 or patterns[0].bits()[0] not in specialize_on:
+    if not controls or (patterns is not None and len(controls) != len(patterns)):
+        raise ValueError("control ports require one activation pattern per register")
+    if Signature(controls).n_qubits() != 1:
+        return inverse_fallback(controls, patterns)
+    validate_control_ports(controls, patterns)
+    if patterns is None:
+        raise ValueError("single control requires a concrete activation")
+    if patterns[0].bits()[0] not in specialize_on:
         return inverse_fallback(controls, patterns)
     function = _call_entry(record, entry)
     assert function.registers is not None

@@ -85,12 +85,15 @@ def _adder() -> StructuredControlAdder:
 def test_unchanged_source_route_and_descriptor_identity(
     kind: str, width: int, shape: tuple[int, ...], value: int, expected: str
 ) -> None:
-    import qualtran as q
-    from qualtran._infra.controlled import make_ctrl_system_with_correct_metabloq
-    from qualtran.bloqs.basic_gates import XGate
+    from qualtran._infra import data_types as q
+    from qualtran._infra.controlled import (
+        CtrlSpec,
+        make_ctrl_system_with_correct_metabloq,
+    )
+    from qualtran.bloqs.basic_gates.x_basis import XGate
 
     dtype = getattr(q, kind)() if kind.endswith("Bit") else getattr(q, kind)(width)
-    spec = q.CtrlSpec(dtype, cvs=np.full(shape, value))
+    spec = CtrlSpec(dtype, cvs=np.full(shape, value))
     source, _ = make_ctrl_system_with_correct_metabloq(XGate(), spec)
     assert type(source).__name__ == expected
     native_type = {
@@ -126,9 +129,12 @@ def test_unchanged_source_route_and_descriptor_identity(
 
 
 def test_mixed_empty_symbolic_and_owner_failure() -> None:
-    import qualtran as q
-    from qualtran._infra.controlled import make_ctrl_system_with_correct_metabloq
-    from qualtran.bloqs.basic_gates import XGate
+    from qualtran._infra import data_types as q
+    from qualtran._infra.controlled import (
+        CtrlSpec,
+        make_ctrl_system_with_correct_metabloq,
+    )
+    from qualtran.bloqs.basic_gates.x_basis import XGate
     from sympy import Symbol
 
     def reject(controls: object, patterns: object) -> Any:
@@ -143,7 +149,7 @@ def test_mixed_empty_symbolic_and_owner_failure() -> None:
     ):
         with pytest.raises(NotImplementedError):
             make_ctrl_system_with_correct_metabloq(
-                XGate(), q.CtrlSpec(dtypes, (np.array(0), np.array(0)))
+                XGate(), CtrlSpec(dtypes, (np.array(0), np.array(0)))
             )
         with pytest.raises(NotImplementedError):
             default_component_control_system(
@@ -154,7 +160,7 @@ def test_mixed_empty_symbolic_and_owner_failure() -> None:
                 reject,
             )
     with pytest.raises(AssertionError):
-        q.CtrlSpec((), ())
+        CtrlSpec((), ())
     with pytest.raises(ValueError):
         default_component_control_system((), (), reject, reject, reject)
     with pytest.raises(ValueError, match="one activation"):
@@ -162,9 +168,7 @@ def test_mixed_empty_symbolic_and_owner_failure() -> None:
             (Register("c", quantum_bit_type()),), (), reject, reject, reject
         )
     n = Symbol("n", positive=True, integer=True)
-    source, _ = make_ctrl_system_with_correct_metabloq(
-        XGate(), q.CtrlSpec(q.QUInt(n), 1)
-    )
+    source, _ = make_ctrl_system_with_correct_metabloq(XGate(), CtrlSpec(q.QUInt(n), 1))
     assert type(source).__name__ == "ControlledViaAnd"
     for dtype in (quantum_bit_type(), unsigned_register_type(n), classical_bit_type()):
         with pytest.raises(RuntimeError, match="selected owner admission"):
@@ -178,7 +182,9 @@ def test_mixed_empty_symbolic_and_owner_failure() -> None:
 
 
 def _quantum_owner(
-    controls: tuple[Register, ...], patterns: tuple[ControlRegister, ...], total: bool
+    controls: tuple[Register, ...],
+    patterns: tuple[ControlRegister, ...] | None,
+    total: bool,
 ) -> tuple[ProgramRecord, StructuredControlAdder]:
     bit = quantum_bit_type()
     child = bit_gate_function(
@@ -207,11 +213,16 @@ def _quantum_owner(
 def test_actual_quantum_owners_callback_gates_complex_branches_and_work(
     width: int, shape: tuple[int, ...], values: tuple[int, ...]
 ) -> None:
-    from qualtran import BloqBuilder, CtrlSpec, QBit, QUInt
-    from qualtran import Signature as SourceSignature
-    from qualtran._infra.controlled import make_ctrl_system_with_correct_metabloq
-    from qualtran.bloqs.basic_gates import XGate
-    from qualtran.resource_counting import QECGatesCost, get_cost_value
+    from qualtran._infra.composite_bloq import BloqBuilder
+    from qualtran._infra.controlled import (
+        CtrlSpec,
+        make_ctrl_system_with_correct_metabloq,
+    )
+    from qualtran._infra.data_types import QBit, QUInt
+    from qualtran._infra.registers import Signature as SourceSignature
+    from qualtran.bloqs.basic_gates.x_basis import XGate
+    from qualtran.resource_counting._bloq_counts import QECGatesCost
+    from qualtran.resource_counting._costing import get_cost_value
 
     ports = (
         Register(
@@ -224,13 +235,13 @@ def test_actual_quantum_owners_callback_gates_complex_branches_and_work(
     routes = []
 
     def total(
-        c: tuple[Register, ...], p: tuple[ControlRegister, ...]
+        c: tuple[Register, ...], p: tuple[ControlRegister, ...] | None
     ) -> tuple[ProgramRecord, StructuredControlAdder]:
         routes.append("total")
         return _quantum_owner(c, p, True)
 
     def predicate(
-        c: tuple[Register, ...], p: tuple[ControlRegister, ...]
+        c: tuple[Register, ...], p: tuple[ControlRegister, ...] | None
     ) -> tuple[ProgramRecord, StructuredControlAdder]:
         routes.append("predicate")
         return _quantum_owner(c, p, False)
@@ -322,16 +333,20 @@ def test_actual_quantum_owners_callback_gates_complex_branches_and_work(
 def test_actual_classical_owner_callback_complex_append_and_control_ownership(
     values: tuple[int, ...],
 ) -> None:
-    from qualtran import BloqBuilder, CBit, CtrlSpec
-    from qualtran._infra.controlled import make_ctrl_system_with_correct_metabloq
-    from qualtran.bloqs.basic_gates import XGate
+    from qualtran._infra.composite_bloq import BloqBuilder
+    from qualtran._infra.controlled import (
+        CtrlSpec,
+        make_ctrl_system_with_correct_metabloq,
+    )
+    from qualtran._infra.data_types import CBit
+    from qualtran.bloqs.basic_gates.x_basis import XGate
 
     shape = () if len(values) == 1 else (len(values),)
     controls = (Register("ctrl", classical_bit_type(), shape),)
     patterns = (ControlRegister(1, values),)
 
     def feedback(
-        c: tuple[Register, ...], p: tuple[ControlRegister, ...]
+        c: tuple[Register, ...], p: tuple[ControlRegister, ...] | None
     ) -> tuple[ProgramRecord, StructuredControlAdder]:
         assert c is controls and p is patterns
         function = classical_bit_feedback_function(
@@ -344,7 +359,7 @@ def test_actual_classical_owner_callback_complex_append_and_control_ownership(
         return module, _adder()
 
     def unexpected(
-        c: tuple[Register, ...], p: tuple[ControlRegister, ...]
+        c: tuple[Register, ...], p: tuple[ControlRegister, ...] | None
     ) -> tuple[ProgramRecord, StructuredControlAdder]:
         raise AssertionError("Classical control must select the feedback owner")
 
@@ -404,7 +419,7 @@ def test_total_factory_replacement_keeps_existing_callback_consumer() -> None:
 
         def system(
             controls: tuple[Register, ...],
-            activation: tuple[ControlRegister, ...],
+            activation: tuple[ControlRegister, ...] | None,
             total: bool = use_total,
         ) -> tuple[ProgramRecord, StructuredControlAdder]:
             return _quantum_owner(controls, activation, total)

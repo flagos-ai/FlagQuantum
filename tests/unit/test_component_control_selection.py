@@ -50,7 +50,7 @@ def native_fallback(
     record: ProgramRecord, mapping: dict[str, ControlAdder]
 ) -> ComponentControlSystem:
     def system(
-        controls: tuple[Register, ...], patterns: tuple[ControlRegister, ...]
+        controls: tuple[Register, ...], patterns: tuple[ControlRegister, ...] | None
     ) -> tuple[ProgramRecord, StructuredControlAdder]:
         registers = record.functions[0].registers
         assert registers is not None
@@ -59,7 +59,12 @@ def native_fallback(
             Register(name, r.dtype, r.shape)
             for name, r in zip(names, controls, strict=True)
         )
-        if len(actual) == 1 and not actual[0].shape and patterns[0].bits() == (1,):
+        if (
+            len(actual) == 1
+            and not actual[0].shape
+            and patterns is not None
+            and patterns[0].bits() == (1,)
+        ):
             module = control_component_hierarchy(record, mapping)
         else:
             module = control_component_via_predicate(record, mapping, actual, patterns)
@@ -81,7 +86,8 @@ def native_fallback(
 def fixtures(
     spectator: str, both: bool
 ) -> tuple[ProgramRecord, Any, dict[int, tuple[ProgramRecord, str]], dict[int, Any]]:
-    from qualtran import Bloq, CtrlSpec
+    from qualtran._infra.bloq import Bloq
+    from qualtran._infra.controlled import CtrlSpec
     from qualtran.bloqs.mcmt.controlled_via_and import ControlledViaAnd
     from qualtran.bloqs.mcmt.specialized_ctrl import _get_ctrl_system_1bit_cv
 
@@ -160,7 +166,7 @@ def assert_gate_parameters(
 def test_direct_selection_and_negative_fallback_match_original(
     both: bool, value: int, spectator: str
 ) -> None:
-    from qualtran import CtrlSpec
+    from qualtran._infra.controlled import CtrlSpec
 
     record, source, native, originals = fixtures(spectator, both)
     controls = (Register("added", quantum_bit_type()),)
@@ -174,7 +180,7 @@ def test_direct_selection_and_negative_fallback_match_original(
         return native.get(value)
 
     def default(
-        controls: tuple[Register, ...], patterns: tuple[ControlRegister, ...]
+        controls: tuple[Register, ...], patterns: tuple[ControlRegister, ...] | None
     ) -> tuple[ProgramRecord, StructuredControlAdder]:
         fallback_calls.append(True)
         return fallback(controls, patterns)
@@ -269,7 +275,7 @@ def test_multi_bit_dispatch_never_queries_specialization(
         unexpected,
         native_fallback(record, {"h": add_h, "p": add_phase}),
     )
-    from qualtran import CtrlSpec
+    from qualtran._infra.controlled import CtrlSpec
 
     original, _ = source.get_ctrl_system(CtrlSpec(cvs=[value] * count))
     observer = _source(Signature([]))
@@ -329,7 +335,7 @@ def test_missing_positive_specialization_rejects(current: int | None) -> None:
         return None
 
     def unexpected(
-        controls: tuple[Register, ...], patterns: tuple[ControlRegister, ...]
+        controls: tuple[Register, ...], patterns: tuple[ControlRegister, ...] | None
     ) -> tuple[ProgramRecord, StructuredControlAdder]:
         pytest.fail("missing positive specialization entered fallback")
 
@@ -352,7 +358,7 @@ def test_invalid_existing_activation_rejects(current: int) -> None:
 
 @pytest.mark.parametrize("count", (0, 2))
 def test_direct_callback_preserves_original_wrong_arity_failure(count: int) -> None:
-    from qualtran import CtrlSpec
+    from qualtran._infra.controlled import CtrlSpec
 
     record, source, native, _ = fixtures("spectator", True)
     module, adder = select_component_control_system(
@@ -383,8 +389,11 @@ def test_direct_callback_preserves_original_wrong_arity_failure(count: int) -> N
 def test_mixed_control_fallback_closes_graph_resources_and_all_branches() -> None:
     from collections import Counter
 
-    from qualtran import CtrlSpec, QBit, QUInt
-    from qualtran.resource_counting import QECGatesCost, QubitCount, get_cost_value
+    from qualtran._infra.controlled import CtrlSpec
+    from qualtran._infra.data_types import QBit, QUInt
+    from qualtran.resource_counting._bloq_counts import QECGatesCost
+    from qualtran.resource_counting._costing import get_cost_value
+    from qualtran.resource_counting._qubit_counts import QubitCount
 
     from flagquantum.compiler._component_trace.program_call_graph import (
         program_component_call_graph,

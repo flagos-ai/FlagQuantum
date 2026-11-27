@@ -68,12 +68,14 @@ def add_inverse_phase(
 def test_specialized_masks_callback_graph_all_histories_and_complex_inverse(
     mask: tuple[int, ...], value: int, spectator: str, expanded: bool
 ) -> None:
-    from qualtran import CtrlSpec
+    from qualtran._infra.controlled import CtrlSpec
     from qualtran.bloqs.mcmt.specialized_ctrl import (
         AdjointWithSpecializedCtrl,
         SpecializeOnCtrlBit,
     )
-    from qualtran.resource_counting import QECGatesCost, QubitCount, get_cost_value
+    from qualtran.resource_counting._bloq_counts import QECGatesCost
+    from qualtran.resource_counting._costing import get_cost_value
+    from qualtran.resource_counting._qubit_counts import QubitCount
 
     record, source, native, _ = fixtures(spectator, True)
     controls = (Register("added", quantum_bit_type()),)
@@ -86,7 +88,7 @@ def test_specialized_masks_callback_graph_all_histories_and_complex_inverse(
     fallback_calls = []
 
     def forward(
-        controls: tuple[Register, ...], patterns: tuple[ControlRegister, ...]
+        controls: tuple[Register, ...], patterns: tuple[ControlRegister, ...] | None
     ) -> tuple[ProgramRecord, StructuredControlAdder]:
         selected_calls.append(True)
         return select_component_control_system(
@@ -97,7 +99,7 @@ def test_specialized_masks_callback_graph_all_histories_and_complex_inverse(
         )
 
     def fallback(
-        controls: tuple[Register, ...], patterns: tuple[ControlRegister, ...]
+        controls: tuple[Register, ...], patterns: tuple[ControlRegister, ...] | None
     ) -> tuple[ProgramRecord, StructuredControlAdder]:
         fallback_calls.append(True)
         return inverse_fallback(controls, patterns)
@@ -224,7 +226,7 @@ def test_append_specialized_inverse_matches_all_dynamic_trajectories(
     record, _, native, _ = fixtures("spectator", True)
 
     def forward(
-        controls: tuple[Register, ...], patterns: tuple[ControlRegister, ...]
+        controls: tuple[Register, ...], patterns: tuple[ControlRegister, ...] | None
     ) -> tuple[ProgramRecord, StructuredControlAdder]:
         return select_component_control_system(
             controls,
@@ -282,12 +284,12 @@ def test_multibit_adjoint_request_delegates_without_forward_query(count: int) ->
     seen = []
 
     def forward(
-        controls: tuple[Register, ...], patterns: tuple[ControlRegister, ...]
+        controls: tuple[Register, ...], patterns: tuple[ControlRegister, ...] | None
     ) -> tuple[ProgramRecord, StructuredControlAdder]:
         pytest.fail("multi-bit adjoint pushed controls into forward specialization")
 
     def fallback(
-        actual: tuple[Register, ...], activations: tuple[ControlRegister, ...]
+        actual: tuple[Register, ...], activations: tuple[ControlRegister, ...] | None
     ) -> tuple[ProgramRecord, StructuredControlAdder]:
         assert actual is controls and activations is patterns
         seen.append(True)
@@ -315,7 +317,7 @@ def test_local_adapter_names_avoid_existing_functions() -> None:
     native[1] = (positive, name)
 
     def forward(
-        controls: tuple[Register, ...], patterns: tuple[ControlRegister, ...]
+        controls: tuple[Register, ...], patterns: tuple[ControlRegister, ...] | None
     ) -> tuple[ProgramRecord, StructuredControlAdder]:
         return select_component_control_system(
             controls,
@@ -342,7 +344,8 @@ def test_local_adapter_names_avoid_existing_functions() -> None:
 
 
 def test_adjoint_reverses_nested_returned_adder_before_inlining() -> None:
-    from qualtran import Bloq, CtrlSpec
+    from qualtran._infra.bloq import Bloq
+    from qualtran._infra.controlled import CtrlSpec
     from qualtran.bloqs.mcmt.specialized_ctrl import (
         AdjointWithSpecializedCtrl,
         SpecializeOnCtrlBit,
@@ -362,7 +365,7 @@ def test_adjoint_reverses_nested_returned_adder_before_inlining() -> None:
     )
 
     def forward(
-        controls: tuple[Register, ...], patterns: tuple[ControlRegister, ...]
+        controls: tuple[Register, ...], patterns: tuple[ControlRegister, ...] | None
     ) -> tuple[ProgramRecord, StructuredControlAdder]:
         def adder(
             builder: ComponentProgramBuilder,

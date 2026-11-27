@@ -15,7 +15,7 @@ from .control_predicate import ControlRegister
 
 def default_component_control_system(
     controls: tuple[Register, ...],
-    patterns: tuple[ControlRegister, ...],
+    patterns: tuple[ControlRegister, ...] | None,
     total: ComponentControlSystem,
     predicate: ComponentControlSystem,
     classical: ComponentControlSystem,
@@ -31,7 +31,7 @@ def default_component_control_system(
     workspace and execution responsibilities. Their failures propagate. Dispatch
     itself does not admit symbolic or additional physical register encodings.
     """
-    if len(controls) != len(patterns):
+    if patterns is not None and len(controls) != len(patterns):
         raise ValueError("Control registers require one activation pattern each")
     if (
         len(controls) == 1
