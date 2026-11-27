@@ -5,7 +5,6 @@
 
 """Standalone legacy wire helpers for symbolic integers, arrays, and complex values."""
 
-from io import BytesIO
 from operator import index
 from sys import modules
 from typing import Any, cast
@@ -15,6 +14,7 @@ from numpy.typing import NDArray
 
 from ...core.value_math import SymbolicInt
 from ...errors import SerializationError
+from .._array_literals import freeze_array, thaw_array
 from ._legacy_expression import parse_legacy_expression
 from ._legacy_protobuf import message_factory, parse_message
 
@@ -81,12 +81,7 @@ def serialize_array_argument(value: NDArray[Any]) -> bytes:
 
 
 def _write_array_argument(message: Any, value: NDArray[Any]) -> None:
-    with BytesIO() as stream:
-        try:
-            np.save(stream, value, allow_pickle=False)
-        except (TypeError, ValueError, OverflowError) as error:
-            raise SerializationError("Invalid array argument") from error
-        message.ndarray = stream.getvalue()
+    message.ndarray = freeze_array(value)
 
 
 def deserialize_array_argument(data: bytes) -> NDArray[Any]:
@@ -95,15 +90,7 @@ def deserialize_array_argument(data: bytes) -> NDArray[Any]:
 
 
 def _read_array_argument(message: Any) -> NDArray[Any]:
-    with BytesIO(message.ndarray) as stream:
-        try:
-            result = np.load(stream, allow_pickle=False)
-        except (ValueError, EOFError, OSError, OverflowError) as error:
-            raise SerializationError("Invalid NumPy array argument payload") from error
-        if isinstance(result, np.ndarray):
-            return result
-        result.close()
-    raise SerializationError("Array argument requires a single NumPy array")
+    return thaw_array(message.ndarray)
 
 
 def serialize_complex_argument(value: complex) -> bytes:
