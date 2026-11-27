@@ -678,8 +678,12 @@ and 16 partitions. Manual runs continue to include slow tests; the runner choice
 does not change the collected selection, time limits, or coverage thresholds.
 Source preparation uses the generic CPU pool. Source hygiene runs on a hosted
 runner to download its pre-commit hooks.
-Dependency-bound and supply-chain checks retain the general CPU pool.
-Fork PRs use hosted runners.
+Dependency-bound checks retain the general CPU pool, with hosted runners for
+fork PRs. Supply-chain checks use GitHub-hosted runners for every event because
+`pip-audit` queries the public PyPI vulnerability API independently of the pip
+installation index. The installed-dependency snapshot, strict audit, Bandit,
+validated SBOM, and required `ci-complete` dependency remain unchanged. A PyPI
+query timeout fails the gate; it is not a completed vulnerability assessment.
 
 The generic CPU pool includes isolated MC550, BW1100, and A800 services.
 MC550 services use four CPU time units and 16 GiB per slot, with a 64-CPU parent
