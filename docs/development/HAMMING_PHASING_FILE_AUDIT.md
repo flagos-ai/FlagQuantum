@@ -1,5 +1,54 @@
 # Hamming-weight phasing source-file audit
 
+## Current complete-file disposition (2026-11-28)
+
+This review applies the explicitly approved
+[faithful-migration closure rule](G2_FAITHFUL_MIGRATION_CLOSURE_PROPOSAL.md).
+The historical open decisions below are retained as evidence, rather than
+requirements to repair the frozen source or invent a missing upstream body.
+All 14 class/method/example definitions, six constructor fields and two
+documentation specifications have native owners:
+
+| Complete source responsibility | Authoritative native owner and acceptance |
+| --- | --- |
+| Both classes and their `bitsize`, `exponent`, `eps` fields | Existing Hamming phase constructor factories, `HammingPhasingExample` and stored Program signatures; actual default and explicit source objects resolve identically at depths zero through two. |
+| Both `signature` properties | MSB-first uint input and caller-owned fixed-point gradient; actual source typed signatures and all operands are compared. |
+| Direct `build_composite_bloq` | `hamming_phasing_program`: count, LSB-first weighted phases and specialized exact count erasure; normal append, full source operators, every small measurement history and zero private work are certified. |
+| Direct `build_call_graph` | Independent source Hamming phase resource owner composes count, representative unweighted Z power and count adjoint. Source classification and both QEC profiles remain separate from weighted physical angles and synthesis estimates. |
+| Gradient `phase_oracle`, `b_grad`, `gamma_dtype` | Existing QVR constructor, phase-sizing and coefficient-format owners; the source count word uses fixed-point fraction zero. Symbolic bounds retain their original expressions, coefficient metadata and logical declarations. |
+| Gradient `build_composite_bloq` | `hamming_gradient_phasing_program` and the existing QVR/scaled-add modules retain the three-call root, typed cost handoff, caller gradient and exact count erase. Source-success child bodies are compared; the original mixed-QFxp child failure is explicitly distinguished from the native storage-view adaptation. |
+| Both `wire_symbol` methods | Existing catalog glyph provider and fresh recursive source drawing comparisons, including both original root labels and descendant definition identities. |
+| Both example functions and documentation specifications | Original four-bit factories, native catalog and notebook. Source and native notebooks already ran independently; all original source assets remain unchanged. |
+
+The direct Hamming dependency is now accepted as Q-0198, including its actual
+outer-adjoint metadata and concrete symbolic-integer SDK storage path. Existing
+QVR, phase-gradient, scaled-add, arithmetic, measurement and transport owners
+retain their respective responsibilities; this review neither duplicates them
+nor certifies every inherited SDK, serialization or generic-adjoint protocol.
+The parent accepts the source's own complete responsibilities. Generic protocol
+parents and unrelated catalog groups stay open under their own ledgers.
+
+The following source limitations remain separate follow-ups: width-one
+empty-junk generic/SDK adjoint and recursive width-query failures; particular
+mixed fixed-point QVR/scaled-add failures; the negative small-gradient model;
+and the negative-exponent precision violations recorded numerically below.
+Successful native/source translation does not imply the requested epsilon was
+met. Native storage adaptation and independently certified exact inverses are
+not substituted for absent or failing original gate streams. Nonliteral
+numerical leaves remain unbound declarations or explicit refusals.
+
+Q-0668 is eligible for acceptance after publication of this reviewed
+disposition. No native implementation is changed for that acceptance. Reuse
+the published 768-case Hamming/count/phase/catalog regression and 32 integration
+cases from `g2-hamming-literal-closure-*20261128`, including complete original
+parameter grids, source-recursive calls/drawings, complex amplitudes, histories,
+clean work, SDK replacement and symbolic resource/dependency evidence. Native
+phase owners and source assets are unchanged from those checked bytes. The
+earlier larger notebook and source-test receipts remain evidence for their
+original scopes; simulator failures and performance skips are not passing
+physical certificates. Physical inventories and model estimates stay in the
+separate columns below. Only Q-0668 changes disposition in this audit.
+
 The reference is unchanged Qualtran v0.7.0 at commit
 `bcb17bb25360ed68ce3bc084645db3e929799389`.
 
