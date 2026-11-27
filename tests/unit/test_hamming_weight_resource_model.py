@@ -2,6 +2,7 @@
 
 from dataclasses import fields
 from itertools import product
+from typing import Any
 
 import pytest
 import sympy
@@ -26,6 +27,7 @@ from flagquantum.compiler.registers.bits.hamming_weight_resource_model import (
     source_hamming_weight_cost,
     source_hamming_weight_resource_formula,
 )
+from flagquantum.core.value_math import SymbolicInt
 
 pytestmark = [pytest.mark.unit, pytest.mark.ftqc_reference]
 n = sympy.Symbol("n", positive=True, integer=True)
@@ -50,12 +52,15 @@ WIDTHS = (
     "width,adjoint,legacy", tuple(product(WIDTHS, (False, True), (False, True)))
 )
 def test_every_source_category_and_successful_peak_with_original_width_object(
-    width, adjoint, legacy
-):
+    width: SymbolicInt, adjoint: bool, legacy: bool
+) -> None:
+    from qualtran._infra.bloq import Bloq
     from qualtran.bloqs.arithmetic.hamming_weight import HammingWeightCompute
-    from qualtran.resource_counting import QECGatesCost, QubitCount, get_cost_value
+    from qualtran.resource_counting._bloq_counts import QECGatesCost
+    from qualtran.resource_counting._costing import get_cost_value
+    from qualtran.resource_counting._qubit_counts import QubitCount
 
-    source = HammingWeightCompute(width)
+    source: Bloq = HammingWeightCompute(width)
     if adjoint:
         source = source.adjoint()
     model = source_hamming_weight_resource_formula(
@@ -80,22 +85,25 @@ def test_every_source_category_and_successful_peak_with_original_width_object(
         )
     ),
 )
-def test_direct_callees_keep_source_counts_and_adjoint_identity(width, adjoint):
+def test_direct_callees_keep_source_counts_and_adjoint_identity(
+    width: SymbolicInt, adjoint: bool
+) -> None:
+    from qualtran._infra.bloq import Bloq
     from qualtran.bloqs.arithmetic.hamming_weight import HammingWeightCompute
-    from qualtran.bloqs.basic_gates import CNOT
+    from qualtran.bloqs.basic_gates.cnot import CNOT
     from qualtran.bloqs.mcmt.and_bloq import And
-    from qualtran.resource_counting import SympySymbolAllocator
+    from qualtran.resource_counting._call_graph import get_bloq_callee_counts
 
-    source = HammingWeightCompute(width)
+    source: Bloq = HammingWeightCompute(width)
     if adjoint:
         source = source.adjoint()
-    original = dict(source.build_call_graph(SympySymbolAllocator()))
+    original = dict(get_bloq_callee_counts(source, ignore_decomp_failure=False))
     root = ArithmeticCall("hamming_weight", (width,), adjoint=adjoint)
     children = arithmetic_callees(root)
-    translated = {}
+    translated: dict[Any, SymbolicInt] = {}
     for child, count in children.items():
         if isinstance(child, ConjunctionCall):
-            leaf = And(uncompute=child.adjoint)
+            leaf: Bloq = And(uncompute=child.adjoint)
         else:
             assert isinstance(child, CliffordCall) and child.opcode == "cx"
             leaf = CNOT()
@@ -105,7 +113,7 @@ def test_direct_callees_keep_source_counts_and_adjoint_identity(width, adjoint):
 
 
 @pytest.mark.parametrize("width", WIDTHS)
-def test_original_logical_junk_and_output_widths(width):
+def test_original_logical_junk_and_output_widths(width: SymbolicInt) -> None:
     from qualtran.bloqs.arithmetic.hamming_weight import HammingWeightCompute
 
     source = HammingWeightCompute(width)
@@ -119,12 +127,15 @@ def test_original_logical_junk_and_output_widths(width):
     tuple(product((1, 2, 3, 4, 5, 7, 8, 16), (False, True), (False, True))),
 )
 def test_concrete_allocation_model_retains_count_query_failure_separately(
-    width, adjoint, legacy
-):
+    width: int, adjoint: bool, legacy: bool
+) -> None:
+    from qualtran._infra.bloq import Bloq
     from qualtran.bloqs.arithmetic.hamming_weight import HammingWeightCompute
-    from qualtran.resource_counting import QECGatesCost, QubitCount, get_cost_value
+    from qualtran.resource_counting._bloq_counts import QECGatesCost
+    from qualtran.resource_counting._costing import get_cost_value
+    from qualtran.resource_counting._qubit_counts import QubitCount
 
-    source = HammingWeightCompute(width)
+    source: Bloq = HammingWeightCompute(width)
     if adjoint:
         source = source.adjoint()
     report = estimate_component_resources(
@@ -142,11 +153,13 @@ def test_concrete_allocation_model_retains_count_query_failure_separately(
 
 
 @pytest.mark.parametrize("width,adjoint", tuple(product((0, 1), (False, True))))
-def test_source_failed_qubit_queries_remain_explicit(width, adjoint):
+def test_source_failed_qubit_queries_remain_explicit(width: int, adjoint: bool) -> None:
+    from qualtran._infra.bloq import Bloq
     from qualtran.bloqs.arithmetic.hamming_weight import HammingWeightCompute
-    from qualtran.resource_counting import QubitCount, get_cost_value
+    from qualtran.resource_counting._costing import get_cost_value
+    from qualtran.resource_counting._qubit_counts import QubitCount
 
-    source = HammingWeightCompute(width)
+    source: Bloq = HammingWeightCompute(width)
     if adjoint:
         source = source.adjoint()
     with pytest.raises((RuntimeError, ValueError)):
@@ -155,7 +168,7 @@ def test_source_failed_qubit_queries_remain_explicit(width, adjoint):
         source_hamming_weight_resource_formula(width, adjoint=adjoint)
 
 
-def test_symbolic_lower_bound_changes_counts_without_casting_literal():
+def test_symbolic_lower_bound_changes_counts_without_casting_literal() -> None:
     from sympy.codegen.cfunctions import log2
 
     concrete = source_hamming_weight_resource_formula(3)
@@ -173,14 +186,16 @@ def test_symbolic_lower_bound_changes_counts_without_casting_literal():
 
 
 def test_phasing_composes_replaceable_count_models_without_duplicate_equations(
-    monkeypatch,
-):
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
     import flagquantum.compiler.registers.phase.hamming_weight_phasing as consumer
 
-    seen = []
+    seen: list[tuple[int, bool, bool]] = []
 
-    def count(width, *, adjoint=False):
-        seen.append((width, adjoint))
+    def count(
+        width: int, *, adjoint: bool = False, legacy_shims: bool = False
+    ) -> ComponentCost:
+        seen.append((width, adjoint, legacy_shims))
         return ComponentCost(
             "replacement",
             43 if adjoint else 37,
@@ -195,7 +210,7 @@ def test_phasing_composes_replaceable_count_models_without_duplicate_equations(
     actual = estimate_component_resources(
         consumer.source_hamming_weight_phasing_cost(4, 1.0)
     )
-    assert seen == [(4, False), (4, True)]
+    assert seen == [(4, False, False), (4, True, False)]
     assert actual.gates == GateCost(21, 26, 34, 38, 51, 54, 60)
     assert actual.peak_logical_qubits == 43
 
@@ -203,12 +218,14 @@ def test_phasing_composes_replaceable_count_models_without_duplicate_equations(
 @pytest.mark.parametrize(
     "kwargs", ({"width": True}, {"width": -1}, {"adjoint": 1}, {"legacy_shims": 1})
 )
-def test_invalid_resource_parameters_are_not_converted(kwargs):
+def test_invalid_resource_parameters_are_not_converted(kwargs: dict[str, Any]) -> None:
     with pytest.raises(ValueError):
         source_hamming_weight_resource_formula(**({"width": n} | kwargs))
 
 
-def test_literal_zero_negative_counts_are_diagnostics_not_physical_gate_budgets():
+def test_literal_zero_negative_counts_are_diagnostics_not_physical_gate_budgets() -> (
+    None
+):
     literal = source_hamming_weight_resource_formula(sympy.Integer(0))
     inverse = source_hamming_weight_resource_formula(sympy.Integer(0), adjoint=True)
     assert (literal.and_bloq, literal.clifford, literal.logical_qubits) == (-1, -4, 3)
