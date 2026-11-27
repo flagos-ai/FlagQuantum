@@ -108,8 +108,10 @@ Unknown leaves lacking a supported physical protocol still fail conversion.
 
 Run `tests/unit/test_lp_direct_live_graph.py` for the complete live LP path and
 `tests/unit/test_luis_perina_state.py` for the existing native module, direct
-source dependencies and retained inverse-phase counterexample. The missing
-LP/LPRS stored constructor bindings remain a separate production task.
+source dependencies and retained inverse-phase counterexample. LP/LPRS stored
+constructor bindings are now implemented; see [the LP audit](LUIS_PERINA_STATE_FILE_AUDIT.md).
+The native root retains the original fifteen calls without redundant output
+views, and the catalogue uses its complete native decomposition.
 
 ## Verification and remaining boundaries
 

@@ -1464,3 +1464,27 @@ The initial concentrated run exhausted temporary storage and exited 120. Its
 retry log replaced the first log. Only confirmed reproducible task-generated
 exports were reclaimed. The successful retry and isolated module export ran
 serially with failed-only temporary retention and first-failure stopping.
+
+## Complete LP root presentation, 2026-11-27
+
+The LP catalogue entry now selects the existing complete native preparation
+Program, replacing its former interface-only presentation. Its fifteen source
+calls and exact return mapping retain the original constructor order. Two
+unnecessary native output views were removed using the already admitted nominal
+compatibility rule. Complete primitive IR and outputs are unchanged; allocation
+and free order is unchanged, while expanded logical operation positions are
+renumbered after removing the views.
+
+The dedicated LP presentation module owns original allocation/free arrows,
+interim/adjoint labels, Ry parameters, CZ controls, X and reflection symbols.
+The shared QPE window dispatcher delegates to that owner. Fresh root scores at
+widths 1, 3, 5 and 7 match source geometry and every glyph after the established
+boundary-identity normalization. The actual catalogue exporter publishes the
+LP body and its existing native dependencies. Symbolic LP retains the original
+unresolved-body boundary. Unqualified native reflection/private descendants
+remain explicitly native; this does not certify every recursive source drawing
+or complete Q-0120.
+
+The retained full-state, branch, work-cleanup and independent resource evidence
+is linked in [the LP audit](LUIS_PERINA_STATE_FILE_AUDIT.md). No protected API,
+new scalar opcode, source patch or pending-proposal implementation is involved.

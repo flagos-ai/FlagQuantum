@@ -27,9 +27,10 @@ No production code imports Qualtran or Cirq.
 
 `luis_perina_state_program` composes the complete source forward graph through
 the existing interim, exact interim adjoint and zero-state reflection Programs.
-Allocation, source call order and private frees remain explicit. A final shared
-Split/Join restores the fractional output descriptor from the child QAny view;
-these are nominal views and emit no physical gates. This does not change the
+Allocation, source call order and private frees remain explicit. Existing nominal
+compatibility accepts the source QAny child return under its declared fractional
+output descriptor. The root retains exactly the original fifteen calls and
+their return mapping without additional Split/Join views. This does not change the
 source's defective generic full-window adjoint or identify it with the exact
 mathematical inverse.
 
@@ -48,6 +49,14 @@ All measurement histories share the certified complex channel, and numerical
 prepared outputs verify private zero work with a coherent spectator. Existing
 full source/module evidence, including n=13 and the inverse counterexample,
 remains applicable to unchanged dependencies.
+
+The catalogue now uses this actual concrete LP Program instead of a port-only
+stub. Allocation/free glyphs, interim and adjoint labels, Ry, CZ, X and reflection
+symbols retain the original root geometry. The dedicated presentation owner is
+`examples/algorithms/luis_perina_decomposition.py`; the shared window dispatcher
+delegates to it. Fresh source scores are compared at widths 1, 3, 5 and 7.
+Symbolic LP retains its unresolved body boundary. Unqualified native private
+helpers are not misrepresented as exact source decompositions.
 
 Measured inventories and source estimates remain separate. Stored LP emits
 8/16/32 T or TDG primitives and 2/4/8 measurements at widths 1/3/7. Its independent

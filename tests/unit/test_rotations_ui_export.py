@@ -160,6 +160,7 @@ def test_fresh_complete_catalog_and_source_square_filename_collision(
             "rectangular_window_state_small",
             "rectangular_window_state_symbolic",
             "lprs_interim_prep",
+            "lp_resource_state_small",
             "textbook_qpe_small",
             "two_bit_ffft",
             "approximate_qft_small",

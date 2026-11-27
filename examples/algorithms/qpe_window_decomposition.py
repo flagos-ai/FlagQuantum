@@ -10,9 +10,11 @@ from math import pi
 
 from sympy import Expr
 
+from examples.algorithms.luis_perina_decomposition import luis_perina_window_symbols
 from examples.algorithms.rotation_gate_decomposition import rotation_gate_symbols
 from flagquantum.algorithms.primitives.luis_perina_state import (
     luis_perina_interim_program,
+    luis_perina_state_program,
 )
 from flagquantum.algorithms.primitives.phase_estimation_window import (
     rectangular_window_program,
@@ -63,6 +65,8 @@ def window_program(
         return rectangular_window_program(width)
     if operation == "LPRSInterimPrep" and type(width) is int:
         return luis_perina_interim_program(width)
+    if operation == "LPResourceState" and type(width) is int:
+        return luis_perina_state_program(width)
     if operation == "TextbookQPE":
         preparation, unitary = parameters["ctrl_state_prep"], parameters["unitary"]
         assert isinstance(preparation, dict) and isinstance(unitary, dict)
@@ -85,6 +89,17 @@ def window_symbols(
     """Project source glyphs from literal, definition-qualified constructors."""
     functions = {f.name: f for f in record.functions}
     root_ports = tuple(p.name for p in record.functions[0].registers or ())
+    lp_root = (
+        root_ports == ("qpe_reg",)
+        and isinstance(width, int)
+        and len(record.functions[0].blocks[0].operations) == 15
+        and matches_component_definition(
+            record, record.functions[0].name, luis_perina_state_program(width)
+        )
+    )
+    if lp_root:
+        assert isinstance(width, int)
+        return luis_perina_window_symbols(record, width)
     controlled_powers = [
         op.callee
         for op in record.functions[0].blocks[0].operations
