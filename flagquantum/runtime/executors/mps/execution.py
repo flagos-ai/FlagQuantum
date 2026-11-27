@@ -17,7 +17,7 @@ from typing import Any, TypedDict
 import torch
 import torch.distributed as dist
 
-from ....core.ir import CircuitIR, Instruction, ensure_circuit_ir
+from ....core.ir import Instruction, ensure_circuit_ir
 from ....simulation.mps.entrypoints import run_mps
 from ....simulation.mps.models import (
     MPSAdaptiveBondPlan,
@@ -289,10 +289,6 @@ def run_distributed_mps(
     )
 
 
-def _as_ir(program: Any) -> CircuitIR:
-    return ensure_circuit_ir(program)
-
-
 def _value_requires_grad(value: Any) -> bool:
     if isinstance(value, torch.Tensor):
         return bool(value.requires_grad)
@@ -304,7 +300,7 @@ def _value_requires_grad(value: Any) -> bool:
 
 
 def _program_requires_grad(program: Any) -> bool:
-    ir = _as_ir(program)
+    ir = ensure_circuit_ir(program)
     return any(
         _value_requires_grad(instruction.params)
         or _value_requires_grad(instruction.matrix)
@@ -327,7 +323,7 @@ def _mps_run_options(options: Mapping[str, Any]) -> dict[str, Any]:
 
 def _replicated_mps_stats(circuit_or_ir: Any) -> _MPSExecutionStats:
     return {
-        "owned_instruction_count": len(tuple(_as_ir(circuit_or_ir))),
+        "owned_instruction_count": len(tuple(ensure_circuit_ir(circuit_or_ir))),
         "sharded_kernel_count": 0,
         "tensor_sync_count": 0,
         "boundary_sync_count": 0,
@@ -353,7 +349,7 @@ def _initial_mps(
     cutoff: float = 0.0,
     truncated_gradient: TruncatedGradient = "refuse",
 ) -> MPSState:
-    ir = _as_ir(circuit_or_ir)
+    ir = ensure_circuit_ir(circuit_or_ir)
     config = MPSConfig(
         max_bond=max_bond,
         cutoff=cutoff,
@@ -846,7 +842,7 @@ def _run_mps_site_sharded_local(
 ) -> tuple[MPSState, _MPSExecutionStats]:
     """Run a single-process MPS development simulator with rank-owned tensors."""
 
-    ir = _as_ir(circuit_or_ir)
+    ir = ensure_circuit_ir(circuit_or_ir)
     seed_mps = _initial_mps(
         circuit_or_ir,
         bsz=bsz,
@@ -1048,7 +1044,7 @@ def _run_mps_site_sharded_sync(
     truncated_gradient: TruncatedGradient = "refuse",
     **_: Any,
 ) -> tuple[MPSState, _MPSExecutionStats]:
-    ir = _as_ir(circuit_or_ir)
+    ir = ensure_circuit_ir(circuit_or_ir)
     mps = _initial_mps(
         circuit_or_ir,
         bsz=bsz,

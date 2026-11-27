@@ -134,10 +134,6 @@ def _validated_declaration(
     return tuple(resolved)
 
 
-def _validated_program(program: object) -> CircuitIR:
-    return ensure_circuit_ir(program)
-
-
 def _expect_ir(function: Callable[..., object], result: object, name: str) -> CircuitIR:
     if not isinstance(result, CircuitIR):
         raise CompilationError(
@@ -576,7 +572,7 @@ class PassManager:
                 declared dependencies are unsatisfiable.
         """
 
-        return _AnalysisRun(self.registry).value(name, _validated_program(program))
+        return _AnalysisRun(self.registry).value(name, ensure_circuit_ir(program))
 
     def calls(self, program: CircuitIR, sequence: Sequence[str]) -> Mapping[str, int]:
         """Run ``sequence`` and report how often each analysis was computed.
@@ -587,7 +583,7 @@ class PassManager:
         """
 
         resolved = self.registry.resolve_sequence(sequence)
-        ir = _validated_program(program)
+        ir = ensure_circuit_ir(program)
         run = _AnalysisRun(self.registry)
         for name, spec in resolved:
             ir = self._applied(name, spec, ir, run)
@@ -604,7 +600,7 @@ class PassManager:
         """
 
         resolved = self.registry.resolve_sequence(sequence)
-        ir = _validated_program(program)
+        ir = ensure_circuit_ir(program)
         run = _AnalysisRun(self.registry)
         for name, spec in resolved:
             ir = self._applied(name, spec, ir, run)
@@ -633,7 +629,7 @@ class PassManager:
         """
 
         resolved = self.registry.resolve_sequence(sequence)
-        ir = _validated_program(program)
+        ir = ensure_circuit_ir(program)
         limit = len(ir) + 1 if max_rounds is None else int(max_rounds)
         if limit <= 0:
             raise ValueError("max_rounds must be positive")

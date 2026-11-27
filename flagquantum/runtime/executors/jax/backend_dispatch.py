@@ -5,9 +5,11 @@ from __future__ import annotations
 from collections.abc import Sequence
 from typing import Any
 
+from flagquantum.core.ir import ensure_circuit_ir
+
 from ...distributed.backend_policy import DistributedBackendPolicy
 from .mps.planning import _mps_plan
-from .planning_core import JAXDistributedQuantumPlan, _as_ir
+from .planning_core import JAXDistributedQuantumPlan
 from .runtime_environment import (
     _resolve_local_world_size,
     _resolve_policy,
@@ -58,7 +60,7 @@ def plan_jax_distributed_quantum_backend(
         world_size=resolved_world_size,
         policy=policy,
     )
-    ir = _as_ir(circuit_or_ir)
+    ir = ensure_circuit_ir(circuit_or_ir)
     if normalized_mode == "statevector":
         return _statevector_plan(
             ir,

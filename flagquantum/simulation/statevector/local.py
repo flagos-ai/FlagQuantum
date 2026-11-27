@@ -66,9 +66,6 @@ from .fusion_config import (
     _cpu_disjoint_dense_max_wires,
     _cpu_hadamard_controlled_phase_fusion_enabled,
 )
-from .measurement_ops import (
-    _expectation_z as _measurement_expectation_z,
-)
 from .operations import (
     _CPU_DISJOINT_DENSE_MAX_WIRES,
     _CX_SEQUENCE_GATHER_MINIMUM_LENGTH,
@@ -1203,12 +1200,6 @@ def state(circuit: Circuit, *, refresh: bool = False) -> torch.Tensor:
             runtime["statevector_batch_assembly"] = assembly
     circuit._state_cache = output
     return output
-
-
-def _expectation_z(circuit: Circuit, wires: tuple[int, ...]) -> torch.Tensor:
-    """Evaluate Z signs read from bit ``n_wires - 1 - wire``."""
-
-    return _measurement_expectation_z(circuit, wires)
 
 
 def run_local_statevector(

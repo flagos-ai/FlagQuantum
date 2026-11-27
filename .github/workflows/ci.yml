@@ -2755,6 +2755,8 @@ jobs:
           python-version: "3.12"
       - uses: ./.github/actions/isolated-python
         with:
+          # Audit only this job's environment, without shadowed cache versions.
+          inherit-installed-dependencies: "false"
           self-hosted-pypi-index: https://mirrors.aliyun.com/pypi/simple
       - run: python -m pip install --upgrade pip 'setuptools>=77.0.3' wheel
       - uses: ./.github/actions/install-cpu-torch

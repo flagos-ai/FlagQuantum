@@ -5,6 +5,7 @@ from __future__ import annotations
 from collections.abc import Sequence
 from typing import Any
 
+from flagquantum.core.ir import ensure_circuit_ir
 from flagquantum.simulation.mps.jax.batched import (
     jax_mps_apply_one_batched as _apply_one_jax_mps_tensor,
 )
@@ -19,7 +20,6 @@ from ..array_conversions import (
     _parameterized_gate_matrix_as_jax,
 )
 from ..backend_dispatch import plan_jax_distributed_quantum_backend
-from ..planning_core import _as_ir
 from ..runtime_environment import (
     _jax_array_nbytes,
     _jax_complex_dtype,
@@ -88,7 +88,7 @@ def run_jax_sharded_mps(
     )
     if complex_bytes is None:
         complex_bytes = 16 if dtype == torch.complex128 else 8
-    ir = _as_ir(circuit_or_ir)
+    ir = ensure_circuit_ir(circuit_or_ir)
     jax_dtype = _jax_complex_dtype(complex_bytes)
     torch_dtype = _torch_complex_dtype(complex_bytes)
     jax_device = _resolve_jax_device(device)

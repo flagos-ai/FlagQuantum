@@ -7,6 +7,7 @@ from typing import Any
 
 import torch
 
+from flagquantum.core.ir import ensure_circuit_ir
 from flagquantum.simulation.kernels.complex_bmm import _layout_complex_bmm_declared_for
 
 from ..gate_matrix import gate_matrix
@@ -16,7 +17,6 @@ from .models import (
     TensorNetworkContractionPlan,
     TensorNetworkNode,
 )
-from .path_search import _as_ir
 from .state import TensorNetworkState
 
 
@@ -51,7 +51,7 @@ def _build_tensor_network_plan(
 ) -> TensorNetworkContractionPlan:
     """Walk the program once, materializing node tensors on ``device``."""
 
-    ir = _as_ir(circuit_or_ir)
+    ir = ensure_circuit_ir(circuit_or_ir)
     dtype = dtype or torch.complex64
     initial_tensors, joint_initial_state = _initial_state_tensors(
         circuit_or_ir, bsz=bsz, n_qubits=ir.n_wires, device=device, dtype=dtype

@@ -4,13 +4,15 @@ from __future__ import annotations
 
 from typing import Any
 
+from flagquantum.core.ir import ensure_circuit_ir
+
 from .....core.ir import CircuitIR
 from ....distributed.backend_policy import DistributedBackendPolicy
 from ..common import communication_tier as _communication_tier
 from ..common import node_count as _node_count
 from ..common import rank_for_qubit as _rank_for_qubit
 from ..common import split_contiguous as _split_contiguous
-from ..planning_core import JAXDistributedQuantumPlan, _as_ir
+from ..planning_core import JAXDistributedQuantumPlan
 from ..runtime_environment import (
     _jax_device_count_summary,
     _resolve_jax_backward_backend,
@@ -120,7 +122,7 @@ def plan_jax_sharded_mps_parameter_flow(
         world_size=resolved_world_size,
         policy=policy,
     )
-    ir = _as_ir(circuit_or_ir)
+    ir = ensure_circuit_ir(circuit_or_ir)
     shard_plans = _mps_shards(ir.n_wires, resolved_world_size)
     rank_counts = [0 for _ in range(int(resolved_world_size))]
     assignments: list[JAXShardedMPSParameterGateAssignment] = []
@@ -294,7 +296,7 @@ def plan_jax_sharded_mps_training(
         policy=policy,
     )
     resolved_backward_backend = _resolve_jax_backward_backend(backward_backend, policy)
-    ir = _as_ir(circuit_or_ir)
+    ir = ensure_circuit_ir(circuit_or_ir)
     shard_plans = _mps_shards(ir.n_wires, resolved_world_size)
     parameter_flow = plan_jax_sharded_mps_parameter_flow(
         ir,

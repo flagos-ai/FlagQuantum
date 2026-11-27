@@ -276,3 +276,9 @@ See [ownership](migration/runtime-mps-local-numerical-ownership.md) and
 [acceptance](migration/runtime-mps-local-numerical-acceptance.md). Runtime
 retains communication, optimizer policy, independent analytic validation and
 evidence-only tensor allocations. No directory, dependency or forwarding is added.
+
+## Exact-argument private forwarding closure
+
+The [direct-call retirement record](migration/private-direct-call-retirement.md)
+tracks eight private wrapper deletions, their complete current callers, the
+private measurement delta and independent source/installed acceptance.

@@ -16,7 +16,6 @@ from flagquantum.simulation.kernels.complex_bmm import (
 )
 from flagquantum.simulation.kernels.real_imag import complex_einsum_pair
 
-from ...core.ir import CircuitIR, ensure_circuit_ir
 from .models import (
     CompiledTNStagePlan,
     PairContractionStep,
@@ -109,10 +108,6 @@ def _reorder_final_tensor(
     return _einsum_reorder_by_labels(
         _real_tensor(node.tensor), node.labels, output_labels
     )
-
-
-def _as_ir(program: Any) -> CircuitIR:
-    return ensure_circuit_ir(program)
 
 
 def _product(values: Iterable[SupportsInt]) -> int:

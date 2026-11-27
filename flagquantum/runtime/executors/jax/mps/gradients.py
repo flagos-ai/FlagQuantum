@@ -5,13 +5,14 @@ from __future__ import annotations
 from collections.abc import Callable, Sequence
 from typing import Any
 
+from flagquantum.core.ir import ensure_circuit_ir
+
 from ....distributed.backend_policy import DistributedBackendPolicy
 from ..array_conversions import (
     _jax_parameter_array_from_input,
     _torch_parameters_for_static_build,
 )
 from ..backend_dispatch import plan_jax_distributed_quantum_backend
-from ..planning_core import _as_ir
 from ..runtime_environment import (
     _jax_real_dtype,
     _require_jax,
@@ -85,7 +86,7 @@ def jax_sharded_mps_parameter_value_and_grad(
     )
     parameter_shape = tuple(int(dim) for dim in static_parameters.shape)
     example_circuit = circuit_builder(static_parameters)
-    ir = _as_ir(example_circuit)
+    ir = ensure_circuit_ir(example_circuit)
     if int(ir.n_wires) != int(n_qubits):
         raise ValueError(
             f"n_qubits={n_qubits} does not match circuit IR n_qubits={ir.n_wires}."

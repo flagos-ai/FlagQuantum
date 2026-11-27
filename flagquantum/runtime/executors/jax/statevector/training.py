@@ -4,9 +4,10 @@ from __future__ import annotations
 
 from typing import Any
 
+from flagquantum.core.ir import ensure_circuit_ir
+
 from ....distributed.backend_policy import DistributedBackendPolicy
 from ..backend_dispatch import plan_jax_distributed_quantum_backend
-from ..planning_core import _as_ir
 from ..runtime_environment import (
     _jax_device_count_summary,
     _resolve_jax_backward_backend,
@@ -88,7 +89,7 @@ def plan_jax_sharded_statevector_training(
         policy=policy,
     )
     resolved_backward_backend = _resolve_jax_backward_backend(backward_backend, policy)
-    ir = _as_ir(circuit_or_ir)
+    ir = ensure_circuit_ir(circuit_or_ir)
     state_plan = plan_distributed_statevector(
         ir,
         world_size=resolved_world_size,

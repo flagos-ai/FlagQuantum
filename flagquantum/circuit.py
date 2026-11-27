@@ -1091,7 +1091,7 @@ class Circuit(_BuiltinGateMethods):
         )
 
     def expectation_z(self, qubits: Iterable[int] | int | None = None) -> torch.Tensor:
-        from .simulation.statevector.local import _expectation_z
+        from flagquantum.simulation.statevector.measurement_ops import _expectation_z
 
         if qubits is None:
             qubits = range(self.n_qubits)

@@ -271,21 +271,42 @@ jobs:
           mkdir -p hardware-run
           if [ -d "$output" ]; then cp -a "$output" hardware-run/qng-cuda; fi
           if [ -d "$output-watchdog" ]; then cp -a "$output-watchdog" hardware-run/qng-watchdog; fi
+      - name: Select one idle physical GPU
+        if: ${{ !inputs.qng_ablation && !inputs.precision_frontier }}
+        run: |
+          python - <<'PYTHON'
+          import os
+          import subprocess
+          from pathlib import Path
+
+          result = subprocess.run(
+              ["nvidia-smi", "--query-gpu=index,memory.used,utilization.gpu", "--format=csv,noheader,nounits"],
+              check=True, capture_output=True, text=True, timeout=30,
+          )
+          devices = [tuple(map(int, row.split(","))) for row in result.stdout.splitlines()]
+          idle = [index for index, memory, utilization in devices if memory < 1024 and utilization == 0]
+          if len(set(idle)) < 1:
+              raise SystemExit("One idle GPU is required; other workloads must finish first")
+          selected = str(idle[0])
+          with Path(os.environ["GITHUB_ENV"]).open("a", encoding="utf-8") as output:
+              output.write(f"CUDA_VISIBLE_DEVICES={selected}\n")
+          print(f"Selected physical GPU {selected}; occupancy remains checked by the performance gate")
+          PYTHON
       - name: One-GPU local behavior
         if: ${{ !inputs.qng_ablation && !inputs.precision_frontier }}
         run: |
           mkdir -p hardware-run
           set -o pipefail
-          CUDA_VISIBLE_DEVICES=0 python -c "import torch; assert torch.cuda.device_count() == 1"
-          CUDA_VISIBLE_DEVICES=0 python tools/ci/run_with_watchdog.py --phase one-gpu-correctness --stall-seconds 180 --timeout-seconds 600 --diagnostics hardware-run/watchdog-one-gpu-correctness -- python tests/distributed/correctness_hardware.py 2>&1 | tee hardware-run/one-gpu-correctness.json
-          CUDA_VISIBLE_DEVICES=0 XLA_PYTHON_CLIENT_PREALLOCATE=false FQ_MODULE_CUDA_RECEIPTS=hardware-run/module-ir-cuda.json python tools/ci/run_with_watchdog.py --phase one-gpu-tests --stall-seconds 180 --timeout-seconds 600 --diagnostics hardware-run/watchdog-one-gpu-tests -- python -m pytest tests/test_statevector_triton_gates.py tests/qec/test_ising_comparison.py::test_real_cuda_complete_hyperedge_correction_and_timing tests/benchmark_contract/test_qng_hva_cuda.py::test_real_fused_tangents_metric_and_update_match_oracle tests/benchmark_contract/test_module_ir_cuda.py -q -rs 2>&1 | tee hardware-run/one-gpu.log
-          CUDA_VISIBLE_DEVICES=0 python tools/ci/run_with_watchdog.py --phase one-gpu-benchmark --stall-seconds 240 --timeout-seconds 900 --diagnostics hardware-run/watchdog-one-gpu-benchmark --hardware-samples hardware-run/one-gpu-telemetry.jsonl -- python benchmarks/continuous_performance.py --mode local-gpu --backend pytorch --warmup 10 --repetitions 30 --inner-loops 20 --output hardware-run/one-gpu-performance.json
+          python -c "import torch; assert torch.cuda.device_count() == 1"
+          python tools/ci/run_with_watchdog.py --phase one-gpu-correctness --stall-seconds 180 --timeout-seconds 600 --diagnostics hardware-run/watchdog-one-gpu-correctness -- python tests/distributed/correctness_hardware.py 2>&1 | tee hardware-run/one-gpu-correctness.json
+          XLA_PYTHON_CLIENT_PREALLOCATE=false FQ_MODULE_CUDA_RECEIPTS=hardware-run/module-ir-cuda.json python tools/ci/run_with_watchdog.py --phase one-gpu-tests --stall-seconds 180 --timeout-seconds 600 --diagnostics hardware-run/watchdog-one-gpu-tests -- python -m pytest tests/test_statevector_triton_gates.py tests/qec/test_ising_comparison.py::test_real_cuda_complete_hyperedge_correction_and_timing tests/benchmark_contract/test_qng_hva_cuda.py::test_real_fused_tangents_metric_and_update_match_oracle tests/benchmark_contract/test_module_ir_cuda.py -q -rs 2>&1 | tee hardware-run/one-gpu.log
+          python tools/ci/run_with_watchdog.py --phase one-gpu-benchmark --stall-seconds 240 --timeout-seconds 900 --diagnostics hardware-run/watchdog-one-gpu-benchmark --hardware-samples hardware-run/one-gpu-telemetry.jsonl -- python benchmarks/continuous_performance.py --mode local-gpu --backend pytorch --warmup 10 --repetitions 30 --inner-loops 20 --output hardware-run/one-gpu-performance.json
           python tools/validation/evaluate_performance_artifact.py --write hardware-run/one-gpu-performance.json
       - if: ${{ always() && !inputs.qng_ablation && !inputs.precision_frontier }}
         run: >-
           python tools/release/hardware_run_manifest.py
           --output hardware-run/one-gpu.json
-          --command 'CUDA_VISIBLE_DEVICES=0 XLA_PYTHON_CLIENT_PREALLOCATE=false FQ_MODULE_CUDA_RECEIPTS=hardware-run/module-ir-cuda.json python -m pytest tests/test_statevector_triton_gates.py tests/qec/test_ising_comparison.py::test_real_cuda_complete_hyperedge_correction_and_timing tests/benchmark_contract/test_qng_hva_cuda.py::test_real_fused_tangents_metric_and_update_match_oracle tests/benchmark_contract/test_module_ir_cuda.py -q -rs'
+          --command "CUDA_VISIBLE_DEVICES=${CUDA_VISIBLE_DEVICES} XLA_PYTHON_CLIENT_PREALLOCATE=false FQ_MODULE_CUDA_RECEIPTS=hardware-run/module-ir-cuda.json python -m pytest tests/test_statevector_triton_gates.py tests/qec/test_ising_comparison.py::test_real_cuda_complete_hyperedge_correction_and_timing tests/benchmark_contract/test_qng_hva_cuda.py::test_real_fused_tangents_metric_and_update_match_oracle tests/benchmark_contract/test_module_ir_cuda.py -q -rs"
           --world-size 1
           --evidence-scope one_gpu_local
           --log hardware-run/one-gpu.log

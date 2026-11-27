@@ -531,3 +531,70 @@ def test_two_gpu_gate_selects_idle_devices_or_refuses_contention(
     )
     assert "CUDA_VISIBLE_DEVICES=" not in gate
     assert "evaluate_performance_artifact.py --write" in gate
+
+
+@pytest.mark.parametrize(
+    ("occupancy", "expected"),
+    [
+        ("0, 33143, 63\n1, 4, 0\n4, 36523, 29\n", "1"),
+        ("0, 0, 10\n1, 0, 0\n", "1"),
+        ("0, 1024, 0\n1, 1023, 0\n", "1"),
+        ("0, 4, 0\n1, 4, 0\n", "0"),
+        ("0, 33143, 63\n1, 2048, 0\n", None),
+    ],
+)
+def test_one_gpu_gate_selects_idle_devices_or_refuses_contention(
+    occupancy: str,
+    expected: str | None,
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    job = _jobs(WORKFLOWS / "local-gpu.yml")["one-gpu-local"]
+    selector = next(
+        step["run"]
+        for step in job["steps"]
+        if step.get("name") == "Select one idle physical GPU"
+    )
+    code = selector.split("python - <<'PYTHON'\n", 1)[1].rsplit("PYTHON", 1)[0]
+    environment = tmp_path / "environment"
+    monkeypatch.setenv("GITHUB_ENV", str(environment))
+    monkeypatch.setattr(
+        subprocess,
+        "run",
+        lambda *args, **kwargs: subprocess.CompletedProcess(
+            args[0], 0, stdout=occupancy
+        ),
+    )
+    if expected is None:
+        with pytest.raises(SystemExit, match="One idle GPU is required"):
+            exec(compile(code, "<one-gpu-selection>", "exec"), {})
+        assert not environment.exists()
+    else:
+        exec(compile(code, "<one-gpu-selection>", "exec"), {})
+        assert environment.read_text() == f"CUDA_VISIBLE_DEVICES={expected}\n"
+
+
+def test_one_gpu_gate_inherits_selection_and_preserves_frozen_campaigns() -> None:
+    job = _jobs(WORKFLOWS / "local-gpu.yml")["one-gpu-local"]
+    steps = {step.get("name"): step for step in job["steps"]}
+    selector = steps["Select one idle physical GPU"]
+    behavior = steps["One-GPU local behavior"]
+    assert selector["if"] == behavior["if"]
+    assert "CUDA_VISIBLE_DEVICES=" not in behavior["run"]
+    assert "assert torch.cuda.device_count() == 1" in behavior["run"]
+    assert (
+        "--mode local-gpu --backend pytorch --warmup 10 --repetitions 30 --inner-loops 20"
+        in behavior["run"]
+    )
+    assert "evaluate_performance_artifact.py --write" in behavior["run"]
+    manifest = next(
+        step["run"]
+        for step in job["steps"]
+        if "hardware_run_manifest.py" in step.get("run", "")
+    )
+    assert "CUDA_VISIBLE_DEVICES=${CUDA_VISIBLE_DEVICES}" in manifest
+    for name in (
+        "Frozen complete-circuit precision frontier",
+        "Frozen QNG algorithm and fusion ablation",
+    ):
+        assert steps[name]["env"]["CUDA_VISIBLE_DEVICES"] == "0"
