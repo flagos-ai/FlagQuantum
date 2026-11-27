@@ -5,6 +5,9 @@
 
 """Store sequential field shifts and their gate-free physical output aliases."""
 
+from operator import index
+from typing import SupportsIndex
+
 import numpy as np
 
 from ....core.ir import CircuitIR, Instruction
@@ -12,6 +15,7 @@ from ....core.ir.program import ProgramRecord
 from ....core.ir.program.register_bindings import RegisterBinding
 from ....core.ir.program.registers import RegisterType
 from ....core.ir.program.signatures import Signature
+from ....core.value_parameters import is_symbolic_value
 from ..component_builder import ComponentProgramBuilder
 from ..component_gate_function import bit_gate_function
 from .field_word import field_word_width
@@ -52,3 +56,21 @@ def monomial_multiplication_program(
             if power < 0:
                 bits = np.concatenate((bits[1:], bits[:1]))
     return builder.finalize({"f": builder.join(bits[::-1], dtype)})
+
+
+def monomial_decomposition_program(
+    dtype: RegisterType, count: SupportsIndex, *, modulus: int, adjoint: bool = False
+) -> ProgramRecord:
+    """Preserve source right/left iteration counts, including negative no-ops.
+
+    adjoint selects the source left-shift constructor. Its negative count still
+    runs no iterations, unlike a negative mathematical exponent.
+    """
+    if is_symbolic_value(count) or not isinstance(count, SupportsIndex):
+        raise ValueError("Literal field shift count requires a concrete integer")
+    if type(adjoint) is not bool:
+        raise ValueError("Literal field shift direction requires a boolean")
+    steps = max(index(count), 0)
+    return monomial_multiplication_program(
+        dtype, -steps if adjoint else steps, modulus=modulus
+    )
