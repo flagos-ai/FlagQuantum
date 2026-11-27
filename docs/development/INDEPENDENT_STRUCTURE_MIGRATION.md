@@ -323,3 +323,12 @@ and complete tests from PR1253 without merging its branch. See the
 [implementation and pending elapsed-job acceptance](migration/ci-partition-critical-path.md).
 The ten-minute target still requires the new published run; local scientific
 acceptance and the complete original-corpus replay do not certify it.
+
+
+Runtime partitions now collect their original tier/shard selection serially
+before starting workers, then execute the verified exact node list. This avoids
+repeated full-tier discovery by every worker. Only sole measured-heavy Runtime
+selections use the existing exclusive CPU profile; mixed selections retain
+parallel workers. Collection failures/skips, original admission, selected-node
+identity and execution reports remain retained. This refinement changes no
+product source, public contract, scientific workload or compatibility boundary.

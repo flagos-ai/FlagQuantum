@@ -357,7 +357,7 @@ def test_expensive_cpu_runtime_proofs_run_once_on_the_newest_python() -> None:
     )
     assert runtime["run"] == (
         "python tools/ci/ci_tier.py pr-runtime --shard-count 128 "
-        "--shard-index ${{ matrix.shard }}"
+        "--shard-index ${{ matrix.shard }} --plan-shard"
     )
     for step in expensive_steps:
         if "torchrun" in step["run"]:

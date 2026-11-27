@@ -1181,3 +1181,13 @@ The actual CI job durations determine acceptance; local replay, extra fan-out
 and a green correctness gate alone do not establish this performance target.
 Heavy cases use one active test worker within their existing CPU share. No
 original workload, assertion, coverage threshold or safety timeout is reduced.
+
+
+Runtime CI partitions use `python tools/ci/ci_tier.py pr-runtime --shard-count 128
+--shard-index 0 --plan-shard` (on one shell line). This collects the original
+marker/shard selection once, verifies its source-bound node manifest, then
+executes only that list. Collection and execution reports remain separate;
+sole measured-heavy cases use the existing CPU admission owner's exclusive
+profile. Normal local tier commands keep their existing behavior. See the
+[critical-path implementation record](migration/ci-partition-critical-path.md)
+for evidence preservation and the pending full-job timing objective.

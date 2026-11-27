@@ -180,3 +180,55 @@ buckets, once-only real launchers and safety limits. The capacity policy tests
 verify all 128 rows and the original mixed-worker admission command. Completed
 successful shards from the first run are useful measurements, not qualification
 of its failed head or proof that every final job meets the target.
+
+
+## Runtime discovery and execution are separate phases
+
+The f8bd44f7e run's actual 38,450-node coverage plan preserves every earlier
+38,449 node exactly once and adds the previously missing thread-restoration
+case. All 75 originally measured heavy cases remain alone. No new scientific
+failure was observed before this refinement, but Runtime slots 5 and 12 still
+exceeded 600 seconds despite the increased fan-out.
+
+Each ordinary xdist worker was collecting the entire Runtime tier before
+selecting its small partition. One original successful 143-node Runtime report
+records 263.27 seconds of pytest wall time and 1,673.85 process CPU seconds,
+while completed test phases sum to 221.87 seconds and the longest case is
+136.37 seconds. This is not a precise collection-time census; it motivates
+removing the known repeated full-tier discovery and retaining measurements of
+both phases. Increasing partitions alone also adds repeated setup to the
+bounded A800 pool.
+
+`ci_tier.py pr-runtime --plan-shard` first runs the unchanged integration marker
+and original duration-balanced shard selector serially with `--collect-only`.
+The source-bound selection records the original complete marker inventory's
+count and sorted node-ID digest, shard count/index, selected count and exact
+node-file digest. The execution pass verifies that manifest, requests only
+those node IDs and explicitly disables a second shard filter. All 128 original
+partition assignments retain their existing balancing policy.
+
+Mixed partitions retain their original bounded workers and single-thread
+configuration. Only an actual sole-node selection with an existing duration
+hint of at least 120 seconds requests the already established exclusive profile
+from `ci_cpu_budget.py`. The budget owner rechecks the same host/cgroup/memory
+admission; the runner does not copy or increase its quota formula. QEC's
+per-case one-thread fixture still takes precedence for its scientific workflow.
+Real two-rank launchers remain once-only and one-thread-per-rank.
+
+The serial collection JUnit report, original admission and selection remain in
+the resource artifact, including original optional-module skips and collection
+errors. Exclusive execution also retains a copy of the original collection
+before writing its new resource report. The actual execution JUnit path follows
+the updated report directory. Discovery records are not counted as executed
+cases. Collection, budget and test failures retain their real exit statuses;
+there is no success fallback, lowered assertion or ten-minute cancellation.
+
+Controlled end-to-end regressions exercise three original partitions with a
+real failed and skipped case, excluded slow/unit bodies, retained optional
+collection skips and a module whose import proves that execution workers no
+longer rediscover unselected files. They also verify inherited shard-option
+reset, source/content refusal, original selector/CLI status, actual budget-owner
+invocation and refusal, single-worker overrides, resource retention and JUnit
+relocation. Synthetic admission fixtures establish orchestration behavior, not
+hardware capacity or Linux timing. New exact-head CI must still verify the
+complete original selection and each full executed-job duration.

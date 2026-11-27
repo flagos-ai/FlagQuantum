@@ -96,6 +96,7 @@ def pytest_addoption(parser: pytest.Parser) -> None:
     group = parser.getgroup("flagquantum-sharding")
     group.addoption("--fq-shard-count", type=int, default=1)
     group.addoption("--fq-shard-index", type=int, default=0)
+    group.addoption("--fq-write-selected-tests", type=Path)
     group.addoption("--fq-write-coverage-plan", type=Path)
     group.addoption("--fq-coverage-plan-count", type=int, default=16)
 
@@ -127,21 +128,66 @@ def pytest_collection_modifyitems(
             directory,
             int(config.getoption("--fq-coverage-plan-count")),
         )
+    collected = tuple(item.nodeid for item in items)
     count = int(config.getoption("--fq-shard-count"))
-    if count == 1:
-        return
-    index = int(config.getoption("--fq-shard-index"))
-    default_seconds, durations = load_duration_hints()
-    assignments = balanced_assignments(
-        tuple(item.nodeid for item in items),
-        count,
-        default_seconds=default_seconds,
-        durations=durations,
-    )
-    selected = [item for item in items if assignments[item.nodeid] == index]
-    deselected = [item for item in items if assignments[item.nodeid] != index]
-    items[:] = selected
-    config.hook.pytest_deselected(items=deselected)
+    if count > 1:
+        index = int(config.getoption("--fq-shard-index"))
+        default_seconds, durations = load_duration_hints()
+        assignments = balanced_assignments(
+            collected,
+            count,
+            default_seconds=default_seconds,
+            durations=durations,
+        )
+        selected = [item for item in items if assignments[item.nodeid] == index]
+        deselected = [item for item in items if assignments[item.nodeid] != index]
+        items[:] = selected
+        config.hook.pytest_deselected(items=deselected)
+    if directory := config.getoption("--fq-write-selected-tests"):
+        if not config.option.collectonly or hasattr(config, "workerinput"):
+            raise pytest.UsageError("Selection planning requires serial --collect-only")
+        if items:
+            _write_selected_tests(
+                directory,
+                tuple(item.nodeid for item in items),
+                collected=collected,
+                count=count,
+                index=int(config.getoption("--fq-shard-index")),
+            )
+
+
+def _write_selected_tests(
+    directory: Path,
+    nodeids: tuple[str, ...],
+    *,
+    collected: tuple[str, ...],
+    count: int,
+    index: int,
+) -> None:
+    """Bind the original marker/shard selection before starting test workers."""
+    from tools.ci.ci_coverage_plan import EXCLUSIVE_TEST_SECONDS
+
+    if not nodeids or len(nodeids) != len(set(nodeids)):
+        raise ValueError("Selected tests must be nonempty and unique")
+    directory.mkdir(parents=True, exist_ok=False)
+    raw = ("\n".join(nodeids) + "\n").encode()
+    (directory / "nodes.txt").write_bytes(raw)
+    default, durations = load_duration_hints()
+    payload = {
+        "schema": "flagquantum_pytest_selection_v1",
+        "source_sha": os.environ.get("GITHUB_SHA"),
+        "tests": len(nodeids),
+        "collected_tests": len(collected),
+        "collected_sha256": hashlib.sha256(
+            ("\n".join(sorted(collected)) + "\n").encode()
+        ).hexdigest(),
+        "shard_count": count,
+        "shard_index": index,
+        "sha256": hashlib.sha256(raw).hexdigest(),
+        "exclusive": len(nodeids) == 1
+        and durations.get(nodeids[0], default) >= EXCLUSIVE_TEST_SECONDS,
+    }
+    (directory / "selection.json").write_text(json.dumps(payload, indent=2) + "\n")
 
 
 def _cpu_seconds() -> float:

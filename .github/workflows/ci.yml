@@ -1047,7 +1047,7 @@ jobs:
       - name: Run integration tests with bounded workers
         env:
           PYTEST_ADDOPTS: -n ${{ env.FQ_PYTEST_WORKERS }} --dist=worksteal --durations=50 --junitxml=${{ env.FQ_CI_REPORT_DIR }}/pytest.xml
-        run: python tools/ci/ci_tier.py pr-runtime --shard-count 128 --shard-index ${{ matrix.shard }}
+        run: python tools/ci/ci_tier.py pr-runtime --shard-count 128 --shard-index ${{ matrix.shard }} --plan-shard
       - name: Prove native distributed runtime does not require JAX
         if: matrix.shard == 0
         env:
