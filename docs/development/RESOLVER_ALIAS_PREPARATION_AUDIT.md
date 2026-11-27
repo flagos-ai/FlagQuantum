@@ -94,3 +94,41 @@ Receipts use `g2-alias-constructor-*-20261124` under the external reference
 ledger. They include exact original blobs, complete source/notebook outcomes,
 source-free reflection dependency, full complex operators with all-history
 private cleanup and separate seven-row resource inventories.
+
+
+## Complete source closure and symbolic-data dispatch, 2026-11-28
+
+The adapter now applies the existing source word-consistency predicate at sparse
+selection admission. Compiler preparation preserves the original raw mu from
+lookup widths before one-bit signature canonicalization. Known data does not
+provide an unknown physical width: those QROM children remain declarations while
+the complete five-call root and exact inverse stay inspectable. This fixes two
+actual source-success logical/physical invocation gaps without adding numerical
+kernels, descriptors, public entries or backend selection.
+
+Six executable nominal profiles retain complete source operators, exact root
+edges, accepted forward/inverse primitive/event streams, every small raw history,
+nonzero logical junk, coherent spectator and zero private work. Four known-data
+symbolic-width contexts preserve source roots and actual source transport while
+retaining original tensor/binding failures. Native constructor/append works
+with source SDK imports blocked. Existing entire source/asset/dependency evidence
+is reused; full-file parents Q-0695/Q-0700 close under the approved rule.
+
+The original Montgomery/Shaped/field codecs, typed child failures, singleton
+and domain errors remain separate. Earlier reflection structural inventories
+are historical; current automatic inverse recipes reject implicit signal-junk
+disposal. No reflection correctness, global gate-count identity across distinct
+controlled-H lowering policies or generic workflow acceptance is inferred.
+
+Final batch acceptance passes 463 concentrated cases, 32 relevant local
+integration cases, 59 independent Cirq 1.6.1 constructor/nominal cases and the
+final 12-case independent symbolic/nominal grid. Three Python files pass strict
+typing, Black and Ruff. Compiler scope, architecture, multi-level IR, required
+checks, public API baseline, English, links and whitespace pass. Thirty-eight
+complete frozen source/asset/dependency blobs and actual Qualtran 0.7.0/Kickmix
+0.1 Simulator are verified. Nine fresh inventory rows retain reserved capacity,
+touched/live private work and independent source models separately. Ten actual
+optional/required reference-absence scenarios preserve skip versus original
+exception behavior. Global dependency findings remain 570 in 362 files, with
+none in the added consumer; workflow parents remain open. No source patch,
+checker waiver, selection exclusion, CI wait, G3 work or merge occurred.

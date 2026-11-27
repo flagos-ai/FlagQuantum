@@ -155,3 +155,77 @@ seconds. Strict mypy on the added test, Black, Ruff, Algorithms scope,
 architecture, multilevel IR and protected API checks passed. Existing source
 notebook and CPU integration evidence is reused; no production implementation
 or public contract changes in this batch.
+
+
+## Complete faithful source-file closure — 2026-11-28
+
+Q-0700 is accepted under the approved G2 faithful-migration rule after reviewing
+the complete two-class definition map, all five factories, both documentation
+specifications, array/shape conversion and direct preprocessing/quantum owners.
+Earlier open statements based solely on original dtype, singleton, codec and
+model defects are historical. Two actual native invocation gaps were fixed.
+
+Sparse selection admission now uses the existing source-ordered word consistency
+predicate against the QROM's unsigned target. Signed integers, Montgomery words
+and pure integer/fractional unsigned fixed point execute upstream but were
+previously rejected by the adapter. One-bit signed and GF(2) words also retain
+the source single-bit compatibility rule. No Core type, field arithmetic,
+control rule or public entry changes. Mixed/signed fixed point, two-bit ones
+complement and nonbinary field targets retain the original downstream tensor
+failures and adapter refusal. Their outer source roots can exist; this does not
+make the failed physical recipe executable. Sparse selection still uses the
+source hardcoded name. No missing iteration bound is invented.
+
+Known lookup data with symbolic mu also has a defined original five-call root
+but no complete source tensor. The native composer previously attempted physical
+QROM binding before returning that root. It now retains a QROM declaration and
+the constructor's real mu dispatch. A one-bit signature canonicalizes its type,
+so the raw lookup width preserves the distinction between Python 1 and SymPy
+Integer(1). Both symbolic cases retain original H/lookup/comparison refusals;
+no unresolved or source-refused physical execution is invented. Actual depth-zero
+source wires, both directions, ports and producer/operand/result edges agree.
+
+Six executable nominal cases compare complete original complex operators, exact
+source forward/inverse root edges and the accepted unsigned primitive/event
+streams. Every small forward and inverse raw history preserves a coherent
+spectator and returns private work to zero. Selection and all logical junk may
+be nonzero and entangled; they remain caller-owned outputs. Representable source
+constructor depths zero/one execute identically. Montgomery modulus loss and
+field-codec limitations remain separate; direct typed descriptors are retained.
+Native construction and append work with source SDK imports blocked.
+
+Four symbolic-mu dense/sparse contexts compare complete stored roots and actual
+source serialization while retaining physical refusal. Validated probability
+factories reuse the accepted source-ordered precision, cumulative rounding and
+donor algorithms; raw preprocessing retains its separately verified source
+exceptions and warning order. Prior complete grids, Ising, notebook, symbolic
+shape/model and exact primitive/feedback evidence is reused.
+
+Original dense unbounded-domain errors, sparse renamed/singleton failures,
+symbolic two-row model and Shaped codec failures, model expansion conventions
+and strict source typed-edge skips remain explicit. Historical reflection
+inventories do not establish reflection correctness: current inverse preparation
+recipes refuse implicit disposal of logical signal junk. Generic reflection,
+codec, workflow and unapproved scalar parents do not close here. No reference
+source or original assertion was changed.
+
+Fresh two-bit nominal cases emit 18 T/T-dagger, 36 CX and one measurement on
+ten wires, with two touched/live private bits. The source model separately
+declares two CSwap, one And, 22 Clifford, one measurement and peak ten. One-bit
+cases emit 11 T-family, 26 CX and one measurement on eight wires versus one
+CSwap, one And, 20 Clifford and peak eight. Extra spectator wires are separate.
+Receipts use `g2-uniform-alias-full-closure-*20261128`; all source defects and
+unknown-width intake results remain in their own external receipts.
+
+Final batch acceptance passes 463 concentrated cases, 32 relevant local
+integration cases, 59 independent Cirq 1.6.1 constructor/nominal cases and the
+final 12-case independent symbolic/nominal grid. Three Python files pass strict
+typing, Black and Ruff. Compiler scope, architecture, multi-level IR, required
+checks, public API baseline, English, links and whitespace pass. Thirty-eight
+complete frozen source/asset/dependency blobs and actual Qualtran 0.7.0/Kickmix
+0.1 Simulator are verified. Nine fresh inventory rows retain reserved capacity,
+touched/live private work and independent source models separately. Ten actual
+optional/required reference-absence scenarios preserve skip versus original
+exception behavior. Global dependency findings remain 570 in 362 files, with
+none in the added consumer; workflow parents remain open. No source patch,
+checker waiver, selection exclusion, CI wait, G3 work or merge occurred.

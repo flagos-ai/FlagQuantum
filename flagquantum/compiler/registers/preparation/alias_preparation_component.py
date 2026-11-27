@@ -39,7 +39,9 @@ def alias_preparation_component_program(
     """
     if type(adjoint) is not bool or type(sparse) is not bool:
         raise ValueError("Alias preparation direction and layout must be boolean")
-    mu = signature.get_left("sigma_mu").bitsize
+    # A one-bit signature canonicalizes its word type. Retain the source
+    # parameter's symbolic dispatch from the lookup metadata instead.
+    mu = lookup_table.target_bitsizes[-1]
     width = signature.get_left(selection_name).bitsize
     builder = ComponentProgramBuilder(signature)
     words = dict(builder.inputs)
@@ -87,7 +89,15 @@ def alias_preparation_component_program(
             )
         )
     )
-    lookup = qrom_program(lookup_table)
+    # The source retains its five-call root when word widths are symbolic.
+    # Keep the QROM leaf declaration; known table values do not supply a width.
+    lookup = (
+        qrom_program(lookup_table)
+        if type(mu) is int and type(width) is int
+        else ProgramRecord(
+            (FunctionRecord("main", (), registers=tuple(lookup_table.signature)),)
+        )
+    )
     lookup_words = (selection_name, "alt", "keep") if sparse else ("alt", "keep")
     steps = [
         (uniform, {"target": address}),

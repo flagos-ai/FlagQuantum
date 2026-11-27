@@ -11,6 +11,8 @@ from functools import partial
 import numpy as np
 
 from ...core.ir.program import FunctionRecord, ProgramRecord
+from ...core.ir.program.register_compatibility import check_register_types_consistent
+from ...core.ir.program.register_types import unsigned_register_type
 from ...core.ir.program.registers import Register, RegisterSide
 from ...core.ir.program.signatures import Signature
 from ...core.value_math import SymbolicInt, bit_length
@@ -116,7 +118,9 @@ def alias_preparation_factories(
             )
         if sparse and (
             selection.name != "selection"
-            or selection.dtype.encoding not in {"uint", "opaque", "bit"}
+            or not check_register_types_consistent(
+                selection.dtype, unsigned_register_type(selection.bitsize)
+            )
         ):
             raise SerializationError(
                 "Sparse alias requires the source selection name and supported word storage"
