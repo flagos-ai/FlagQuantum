@@ -195,3 +195,9 @@ original four/eight-bit release violations are documented in the inverse audit.
 Run `tests/unit/test_field_inverse_literal.py` for complete source primitive,
 complex-amplitude, alias and private-padding checks. Literal catalog dispatch
 is still a separate open part of the complete inverse source acceptance.
+
+The field-power catalog now uses `field_inverse_decomposition_graph` for full
+original static graphs. This supersedes the literal catalog dispatch gap above.
+Static graphs can contain original invalid clean releases; they are evidence and
+drawing artifacts. The executable example `FieldInverse(..., literal=True)`
+uses the guarded constructor. Its default still uses the mathematical profile.

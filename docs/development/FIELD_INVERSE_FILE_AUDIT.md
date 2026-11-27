@@ -428,3 +428,35 @@ witnesses. The existing inverse catalog still selects the mathematical profile
 for higher-degree roots; literal catalog dispatch and complete original-invalid
 static graph qualification remain required before Q-0516 closes. No parent
 acceptance is inferred from this dependency delivery.
+
+## Literal static catalog and guarded append — 2026-11-27
+
+The next dependency closure supersedes the preceding catalog gap.
+`field_inverse_decomposition_graph` retains the full static original root,
+including invalid clean frees, for source auditing and drawing. It does not
+admit execution. `field_power_program` now selects that original graph instead
+of the mathematical inverse. Whole-root verification maps square powers and
+declared directions to child identities; generated names are opaque. Every
+recursive GF16 source call and drawing now agrees exactly, with zero native
+exact-inverse substitutions. Changing primitive operands rejects qualification,
+and renaming all functions preserves labels.
+
+The existing example `FieldInverse(..., literal=True)` uses the guarded literal
+constructor through normal `circuit.append(op)`. The default remains the
+mathematical inverse. Replacing the mathematical provider proves literal append
+independent, while existing default append tests preserve its correct values.
+The explicit literal profile fails before composition for unproved root releases.
+
+An audit-only binding of the static four/eight-bit graphs matches the untouched
+source stream exactly. All input columns reproduce the original 12/16 and
+250/256 dirty-release violations and subsequent dirty reuse without any reset.
+Those bound artifacts are used for diagnosis, not claimed clean executions.
+Original scalar callbacks, source QEC declarations and primitive circuits remain
+separate witnesses. No measurement branches occur in this forward root.
+
+Q-0516 remains open: the conservative executable restriction on other root-free
+profiles needs a complete valid-source disposition. Static construction is now
+available for every concrete binary degree, but a static graph is not a proof
+that its clean-release preconditions hold. Existing complete original tests,
+models, callbacks, symbolic declarations and notebooks remain reusable. No
+reference patch, generic clean-free waiver or parent acceptance is introduced.
