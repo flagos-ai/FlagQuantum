@@ -15,6 +15,8 @@ except ModuleNotFoundError:
         "NumPy is needed for polynomial metadata codecs", allow_module_level=True
     )
 
+from flagquantum.compiler.registers.component_builder import ComponentProgramBuilder
+from flagquantum.compiler.registers.register_binding import bind_register_program
 from flagquantum.core.ir.program.register_verifier import executable_register_width
 from flagquantum.core.ir.program.registers import Register
 from flagquantum.core.ir.program.signatures import Signature
@@ -47,8 +49,15 @@ def test_projection_domains_truth_table_and_approved_core_admission(
     assert resolved.field.gf_type is encoding.field.gf_type is source.qgf.gf_type
     assert_domain_and_table(dtype, source)
     assert (dtype.num_qubits, dtype.num_cbits) == (source.num_qubits, source.num_cbits)
-    if p == 2 and not classical:
-        assert executable_register_width(dtype) == int(encoding.bitsize)
+    if not classical:
+        width = int(encoding.bitsize)
+        assert executable_register_width(dtype) == width
+        builder = ComponentProgramBuilder(Signature.build_from_dtypes(x=dtype))
+        program = builder.finalize(builder.inputs)
+        wires = tuple(range(width))
+        bound = bind_register_program(program, (wires,))
+        assert bound.outputs == (wires,)
+        assert bound.circuit.instructions == () and bound.events == ()
     else:
         with pytest.raises(ValueError, match="unsupported executable"):
             executable_register_width(dtype)
@@ -95,15 +104,15 @@ def test_all_binary_words_default_codecs_and_binding(
 def test_dense_default_codec_keeps_source_data_or_original_failure(
     p: int, m: int, degree: int, classical: bool
 ) -> None:
-    from qualtran import Register as SourceRegister
-    from qualtran import Signature as SourceSignature
+    from qualtran._infra.registers import Register as SourceRegister
+    from qualtran._infra.registers import Signature as SourceSignature
     from qualtran.simulation.tensor._tensor_from_classical import (
         _bloq_to_dense_via_classical_action,
     )
 
     encoding, source = pair(p, m, degree, classical)
     signature = Signature((Register("x", encoding.register_type(classical=classical)),))
-    original = SimpleNamespace(
+    original: Any = SimpleNamespace(
         signature=SourceSignature([SourceRegister("x", source)]),
         call_classically=lambda **values: (values["x"],),
     )
