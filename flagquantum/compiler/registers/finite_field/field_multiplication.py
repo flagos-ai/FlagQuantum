@@ -103,8 +103,32 @@ class _FieldEmitter(_PolynomialEmitter):
         self, qubits: tuple[int, ...], matrix: list[list[int]]
     ) -> tuple[int, ...]:
         """Qualtran SynthesizeLRCircuit with galois's first-pivot PLU order."""
-        n = len(qubits)
         upper, lower, permutation = _field_plu(matrix)
+        return self._linear_factors(qubits, upper, lower, permutation)
+
+    def linear_with_zero_pivots(
+        self, qubits: tuple[int, ...], matrix: list[list[int]]
+    ) -> tuple[int, ...]:
+        """Emit the original reversible recipe even for a singular input matrix."""
+        factors = BinaryMatrix.from_dense(matrix).plu_with_zero_pivots()
+        if factors is None:
+            raise ValueError("Literal linear synthesis requires a square matrix")
+        permutation, lower, upper = factors
+        return self._linear_factors(
+            qubits,
+            upper.dense(),
+            lower.dense(),
+            [row.bit_length() - 1 for row in permutation.transposed().packed_rows],
+        )
+
+    def _linear_factors(
+        self,
+        qubits: tuple[int, ...],
+        upper: list[list[int]],
+        lower: list[list[int]],
+        permutation: list[int],
+    ) -> tuple[int, ...]:
+        n = len(qubits)
         for i in range(n):
             for j in range(i + 1, n):
                 if upper[i][j]:

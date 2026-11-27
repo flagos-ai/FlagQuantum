@@ -50,13 +50,54 @@ def binary_linear_program(
             for g in reversed(gates)
         )
         outputs = tuple(binding[w] for w in range(width))
+    return _linear_circuit_program(width, gates, outputs)
+
+
+def binary_linear_decomposition_program(
+    matrix: tuple[tuple[int, ...], ...], *, adjoint: bool = False
+) -> ProgramRecord:
+    """Store the literal source recipe, including zero pivots and ignored flag.
+
+    Singular matrices produce reversible circuits that need not equal their
+    matrix action. Distinct entry names retain the declared source direction.
+    """
+    width = len(matrix)
+    if not width or any(
+        len(row) != width
+        or any(type(bit) is not int or bit not in (0, 1) for bit in row)
+        for row in matrix
+    ):
+        raise ValueError("Linear synthesis requires a nonempty square binary matrix")
+    if type(adjoint) is not bool:
+        raise ValueError("Linear synthesis direction requires a boolean")
+    emitter = _FieldEmitter((), 0)
+    outputs = emitter.linear_with_zero_pivots(
+        tuple(range(width)), [list(row) for row in matrix]
+    )
+    return _linear_circuit_program(
+        width,
+        tuple(emitter.instructions),
+        outputs,
+        name="linear_adjoint" if adjoint else "main",
+    )
+
+
+def _linear_circuit_program(
+    width: int,
+    gates: tuple[Instruction, ...],
+    outputs: tuple[int, ...],
+    *,
+    name: str = "main",
+) -> ProgramRecord:
     leaf = bit_gate_function(
         "linear_cx",
         tuple(Signature.build(ctrl=1, target=1)),
         CircuitIR(2, (Instruction("cx", (0, 1)),)),
     )
     builder = ComponentProgramBuilder(
-        Signature((Register("q", quantum_bit_type(), shape=(width,)),)), (leaf,)
+        Signature((Register("q", quantum_bit_type(), shape=(width,)),)),
+        (leaf,),
+        name=name,
     )
     bits = np.asarray(builder.inputs["q"], dtype=object).copy()
     for gate in gates:
