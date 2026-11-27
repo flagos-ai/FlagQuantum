@@ -54,6 +54,8 @@ def field_word_call(
 ) -> NDArray[np.object_]:
     """Call a typed MSB word child from a coefficient-zero-first bit view."""
     word = builder.join(coefficients[::-1], dtype)
-    result = builder.call_program(child, {port: word})[port]
+    result = builder.call_program(child, {port: word}, entry=child.functions[0].name)[
+        port
+    ]
     assert isinstance(result, RegisterBinding)
     return builder.split(result)[::-1]

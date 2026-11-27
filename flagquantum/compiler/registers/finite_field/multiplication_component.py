@@ -5,6 +5,8 @@
 
 """Quadratic field product graphs with owned or arbitrary-target results."""
 
+from dataclasses import replace
+
 from ....core.ir.program import ProgramRecord
 from ....core.ir.program.register_bindings import RegisterBinding
 from ....core.ir.program.registers import Register, RegisterSide, RegisterType
@@ -63,13 +65,18 @@ def field_multiplication_decomposition_program(
     width = raw_field_word_width(dtype)
     if type(plus_equal_prod) is not bool or type(adjoint) is not bool:
         raise ValueError("Field product mode and direction require booleans")
+    right = monomial_decomposition_program(dtype, width, modulus=modulus)
+    left = monomial_decomposition_program(dtype, width, modulus=modulus, adjoint=True)
+    if left == right:
+        left = replace(
+            left,
+            functions=(
+                replace(left.functions[0], name="field_shift_left"),
+                *left.functions[1:],
+            ),
+        )
     return _field_multiplication_program(
-        dtype,
-        width,
-        monomial_decomposition_program(dtype, width, modulus=modulus),
-        monomial_decomposition_program(dtype, width, modulus=modulus, adjoint=True),
-        plus_equal_prod=plus_equal_prod,
-        adjoint=adjoint,
+        dtype, width, right, left, plus_equal_prod=plus_equal_prod, adjoint=adjoint
     )
 
 
@@ -110,6 +117,7 @@ def _field_multiplication_program(
         result = builder.call_program(
             left_shift,
             {"f": result},
+            entry=left_shift.functions[0].name,
         )["f"]
         assert isinstance(result, RegisterBinding)
     bits = builder.split(result)[::-1]
