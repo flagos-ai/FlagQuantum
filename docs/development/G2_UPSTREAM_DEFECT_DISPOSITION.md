@@ -41,3 +41,19 @@ generic-constructor and external-capture scope is not waived by this decision.
 Any later stronger mathematical guarantee must be specified independently.
 Exact source parity and a corrected algorithm must be reported as distinct paths.
 The frozen reference must never be patched to make either path appear equal.
+
+## Explicit extension approved on 2026-11-27
+
+The user subsequently approved the full
+[G2 faithful-migration closure rule](G2_FAITHFUL_MIGRATION_CLOSURE_PROPOSAL.md).
+The three-parent decision above remains the historical evidence record; it is
+no longer the only authorized disposition. Review each additional complete
+source owner separately. Missing native implementation, valid-source calls,
+execution, assets and failed mandatory checks remain open. Approval alone
+closes none of the remaining parents.
+
+Q-0477 is individually reviewed and accepted for complete faithful migration.
+Its [full audit](QROAM_CLEAN_FILE_AUDIT.md#faithful-migration-acceptance-on-2026-11-27)
+retains the source's model-only erasure, omitted selectors, inactive classical
+control failure and independent cost discrepancies with owning follow-ups.
+Native paper erasure remains separately specified and verified.

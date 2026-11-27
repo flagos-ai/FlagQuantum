@@ -8,7 +8,7 @@ tutorial, implementation and tests match their inventory blobs.
 | --- | --- |
 | Q-0475 package entry | The four source imports map to `source_qrom.source_qrom_ir`, `clean_table_lookup.CleanTableLookup`, `qroam_clean_erasure.qroam_clean_measurement_erase_ir` and `select_swap_qrom.select_swap_qrom_ir`. Compiler owns lookup lowering and Algorithms owns the named append binding. The separate leaf declaration and model live in `qroam_clean_metadata` and `qroam_resource_model`. |
 | Q-0476 tutorial | `examples/notebooks/register_qroam_clean.ipynb` covers both concrete datasets, both symbolic instances, signatures and the immediate call graph. It also executes the paired named append operations and displays the separate executable and modeled counts. |
-| Q-0477 implementation | The forward emitter and resource models are reused. The wrapper's concrete and symbolic ports, packed leaf input positions and unsigned padded literals are verified. Measured erase uses the existing native signed reversal and replay feedback. See the open boundaries below. |
+| Q-0477 implementation | The forward emitter and resource models are reused. The wrapper's concrete and symbolic ports, packed leaf input positions and unsigned padded literals are verified. Measured erase uses the existing native signed reversal and replay feedback. Accepted under the explicitly approved faithful-migration rule; see retained source limits below. |
 | Q-0478 original tests | The complete locked test file ran, including its slow classical case. It reported 25 passes, one skip and one expected failure. Native coverage uses the signature diagrams, resource and block selection checks, bank layout, direct source gate comparison and branch tests. |
 
 ## Binding and branch evidence
@@ -47,7 +47,7 @@ erase blocks, the wrapper and padded leaf instead declare three and
 four Toffolis respectively. See
 [forward and erase validation](REGISTER_SOURCE_QROAM_CLEAN.md).
 
-## Open boundaries for Q-0477
+## Retained source limits for accepted Q-0477
 
 - The locked adjoint leaf provides a call and resource declaration. Its
   executable decomposition raises `DecomposeNotImplementedError`, so
@@ -65,3 +65,21 @@ The original 15-cell tutorial and native tutorial both completed in
 independent kernels. The focused native regression passed 275 tests
 with no skips. Strict typing, format, team scope, architecture, IR
 contracts and public API checks passed.
+
+## Faithful-migration acceptance on 2026-11-27
+
+The user explicitly approved the complete-file rule in
+[G2 closure](G2_FAITHFUL_MIGRATION_CLOSURE_PROPOSAL.md). Q-0477 is accepted
+for its complete source responsibility, reusing the published constructor,
+forward stream, branch, resource and mandatory-check evidence above and in
+[constructor closure](RESOLVER_QROAM_CLEAN_AUDIT.md). No implementation or
+reference was changed to obtain this disposition.
+
+Compiler's data-loading owners retain the follow-ups: an executable upstream
+adjoint body would need a new literal stream comparison; omitted-selector
+layouts need an upstream graph fix before parity can be claimed; inactive
+control classical RIGHT-output failure and wrapper/padded-leaf cost differences
+remain reproduced diagnostics. Native paper-based erasure and separately
+supported whole-bank lowering keep their independent evidence and cannot be
+called literal source decompositions. No unsupported source shape, performance
+claim or new runtime certificate is inferred from migration acceptance.

@@ -95,8 +95,9 @@ already-emitted T gates. Full resource receipts are in
   refuses. Source symbolic/object-array serialization, QROM admission gaps,
   mixed omitted selectors and shaped-target boundaries remain explicit.
 - No complete generic catalogue identifier or parent item is added for this
-  concrete disposition. The remaining G2, pending Proposals 116/119 and broader
-  repository/GPU/performance scope remain in the central ledger.
+  concrete disposition. Proposal 116 is approved and implemented. Proposal 119 remains unapproved
+  and is not required by this source closure. Broader G2, GPU and performance
+  scope remains in the central ledger.
 
 ## Acceptance
 
@@ -108,3 +109,7 @@ existing Cirq 1.6 compatibility environment. Source counts enforcement remains
 an upstream limitation. Strict mypy checks seven Python files. Black, Ruff,
 Compiler scope, language, architecture, IR and public API checks pass.
 Dependency analysis matches the 720 existing findings exactly.
+
+Q-0477 is accepted under the user-approved 2026-11-27 faithful-migration
+rule. The source failures above remain independent follow-ups; see the
+[complete-file disposition](QROAM_CLEAN_FILE_AUDIT.md#faithful-migration-acceptance-on-2026-11-27).
