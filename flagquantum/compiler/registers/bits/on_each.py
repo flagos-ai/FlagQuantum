@@ -7,24 +7,37 @@
 
 from ....core.ir.program import FunctionRecord, ProgramRecord
 from ....core.ir.program.register_bindings import RegisterBinding
-from ....core.ir.program.register_types import opaque_register_type, quantum_bit_type
-from ....core.ir.program.registers import Register, RegisterType
+from ....core.ir.program.register_types import opaque_register_type
+from ....core.ir.program.register_verifier import executable_register_width
+from ....core.ir.program.registers import Register, RegisterSide, RegisterType
 from ....core.ir.program.signatures import Signature
 from ..component_builder import ComponentProgramBuilder
+
+
+def _validate_on_each_child(child: FunctionRecord) -> None:
+    registers = child.registers
+    if (
+        registers is None
+        or len(registers) != 1
+        or registers[0].name != "q"
+        or registers[0].shape_symbolic
+        or registers[0].side != RegisterSide.THRU
+    ):
+        raise ValueError("OnEach requires one scalar quantum THRU port named q")
+    if executable_register_width(registers[0].dtype) != 1:
+        raise ValueError("OnEach child requires exactly one physical quantum bit")
 
 
 def on_each_word_program(
     width: int, child: FunctionRecord, *, target_dtype: RegisterType | None = None
 ) -> ProgramRecord:
-    """Split a concrete word, call a self-contained QBit child in order, and join.
+    """Split a concrete word, call a self-contained one-bit child in order, and join.
 
     The child has a single through-going port named q. The returned word uses
     the input dtype. Physical binding and any work required by the child are
     handled by the existing Program binder.
     """
-    bit = Register("q", quantum_bit_type())
-    if child.registers != (bit,):
-        raise ValueError("OnEach requires a single scalar QBit THRU port named q")
+    _validate_on_each_child(child)
     if type(width) is not int or width < 0:
         raise ValueError("OnEach requires a concrete nonnegative integer width")
     dtype = opaque_register_type(width) if target_dtype is None else target_dtype

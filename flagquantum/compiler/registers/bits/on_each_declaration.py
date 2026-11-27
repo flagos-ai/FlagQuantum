@@ -20,7 +20,7 @@ class OnEachDeclaration:
     """Own the original child-port checks, target default and multiplicity.
 
     Constructor checks retain source shape and direction metadata. Physical
-    construction delegates to the existing scalar QBit THRU adapter. Child names
+    construction delegates to the existing scalar one-bit quantum THRU adapter. Child names
     are identities in the enclosing native component namespace.
     """
 

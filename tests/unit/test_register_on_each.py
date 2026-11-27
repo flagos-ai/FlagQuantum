@@ -52,8 +52,9 @@ def test_original_word_program_and_resource_counts(
     opcode: Literal["x", "h"], width: int
 ) -> None:
     pytest.importorskip("qualtran")
-    from qualtran.bloqs.basic_gates import Hadamard, XGate
+    from qualtran.bloqs.basic_gates.hadamard import Hadamard
     from qualtran.bloqs.basic_gates.on_each import OnEach
+    from qualtran.bloqs.basic_gates.x_basis import XGate
     from qualtran.resource_counting.generalizers import ignore_split_join
     from qualtran.testing import assert_valid_bloq_decomposition
 
@@ -107,8 +108,9 @@ def test_original_word_program_and_resource_counts(
 @pytest.mark.ftqc_reference
 def test_original_ten_bit_classical_action_and_refusal() -> None:
     pytest.importorskip("qualtran")
-    from qualtran.bloqs.basic_gates import Hadamard, XGate
+    from qualtran.bloqs.basic_gates.hadamard import Hadamard
     from qualtran.bloqs.basic_gates.on_each import OnEach
+    from qualtran.bloqs.basic_gates.x_basis import XGate
 
     def apply_x(bit: object) -> tuple[object, complex]:
         assert isinstance(bit, SupportsIndex)
@@ -137,7 +139,7 @@ def test_word_program_admission_and_zero_width() -> None:
     child = bit_child("x")
     bound = bind_register_program(on_each_word_program(0, child), ((),), borrowed=(0,))
     assert bound.outputs == ((),) and bound.circuit.instructions == ()
-    with pytest.raises(ValueError, match="scalar QBit THRU port named q"):
+    with pytest.raises(ValueError, match="scalar quantum THRU port named q"):
         on_each_word_program(2, replace(child, registers=tuple(Signature.build(r=1))))
     with pytest.raises(ValueError, match="dtype must match"):
         on_each_word_program(2, child, target_dtype=unsigned_register_type(3))
@@ -152,10 +154,14 @@ def test_on_each_source_order_and_entangled_amplitudes(
     opcode: Literal["x", "h", "rz"], dtype: str
 ) -> None:
     pytest.importorskip("qualtran")
-    from qualtran import QUInt
-    from qualtran.bloqs.basic_gates import Hadamard, Rz, XGate
+    from qualtran._infra.data_types import QUInt
+    from qualtran.bloqs.basic_gates.hadamard import Hadamard
     from qualtran.bloqs.basic_gates.on_each import OnEach
-    from qualtran.resource_counting import QECGatesCost, QubitCount, get_cost_value
+    from qualtran.bloqs.basic_gates.rotation import Rz
+    from qualtran.bloqs.basic_gates.x_basis import XGate
+    from qualtran.resource_counting._bloq_counts import QECGatesCost
+    from qualtran.resource_counting._costing import get_cost_value
+    from qualtran.resource_counting._qubit_counts import QubitCount
 
     angle = 0.37
     leaf = {"x": XGate(), "h": Hadamard(), "rz": Rz(angle)}[opcode]
@@ -212,10 +218,12 @@ def test_on_each_source_order_and_entangled_amplitudes(
 @pytest.mark.ftqc_reference
 def test_zero_and_symbolic_on_each_resource_counts() -> None:
     pytest.importorskip("qualtran")
-    from qualtran import DecomposeTypeError
-    from qualtran.bloqs.basic_gates import XGate
+    from qualtran._infra.bloq import DecomposeTypeError
     from qualtran.bloqs.basic_gates.on_each import OnEach
-    from qualtran.resource_counting import QECGatesCost, QubitCount, get_cost_value
+    from qualtran.bloqs.basic_gates.x_basis import XGate
+    from qualtran.resource_counting._bloq_counts import QECGatesCost
+    from qualtran.resource_counting._costing import get_cost_value
+    from qualtran.resource_counting._qubit_counts import QubitCount
     from sympy import Symbol
 
     count = Symbol("width", positive=True, integer=True)
@@ -259,9 +267,13 @@ def test_on_each_rejects_dynamic_or_overlapping_binding() -> None:
 def test_concrete_dtypes_and_actual_phase_adjoint(
     kind: str, opcode: Literal["s", "t"]
 ) -> None:
-    from qualtran import QAny, QFxp, QInt, QIntOnesComp, QUInt
-    from qualtran.bloqs.basic_gates import OnEach, SGate, TGate
-    from qualtran.resource_counting import QECGatesCost, QubitCount, get_cost_value
+    from qualtran._infra.data_types import QAny, QFxp, QInt, QIntOnesComp, QUInt
+    from qualtran.bloqs.basic_gates.on_each import OnEach
+    from qualtran.bloqs.basic_gates.s_gate import SGate
+    from qualtran.bloqs.basic_gates.t_gate import TGate
+    from qualtran.resource_counting._bloq_counts import QECGatesCost
+    from qualtran.resource_counting._costing import get_cost_value
+    from qualtran.resource_counting._qubit_counts import QubitCount
 
     from flagquantum.compiler._component_trace.resource_generalization import PhaseCall
     from flagquantum.core.ir.program.register_types import (
@@ -339,9 +351,14 @@ def test_concrete_dtypes_and_actual_phase_adjoint(
 
 @pytest.mark.ftqc_reference
 def test_constructor_admission_is_distinct_from_executable_body() -> None:
-    from qualtran import Bloq, BloqError, QBit, Register
-    from qualtran import Signature as SourceSignature
-    from qualtran.bloqs.basic_gates import OnEach, SGate, ZeroEffect, ZeroState
+    from qualtran._infra.bloq import Bloq
+    from qualtran._infra.composite_bloq import BloqError
+    from qualtran._infra.data_types import QBit
+    from qualtran._infra.registers import Register
+    from qualtran._infra.registers import Signature as SourceSignature
+    from qualtran.bloqs.basic_gates.on_each import OnEach
+    from qualtran.bloqs.basic_gates.s_gate import SGate
+    from qualtran.bloqs.basic_gates.z_basis import ZeroEffect, ZeroState
 
     class ShapedChild:
         @property

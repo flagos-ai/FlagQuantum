@@ -21,7 +21,7 @@ from ...core.value_parameters import is_symbolic_value
 from ...errors import SerializationError
 from ..registers.bits.bitwise_component import bitwise_word_program
 from ..registers.bits.bitwise_component_control import controlled_bitwise_word_program
-from ..registers.bits.on_each import on_each_word_program
+from ..registers.bits.on_each import _validate_on_each_child, on_each_word_program
 from ..registers.component_graph import _namespace_helpers
 from .legacy_component_arguments import ControlSpecification
 from .legacy_component_resolution import ComponentFactory, ResolvedArgument
@@ -107,10 +107,12 @@ def _on_each_factory(
     width, child = arguments["n"], arguments["gate"]
     if type(width) is not int and not isinstance(width, sympy.Expr):
         raise SerializationError("OnEach requires an integer or symbolic width")
-    if not isinstance(child, FunctionRecord) or child.registers != tuple(
-        Signature.build(q=1)
-    ):
-        raise SerializationError("OnEach requires one scalar QBit THRU port named q")
+    if not isinstance(child, FunctionRecord):
+        raise SerializationError("OnEach requires a typed child function")
+    try:
+        _validate_on_each_child(child)
+    except ValueError as error:
+        raise SerializationError(str(error)) from error
     dtype = arguments.get("target_dtype", opaque_register_type(width))
     if (
         not isinstance(dtype, RegisterType)
@@ -137,7 +139,7 @@ def word_factories(*, encode_constant: ConstantEncoder) -> dict[str, ComponentFa
 
     Compiler consumes MSB bits and constructs typed calls. Numerical encoding
     and its dtype-specific validation remain with the injected codec owner.
-    OnEach references the independently resolved scalar QBit child closure.
+    OnEach references the independently resolved scalar one-bit child closure.
     Controlled accepts the positive scalar QBit complement dependency. Its
     child must have been resolved in this catalogue, including symbolic views.
     Create a catalogue per compilation to bound retained constructor context.
