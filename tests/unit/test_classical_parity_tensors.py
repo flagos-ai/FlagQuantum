@@ -3,7 +3,12 @@
 from itertools import count, product
 from typing import Any
 
-import numpy as np
+from tests._reference_dependencies import unavailable_reference
+
+try:
+    import numpy as np
+except ModuleNotFoundError as _reference_import_error:
+    unavailable_reference(_reference_import_error)
 import pytest
 import torch
 
@@ -16,6 +21,7 @@ from flagquantum.simulation.tensor_network.classical_parity import (
 from flagquantum.simulation.tensor_network.register_tensor_binding import (
     contract_register_tensors,
 )
+from tests.unit.classical_source_callbacks import source_tensors
 
 pytestmark = [pytest.mark.unit, pytest.mark.ftqc_reference]
 
@@ -66,8 +72,8 @@ def test_entire_original_value_table_and_linear_shared_storage(
     )
     # No original tensor exists to compare gate-by-gate: retain that negative contract.
     with pytest.raises(NotImplementedError, match="tensor simulation"):
-        original.my_tensors(
-            {"x": np.arange(width)}, {"x": np.arange(width), "parity": "p"}
+        source_tensors(
+            original, {"x": np.arange(width)}, {"x": np.arange(width), "parity": "p"}
         )
 
 
