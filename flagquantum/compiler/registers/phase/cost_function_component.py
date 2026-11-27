@@ -22,11 +22,12 @@ def cost_function_phase_program(
     Each supplied Program uses its first function as entry. Erase must be the
     exact inverse on the evaluator's image, including measured feedback.
     Evaluation inputs and phase extras form the outer source signature.
+    A phase oracle may have no cost ports; evaluation and erasure still run.
     """
     evaluation = Signature(evaluate.functions[0].registers or ())
     phasing = Signature(phase.functions[0].registers or ())
     erasure = Signature(erase.functions[0].registers or ())
-    if not cost_names or len(set(cost_names)) != len(cost_names):
+    if len(set(cost_names)) != len(cost_names):
         raise ValueError("Cost phasing requires distinct cost output names")
     for name in cost_names:
         source, target = evaluation.get_right(name), phasing.get_left(name)
