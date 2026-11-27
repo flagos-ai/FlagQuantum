@@ -16,7 +16,10 @@ from ._polynomial_component_calls import (
     product_ccx,
     product_cx,
 )
-from .constant_multiplication_component import constant_multiplication_program
+from .constant_multiplication_component import (
+    constant_multiplication_decomposition_program,
+    constant_multiplication_program,
+)
 from .field_word import field_word_width
 from .monomial_component import monomial_multiplication_program
 from .polynomial_product_component import (
@@ -57,9 +60,15 @@ def karatsuba_decomposition_implementation(
     from the mathematical implementation and does not promise h += f*g.
     """
     width = field_word_width(dtype, modulus)
+    if width < 2:
+        raise ValueError(
+            "Literal Karatsuba implementation requires degree at least two"
+        )
     constant = 1 | (1 << ((width + 1) // 2))
     inverse_scale = (
-        constant_multiplication_program(dtype, constant, modulus=modulus)
+        constant_multiplication_decomposition_program(
+            dtype, constant, modulus=modulus, adjoint=True
+        )
         if width > 1
         else None
     )
