@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import hashlib
 import json
 import os
 import re
@@ -74,7 +75,7 @@ def _groups(job: dict[str, object]) -> set[str]:
     strategy = job.get("strategy")
     matrix = strategy.get("matrix") if isinstance(strategy, dict) else None
     if matrix == "${{ fromJSON(needs.coverage-plan.outputs.matrix) }}":
-        matrix = {"include": [{"shard": i, "hosted-bucket": i % 8} for i in range(192)]}
+        matrix = {"include": [{"shard": i, "hosted-bucket": i % 8} for i in range(256)]}
     assert isinstance(matrix, dict), f"{group}: job declares no matrix"
     values = matrix.get(reference.group(1))
     if values is None and isinstance(matrix.get("include"), list):
@@ -261,13 +262,23 @@ def test_migrated_cpu_jobs_keep_frameworks_and_processes_isolated(job: str) -> N
             "${{ github.event_name == 'pull_request' && 60 || matrix.timeout-minutes }}"
         )
     if job == "coverage-shard":
+        assert " ".join(definition["runs-on"].split()) == (
+            '${{ fromJSON( (github.event_name != \'pull_request\' || github.event.pull_request.head.repo.full_name == github.repository) && (matrix.runner && format(\'["self-hosted","linux","x64","flagquantum-cpu","{0}"]\', matrix.runner) || matrix.a800 && \'["self-hosted","linux","x64","flagquantum-cpu","flagquantum-a800-cpu"]\' || \'["self-hosted","linux","x64","flagquantum-cpu"]\') || \'["ubuntu-latest"]\' ) }}'
+        )
+        assert any(
+            step.get("uses") == "./.github/actions/offline-cpu"
+            and step["with"]["profile"] == "coverage-py3.12"
+            and step["with"]["require-cached"]
+            == "${{ runner.environment == 'self-hosted' }}"
+            for step in steps
+        )
         assert (
             definition["strategy"]["matrix"]
             == "${{ fromJSON(needs.coverage-plan.outputs.matrix) }}"
         )
         assert (
-            "192"
-            in _document("ci.yml")["jobs"]["coverage-plan"]["env"]["FQ_COVERAGE_SHARDS"]
+            _document("ci.yml")["jobs"]["coverage-plan"]["env"]["FQ_COVERAGE_SHARDS"]
+            == "256"
         )
     else:
         assert "python tools/ci/ci_tier.py pr-distributed" in commands
@@ -331,10 +342,47 @@ def test_python_312_required_check_aggregates_parallel_suites() -> None:
 
 def test_expensive_cpu_runtime_proofs_run_once_on_the_newest_python() -> None:
     job = _document("ci.yml")["jobs"]["cpu-runtime"]
-    assert job["strategy"] == {
-        "fail-fast": False,
-        "matrix": {"shard": list(range(8))},
+    assert job["strategy"]["fail-fast"] is False
+    rows = job["strategy"]["matrix"]["include"]
+    assert [row["shard"] for row in rows] == list(range(128))
+    assert all(row["hosted-bucket"] == row["shard"] % 8 for row in rows)
+    assert all(row["runner"] == "flagquantum-a800-cpu" for row in rows[:32])
+    recipients = [row["runner"] for row in rows[32:]]
+    assert len(recipients) == len(set(recipients)) == 96
+    record = json.loads(
+        (
+            ROOT / "docs/development/migration/ci-cpu-cache-qualification.json"
+        ).read_text()
+    )
+    qualified = {row["selector"] for row in record["qualified_slots"]}
+    assert set(recipients) <= qualified
+    assert all(
+        re.fullmatch(r"fq-bw1100-\d+-cpu\d+-validation", name) for name in recipients
+    )
+    assert not any("mc550" in name for name in recipients)
+    assert set(record["profiles"]) == {
+        "core-py3.10",
+        "core-py3.11",
+        "core-py3.12",
+        "coverage-py3.12",
     }
+    lock = (ROOT / "docker/ci/images.lock").read_bytes()
+    assert hashlib.sha1(
+        b"blob " + str(len(lock)).encode() + b"\0" + lock
+    ).hexdigest() == (record["image_lock_git_blob"])
+    assert all(
+        row["run"] in {46010078828, 46010700562} and row["job"] > 0
+        for row in record["qualified_slots"]
+    )
+
+    budget = next(
+        step
+        for step in _steps("ci.yml", "cpu-runtime")
+        if step.get("name") == "Measure CPU and memory limits"
+    )
+    assert budget["run"] == "python -I tools/ci/ci_cpu_budget.py"
+    for variable in ("OMP_NUM_THREADS", "MKL_NUM_THREADS", "OPENBLAS_NUM_THREADS"):
+        assert job["env"][variable] == "1"
     expensive_steps = [
         step
         for step in _steps("ci.yml", "cpu-runtime")
@@ -346,12 +394,18 @@ def test_expensive_cpu_runtime_proofs_run_once_on_the_newest_python() -> None:
         step for step in expensive_steps if "ci_tier.py pr-runtime" in step["run"]
     )
     assert runtime["run"] == (
-        "python tools/ci/ci_tier.py pr-runtime --shard-count 8 "
-        "--shard-index ${{ matrix.shard }}"
+        "python tools/ci/ci_tier.py pr-runtime --shard-count 128 "
+        "--shard-index ${{ matrix.shard }} --plan-shard"
     )
     for step in expensive_steps:
         if "torchrun" in step["run"]:
             assert step["if"] == "matrix.shard == 0"
+            for variable in (
+                "OMP_NUM_THREADS",
+                "MKL_NUM_THREADS",
+                "OPENBLAS_NUM_THREADS",
+            ):
+                assert step["env"][variable] == "1"
 
 
 def test_launched_distributed_steps_never_inherit_xdist_workers() -> None:
@@ -567,7 +621,10 @@ def test_openfermion_validation_does_not_wait_for_container_builds() -> None:
 
 def test_native_fermion_uses_isolated_cpu_capacity_for_trusted_changes() -> None:
     job = _document("ci.yml")["jobs"]["native-fermion"]
-    assert job["runs-on"] == TRUSTED_CPU_ROUTE
+    assert job["runs-on"] == "ubuntu-latest"
+    assert _groups(job) == {"flagquantum-gh-3", "flagquantum-gh-4"}
+    assert job["concurrency"]["queue"] == "max"
+    assert job["timeout-minutes"] == 45
     assert len(job["strategy"]["matrix"]["include"]) == 2
     isolated = next(
         step

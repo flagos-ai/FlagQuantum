@@ -11,6 +11,7 @@ from flagquantum.simulation.numerics.jax import (
     jax_circuit_tensor_nodes,
     jax_contract_tensor_nodes,
 )
+from flagquantum.simulation.tensor_network.jax.models import JAXTensorNetworkNode
 
 _JAX_EINSUM_CHARS = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ"
 
@@ -261,3 +262,116 @@ def _jax_einsum_reorder(
         + "".join(mapping[label] for label in output_labels)
     )
     return jnp.einsum(equation, tensor, precision=matmul_precision)
+
+
+def jax_parameterized_tn_state_nodes(
+    circuit: Any,
+    n_qubits: int,
+    *,
+    bsz: int,
+    dtype: Any,
+    batch_label: int,
+    start_label: int,
+    conjugate: bool,
+) -> tuple[list[JAXTensorNetworkNode], list[int], int]:
+    import jax.numpy as jnp
+
+    from flagquantum.simulation.numerics.jax import _jax_instruction_matrix
+
+    next_label = int(start_label)
+    current_labels: list[int] = []
+    nodes: list[JAXTensorNetworkNode] = []
+    zero = jnp.zeros((int(bsz), 2), dtype=dtype)
+    zero = zero.at[:, 0].set(1.0 + 0.0j)
+    for qubit in range(int(n_qubits)):
+        label = next_label
+        next_label += 1
+        current_labels.append(label)
+        nodes.append(
+            JAXTensorNetworkNode(
+                tensor=zero, labels=(int(batch_label), label), name=f"init_{qubit}"
+            )
+        )
+    for index, instruction in enumerate(circuit.to_ir()):
+        if instruction.metadata.get("is_channel"):
+            raise NotImplementedError(
+                "JAX parameterized sliced TN currently supports unitary circuit instructions."
+            )
+        qubits = tuple(int(qubit) for qubit in instruction.wires)
+        matrix = _jax_instruction_matrix(instruction)
+        if conjugate:
+            matrix = jnp.conj(matrix)
+        if len(tuple(matrix.shape)) != 2:
+            raise NotImplementedError(
+                "JAX parameterized sliced TN expects unbatched gate matrices."
+            )
+        tensor = matrix.reshape((2,) * (2 * len(qubits)))
+        input_labels = tuple(current_labels[qubit] for qubit in qubits)
+        output_labels = tuple(range(next_label, next_label + len(qubits)))
+        next_label += len(qubits)
+        for qubit, label in zip(qubits, output_labels, strict=True):
+            current_labels[qubit] = label
+        nodes.append(
+            JAXTensorNetworkNode(
+                tensor=tensor,
+                labels=output_labels + input_labels,
+                name=f"{index}:{instruction.name}",
+                metadata={"qubits": qubits},
+            )
+        )
+    return nodes, current_labels, next_label
+
+
+def jax_parameterized_tn_expectation_nodes(
+    circuit: Any,
+    n_qubits: int,
+    *,
+    bsz: int,
+    dtype: Any,
+    ops: Mapping[int, str],
+) -> tuple[tuple[JAXTensorNetworkNode, ...], tuple[int, ...]]:
+    import jax.numpy as jnp
+
+    ket_nodes, ket_outputs, next_label = jax_parameterized_tn_state_nodes(
+        circuit,
+        n_qubits,
+        bsz=bsz,
+        dtype=dtype,
+        batch_label=0,
+        start_label=1,
+        conjugate=False,
+    )
+    max_label = max((label for node in ket_nodes for label in node.labels), default=0)
+    offset = max(int(next_label), int(max_label) + 1)
+    bra_nodes, bra_outputs, _ = jax_parameterized_tn_state_nodes(
+        circuit,
+        n_qubits,
+        bsz=bsz,
+        dtype=dtype,
+        batch_label=offset,
+        start_label=offset + 1,
+        conjugate=True,
+    )
+    nodes: list[JAXTensorNetworkNode] = list(ket_nodes) + list(bra_nodes)
+    batch_identity = jnp.eye(int(bsz), dtype=dtype)
+    nodes.append(
+        JAXTensorNetworkNode(
+            tensor=batch_identity,
+            labels=(0, offset),
+            name="batch_identity",
+        )
+    )
+    for qubit in range(int(n_qubits)):
+        matrix = _jax_pauli_matrix(
+            ops.get(int(qubit), "i"),
+            dtype=dtype,
+        )
+        nodes.append(
+            JAXTensorNetworkNode(
+                tensor=matrix,
+                labels=(int(bra_outputs[qubit]), int(ket_outputs[qubit])),
+                name=f"obs_{qubit}",
+                metadata={"qubit": int(qubit)},
+            )
+        )
+    return tuple(nodes), (0,)
