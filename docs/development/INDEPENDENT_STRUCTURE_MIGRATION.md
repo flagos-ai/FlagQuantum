@@ -332,3 +332,15 @@ selections use the existing exclusive CPU profile; mixed selections retain
 parallel workers. Collection failures/skips, original admission, selected-node
 identity and execution reports remain retained. This refinement changes no
 product source, public contract, scientific workload or compatibility boundary.
+
+
+### PR 1344 full timing census and internal import closure
+
+Coverage run `45998519970` records all 38,464 selected nodes exactly once across
+256 digest-verified reports, retaining the original failed Lindblad outcomes.
+The complete integrator test file now imports Runtime evolution explicitly and
+passes all 48 cases independently, without relying on another module to import
+the historical `flagquantum.lindblad` facade. Public compatibility scope is
+unchanged. Updated scheduling weights and qualified routing of indivisible heavy
+cases are documented in [the critical-path record](migration/ci-partition-critical-path.md).
+Published candidate CI and the whole-job ten-minute target remain outstanding.

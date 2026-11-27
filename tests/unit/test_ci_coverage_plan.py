@@ -311,3 +311,31 @@ def test_full_256_way_plan_remains_nonempty_and_complete(tmp_path, monkeypatch):
     ]
     assert len(rows) == 256
     assert not any(row["exclusive"] for row in rows)
+
+
+@pytest.mark.parametrize("seconds,expected", [(299.9, False), (300.0, True)])
+def test_only_indivisible_measured_heavy_cases_use_qualified_cpu_pool(
+    tmp_path, monkeypatch, seconds, expected
+):
+    from tools.ci import ci_coverage_plan
+
+    monkeypatch.setenv("GITHUB_SHA", "b" * 40)
+    monkeypatch.setenv("GITHUB_OUTPUT", str(tmp_path / "output"))
+    heavy = "tests/test_full.py::test_original_workload"
+    ordinary = "tests/test_small.py::test_original_workload"
+    monkeypatch.setattr(
+        ci_coverage_plan, "load_duration_hints", lambda: (0.05, {heavy: seconds})
+    )
+    assert write_plan((heavy, ordinary), tmp_path / "plan", 2) == 2
+    rows = json.loads((tmp_path / "output").read_text().split("matrix=", 1)[1])[
+        "include"
+    ]
+    for row in rows:
+        nodes = verify_plan(tmp_path / "plan", row["shard"]).read_text().splitlines()
+        assert row["a800"] is (expected and nodes == [heavy])
+        assert row["timeout-minutes"] == 60
+
+    monkeypatch.setenv("GITHUB_OUTPUT", str(tmp_path / "mixed-output"))
+    assert write_plan((heavy, ordinary), tmp_path / "mixed-plan", 1) == 1
+    mixed = json.loads((tmp_path / "mixed-output").read_text().split("matrix=", 1)[1])
+    assert mixed["include"][0]["a800"] is False

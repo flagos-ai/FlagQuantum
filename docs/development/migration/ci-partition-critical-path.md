@@ -232,3 +232,46 @@ invocation and refusal, single-worker overrides, resource retention and JUnit
 relocation. Synthetic admission fixtures establish orchestration behavior, not
 hardware capacity or Linux timing. New exact-head CI must still verify the
 complete original selection and each full executed-job duration.
+
+
+## Full-cohort timing update and qualified heavy-case routing
+
+Run `45998519970` at head `93d221add32858ac1254ed146ea4ada39cb20928`
+produced all 256 original coverage execution reports. Their artifact digests
+were verified, and their recorded node sets cover the complete 38,464-node
+source-bound plan exactly once. This is a full phase-timing census, unlike the
+earlier printed slowest-50 sample. Original reports, including failed outcomes,
+remain retained separately from candidate execution.
+
+Nine successful whole coverage jobs exceeded 600 seconds. Eight already had a
+single case, including the complete Maxwell, network-resiliency and projection
+embedding workloads; further fan-out cannot divide those cases. One mixed
+partition contained 218 nodes and took 911 seconds. Scheduling weights now
+increase from measured phase sums of at least one second; earlier larger weights
+remain intact. Replaying the complete original plan still produces 256 nonempty
+partitions with every node exactly once, 83 sole-heavy partitions and a maximum
+ordinary predicted serial weight of 155.5545 seconds. Predictions are scheduling
+inputs, not candidate elapsed-job acceptance.
+
+Only sole cases with a measured scheduling weight of at least 300 seconds use
+the existing `flagquantum-a800-cpu` pool. Both A800 hosts passed the existing
+read-only locked-image qualification in run `45999529800`, with
+`export-bundle=false`, at the same source head. No images were installed or
+pulled, and no runner labels, services, CPU quotas or admission formulas changed.
+The replay routes 32 partitions to this pool; ordinary partitions retain their
+existing CPU pool. Fork PRs retain hosted execution, eight bounded hosted groups
+and the same cached-image requirement for trusted runners. The workflow retains
+its original finite safety budgets; 600 seconds is an elapsed-job target.
+
+The failed coverage partition exposed a test import-order dependency:
+`test_lindblad_integrators.py` accessed `fq.lindblad` without importing that
+submodule. Earlier broad collection happened to import its historical facade.
+These internal tests now explicitly import the authoritative Runtime evolution
+module and retain all original scenarios and assertions. The complete file
+passes independently (48 cases). No public export or compatibility facade is
+added. The failed original execution remains failed evidence.
+
+New published-head acceptance must verify all actual selected node inventories,
+root execution reports, source bindings and whole-job durations. Neither the
+old run's successful shards nor this replay certify the candidate as all green
+or within ten minutes.

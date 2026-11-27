@@ -132,6 +132,10 @@ def write_plan(nodeids: tuple[str, ...], directory: Path, requested: int) -> int
                     LONG_TEST_TIMEOUT_MINUTES.get(nodes[0], 0) * 60,
                 )
                 >= EXCLUSIVE_TEST_SECONDS,
+                # These indivisible cases already occupy their own partition.
+                # Both existing A800 hosts qualify the locked coverage image;
+                # reuse their admitted CPU pool instead of adding empty shards.
+                "a800": len(nodes) == 1 and hints.get(nodes[0], default) >= 300.0,
                 "timeout-minutes": max(
                     DEFAULT_TIMEOUT_MINUTES,
                     sum(LONG_TEST_TIMEOUT_MINUTES.get(node, 0) for node in nodes),

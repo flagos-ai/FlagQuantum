@@ -47,6 +47,11 @@ def test_cpu_pool_routes_require_a_same_repository_pull_request() -> None:
             expected,
             FULL_CPU_ROUTE,
             FULL_CPU_ROUTE.replace(
+                '&& \'["self-hosted","linux","x64","flagquantum-cpu"]\'',
+                '&& (matrix.a800 && \'["self-hosted","linux","x64","flagquantum-cpu",'
+                '"flagquantum-a800-cpu"]\' || \'["self-hosted","linux","x64","flagquantum-cpu"]\')',
+            ),
+            FULL_CPU_ROUTE.replace(
                 '"flagquantum-cpu"]', '"flagquantum-cpu","flagquantum-a800-cpu"]'
             ),
             FULL_CPU_ROUTE.replace(

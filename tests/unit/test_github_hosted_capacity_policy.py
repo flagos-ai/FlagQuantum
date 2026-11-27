@@ -261,6 +261,20 @@ def test_migrated_cpu_jobs_keep_frameworks_and_processes_isolated(job: str) -> N
             "${{ github.event_name == 'pull_request' && 60 || matrix.timeout-minutes }}"
         )
     if job == "coverage-shard":
+        assert " ".join(definition["runs-on"].split()) == (
+            "${{ fromJSON( (github.event_name != 'pull_request' || "
+            "github.event.pull_request.head.repo.full_name == github.repository) "
+            '&& (matrix.a800 && \'["self-hosted","linux","x64","flagquantum-cpu",'
+            '"flagquantum-a800-cpu"]\' || \'["self-hosted","linux","x64","flagquantum-cpu"]\') '
+            "|| '[\"ubuntu-latest\"]' ) }}"
+        )
+        assert any(
+            step.get("uses") == "./.github/actions/offline-cpu"
+            and step["with"]["profile"] == "coverage-py3.12"
+            and step["with"]["require-cached"]
+            == "${{ runner.environment == 'self-hosted' }}"
+            for step in steps
+        )
         assert (
             definition["strategy"]["matrix"]
             == "${{ fromJSON(needs.coverage-plan.outputs.matrix) }}"
