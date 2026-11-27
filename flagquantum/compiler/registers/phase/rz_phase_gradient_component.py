@@ -4,6 +4,8 @@
 
 """Compose fixed-point Rz kickback through shared casts and conditional addition."""
 
+import sympy
+
 from ....core.ir.program import FunctionRecord, ProgramRecord
 from ....core.ir.program.register_types import quantum_bit_type, unsigned_register_type
 from ....core.ir.program.registers import RegisterType
@@ -35,7 +37,13 @@ def rz_via_phase_gradient_program(
         name: str, source: RegisterType, target: RegisterType
     ) -> FunctionRecord:
         signature = cast_signature(source, target)
-        if source.is_symbolic() or target.is_symbolic():
+        # A raw Cast needs known wire dimensions, not a numerical value for
+        # fractional metadata. Proposal 130 already admits these storage views.
+        if any(
+            isinstance(dtype.quantum_bits, sympy.Expr)
+            and bool(dtype.quantum_bits.free_symbols)
+            for dtype in (source, target)
+        ):
             return FunctionRecord(name, (), registers=tuple(signature))
         return cast_word_function(name, source, target)
 

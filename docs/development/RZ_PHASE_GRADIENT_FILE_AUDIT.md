@@ -169,3 +169,66 @@ the successful run followed HTTP-cache and partial-export cleanup. An additional
 broad integration probe passed 163 cases before local Gloo address resolution
 failed. That environment diagnostic remains separate from the passing relevant
 integration suite.
+
+
+## Complete faithful source-file closure — 2026-11-28
+
+Q-0685 is accepted under the approved G2 faithful-migration rule after closing
+the source-success symbolic-interpretation Cast gap. Earlier open status based
+solely on source model anomalies or source-refused physical dimensions is
+historical. No generic transport, SDK or workflow parent closes here.
+
+| Complete source responsibility | Native owner and evidence |
+| --- | --- |
+| Both dtype fields and ordered THRU signature | Existing format constructor and typed `q`, `angle`, `phase_grad` ports preserve nominal descriptors and MSB order. |
+| Both unsigned dtype properties | Register sizes feed existing unsigned descriptors; arithmetic uses raw bits. |
+| Composite body | Four owned Cast views surround the existing ControlledAddOrSubtract call, preserving source producer/operand/result edges. |
+| Declared call graph | Existing resource model retains the single arithmetic child and original omission of Cast costs. |
+| Example and documentation specification | Accepted four-bit tutorial, original tests, drawings, notebook and source-free append example are reused. |
+
+The actual original QFxp(3,f) root and full 128-by-128 tensor succeed. The native
+composer previously treated symbolic fractional metadata as an unresolved wire
+size and supplied two bodyless Casts. It now checks physical dimensions and
+uses the existing raw Cast owner when those dimensions are known. Approved
+Proposal 130 permits this view. The original descriptor remains attached to
+every port; no numerical fixed-point interpretation or symbolic arithmetic is
+added. Casts add no gates, measurements or workspace. Unresolved wire dimensions
+remain declarations and fail physical binding.
+
+The 24 profiles cover widths two/three, angle-only, gradient-only and both-word
+metadata, signed/unsigned fractional expressions, bounded iteration lengths and
+Montgomery moduli. Source five-call roots, complete complex operators, every
+small forward and inverse history, coherent spectators, zero carry work and
+nominal output aliases agree. Primitive instructions and lifetime events equal
+the accepted unsigned raw-storage implementation, whose unchanged original
+primitive/operand/feedback evidence is reused. Actual source constructor wires
+at depths zero/one/two also bind identically for the representable profiles.
+The original Montgomery writer drops its modulus; no faithful object roundtrip
+is claimed for that codec. Native construction and append work with source SDK
+imports blocked.
+
+Independent intake additionally checks complete original raw operators and exact
+accepted native instructions/events for GF(3), GF(5), GF(9) and a packed GF(3)
+polynomial. This is unsigned raw-bit reinterpretation under the Rz source
+contract, not finite-field addition or external value admission. Padding codes
+are physical storage columns, not new valid bounded/field numerical values.
+
+Original incomparable-width admission, empty omitted-port failures, symbolic
+physical extents, atomic arithmetic boundaries and one-bit Add model anomalies
+remain explicit. No original graph, callback, tensor or test was patched.
+Measured inventories remain separate from source QEC categories and peak widths.
+Existing signed, unequal-width, eight-bit, full small-history and original
+asset evidence is reused. Shared receipts use
+`g2-phase-rotations-full-closure-*20261128`; metadata and field/literal intake
+receipts retain the exact supported/refused profiles.
+
+Batch acceptance passes 134 concentrated source/execution cases, 47 independent
+Cirq 1.6.1 cases and 32 relevant local integration cases. Strict typing of two
+Python files, Black, Ruff, Compiler scope, architecture, multi-level IR, required
+checks, public API baseline, English, links and whitespace pass. Twenty-five
+complete immutable source/asset/dependency blobs and real Qualtran 0.7.0/Kickmix
+0.1 Simulator are verified. Twenty-seven resource rows separate literal
+primitive inventories and source models. Ten actual optional/required dependency
+absence scenarios pass. Global dependency findings remain at 570 in 362 files,
+with none in the new consumer; Q-0009/Q-0011 remain open. No source patch,
+checker waiver, new exclusion or CI-wait dependency was introduced.

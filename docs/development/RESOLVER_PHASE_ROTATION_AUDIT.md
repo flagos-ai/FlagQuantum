@@ -134,3 +134,37 @@ profiles. These are storage views, so signed bit patterns do not change the
 primitive stream or original model. Whole-file parents Q-0685 and Q-0688 retain
 their existing original empty/symbolic/model boundaries; no parent acceptance
 is inferred from this dependency fix.
+
+
+## Known-width interpretation views and full-file disposition, 2026-11-28
+
+The Rz component now distinguishes unresolved wire dimensions from symbolic
+fractional metadata. Its four Casts reuse the existing finite raw-view owner
+under approved Proposal 130. The arithmetic child still receives only unsigned
+word descriptors and retains its own original admission. No Compiler numerical
+execution, parameter evaluation, Core instruction or public entry is added.
+
+Twenty-four source-positive metadata profiles retain five ordered calls, full
+complex operators, every small forward/inverse branch, a coherent spectator,
+output ownership and zero work. Constructor depths zero/one/two agree for
+representable profiles; the original Montgomery modulus loss stays explicit.
+Native constructor/append works without source SDK imports. Four additional
+finite-field/polynomial raw-view profiles retain complete original operators and
+the exact accepted native primitive/event stream. Four literal/symbolic Z-power
+roots retain source edges while original noninteger-load failures remain.
+
+Complete Rz and Z-power source parents Q-0685/Q-0688 close under the approved
+faithful-migration rule after the full-file audits. Original symbolic/empty/model
+refusals are retained; Q-0120, generic workflows/codecs and unapproved scalar
+behavior do not close. Actual gate inventory and source estimates remain separate.
+
+Batch acceptance passes 134 concentrated source/execution cases, 47 independent
+Cirq 1.6.1 cases and 32 relevant local integration cases. Strict typing of two
+Python files, Black, Ruff, Compiler scope, architecture, multi-level IR, required
+checks, public API baseline, English, links and whitespace pass. Twenty-five
+complete immutable source/asset/dependency blobs and real Qualtran 0.7.0/Kickmix
+0.1 Simulator are verified. Twenty-seven resource rows separate literal
+primitive inventories and source models. Ten actual optional/required dependency
+absence scenarios pass. Global dependency findings remain at 570 in 362 files,
+with none in the new consumer; Q-0009/Q-0011 remain open. No source patch,
+checker waiver, new exclusion or CI-wait dependency was introduced.
