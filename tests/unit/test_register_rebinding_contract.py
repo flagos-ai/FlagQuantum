@@ -4,12 +4,25 @@ The replaceable fixture exposes source builder observations without storing a
 second graph. Native register construction remains a separate implementation.
 """
 
-import numpy as np
+from __future__ import annotations
+
+from typing import TYPE_CHECKING
+
+from tests._reference_dependencies import unavailable_reference
+
+try:
+    import numpy as np
+    from numpy.typing import NDArray
+except ModuleNotFoundError as _reference_import_error:
+    unavailable_reference(_reference_import_error)
 import pytest
 
 from flagquantum.core.ir.program.registers import Register, RegisterType
 from flagquantum.core.ir.program.signatures import Signature
 from tests.unit.test_register_component_calls import SourceCalls, port
+
+if TYPE_CHECKING:
+    from qualtran._infra.quantum_graph import Soquet
 
 pytestmark = [pytest.mark.unit, pytest.mark.ftqc_reference]
 
@@ -17,27 +30,35 @@ pytestmark = [pytest.mark.unit, pytest.mark.ftqc_reference]
 class SourceRebindings(SourceCalls):
     """Retain original mutation and normalize identities at the test boundary."""
 
-    def split(self, value):
-        return self.builder.split(value)
+    def split(self, value: object) -> NDArray[np.object_]:
+        result = getattr(self.builder, "split")(value)
+        assert isinstance(result, np.ndarray)
+        return result
 
-    def join(self, values, dtype):
+    def join(self, values: object, dtype: RegisterType) -> Soquet:
+        from qualtran._infra.quantum_graph import Soquet
+
         from tests.unit.test_register_bindings import SourceContract
 
-        return self.builder.join(
+        result = getattr(self.builder, "join")(
             values, dtype=SourceContract.register(Register("reg", dtype)).dtype
         )
+        assert isinstance(result, Soquet)
+        return result
 
 
 @pytest.fixture(params=[SourceRebindings], ids=["source-fake"])
-def rebindings(request):
-    return request.param
+def rebindings(request: pytest.FixtureRequest) -> type[SourceRebindings]:
+    factory = request.param
+    assert isinstance(factory, type) and issubclass(factory, SourceRebindings)
+    return factory
 
 
 @pytest.mark.parametrize("width", [0, 1, 3])
 @pytest.mark.parametrize("shape", [(), (2,), (2, 2), (0, 2)])
 def test_every_word_has_ownership_even_when_it_has_no_physical_bits(
-    rebindings, width, shape
-):
+    rebindings: type[SourceRebindings], width: int, shape: tuple[int, ...]
+) -> None:
     register = port("word", width, shape)
     builder = rebindings(Signature([register]))
     initial = np.asarray(builder.inputs["word"], dtype=object)
@@ -71,9 +92,10 @@ def test_every_word_has_ownership_even_when_it_has_no_physical_bits(
 @pytest.mark.parametrize("encoding", ["opaque", "uint"])
 @pytest.mark.parametrize("permutation", [(0, 1, 2), (2, 0, 1)])
 def test_split_join_reorders_connections_without_inserting_a_gate(
-    rebindings, encoding, permutation
-):
-    from qualtran.resource_counting import QECGatesCost, get_cost_value
+    rebindings: type[SourceRebindings], encoding: str, permutation: tuple[int, ...]
+) -> None:
+    from qualtran.resource_counting._bloq_counts import QECGatesCost
+    from qualtran.resource_counting._costing import get_cost_value
 
     register = Register("word", RegisterType(encoding, 3))
     builder = rebindings(Signature([register]))
@@ -89,12 +111,15 @@ def test_split_join_reorders_connections_without_inserting_a_gate(
 
 
 @pytest.mark.parametrize("failure", ["duplicate", "short", "rank"])
-def test_failed_join_retains_exact_consumption_prefix(rebindings, failure):
+def test_failed_join_retains_exact_consumption_prefix(
+    rebindings: type[SourceRebindings], failure: str
+) -> None:
     register = port(width=3)
     builder = rebindings(Signature([register]))
     bits = builder.split(builder.inputs["word"])
     before = builder.available
     connections = builder.connections
+    exception: type[Exception]
     if failure == "duplicate":
         values = bits[[0, 0, 2]]
         exception = builder.error_type
@@ -109,7 +134,8 @@ def test_failed_join_retains_exact_consumption_prefix(rebindings, failure):
         consumed = 0
     with pytest.raises(exception):
         builder.join(values, register.dtype)
-    assert builder.instances == ((0,) if failure == "rank" else (0, 1))
+    initial_instances = builder.instances
+    assert initial_instances == ((0,) if failure == "rank" else (0, 1))
     assert builder.available == before - {
         builder.identity(bits[i]) for i in range(consumed)
     }
