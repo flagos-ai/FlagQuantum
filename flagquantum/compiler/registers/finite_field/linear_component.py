@@ -118,12 +118,32 @@ def field_linear_program(
     """Adapt a binary field word to the shared coefficient-array linear owner."""
     if binary_field_word_width(dtype) != len(matrix):
         raise ValueError("Field linear matrix must match the word width")
-    linear = binary_linear_program(matrix, adjoint=adjoint)
+    return _field_linear_word_program(
+        dtype, binary_linear_program(matrix, adjoint=adjoint)
+    )
+
+
+def field_linear_decomposition_program(
+    dtype: RegisterType, matrix: tuple[tuple[int, ...], ...], *, adjoint: bool = False
+) -> ProgramRecord:
+    """Retain a literal linear child's declared direction inside a field word."""
+    if binary_field_word_width(dtype) != len(matrix):
+        raise ValueError("Field linear matrix must match the word width")
+    return _field_linear_word_program(
+        dtype, binary_linear_decomposition_program(matrix, adjoint=adjoint)
+    )
+
+
+def _field_linear_word_program(
+    dtype: RegisterType, linear: ProgramRecord
+) -> ProgramRecord:
     builder = ComponentProgramBuilder(Signature.build_from_dtypes(x=dtype))
     word = builder.inputs["x"]
     assert isinstance(word, RegisterBinding)
     coefficients = builder.split(word)[::-1]
-    result = builder.call_program(linear, {"q": coefficients})["q"]
+    result = builder.call_program(
+        linear, {"q": coefficients}, entry=linear.functions[0].name
+    )["q"]
     return builder.finalize(
         {"x": builder.join(np.asarray(result, dtype=object)[::-1], dtype)}
     )

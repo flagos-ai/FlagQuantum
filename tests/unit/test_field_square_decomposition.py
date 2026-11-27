@@ -184,9 +184,17 @@ def test_reproduced_source_defects_remain_distinct_from_mathematical_execution()
             )
             is None
         )
-    assert field_square_decomposition_program(
+    declared_inverse = field_square_decomposition_program(
         register_type, modulus=11, uncompute=True
-    ) == field_square_decomposition_program(register_type, modulus=11)
+    )
+    declared_forward = field_square_decomposition_program(register_type, modulus=11)
+    assert declared_inverse != declared_forward
+    inverse_bound = bind_register_program(declared_inverse, ((0, 1, 2),))
+    forward_bound = bind_register_program(declared_forward, ((0, 1, 2),))
+    assert (inverse_bound.circuit.instructions, inverse_bound.outputs) == (
+        forward_bound.circuit.instructions,
+        forward_bound.outputs,
+    )
     assert field_frobenius_program(
         register_type, modulus=11, adjoint=True
     ) != field_frobenius_program(register_type, modulus=11)

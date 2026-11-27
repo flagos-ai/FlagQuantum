@@ -14,7 +14,7 @@ from ....core.ir.program.registers import RegisterType
 from .field_linear import _frobenius_matrix
 from .field_multiplication import _validate_field
 from .field_word import binary_field_word_width
-from .linear_component import field_linear_program
+from .linear_component import field_linear_decomposition_program
 
 
 def field_square_decomposition_matrix(
@@ -64,4 +64,4 @@ def field_square_decomposition_program(
     if dict(dtype.parameters).get("polynomial", modulus) != modulus:
         raise ValueError("Square decomposition modulus must match the descriptor")
     matrix = field_square_decomposition_matrix(width, count, modulus=modulus)
-    return field_linear_program(dtype, matrix)
+    return field_linear_decomposition_program(dtype, matrix, adjoint=uncompute)
