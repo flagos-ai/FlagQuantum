@@ -1,5 +1,12 @@
 """Check native polynomial constant addition against locked gate and cost models."""
 
+from tests._reference_dependencies import unavailable_reference
+
+try:
+    import numpy as numpy
+except ModuleNotFoundError as _reference_import_error:
+    unavailable_reference(_reference_import_error)
+
 import pytest
 import torch
 
@@ -12,6 +19,7 @@ from flagquantum.compiler.registers.finite_field.field_polynomial_addition impor
 from flagquantum.compiler.registers.finite_field.field_polynomial_layout import (
     FieldPolynomialLayout,
 )
+from tests.unit.register_source_graph import source_line_qubit_index
 
 pytestmark = pytest.mark.unit
 
@@ -31,14 +39,22 @@ def test_constant_polynomial_gate_order_and_exact_resource_model(
     degree: int, width: int, coefficients: tuple[int, ...]
 ) -> None:
     pytest.importorskip("qualtran")
-    import cirq
-    import numpy as np
+    try:
+        import cirq
+    except ModuleNotFoundError as _reference_import_error:
+        unavailable_reference(_reference_import_error)
+    try:
+        import numpy as np
+    except ModuleNotFoundError as _reference_import_error:
+        unavailable_reference(_reference_import_error)
     from galois import Poly
-    from qualtran import QGF, QGFPoly
-    from qualtran.bloqs.basic_gates import XGate
-    from qualtran.bloqs.gf_poly_arithmetic import GF2PolyAddK
-    from qualtran.cirq_interop import BloqAsCirqGate
-    from qualtran.resource_counting import QECGatesCost, QubitCount, get_cost_value
+    from qualtran._infra.data_types import QGF, QGFPoly
+    from qualtran.bloqs.basic_gates.x_basis import XGate
+    from qualtran.bloqs.gf_poly_arithmetic.gf2_poly_add_k import GF2PolyAddK
+    from qualtran.cirq_interop._bloq_to_cirq import BloqAsCirqGate
+    from qualtran.resource_counting._bloq_counts import QECGatesCost
+    from qualtran.resource_counting._costing import get_cost_value
+    from qualtran.resource_counting._qubit_counts import QubitCount
 
     layout = FieldPolynomialLayout(degree, width)
     wires = tuple(reversed(range(1, 2 * layout.logical_width, 2)))
@@ -52,12 +68,13 @@ def test_constant_polynomial_gate_order_and_exact_resource_model(
             f_x=np.array([cirq.LineQubit(wire) for wire in wires])
         )
     )
-    assert tuple(qubit.x for qubit in outputs["f_x"]) == wires
+    assert tuple(source_line_qubit_index(qubit) for qubit in outputs["f_x"]) == wires
     reference_ops = tuple(reference.all_operations())
     assert all(op.gate in {cirq.X, BloqAsCirqGate(XGate())} for op in reference_ops)
     native = gf2_polynomial_add_constant_ir(wires, coefficients, layout)
     assert [(gate.name, gate.wires) for gate in native] == [
-        ("x", tuple(q.x for q in gate.qubits)) for gate in reference_ops
+        ("x", tuple(source_line_qubit_index(q) for q in gate.qubits))
+        for gate in reference_ops
     ]
     expected = get_cost_value(source, QECGatesCost())
     modeled = source_gf2_polynomial_add_constant_resource_formula(
@@ -74,9 +91,11 @@ def test_unknown_constant_matches_locked_symbolic_bound() -> None:
     pytest.importorskip("qualtran")
     import sympy
     from galois import Poly
-    from qualtran import QGF, QGFPoly
-    from qualtran.bloqs.gf_poly_arithmetic import GF2PolyAddK
-    from qualtran.resource_counting import QECGatesCost, QubitCount, get_cost_value
+    from qualtran._infra.data_types import QGF, QGFPoly
+    from qualtran.bloqs.gf_poly_arithmetic.gf2_poly_add_k import GF2PolyAddK
+    from qualtran.resource_counting._bloq_counts import QECGatesCost
+    from qualtran.resource_counting._costing import get_cost_value
+    from qualtran.resource_counting._qubit_counts import QubitCount
 
     n, m = sympy.symbols("n m", positive=True, integer=True)
     source = GF2PolyAddK(QGFPoly(n, QGF(2, m)), Poly([0]))
