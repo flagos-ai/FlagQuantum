@@ -3,7 +3,12 @@
 from itertools import product
 from typing import Any
 
-import numpy as np
+from tests._reference_dependencies import unavailable_reference
+
+try:
+    import numpy as np
+except ModuleNotFoundError as _reference_import_error:
+    unavailable_reference(_reference_import_error)
 import pytest
 import torch
 
@@ -37,15 +42,19 @@ def xor_action(**values: object) -> tuple[object, ...]:
 
 
 def source_channel(discard: tuple[bool, bool]) -> Any:
-    from qualtran import BloqBuilder, QBit, Side
-    from qualtran import Register as SourceRegister
-    from qualtran.bloqs.basic_gates import CNOT, DiscardQ
+    from qualtran._infra.composite_bloq import BloqBuilder
+    from qualtran._infra.data_types import QBit
+    from qualtran._infra.registers import Register as SourceRegister
+    from qualtran._infra.registers import Side
+    from qualtran.bloqs.basic_gates.cnot import CNOT
+    from qualtran.bloqs.basic_gates.discard import DiscardQ
 
     bb = BloqBuilder()
-    inputs = {
-        name: bb.add_register(SourceRegister(name, QBit(), side=Side.LEFT))
-        for name in NAMES
-    }
+    inputs = {}
+    for name in NAMES:
+        register = bb.add_register(SourceRegister(name, QBit(), side=Side.LEFT))
+        assert register is not None
+        inputs[name] = register
     values = bb.add_d(CNOT(), **inputs)
     kept = {}
     for name, remove in zip(NAMES, discard, strict=True):
@@ -175,7 +184,7 @@ def test_traced_channel_keeps_complex_coherence_and_input_gradient() -> None:
 
 
 def test_empty_classical_output_is_a_coherent_effect_not_quantum_discard() -> None:
-    from qualtran.bloqs.basic_gates import DiscardQ
+    from qualtran.bloqs.basic_gates.discard import DiscardQ
     from qualtran.simulation.tensor._tensor_from_classical import (
         bloq_to_dense_via_classical_action,
     )
