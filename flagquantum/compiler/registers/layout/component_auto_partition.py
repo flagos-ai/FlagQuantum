@@ -30,7 +30,7 @@ def auto_partition_signature(
     lefts = tuple(child.lefts())
     if len(lefts) != len(child):
         raise ValueError("AutoPartition requires every child declaration on the left")
-    if layout._inputs() != {reg.name: reg.total_qubits() for reg in lefts}:
+    if layout._inputs() != {reg.name: reg.total_bits() for reg in lefts}:
         raise ValueError("child input names and widths must match the layout")
     groups = tuple(
         (outer, ssum(width for _, width in segments))
