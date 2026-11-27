@@ -763,3 +763,69 @@ measured root dispatch and recorded branch obligations. Raw nonbinary constructo
 successes must be audited against the new binary-field literal entries rather
 than assumed accepted from raw storage alone. This batch does not change the
 complete-parent count or claim those remaining calls implemented.
+
+
+## Raw nonbinary constant, shift and quadratic consumers — 2026-11-27
+
+The successful physical source paths in the nonbinary intake now execute through
+native components and actual catalog selection. `raw_field_word_width` applies
+existing quantum field storage validation. `constant_matrix_decomposition_program`
+wraps the provided Simulation `field_scale_matrix` in the shared literal PLU
+child, preserving all raw encodings, zero constants and original inverse flags.
+Compiler does not construct numerical field objects or import SDKs.
+
+`monomial_decomposition_program` distinguishes raw word width from field degree.
+It decodes the provided polynomial in its metadata characteristic and reuses the
+mathematical shift's existing static loop. Degree-one source branches omit the
+final reversal, leaving a free bit reversal even for count zero. Larger degrees
+rotate the entire raw word and use the original nonzero degree positions.
+The mathematical binary shift contract is unchanged.
+
+`field_multiplication_decomposition_program` shares one complete root schedule
+with the existing mathematical quadratic operation, injecting literal shift
+children. Raw width controls the Toffoli triangles. RIGHT results are allocated
+logical outputs; arbitrary THRU targets and the original generic adjoints are
+covered. Explicit LEFT inverse binding transfers ownership of the matching RIGHT
+result before release. Full complex forward/inverse composition restores the
+input and zeros every released result wire. No binder policy was relaxed.
+
+All constants of GF(3), GF(9) and GF(5), both source constant directions,
+negative/zero/positive left/right shifts and both quadratic result modes match
+untouched source gates, operand order and returned aliases. Complete small source
+tensors and full complex vectors agree. Larger four-bit arbitrary accumulators
+exhaust every raw input/target and coherent spectator value through the original
+primitive permutation, avoiding a large dense operator. There is one coherent
+branch, no measurements and no private work. The unused clean bit stays zero.
+An SDK import barrier and replaced old public product emitter prove the new
+native compilation/append path. Source arrays/callbacks are not substituted for
+physical execution.
+
+| Raw source case | Actual CX | Actual CCX | Separate source Clifford / Toffoli | Source total-T estimate |
+|---|---:|---:|---:|---:|
+| GF(3) quadratic RIGHT or THRU, width2 | 0 | 4 | 0 / 4 | 16 |
+| GF(9) quadratic RIGHT, width4 | 4 | 16 | 4 / 16 | 64 |
+| GF(9) quadratic THRU, width4 | 8 | 16 | 8 / 16 | 64 |
+| GF(5) quadratic RIGHT or THRU, width3 | 0 | 9 | 0 / 9 | 36 |
+| GF(3)/GF(9)/GF(5) zero constant | 0 | 0 | -2 / -4 / -3 Clifford | 0 |
+
+There are no explicit T primitives. Free output permutations, binding SWAPs,
+logical result storage and model estimates remain separate accounts. These
+source raw circuits are not promised to implement numerical nonbinary field
+multiplication. The original scalar callbacks retain their independent owners.
+
+Q-0519 remains open for complete declared-adjoint catalog identities and generic
+measured inverse/all-branch disposition. Raw class names whose declared direction
+cannot be inferred from identical physical bodies stay unqualified; no repaired
+math body or guessed inverse label is presented as the original. Original
+nonbinary Karatsuba and deeper inverse polynomial failures remain explicit.
+Evidence and validation are in `g2-raw-field-*` receipts; existing complete source
+suites, notebook and protocol evidence is reused.
+
+
+Final raw-field validation passes 1058 dependency-regression cases and the final
+68-case source profile suite (including three additional owned LEFT-release
+scenarios), plus 32 local integration cases. Cirq 1.6.1 passes 82 direct consumers.
+Strict mypy covers all eight changed Python files. Black/Ruff, domain scope,
+language/local links, architecture, IR, required-check mapping and whitespace
+pass. Fourteen frozen source/test/notebook blobs and real locked Simulator
+availability are verified. This acceptance does not close Q-0519 or Q-0516.

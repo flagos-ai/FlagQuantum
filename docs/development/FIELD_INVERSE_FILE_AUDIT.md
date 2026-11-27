@@ -340,3 +340,25 @@ IR and protected API checks pass. Production owners are unchanged, so the
 accepted 145 local integration cases and unchanged 720 dependency baseline from
 the preceding production batch are explicitly reused. Primitive counts remain
 separate from the source resource model. All batch jobs are terminal.
+
+
+## Raw degree-one inverse source branch — 2026-11-27
+
+`inverse_decomposition.field_inverse_degree_one_program` implements the original
+branch for any admitted concrete degree-one field word. Raw width may be greater
+than one. The root allocates one same-type RIGHT result and calls the existing
+literal degree-prefix addition. It returns x/result without a junk port,
+measurements or private work. The actual power catalog selects this branch.
+
+Unchanged GF(2), GF(3) and GF(5) roots match exact primitive calls, output leases,
+complete source operators and every complex input/spectator amplitude. Clean
+unused storage remains zero, and the captured native exact inverse restores
+all physical input wires. Mathematical inversion and original scalar callbacks
+remain independent: this degree-prefix raw circuit is not numerical GF(3)/GF(5)
+inversion. Full higher-degree binary inverse and declared-adjoint catalog work
+remain under Q-0516. The earlier source nonbinary higher-degree failure is not
+generalized to this successful degree-one physical path.
+
+The shared raw-field batch keeps Core/public contracts unchanged and uses normal
+`circuit.append(op)` through the existing append adapter. Source/model evidence
+is recorded in `g2-raw-field-resources-20261127.json` and the multiplication audit.

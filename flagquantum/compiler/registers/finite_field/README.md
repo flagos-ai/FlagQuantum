@@ -150,3 +150,20 @@ negative powers. The normal catalog resolves zero constants and negative shifts
 to these owners. Run `tests/unit/test_field_linear_literal.py` for the executable
 append, source-operator, alias and clean-work scenarios. Measured primitive
 counts and defective source declarations are separate in the multiplication audit.
+
+
+Raw nonbinary physical consumers use existing Core storage, not mathematical
+binary admission. `constant_matrix_decomposition_program` receives a numerical
+matrix already constructed by Simulation. `monomial_decomposition_program`
+retains the source field-degree conditional and raw-width rotations.
+`field_multiplication_decomposition_program` shares the quadratic schedule and
+supports RIGHT, arbitrary THRU and owned LEFT profiles. The degree-one branch
+in `inverse_decomposition.py` allocates a result and calls literal prefix
+addition. None claims numerical nonbinary arithmetic or owns a backend.
+
+Run `tests/unit/test_raw_field_components.py` for a short source constructor,
+Program binding and `Circuit.append(FieldOperation(...))` scenario. It covers
+complete raw complex states, all small constants, source aliases, matching LEFT
+ownership/release and an SDK-blocked replacement execution. The two whole-file
+audits record separate primitive/model costs and remaining declared graph / erasure
+work; successful raw execution does not close those broader parents by itself.
