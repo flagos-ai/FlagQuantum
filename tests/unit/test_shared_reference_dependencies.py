@@ -65,6 +65,9 @@ print(json.dumps(result))
         ("rotation_lattice_fixtures", "numpy", None),
         ("test_controlled_unitary_synthesis", "numpy", None),
         ("test_register_su2_rotation", "numpy", None),
+        ("test_cirq_decomposition_file", "numpy", None),
+        ("test_program_classical_registers", "numpy", None),
+        ("test_register_tensor", "numpy", None),
         (
             "test_global_phase_source_binding",
             "cirq",
