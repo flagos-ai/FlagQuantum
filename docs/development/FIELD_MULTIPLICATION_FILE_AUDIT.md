@@ -2,6 +2,10 @@
 
 The batch covers Q-0518, Q-0519 and Q-0520 at Qualtran v0.7.0 commit
 `bcb17bb25360ed68ce3bc084645db3e929799389`. The reference remains immutable.
+Complete implementation Q-0519 is accepted after the final declared-identity,
+constructor, append-dispatch and all-branch closure recorded below. Source assets
+Q-0518/Q-0520 retain their existing acceptance. Earlier open-boundary statements
+are historical; the final disposition supersedes them.
 
 ## Ownership and interfaces
 
@@ -829,3 +833,129 @@ Strict mypy covers all eight changed Python files. Black/Ruff, domain scope,
 language/local links, architecture, IR, required-check mapping and whitespace
 pass. Fourteen frozen source/test/notebook blobs and real locked Simulator
 availability are verified. This acceptance does not close Q-0519 or Q-0516.
+
+
+## Complete declared identities and all-branch erasure closure review — 2026-11-27
+
+This final review includes all eleven classes, 81 member definitions, the private
+equality converter, nine factories and seven documentation specifications.
+Prior sections record historical remaining boundaries; the implementation and
+verification below resolve their native behavior scope. The separate inverse
+source file Q-0516 retains its own clean-free defect and missing literal-owner
+work; it is not a dependency that prevents closing this multiplication file.
+
+### Literal graphs and source constructor boundaries
+
+Literal Karatsuba now calls the actual literal constant-adjoint child rather
+than a forward mathematical surrogate. Square uncompute also retains its own
+linear-adjoint definition. Both physical recipes remain exactly original while
+named function identities distinguish declared directions. Existing mathematical
+Frobenius/scaling/product inverses retain their corrected behavior.
+
+The normal multiplication catalog now selects the literal Karatsuba root.
+Every reachable comparable original call, operand, returned alias and fresh
+source drawing agrees, including the formerly mismatched linear-adjoint child.
+Constant/linear labels are established from the complete matching product caller
+and its ordered inverse/forward calls. Renaming all functions to opaque IDs
+preserves qualification. No name suffix, scalar no-op or new IR metadata is used.
+Quadratic composition similarly preserves distinct left/right entries when their
+physical bodies coincide. Binary degree1 and GF(3)/GF(9)/GF(5) raw callers retain
+exact source connection records and declared child roles.
+
+Source integer shift aliases reach the same concrete catalog body without
+rounding. Symbolic counts retain their refusal. The final unchanged-source
+constructor probe records successful bool/index shift counts; bool polynomial
+width fails with TypeError, NumPy polynomial width follows the original symbolic
+refusal, and the original private degree-one Karatsuba implementation fails on
+negative dimensions. The literal implementation now refuses that invalid case;
+the mathematical native CCX base remains separate and unchanged.
+
+### Generic measured dispatch and classical ownership
+
+The existing FieldProduct append adapter now dispatches its Karatsuba adjoint
+flag to the owned measured erasure Program. It consumes the matching result,
+retiring physical measurement wires, and preserves the factor words. The existing
+classical scratch binder reserves slots after prior caller storage, preserving
+old snapshots and later feedback. This does not change Circuit.compose.
+The native catalog also accepts the existing GF2MulMBUC root directly.
+
+A concrete raw descriptor without a polynomial may supply a modulus explicitly
+to the erasure component. Existing explicit-polynomial checks remain, and nominal
+port types are not rewritten. Actual append tests exercise prior classical
+slot100, every small measurement history and subsequent control from that
+unchanged slot. Physical retirement and explicit clearing are distinct policies;
+no retired nonzero wire is described as clean released workspace.
+
+### Full eight-bit phase and cleanup certificate
+
+The existing exact monomial/measurement checker now retains classical XOR slots
+as affine expressions of earlier outcomes. It cancels every independent outcome
+phase coefficient using actual conditional Z/CZ instructions. It does not insert
+a hand-authored field correction formula or change the reference circuit.
+
+For both native mathematical multiplication algorithms, all65536 input pairs
+at degree8 are checked with each of polynomials0x11B and0x11D. Every output phase
+coefficient is zero, every logical input is preserved, all cleared result/private
+work is zero, and the common positive Kraus factor is exactly1/16. This proves
+all256 raw measurement histories and arbitrary complex superpositions/external
+entanglement. Small statevector branch tests remain independently reused.
+Smaller degree2/3/5 profiles are included. The original literal Karatsuba output
+followed by the same erasure deliberately fails phase cancellation at degrees2/8,
+preserving the original product defect rather than repairing the reference.
+
+Measured erasure primitives at degree8 are H8, measurement8, explicit clear X8,
+classical XOR8 and CZ64. The original declared model is CZ64 and omits the
+measurement/clearing/parity work. Mathematical product CX/CCX counts and any
+analytical T estimate are separate accounts. There is no T synthesis in this
+certificate. Degree-one native mathematical bases are not mislabeled original
+public Karatsuba support.
+
+### Retained source-specific differences
+
+Original wrong matrix powers and ignored linear inverse, resulting Karatsuba
+product/erase phases, negative singular-matrix declarations, bookkeeping-count
+omissions, QGF/constructor codec failures, source nonbinary deeper failures and
+unsupported symbolic physical execution remain explicitly recorded. Immutable
+native matrix keys and canonical typed constructors replace foreign attrs/hash
+surfaces. Numerical callbacks, declared models and actual circuits retain their
+separate owners and evidence. No valid-source native call is waived as a defect.
+Source test and notebook assets already have complete independent acceptance;
+their unchanged code/evidence is reused. ReadTheDocs remains excluded by user
+instruction. This review does not close Q-0516 or claim source-invalid clean frees.
+
+
+### Complete implementation acceptance
+
+Q-0519 closes under the explicitly approved faithful-migration rule. All concrete
+source decomposition responsibilities have native owners, including literal
+bad-source profiles, arbitrary targets, zero/rank-deficient matrices, raw
+nonbinary successes, exact constructor refusal mapping, named declared directions
+and generic measured dispatch. All source callbacks, resource declarations,
+symbolic signatures and unsupported physical boundaries retain their documented
+owners. The original failure diagnostics and mathematical native improvements
+are separate observations. No source file, original assertion or model was
+modified to obtain this acceptance.
+
+Final concentrated validation passes 843 cases; the final constructor/phase
+selection passes 34 cases after strict import/type corrections. Local integration
+passes32; strict mypy covers all13 changed Python files. Black/Ruff, domain scope,
+language/local links, architecture, multilevel IR, required-check mapping and
+whitespace pass. The normal executable example prints product1 and appends a
+two-measurement adjoint. Field catalog export still validates all22 roots and333
+contextual children. Fourteen frozen source/test/notebook blobs are reverified.
+The previously accepted entire original suite (276 non-slow plus22 slow passes,
+three skips and three xfails), all45 raw factory protocol observations and full
+source/native notebook code evidence are reused after unchanged dependency
+checks. Independent secondary-SDK results and publication are retained in
+`g2-field-identity-*` receipts. No CI wait, G3 or merge is part of acceptance.
+
+Q-0516 remains open: its own valid literal inverse paths still require completion,
+and the original four/eight-bit invalid clean frees must remain explicitly
+refused or diagnosed. Closing this complete multiplication file does not assert
+that the separate original inverse is correct or safely executable.
+
+
+The independent Cirq1.6.1 profile passes all300 changed source/caller/erasure
+consumers. Source/numerical references remain unchanged. Final source receipts
+are `g2-field-identity-source-20261127.json` and
+`g2-field-file-final-constructor-intake-20261127.json`.

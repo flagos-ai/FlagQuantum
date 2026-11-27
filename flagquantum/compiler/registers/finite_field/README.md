@@ -167,3 +167,21 @@ complete raw complex states, all small constants, source aliases, matching LEFT
 ownership/release and an SDK-blocked replacement execution. The two whole-file
 audits record separate primitive/model costs and remaining declared graph / erasure
 work; successful raw execution does not close those broader parents by itself.
+
+
+Declared constant and linear inverse identities survive literal compilation even
+when their primitive recipes coincide. Examples qualify them only against a
+complete matching caller, with generated names treated as opaque. Quadratic
+left/right calls likewise retain separate named entries when needed. The normal
+source catalog selects the original literal Karatsuba graph; mathematical
+FieldProduct execution still uses the correct product owner.
+
+`product_erasure_program` accepts either existing explicit polynomial metadata
+or an explicit modulus with a concrete raw field descriptor. The existing
+FieldProduct example supports `adjoint=True` for measured retirement and reserves
+private classical slots after caller storage. Run
+`python -m examples.algorithms.register_field_multiplication` for normal forward
+and measured-adjoint append. `tests/unit/test_field_erasure_all_branches.py`
+reuses the common exact phase checker to certify all256 eight-bit histories on
+all65536 input pairs, including common Kraus amplitude and clean physical clearing.
+The same test retains the defective original product/erase channel as a failure.
