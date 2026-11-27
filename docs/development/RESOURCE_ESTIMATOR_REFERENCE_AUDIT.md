@@ -44,3 +44,38 @@ graphics and workflow roles, deferred scientific installations, pending API
 proposals and recorded upstream failures remain open. No whole workflow or G2
 acceptance is inferred. Evidence receipts use the external reference workspace
 prefix `g2-control-resource-reference-`, dated November 27, 2026.
+
+## Tutorial and presentation consumer closure
+
+The subsequent complete batch covers `test_comparison_cost_tutorial.py`,
+`test_hubbard_notebook_resources.py`, `test_resource_flame_labels.py` and
+`test_sparse_chemistry_resources.py`. It retains original notebook cells,
+literal comparison gates and feedback, every small complex branch and zero
+work, Hubbard call multiplicities and operands, sparse integral arrays,
+generalized budgets, flame-label formatting and distinct graph identities.
+
+The notebook fixture checks SDK availability before querying its distribution
+version. Its original cell execution catches missing dependencies in both
+optional and mandatory modes. NumPy and SymPy guards run before module-level
+reference data construction. The original Hubbard `context=None` callback is
+retained; validation checks the actual returned operation and Majorana wrapper
+instead of changing source inputs to satisfy an inaccurate SDK annotation.
+Native metadata bounds and symbolic peak objects are validated without
+coercion. All original calculations and assertions pass the scientific AST
+audit; all 42 original source imports retain object identity, and 23 direct
+source modules match their frozen Git blobs.
+
+All 101 original IDs remain and pass in both supported Cirq profiles. The
+original Cirq-specific CY classification difference and source deprecation
+warnings remain visible. Twenty-four optional/mandatory absence scenarios,
+including cold module loading and the dynamic notebook fixture, pass. Two
+independent native consumers still execute with Qualtran unavailable. Strict
+typing covers all four files. These changes add no production algorithm,
+resource formula, primitive or measurement; existing physical inventories and
+independent modern/historical model estimates remain separate.
+
+Whole G2 and workflow acceptance remain open. The evidence prefix is
+`g2-resource-consumers-reference-`, dated November 27, 2026. The previous
+six-file resource closure is reused rather than rerun or recounted as new work.
+The current global dependency check has 570 findings in 362 files; this batch
+removes eight findings across its four complete files.

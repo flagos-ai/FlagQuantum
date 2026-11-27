@@ -1,8 +1,15 @@
 """Compare sparse chemistry tutorial diagrams and budgets with the frozen source."""
 
+from __future__ import annotations
+
 from dataclasses import asdict
 
-import numpy as np
+from tests._reference_dependencies import unavailable_reference
+
+try:
+    import numpy as np
+except ModuleNotFoundError as error:
+    unavailable_reference(error)
 import pytest
 
 from examples.algorithms.chemistry_resource_tutorial import modeled_ccz
@@ -21,16 +28,20 @@ from tests.unit.test_first_quantization_resource_model import assert_source_mode
 pytestmark = [pytest.mark.unit, pytest.mark.ftqc_reference]
 
 
-def test_tutorial_source_fixture_and_direct_children():
-    pytest.importorskip("qualtran")
-    from qualtran.bloqs.chemistry.sparse import (
-        PrepareSparse,
-    )
-    from qualtran.bloqs.chemistry.sparse import (
-        SelectSparse as SourceSelect,
-    )
-    from qualtran.bloqs.chemistry.sparse.prepare_test import build_random_test_integrals
-    from qualtran.resource_counting import QECGatesCost, QubitCount, get_cost_value
+def test_tutorial_source_fixture_and_direct_children() -> None:
+    try:
+        from qualtran.bloqs.chemistry.sparse.prepare import PrepareSparse
+        from qualtran.bloqs.chemistry.sparse.prepare_test import (
+            build_random_test_integrals,
+        )
+        from qualtran.bloqs.chemistry.sparse.select_bloq import (
+            SelectSparse as SourceSelect,
+        )
+        from qualtran.resource_counting._bloq_counts import QECGatesCost
+        from qualtran.resource_counting._costing import get_cost_value
+        from qualtran.resource_counting._qubit_counts import QubitCount
+    except ModuleNotFoundError as error:
+        unavailable_reference(error)
 
     fixture = sparse_integral_fixture(3)
     for actual, expected in zip(fixture, build_random_test_integrals(3), strict=True):
@@ -71,16 +82,19 @@ def test_tutorial_source_fixture_and_direct_children():
 
 
 @pytest.mark.parametrize(("spin", "rotation"), [(8, 3), (12, 4), (16, 3)])
-def test_openfermion_fixture_generalized_budgets_match_source(spin, rotation):
-    pytest.importorskip("qualtran")
-    from qualtran.bloqs.chemistry.sparse import (
-        PrepareSparse,
-    )
-    from qualtran.bloqs.chemistry.sparse import (
-        SelectSparse as SourceSelect,
-    )
-    from qualtran.resource_counting import QECGatesCost, get_cost_value
-    from qualtran.resource_counting.generalizers import generalize_cswap_approx
+def test_openfermion_fixture_generalized_budgets_match_source(
+    spin: int, rotation: int
+) -> None:
+    try:
+        from qualtran.bloqs.chemistry.sparse.prepare import PrepareSparse
+        from qualtran.bloqs.chemistry.sparse.select_bloq import (
+            SelectSparse as SourceSelect,
+        )
+        from qualtran.resource_counting._bloq_counts import QECGatesCost
+        from qualtran.resource_counting._costing import get_cost_value
+        from qualtran.resource_counting.generalizers import generalize_cswap_approx
+    except ModuleNotFoundError as error:
+        unavailable_reference(error)
 
     fixture = sparse_integral_fixture(spin // 2)
     walk = SparseChemistryWalk.from_integrals(
