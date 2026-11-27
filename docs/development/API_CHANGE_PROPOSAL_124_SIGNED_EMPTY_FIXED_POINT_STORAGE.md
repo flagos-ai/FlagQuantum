@@ -1,6 +1,7 @@
 # Proposal 124: signed zero-width fixed-point quantum storage
 
-Status: pending explicit user approval. Proposal 116 is approved and its
+Status: explicitly approved by the user on 2026-11-27. Implementation and
+acceptance remain tracked separately. Proposal 116 is approved and its
 positive signed/empty unsigned implementation passes local regression.
 
 ## Additional complete-file boundary

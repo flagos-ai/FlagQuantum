@@ -2,7 +2,8 @@
 
 ## Review status
 
-Pending explicit user approval. Proposals 108, 110, 111 and 112 admit classical
+Status: explicitly approved by the user on 2026-11-27. Implementation and
+acceptance remain tracked separately. Proposals 108, 110, 111 and 112 admit classical
 word declarations, reads, feedback and writes. They do not authorize changing a
 word's nominal descriptor while retaining its physical classical slots.
 
@@ -89,4 +90,7 @@ append entry with coherent measured inputs and every small measurement branch.
 Compare all complex branch amplitudes and clean work independently of classical
 slot identity and the zero-resource model. Run strict typing, dependency, scope,
 architecture, IR and protected API checks. Update the full Cast audit and G2
-ledger without claiming the separate pending Proposal 116 storage gap is closed.
+ledger. Proposal 116's signed positive-width and unsigned empty storage is
+already approved and implemented. The additional signed-zero profile in
+Proposal 124 and symbolic quantum-field declarations in Proposal 126 retain
+their independent approval boundaries.

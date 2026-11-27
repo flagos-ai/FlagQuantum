@@ -1,6 +1,7 @@
 # Proposal 126 — Symbolic quantum field declarations
 
-Status: proposed; explicit user approval required before implementation.
+Status: explicitly approved by the user on 2026-11-27. Implementation and
+acceptance remain tracked separately.
 
 ## Verified need
 
