@@ -28,3 +28,8 @@ its recorded upstream Git and SHA-256 identities. This retains the upstream
 implementation rather than rebuilding, trimming or modifying its protocol code.
 The integration owner must review both the byte ceiling and provenance on an
 upstream refresh. Other files retain the repository's ordinary size ceiling.
+
+Git attributes preserve upstream line endings and whitespace for the three raw
+files. Their existing trailing spaces remain part of the verified upstream
+bytes, just as they do in the source-hygiene hook exclusions. Maintenance edits
+belong in the wrapper and this provenance documentation.

@@ -5,6 +5,6 @@
 flagquantum/qec/decoders/csrc/vendor/pymatching-2.4.0/** text eol=lf
 
 # Preserve the existing official upload SDK bytes on every platform.
-.github/actions/upload-artifact/vendor/action.yml -text
-.github/actions/upload-artifact/vendor/LICENSE -text
-.github/actions/upload-artifact/vendor/dist/upload/index.js -text linguist-vendored
+.github/actions/upload-artifact/vendor/action.yml -text -whitespace
+.github/actions/upload-artifact/vendor/LICENSE -text -whitespace
+.github/actions/upload-artifact/vendor/dist/upload/index.js -text -whitespace linguist-vendored
