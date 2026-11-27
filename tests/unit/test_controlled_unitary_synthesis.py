@@ -5,11 +5,17 @@ from importlib.metadata import version
 from itertools import product
 from pathlib import Path
 
-import numpy as np
+from tests._reference_dependencies import unavailable_reference
+
+try:
+    import numpy as np
+except ModuleNotFoundError as _reference_import_error:
+    unavailable_reference(_reference_import_error)
 import pytest
 import torch
 
 from flagquantum.compiler.optimization.controlled_unitary_synthesis import (
+    Matrix,
     borrowed_controlled_x_ir,
     controlled_unitary_ir,
 )
@@ -23,9 +29,13 @@ pytestmark = [pytest.mark.unit, pytest.mark.ftqc_reference]
 @pytest.fixture(scope="module", autouse=True)
 def reference_versions() -> None:
     import kickmix
-    from cirq.transformers.analytical_decompositions import (
-        controlled_gate_decomposition,
-    )
+
+    try:
+        from cirq.transformers.analytical_decompositions import (
+            controlled_gate_decomposition,
+        )
+    except ModuleNotFoundError as _reference_import_error:
+        unavailable_reference(_reference_import_error)
 
     raw = Path(controlled_gate_decomposition.__file__).read_bytes()
     assert (
@@ -34,7 +44,7 @@ def reference_versions() -> None:
     )
     assert version("qualtran") == "0.7.0"
     assert version("cirq-core") == "1.7.0"
-    assert kickmix.__version__ == "0.1" and hasattr(kickmix, "Simulator")
+    assert getattr(kickmix, "__version__") == "0.1" and hasattr(kickmix, "Simulator")
 
 
 def assert_source_stream(actual: CircuitIR, source: CircuitIR) -> None:
@@ -62,10 +72,16 @@ def assert_source_stream(actual: CircuitIR, source: CircuitIR) -> None:
 def test_recursive_rotation_original_stream_and_full_operator(
     count: int, kind: str
 ) -> None:
-    import cirq
-    from cirq.transformers.analytical_decompositions.controlled_gate_decomposition import (
-        decompose_multi_controlled_rotation,
-    )
+    try:
+        import cirq
+    except ModuleNotFoundError as _reference_import_error:
+        unavailable_reference(_reference_import_error)
+    try:
+        from cirq.transformers.analytical_decompositions.controlled_gate_decomposition import (
+            decompose_multi_controlled_rotation,
+        )
+    except ModuleNotFoundError as _reference_import_error:
+        unavailable_reference(_reference_import_error)
 
     matrix = {
         "h": cirq.unitary(cirq.H),
@@ -99,10 +115,16 @@ def test_recursive_rotation_original_stream_and_full_operator(
 def test_borrowed_x_source_recipe_restores_arbitrary_borrowed_bits(
     count: int, borrowed: int
 ) -> None:
-    import cirq
-    from cirq.transformers.analytical_decompositions.controlled_gate_decomposition import (
-        decompose_multi_controlled_x,
-    )
+    try:
+        import cirq
+    except ModuleNotFoundError as _reference_import_error:
+        unavailable_reference(_reference_import_error)
+    try:
+        from cirq.transformers.analytical_decompositions.controlled_gate_decomposition import (
+            decompose_multi_controlled_x,
+        )
+    except ModuleNotFoundError as _reference_import_error:
+        unavailable_reference(_reference_import_error)
 
     qubits = cirq.LineQubit.range(count + 1 + borrowed)
     ops = decompose_multi_controlled_x(
@@ -144,6 +166,8 @@ def test_borrowed_x_source_recipe_restores_arbitrary_borrowed_bits(
     "matrix",
     [np.eye(3), np.zeros((2, 2)), np.full((2, 2), np.nan), [[1, 0], [0, 2]]],
 )
-def test_invalid_local_matrices_are_not_synthesized(matrix: object) -> None:
+def test_invalid_local_matrices_are_not_synthesized(
+    matrix: Matrix | list[list[complex]],
+) -> None:
     with pytest.raises(ValueError, match="finite 2x2 unitary"):
         controlled_unitary_ir(matrix, (0,), 1)

@@ -4,7 +4,12 @@ from cmath import exp
 from collections import Counter
 from math import pi
 
-import numpy as np
+from tests._reference_dependencies import unavailable_reference
+
+try:
+    import numpy as np
+except ModuleNotFoundError as _reference_import_error:
+    unavailable_reference(_reference_import_error)
 import pytest
 import torch
 
@@ -26,8 +31,11 @@ pytestmark = pytest.mark.unit
 @pytest.mark.ftqc_reference
 def test_original_seeded_su2_decompositions_and_tensors() -> None:
     pytest.importorskip("qualtran")
-    import cirq
-    from qualtran.bloqs.basic_gates import SU2RotationGate
+    try:
+        import cirq
+    except ModuleNotFoundError as _reference_import_error:
+        unavailable_reference(_reference_import_error)
+    from qualtran.bloqs.basic_gates.su2_rotation import SU2RotationGate
 
     rng = np.random.default_rng(42)
     for theta, phi, lambd, shift in rng.random((20, 4)) * 2 * pi:
@@ -52,15 +60,16 @@ def test_original_seeded_su2_decompositions_and_tensors() -> None:
 @pytest.mark.ftqc_reference
 def test_original_seeded_and_standard_matrix_recovery() -> None:
     pytest.importorskip("qualtran")
-    import cirq
-    from qualtran.bloqs.basic_gates import (
-        Hadamard,
-        SU2RotationGate,
-        TGate,
-        XGate,
-        YGate,
-        ZGate,
-    )
+    try:
+        import cirq
+    except ModuleNotFoundError as _reference_import_error:
+        unavailable_reference(_reference_import_error)
+    from qualtran.bloqs.basic_gates.hadamard import Hadamard
+    from qualtran.bloqs.basic_gates.su2_rotation import SU2RotationGate
+    from qualtran.bloqs.basic_gates.t_gate import TGate
+    from qualtran.bloqs.basic_gates.x_basis import XGate
+    from qualtran.bloqs.basic_gates.y_gate import YGate
+    from qualtran.bloqs.basic_gates.z_basis import ZGate
 
     rng = np.random.RandomState(42)
     matrices = [cirq.testing.random_unitary(2, random_state=rng) for _ in range(20)]
@@ -83,12 +92,13 @@ def test_original_seeded_and_standard_matrix_recovery() -> None:
 @pytest.mark.ftqc_reference
 def test_original_three_su2_factories_and_exact_examples() -> None:
     pytest.importorskip("qualtran")
-    from qualtran.bloqs.basic_gates import Hadamard, TGate
+    from qualtran.bloqs.basic_gates.hadamard import Hadamard
     from qualtran.bloqs.basic_gates.su2_rotation import (
         _hadamard,
         _su2_rotation_gate,
         _t_gate,
     )
+    from qualtran.bloqs.basic_gates.t_gate import TGate
 
     signature = Signature.build(q=1)
     for example, equivalent in (
@@ -133,8 +143,12 @@ def test_su2_decomposition_and_exact_adjoint(
     target: int, angles: tuple[float, float, float, float]
 ) -> None:
     pytest.importorskip("qualtran")
-    from qualtran.bloqs.basic_gates import GlobalPhase, Rx, Rz, SU2RotationGate
-    from qualtran.resource_counting import QECGatesCost, QubitCount, get_cost_value
+    from qualtran.bloqs.basic_gates.global_phase import GlobalPhase
+    from qualtran.bloqs.basic_gates.rotation import Rx, Rz
+    from qualtran.bloqs.basic_gates.su2_rotation import SU2RotationGate
+    from qualtran.resource_counting._bloq_counts import QECGatesCost
+    from qualtran.resource_counting._costing import get_cost_value
+    from qualtran.resource_counting._qubit_counts import QubitCount
 
     theta, phi, lambd, shift = angles
     source = SU2RotationGate(theta, phi, lambd, shift)
@@ -187,7 +201,8 @@ def test_su2_decomposition_and_exact_adjoint(
 def test_symbolic_calls_keep_exact_angles_and_precision() -> None:
     pytest.importorskip("qualtran")
     import sympy
-    from qualtran.bloqs.basic_gates import GlobalPhase, SU2RotationGate
+    from qualtran.bloqs.basic_gates.global_phase import GlobalPhase
+    from qualtran.bloqs.basic_gates.su2_rotation import SU2RotationGate
 
     theta, phi, lambd, shift, precision = sympy.symbols("theta phi lambda alpha eps")
     source = SU2RotationGate(theta, phi, lambd, shift, precision)
@@ -223,7 +238,7 @@ def test_matrix_recovery_preserves_pinned_singular_branches(
     theta: float, near_singular: bool
 ) -> None:
     pytest.importorskip("qualtran")
-    from qualtran.bloqs.basic_gates import SU2RotationGate
+    from qualtran.bloqs.basic_gates.su2_rotation import SU2RotationGate
 
     original = SU2RotationGate(theta, 0.73, -0.82, 0.39).rotation_matrix
     source = SU2RotationGate.from_matrix(original)
@@ -263,7 +278,7 @@ def test_zxz_preserves_order_and_absolute_phase(
     z_1: float, x: float, z_2: float, shift: float
 ) -> None:
     pytest.importorskip("qualtran")
-    from qualtran.bloqs.basic_gates import SU2RotationGate
+    from qualtran.bloqs.basic_gates.su2_rotation import SU2RotationGate
 
     source = SU2RotationGate.from_euler_zxz_angles(
         z_1, x, z_2, global_shift=shift, eps=None
@@ -291,7 +306,7 @@ def test_zxz_preserves_order_and_absolute_phase(
 @pytest.mark.ftqc_reference
 def test_mixed_symbolic_zxz_retains_source_precision_parameters() -> None:
     pytest.importorskip("qualtran")
-    from qualtran.bloqs.basic_gates import SU2RotationGate
+    from qualtran.bloqs.basic_gates.su2_rotation import SU2RotationGate
     from sympy import symbols
 
     z, shift, eps = symbols("z shift eps")
