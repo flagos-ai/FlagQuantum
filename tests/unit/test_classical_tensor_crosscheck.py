@@ -3,7 +3,12 @@
 from dataclasses import replace
 from itertools import product
 
-import numpy as np
+from tests._reference_dependencies import unavailable_reference
+
+try:
+    import numpy as np
+except ModuleNotFoundError as _reference_import_error:
+    unavailable_reference(_reference_import_error)
 import pytest
 import torch
 
@@ -39,9 +44,11 @@ def cases() -> list[tuple[str, int, dict[str, object]]]:
 def test_complete_small_basis_overlap_and_wrong_output(
     kind: str, width: int, inputs: dict[str, object]
 ) -> None:
-    from qualtran import QUInt
-    from qualtran.bloqs.arithmetic import Add
-    from qualtran.bloqs.basic_gates import CNOT, Toffoli, XGate
+    from qualtran._infra.data_types import QUInt
+    from qualtran.bloqs.arithmetic.addition import Add
+    from qualtran.bloqs.basic_gates.cnot import CNOT
+    from qualtran.bloqs.basic_gates.toffoli import Toffoli
+    from qualtran.bloqs.basic_gates.x_basis import XGate
 
     source = {
         "xgate": XGate(),
@@ -160,9 +167,11 @@ def test_executable_example(capsys: pytest.CaptureFixture[str]) -> None:
 def test_complete_provider_matrix_matches_unmodified_source(
     kind: str, width: int
 ) -> None:
-    from qualtran import QUInt
-    from qualtran.bloqs.arithmetic import Add
-    from qualtran.bloqs.basic_gates import CNOT, Toffoli, XGate
+    from qualtran._infra.data_types import QUInt
+    from qualtran.bloqs.arithmetic.addition import Add
+    from qualtran.bloqs.basic_gates.cnot import CNOT
+    from qualtran.bloqs.basic_gates.toffoli import Toffoli
+    from qualtran.bloqs.basic_gates.x_basis import XGate
 
     from flagquantum.compiler.registers.component_graph import iter_component_calls
     from flagquantum.compiler.registers.component_tensor_expansion import (
