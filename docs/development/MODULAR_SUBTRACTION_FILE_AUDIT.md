@@ -171,3 +171,24 @@ The dependency audit retains 688 pre-existing repository findings and zero
 findings in this batch. The established default docstring coverage failure
 remains recorded. Its nine implicated modules and test are byte-identical to
 the previous accepted head `7929f67b5`.
+
+## Complete-file closure after ordered symbolic-root delivery
+
+The [ordered modular-library audit](SYMBOLIC_MODULAR_GRAPH_AUDIT.md) now covers
+all four full source roots, both controlled polarities, Montgomery words and the
+source-defined symbolic-width subtraction shells. Its constructor and edge
+artifacts supplement the existing numerical owners rather than replacing them.
+Fresh known-width symbolic-Montgomery metadata intake matches every source gate
+and feedback entry, and complete native circuits/output/work events equal their
+accepted concrete counterparts. Independent source model categories and peaks
+are retained. No new numerical or Core contract is introduced.
+
+All 28 definitions and their direct dependency responsibilities are accounted
+for. Under the approved faithful-migration rule, Q-0579 is eligible after
+verified publication and final local checks. Earlier generic symbolic/foreign
+notes are superseded by these precise defined/refused paths. Source full-ring
+loader and exterior dirty-flag failures, strict/count/protocol witnesses and
+unavailable symbolic numerical leaves remain separate limitations. Normal
+append, all-history clean work, complex phases and exact adjoint certificates
+above are reused at unchanged execution paths. No global SDK/transport promise
+is made by this source-file acceptance.

@@ -214,3 +214,23 @@ package alias resolve to equal Programs and equal complete bound records.
 This closes the wire-metadata gap; original target-at-modulus cleanup,
 full-ring source loader failures, symbolic physical bodies and model-only
 ModAddK are not relabeled as solved. Q-0570 therefore remains open.
+
+## Complete-file closure after ordered symbolic-root delivery
+
+The later [ordered modular-library audit](SYMBOLIC_MODULAR_GRAPH_AUDIT.md)
+resolves the original finite symbolic-root gap with native constructor data and
+all source connection endpoints. It also verifies that known-width Montgomery
+symbolic interpretation metadata already follows the source physical path;
+no extra arithmetic admission or altered source is needed. The original normal
+append, complete stored constructors, exact adjoints, complex/all-history/work
+and resource evidence above remains authoritative. The earlier generic
+symbolic/foreign wording is superseded by this exact disposition, not by a claim
+that unbound numerical leaves can execute.
+
+All 40 source definitions now have native responsibility and direct dependency
+closure. Under the approved faithful-migration rule, Q-0570 is eligible after
+verified publication and final checks. Original target-at-modulus cleanup,
+exterior constants, full-ring loader failures and strict/count/type outcomes
+remain recorded source limitations. Atomic ModAddK still has no original gate
+recipe; its native documented permutation and original analytical model remain
+separate. Global SDK/transport certification is not inferred or waived.
