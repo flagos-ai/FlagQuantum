@@ -201,3 +201,14 @@ is no degree whitelist or corrected-source substitute. Run
 `tests/unit/test_field_inverse_literal.py` and
 `tests/unit/test_clean_release_analysis.py`; the complete inverse audit separates
 source defects, exact complex/source evidence, proof costs and resource models.
+
+`polynomial_addition_component.py` shares one coefficient-call schedule between
+concrete arithmetic and `logical_field_polynomial_addition_program`. The latter
+retains finite polynomial extent over symbolic fields using signature-only
+atomic children. Declarations have no executable body; resolving a raw storage
+width alone does not supply a field-addition implementation. The field-polynomial
+catalog preserves actual source nominal-binding failures, while the separate
+mathematical owner remains available for supported native inputs. Run
+`tests/unit/test_symbolic_field_polynomial.py` for source traces and declaration
+admission, and `tests/unit/test_raw_field_polynomial_views.py` for concrete raw
+binary/nonbinary identity operators and complex spectators.

@@ -522,3 +522,92 @@ contextual children, 86 decomposed roots, 267 atomic interfaces and 433 qualifie
 descendants. The three qualified native exact inverse exceptions across earlier
 field groups remain explicitly distinct from source equality. Whitespace
 checks pass, and unrelated untracked application work stays outside this commit.
+
+## Symbolic coefficient-field graph boundary — 2026-11-27
+
+The next complete-source batch retains concrete polynomial extent with symbolic
+coefficient field as an actual logical typed-call graph. Compiler owns this
+finite call schedule and its typed declarations; Simulation owns optional
+coefficient-value evaluation, and examples select the appropriate source profile.
+The interface uses an integer polynomial degree, the existing coefficient and
+packed polynomial RegisterTypes, optional encoded constant coefficients and the
+existing adjoint direction. No Core opcode, schema, registry or public export is
+added. All words and coefficient arrays retain descending/MSB order.
+
+Atomic Split/Join and unresolved field-addition children are signature-only
+FunctionRecords, not empty executable identities. The shared root preserves
+original port names, call order, SSA connections and declared child sharing.
+There is no work, measurement or reset in the logical declaration; physical gate
+counts are unavailable until an actual body exists. Independent source models
+remain separate. Binding a declaration must fail rather than silently execute.
+Concrete physical addition keeps its existing body and normal append path.
+
+Actual source intake identifies successful positive-integer symbolic field
+addition, including known symbolic integer literals. Integer-only or unrestricted
+symbol assumptions can fail source nominal binding because field degree and bit
+width expressions differ. Symbolic polynomial degree is rejected by source
+Split/Join constructors. Custom moduli and nonbinary polynomial arithmetic roots
+also fail original child type binding, while their concrete wire views succeed.
+Those failures must remain distinct from correct native arithmetic or raw storage
+admission. The constructor receipts are in `ftqc-reference-env` under
+`g2-polynomial-*-intake-20261127` and `g2-polynomial-logical-assumptions-20261127`.
+
+The shared source schedule now constructs the previously missing symbolic-field
+logical root. Positive-integer m, m+1, 2*m and symbolic integer literal 3 match
+all actual upstream SSA connections, side/shape/width declarations and adjoint
+ordering at polynomial degrees 0, 1 and 4. Quantum addition retains one shared
+field child; constant symbolic-literal roots preserve distinct constant children
+and their declared adjoints. The latter also reproduce the source constructor's
+symbolic nominal-field short circuit before its actual coefficient conversion.
+Opaque function renaming preserves contextual roles; changing coefficient-call
+order rejects qualification. Known-width symbolic integer declarations still
+fail physical lowering because their child bodies are unavailable, rather than
+silently executing empty identities.
+
+Source nonbinary/custom-modulus arithmetic failures are preserved by the catalog;
+the mathematical native owner is separate. Actual packed GF(8), GF(3), GF(5) and
+GF(9) Split/Join operators and wire aliases match the source in both directions,
+including unused raw encodings, complete complex spectators, zero work and zero
+primitive instructions. Two metadata tests retained a pre-Proposal125 binary-only
+expectation; their quantum cases now actually bind typed identities under the
+already approved raw-storage contract. Classical descriptors remain refused by
+the quantum-only entry.
+
+A further genuine source-success gap is isolated in proposed, unapproved
+[Proposal131](API_CHANGE_PROPOSAL_131_EMPTY_QUANTUM_FIELD_POLYNOMIAL.md): degree -1
+empty packed quantum polynomial views. Ten unchanged direct SDK views succeed,
+while native Core and layout refuse. No protected range change is implemented
+without approval. Original empty-root SDK/tensor failures and constant-constructor
+rejection remain separate. This dependency delivery alone does not close the
+three source parents.
+
+## Constant-addition whole-source review — 2026-11-27
+
+Q-0529's complete `gf2_poly_add_k.py` is accepted under the explicitly approved
+faithful-migration rule after the symbolic logical-body implementation above.
+Its declared field/constant, degree-first and symbolic-field validation,
+signature, `is_symbolic`, complete coefficient schedule, concrete/symbolic call
+graphs, value callback, both factories and documentation specification all have
+native owners. Complete source/native tutorial, original four-function test and
+factory protocol evidence is reused. Physical forward and source adjoint calls,
+complex amplitudes, unused work and model separation remain verified.
+
+The default concrete example retains exactly seven X primitives and zero work,
+measurement or feedback. Symbolic field roots retain actual upstream logical
+calls and unavailable leaf bodies; their physical primitive count is unavailable,
+not zero. Resolved raw storage does not manufacture missing source bodies.
+Original QGFPoly codec failures, missing source count annotations, nominal custom
+field failures and unresolved numerical callbacks remain explicit source limits.
+
+The relevant Split/Join dependency domain is complete for this source file:
+actual constant polynomials have nonnegative degree, and the original constant
+constructor rejects degree -1 before calling any view. Thus proposed131's empty
+view extension affects Q-0527/Q-0533, not a missing valid constant-addition call.
+Those two implementation parents stay open. Approval alone will close neither.
+
+Local verification passes 534 concentrated and 32 integration cases, plus strict
+typing of all six changed Python files, format, scope, language/links,
+architecture, IR, required-check mapping and whitespace. Independent Cirq 1.6
+checks and ten complete frozen polynomial assets are recorded in the batch
+receipts. Existing full original 13-pass/6-skip/5-xfail outcomes are unchanged.
+No protected Core implementation has changed while Proposal131 is pending.
