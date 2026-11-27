@@ -221,7 +221,7 @@ def test_the_repository_scan_separates_the_three_populations() -> None:
     # The unchanged _pauli_letters helper now lives in the private
     # stabilizer/_validation.py module, which this public-module census excludes.
     # Canonical names and compatibility aliases above retain their exact counts.
-    assert len(scanned.internal) == 251
+    assert len(scanned.internal) == 250
     assert scanned.aliases and scanned.internal
     aliases = {site.identifier: site.replacement for site in scanned.aliases}
     assert aliases["flagquantum/observables/__init__.py::Z::wire"] == "qubit"

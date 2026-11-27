@@ -56,12 +56,6 @@ def build_tensor_network(
     )
 
 
-def _ensure_tensor_network_plan(
-    plan_or_circuit: TensorNetworkContractionPlan | Any,
-) -> TensorNetworkContractionPlan:
-    return ensure_local_tensor_network_plan(plan_or_circuit)
-
-
 def build_tensor_network_expectation(
     plan_or_circuit: TensorNetworkContractionPlan | Any,
     *,
@@ -237,7 +231,7 @@ def tensor_network_amplitude(
 ) -> torch.Tensor:
     """Contract one computational-basis amplitude without materializing the state."""
 
-    plan = _ensure_tensor_network_plan(plan_or_circuit)
+    plan = ensure_local_tensor_network_plan(plan_or_circuit)
     nodes, output_labels = _amplitude_projection(plan, bitstring)
     if (
         max_intermediate_size is not None
@@ -286,7 +280,7 @@ def tensor_network_amplitudes(
 ) -> torch.Tensor:
     """Contract a small amplitude batch through one shared tensor network."""
 
-    plan = _ensure_tensor_network_plan(plan_or_circuit)
+    plan = ensure_local_tensor_network_plan(plan_or_circuit)
     nodes, output_labels = _amplitude_batch_projection(plan, bitstrings)
     if (
         max_intermediate_size is not None

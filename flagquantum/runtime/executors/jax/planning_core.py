@@ -6,16 +6,11 @@ from collections.abc import Mapping
 from dataclasses import dataclass
 from typing import Any
 
-from ....core.ir import CircuitIR, ensure_circuit_ir
 from ...distributed.backend_policy import DistributedBackendPolicy
 from .release_policy import (
     attach_evidence_contract as _attach_distributed_evidence_contract,
 )
 from .runtime_environment import _require_jax
-
-
-def _as_ir(program: Any) -> CircuitIR:
-    return ensure_circuit_ir(program)
 
 
 @dataclass(frozen=True)

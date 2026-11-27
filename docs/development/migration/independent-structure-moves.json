@@ -2788,7 +2788,6 @@
         "_expectation",
         "_finite_floats",
         "_fit",
-        "_lowered",
         "_plan_sites",
         "_require_no_readout",
         "_require_no_request",
@@ -2825,6 +2824,9 @@
         "_require_no_request",
         "_require_rewritten_names_survive",
         "_snapped"
+      ],
+      "retired_implementation_definitions": [
+        "_lowered"
       ]
     },
     {
@@ -10063,6 +10065,102 @@
       "extraction_scope": "Actual local scores that feed received VJP cotangents; evidence-only tensor allocations stay Runtime",
       "compatibility": "Existing Runtime functions, signatures and defining locators remain; no new facade, re-export or forwarding. Existing published Simulation functions are unchanged.",
       "remaining_imports": "Runtime resolves the defining Simulation module. Device admission, pmap/ppermute, CPU copies, timers, optimizer policy, memory witnesses and independent validation oracles remain Runtime."
+    },
+    {
+      "group": "private-direct-call-retirement",
+      "old": "flagquantum/algorithms/error_mitigation/cdr.py",
+      "new": "flagquantum/compiler/lowering/noise.py",
+      "symbols": [],
+      "partial": true,
+      "source_kind": "retired exact-argument wrapper; existing authority is unchanged",
+      "retired_private_members": [
+        "_lowered"
+      ],
+      "retirement": "private callers use the existing authoritative binding directly; no replacement wrapper or public compatibility added"
+    },
+    {
+      "group": "private-direct-call-retirement",
+      "old": "flagquantum/compiler/optimization/pass_manager.py",
+      "new": "flagquantum/core/ir/__init__.py",
+      "symbols": [],
+      "partial": true,
+      "source_kind": "retired exact-argument wrapper; existing authority is unchanged",
+      "retired_private_members": [
+        "_validated_program"
+      ],
+      "retirement": "private callers use the existing authoritative binding directly; no replacement wrapper or public compatibility added"
+    },
+    {
+      "group": "private-direct-call-retirement",
+      "old": "flagquantum/compiler/optimization/pipeline.py",
+      "new": "flagquantum/core/ir/__init__.py",
+      "symbols": [],
+      "partial": true,
+      "source_kind": "retired exact-argument wrapper; existing authority is unchanged",
+      "retired_private_members": [
+        "_as_ir"
+      ],
+      "retirement": "private callers use the existing authoritative binding directly; no replacement wrapper or public compatibility added"
+    },
+    {
+      "group": "private-direct-call-retirement",
+      "old": "flagquantum/runtime/executors/jax/planning_core.py",
+      "new": "flagquantum/core/ir/__init__.py",
+      "symbols": [],
+      "partial": true,
+      "source_kind": "retired exact-argument wrapper; existing authority is unchanged",
+      "retired_private_members": [
+        "_as_ir"
+      ],
+      "retirement": "private callers use the existing authoritative binding directly; no replacement wrapper or public compatibility added"
+    },
+    {
+      "group": "private-direct-call-retirement",
+      "old": "flagquantum/runtime/executors/mps/execution.py",
+      "new": "flagquantum/core/ir/__init__.py",
+      "symbols": [],
+      "partial": true,
+      "source_kind": "retired exact-argument wrapper; existing authority is unchanged",
+      "retired_private_members": [
+        "_as_ir"
+      ],
+      "retirement": "private callers use the existing authoritative binding directly; no replacement wrapper or public compatibility added"
+    },
+    {
+      "group": "private-direct-call-retirement",
+      "old": "flagquantum/simulation/statevector/local.py",
+      "new": "flagquantum/simulation/statevector/measurement_ops.py",
+      "symbols": [],
+      "partial": true,
+      "source_kind": "retired exact-argument wrapper; existing authority is unchanged",
+      "retired_private_members": [
+        "_expectation_z"
+      ],
+      "retirement": "private callers use the existing authoritative binding directly; no replacement wrapper or public compatibility added"
+    },
+    {
+      "group": "private-direct-call-retirement",
+      "old": "flagquantum/simulation/tensor_network/entrypoints.py",
+      "new": "flagquantum/simulation/tensor_network/local.py",
+      "symbols": [],
+      "partial": true,
+      "source_kind": "retired exact-argument wrapper; existing authority is unchanged",
+      "retired_private_members": [
+        "_ensure_tensor_network_plan"
+      ],
+      "retirement": "private callers use the existing authoritative binding directly; no replacement wrapper or public compatibility added"
+    },
+    {
+      "group": "private-direct-call-retirement",
+      "old": "flagquantum/simulation/tensor_network/path_search.py",
+      "new": "flagquantum/core/ir/__init__.py",
+      "symbols": [],
+      "partial": true,
+      "source_kind": "retired exact-argument wrapper; existing authority is unchanged",
+      "retired_private_members": [
+        "_as_ir"
+      ],
+      "retirement": "private callers use the existing authoritative binding directly; no replacement wrapper or public compatibility added"
     }
   ],
   "retired_namespace_parents": [

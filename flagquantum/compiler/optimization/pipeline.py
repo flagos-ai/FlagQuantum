@@ -13,10 +13,6 @@ from .pass_manager import PassBinding, PassManager, PassRegistry
 from .pass_registry import default_pass_registry
 
 
-def _as_ir(circuit_or_ir: Any) -> CircuitIR:
-    return ensure_circuit_ir(circuit_or_ir)
-
-
 def _with_recorded_level(
     ir: CircuitIR, level: int, admitted: tuple[str, ...] = ()
 ) -> CircuitIR:
@@ -89,7 +85,7 @@ def _optimize_to_fixed_point(
     """
 
     stages = optimization_level_stages(optimization_level)
-    ir = _as_ir(circuit_or_ir)
+    ir = ensure_circuit_ir(circuit_or_ir)
     admitted = tuple((passes or {}).keys())
     sequence = (*stages, *admitted)
     if not sequence:

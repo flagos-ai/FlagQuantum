@@ -87,7 +87,7 @@ from typing import get_type_hints as _class_type_hints
 import torch
 
 from flagquantum.algorithms.primitives.hamiltonian import Hamiltonian
-from flagquantum.compiler.noise import lower_noise_model
+from flagquantum.compiler.lowering.noise import lower_noise_model
 from flagquantum.core.ir import CircuitIR, Instruction, ensure_circuit_ir
 from flagquantum.core.noise import NoiseModel
 from flagquantum.simulation.density_matrix import density_matrix_from_ir
@@ -782,7 +782,10 @@ def run_cdr(
             training_ir, bsz=1, device=device, dtype=dtype
         )
         noisy_density = density_matrix_from_ir(
-            _lowered(training_ir, noise_model), bsz=1, device=device, dtype=dtype
+            lower_noise_model(training_ir, noise_model),
+            bsz=1,
+            device=device,
+            dtype=dtype,
         )
         points.append(
             CliffordTrainingPoint(
@@ -809,7 +812,7 @@ def run_cdr(
     unmitigated = _expectation(
         hamiltonian,
         density_matrix_from_ir(
-            _lowered(ir, noise_model), bsz=1, device=device, dtype=dtype
+            lower_noise_model(ir, noise_model), bsz=1, device=device, dtype=dtype
         ),
     )
     return CdrResult(
@@ -818,12 +821,6 @@ def run_cdr(
         fit=fit,
         variants=names,
     )
-
-
-def _lowered(ir: CircuitIR, noise_model: NoiseModel) -> CircuitIR:
-    """Return ``ir`` with the model's channels inserted."""
-
-    return lower_noise_model(ir, noise_model)
 
 
 def _fit(points: tuple[CliffordTrainingPoint, ...], spread: float) -> CliffordFit:
