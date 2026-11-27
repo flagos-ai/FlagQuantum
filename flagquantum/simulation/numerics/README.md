@@ -24,3 +24,10 @@ tensors and retains the delivered arithmetic, tolerance and allocation rules.
 Runtime selects backend/catalog paths and admits requested marginal sizes.
 Run `tests/unit/test_measurements_marginal_reduction.py` and
 `tests/test_modern_measurements.py` for the local readout workflow.
+
+## Pauli readout draws
+
+`probabilities.py` owns Pauli sampling normalization and draw/bit reconstruction.
+The two numerical calls preserve normalization before Runtime creates its
+generator. Request resolution, generator ownership and result metadata stay
+in Runtime.

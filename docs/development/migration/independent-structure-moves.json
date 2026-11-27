@@ -9886,6 +9886,50 @@
       ],
       "compatibility": "Unused internal aliases retired; protected public exports and actual function/class identities unchanged.",
       "remaining_imports": "Existing dependencies remain direct; test consumers use defining modules."
+    },
+    {
+      "group": "runtime-readout-sampling-numerics",
+      "old": "flagquantum/runtime/measurements.py",
+      "new": "flagquantum/simulation/numerics/probabilities.py",
+      "symbols": [],
+      "partial": true,
+      "same_import_path": false,
+      "extracted_helpers": [
+        "_normalize_pauli_sampling_distribution",
+        "_sample_pauli_distribution"
+      ],
+      "extraction_scope": "Pauli probability clamp/normalization, draw and bit reconstruction",
+      "compatibility": "No new facade or private forwarding alias. Published result type/method identity, validation, annotations and historical pickle locator remain.",
+      "remaining_imports": "Runtime retains request admission, explicit generator creation, readout noise/feedback/frame corrections and result assembly; numerical bodies call their Simulation owners directly."
+    },
+    {
+      "group": "runtime-readout-sampling-numerics",
+      "old": "flagquantum/runtime/dynamic/execution.py",
+      "new": "flagquantum/simulation/statevector/measurement_ops.py",
+      "symbols": [],
+      "partial": true,
+      "same_import_path": false,
+      "extracted_helpers": [
+        "_sample_trajectory_state",
+        "_sample_batched_trajectory_states"
+      ],
+      "extraction_scope": "Single and batched final trajectory draws",
+      "compatibility": "No new facade or private forwarding alias. Published result type/method identity, validation, annotations and historical pickle locator remain.",
+      "remaining_imports": "Runtime retains request admission, explicit generator creation, readout noise/feedback/frame corrections and result assembly; numerical bodies call their Simulation owners directly."
+    },
+    {
+      "group": "runtime-readout-sampling-numerics",
+      "old": "flagquantum/runtime/results/trajectories.py",
+      "new": "flagquantum/simulation/mps/sampling.py",
+      "symbols": [],
+      "partial": true,
+      "same_import_path": false,
+      "extracted_helpers": [
+        "_sample_retained_trajectory_mixture"
+      ],
+      "extraction_scope": "Empirical retained noisy-MPS mixture sampling",
+      "compatibility": "No new facade or private forwarding alias. Published result type/method identity, validation, annotations and historical pickle locator remain.",
+      "remaining_imports": "Runtime retains request admission, explicit generator creation, readout noise/feedback/frame corrections and result assembly; numerical bodies call their Simulation owners directly."
     }
   ],
   "retired_namespace_parents": [

@@ -113,3 +113,32 @@ def _probabilities_from_parity_expectations(
             value = value + (-term if parity % 2 else term)
         probabilities.append(value / (1 << n_wires))
     return torch.stack(probabilities, dim=-1)
+
+
+def _sample_pauli_distribution(
+    distribution: torch.Tensor,
+    *,
+    shots: int,
+    n_qubits: int,
+    generator: torch.Generator | None,
+) -> torch.Tensor:
+    """Sample the Pauli readout distribution with its existing normalization."""
+
+    indices = torch.multinomial(
+        distribution,
+        shots,
+        replacement=True,
+        generator=generator,
+    )
+    shifts = torch.arange(n_qubits - 1, -1, -1, device=indices.device)
+    return ((indices.unsqueeze(-1) >> shifts) & 1).to(torch.int64)
+
+
+def _normalize_pauli_sampling_distribution(
+    distribution: torch.Tensor,
+) -> torch.Tensor:
+    """Preserve the Pauli sampling clamp and row normalization order."""
+
+    distribution = torch.clamp(distribution, min=0)
+    distribution = distribution / distribution.sum(dim=-1, keepdim=True)
+    return distribution

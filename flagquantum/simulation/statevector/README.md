@@ -54,3 +54,10 @@ dependencies; they do not re-export unused helpers for consumers.
 Run the sample-request, single-wire, diagonal-catalog and operations-numerics
 scenarios when updating these imports. Existing algorithm and dispatch
 assertions remain authoritative.
+
+## Final trajectory sampling
+
+`measurement_ops.py` also owns the single and batched final-trajectory draws.
+Runtime supplies the state and explicit generator, then applies readout noise,
+frame corrections and feedback/evidence policy. The distinct original
+multinomial defaults and output shapes are preserved.

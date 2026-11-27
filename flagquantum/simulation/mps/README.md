@@ -68,3 +68,10 @@ lowering, and objective-pipeline tests under `tests/unit`. Preserve diagnostic
 values, refinement decisions, and gradients. The abstract-base test verifies
 that the base cannot be used as a standalone state and that a concrete Bell
 state still produces a valid bond profile.
+
+## Retained noisy-trajectory sampling
+
+`sampling.py::_sample_retained_trajectory_mixture` owns the empirical mixture
+draw used by the published Runtime result method. It receives retained states
+and the caller generator, preserves per-batch RNG order and never reconstructs
+a dense state. Lifecycle and result evidence remain Runtime.
