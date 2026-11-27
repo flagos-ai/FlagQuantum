@@ -131,3 +131,39 @@ G0 integration must carry the current direct-caller closure rather than restore
 these wrappers. Construction/IR, related integrated families, native/development
 distribution and Rust retain their existing closeout gates. This batch remains
 unmerged and does not certify whole-architecture completion or scalability.
+
+
+## One-GPU CI device-admission followup
+
+The complete source counts above belong to migration commit `f05f9bafe`.
+Its one-GPU job passed all 21 correctness tests but failed the unchanged
+performance-variance gate: CV 0.5677354127477401 and robust CV
+0.1123136768104932, against 0.10. The original artifact records
+`correctness_passed=true` and a contended measurement environment. Physical GPU0
+held 33143 MiB before the measurement while six other devices were idle. All
+30 original samples and ten warmups remain retained; artifact ZIP SHA-256 is
+`6e3c46297a98c78c562bce267ddca0f6005d8d990dabe3b4ed4946235d8d6efd`.
+Its tested merge tree equals the exact published f05 source tree. Occupancy
+establishes contention, not the exclusive cause of the measured variance.
+
+The normal one-GPU workflow hardcoded physical GPU0. Reuse the existing two-GPU
+admission rule for one device: memory below 1024 MiB and zero measured GPU
+utilization. Refuse before measurement if none is idle. Correctness, benchmark
+and manifest steps inherit the selected device; the manifest records its actual
+physical ID. The two frozen manual campaigns retain their original device
+configuration, and all other jobs are unchanged.
+
+The benchmark, ten warmups, thirty samples, twenty inner loops, workload,
+performance evaluator, thresholds and watchdog limits remain unchanged. This
+admission check is not an exclusive hardware lease; measurement validity and
+variance checks still evaluate the actual run. The old failed job is not rerun.
+The followup requires a new exact-head CI, including both GPU jobs.
+
+Six regression cases cover the original busy-device inventory, utilization,
+the memory boundary, idle GPU0, no-idle refusal, and selected-device propagation
+without changing frozen manual campaigns. All 48 related hardware/workflow
+checks pass. Original tests are unchanged and the new cases are appended.
+All 1566 product blobs remain identical to the fully regressed migration
+commit; all 1262 product Python blobs still match the same qualified native
+wheel and installation. No new wheel or repeated numerical benchmark baseline
+is substituted for the retained original evidence.
