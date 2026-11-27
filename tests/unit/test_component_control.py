@@ -8,7 +8,12 @@ from itertools import product
 from math import pi
 from typing import Any
 
-import numpy as np
+from tests._reference_dependencies import unavailable_reference
+
+try:
+    import numpy as np
+except ModuleNotFoundError as _reference_import_error:
+    unavailable_reference(_reference_import_error)
 import pytest
 import torch
 
@@ -129,8 +134,9 @@ def add_phase(
 def fixture_program(
     repeats: int, spectator: str = "spectator"
 ) -> tuple[ProgramRecord, Any]:
-    from qualtran import Controlled, CtrlSpec
-    from qualtran.bloqs.basic_gates import Hadamard, ZPowGate
+    from qualtran._infra.controlled import Controlled, CtrlSpec
+    from qualtran.bloqs.basic_gates.hadamard import Hadamard
+    from qualtran.bloqs.basic_gates.rotation import ZPowGate
 
     bit = quantum_bit_type()
     definitions = (
@@ -171,8 +177,11 @@ def fixture_program(
 def test_source_specialization_renaming_packing_graph_counts_and_all_complex_branches(
     repeats: int, spectator: str
 ) -> None:
-    from qualtran.bloqs.basic_gates import CHadamard, CZPowGate
-    from qualtran.resource_counting import QECGatesCost, QubitCount, get_cost_value
+    from qualtran.bloqs.basic_gates.hadamard import CHadamard
+    from qualtran.bloqs.basic_gates.rotation import CZPowGate
+    from qualtran.resource_counting._bloq_counts import QECGatesCost
+    from qualtran.resource_counting._costing import get_cost_value
+    from qualtran.resource_counting._qubit_counts import QubitCount
 
     record, source = fixture_program(repeats, spectator)
     controlled = control_component_program(record, {"h": add_h, "p": add_phase})
@@ -281,7 +290,7 @@ def test_source_specialization_renaming_packing_graph_counts_and_all_complex_bra
 def test_empty_entry_threads_control_and_matches_source_name_collisions(
     names: tuple[str, ...], expected: str
 ) -> None:
-    from qualtran import Controlled, CtrlSpec
+    from qualtran._infra.controlled import Controlled, CtrlSpec
 
     signature = Signature([Register(name, quantum_bit_type()) for name in names])
     native = ComponentProgramBuilder(signature)
@@ -468,7 +477,7 @@ def test_retained_callers_are_rejected_when_entry_gains_control_port() -> None:
 def test_array_ports_are_carried_through_without_flattening_word_identity(
     empty_shape: bool,
 ) -> None:
-    from qualtran import Controlled, CtrlSpec
+    from qualtran._infra.controlled import Controlled, CtrlSpec
 
     signature = Signature(
         [Register("words", quantum_bit_type(), (0, 2) if empty_shape else (2, 2))]

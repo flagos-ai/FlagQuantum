@@ -6,7 +6,12 @@ from collections import Counter
 from dataclasses import replace
 from itertools import product
 
-import numpy as np
+from tests._reference_dependencies import unavailable_reference
+
+try:
+    import numpy as np
+except ModuleNotFoundError as _reference_import_error:
+    unavailable_reference(_reference_import_error)
 import pytest
 import torch
 
@@ -89,9 +94,11 @@ def test_two_actual_add_calls_keep_exact_signature_gates_all_branches_and_resour
     rebuild: bool,
     expand: bool,
 ) -> None:
-    from qualtran import QUInt
+    from qualtran._infra.data_types import QUInt
     from qualtran.bloqs.arithmetic.addition import Add
-    from qualtran.resource_counting import QECGatesCost, QubitCount, get_cost_value
+    from qualtran.resource_counting._bloq_counts import QECGatesCost
+    from qualtran.resource_counting._costing import get_cost_value
+    from qualtran.resource_counting._qubit_counts import QubitCount
 
     registers = (
         Register("a", RegisterType("uint", 2)),
@@ -170,8 +177,11 @@ def test_two_actual_add_calls_keep_exact_signature_gates_all_branches_and_resour
 
 
 def test_zero_left_add_constructs_in_source_but_fails_original_decomposition() -> None:
-    import cirq
-    from qualtran import QUInt
+    try:
+        import cirq
+    except ModuleNotFoundError as _reference_import_error:
+        unavailable_reference(_reference_import_error)
+    from qualtran._infra.data_types import QUInt
     from qualtran.bloqs.arithmetic.addition import Add
 
     registers = (
