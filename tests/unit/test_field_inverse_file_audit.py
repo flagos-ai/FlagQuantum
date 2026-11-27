@@ -47,7 +47,7 @@ def frozen_assets() -> None:
     import kickmix
 
     assert version("qualtran") == "0.7.0"
-    assert kickmix.__version__ == "0.1" and hasattr(kickmix, "Simulator")
+    assert getattr(kickmix, "__version__") == "0.1" and hasattr(kickmix, "Simulator")
     blobs = {
         "gf2_inverse.ipynb": "30174d21584b13dfc2da26c03b43de6958a58f06",
         "gf2_inverse.py": "0cabf787ad5716c6099b613ac2f038253402396b",
@@ -112,8 +112,8 @@ def test_actual_inverse_factory_protocols_and_native_root(symbolic: bool) -> Non
 
     from examples.algorithms import field_ui_export as native
     from examples.algorithms.field_power_decomposition import field_power_program
-    from flagquantum.compiler.registers.finite_field.inverse_component import (
-        field_inverse_program,
+    from flagquantum.compiler.registers.finite_field.inverse_decomposition import (
+        field_inverse_decomposition_graph,
     )
     from flagquantum.core.ir.program import verify_program_record
     from flagquantum.core.ir.program.physical_codec import native_program_to_dict
@@ -145,8 +145,10 @@ def test_actual_inverse_factory_protocols_and_native_root(symbolic: bool) -> Non
     if symbolic:
         assert record is None
     else:
-        assert record == field_inverse_program(
-            signature[0].dtype, modulus=int(original.qgf.irreducible_poly)
+        polynomial = original.qgf.irreducible_poly
+        assert polynomial is not None
+        assert record == field_inverse_decomposition_graph(
+            signature[0].dtype, modulus=int(polynomial)
         )
         assert record is not None and verify_program_record(record) == ()
         with pytest.raises(SerializationError, match="requires a physical context"):
@@ -158,7 +160,8 @@ def test_actual_inverse_factory_protocols_and_native_root(symbolic: bool) -> Non
 )
 def test_complete_signature_graph_and_static_width(degree: Any) -> None:
     from qualtran.bloqs.gf_arithmetic.gf2_inverse import GF2Inverse
-    from qualtran.resource_counting import QubitCount, get_cost_value
+    from qualtran.resource_counting._costing import get_cost_value
+    from qualtran.resource_counting._qubit_counts import QubitCount
     from qualtran.resource_counting.generalizers import ignore_split_join
 
     source = GF2Inverse(degree)
@@ -189,7 +192,8 @@ def test_complete_signature_graph_and_static_width(degree: Any) -> None:
 )
 def test_independent_source_gate_model(degree: Any) -> None:
     from qualtran.bloqs.gf_arithmetic.gf2_inverse import GF2Inverse
-    from qualtran.resource_counting import QECGatesCost, get_cost_value
+    from qualtran.resource_counting._bloq_counts import QECGatesCost
+    from qualtran.resource_counting._costing import get_cost_value
 
     model = (
         field_inverse_example_gate_model(degree)
