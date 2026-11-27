@@ -139,3 +139,61 @@ models both report two And, seven Cliffords, three rotations, two measurements
 and six peak wires. Estimated rotations remain distinct from captured atoms.
 The direct single negative-control source defect above remains separately
 recorded. These wrappers have correct activation for the declared two-bit word.
+
+
+## Complete source disposition under approved migration rule — 2026-11-28
+
+The complete frozen file, its eight methods, example, documentation constant,
+attrs converter and direct unary/control dependencies were reread. The previous
+open status above predates the approved faithful-migration rule and the complete
+directional source capture. The following ownership map closes Q-0586 without
+claiming the source's failing paths now work.
+
+| Complete source responsibility | Authoritative native disposition |
+|---|---|
+| `ApplyLthBloq` metadata and `__attrs_post_init__` | Existing indexed component admission retains finite row-major child banks, matching THRU targets and minimum two children. Actual foreign objects stop at Ecosystem capture; owned emitters retain packed named targets and directional snapshots. |
+| `control_registers`, `selection_registers`, `target_registers` | Existing bounded MSB selector layout and typed indexed selection preserve source names, explicit selector words, optional control and child target order. Multi-register words and arrays use the same named capture owner. |
+| `nth_operation_callgraph`, `nth_operation` | Shared bounded unary traversal calls the selected positive-controlled child; the independent indexed model retains those exact child identities and counts. Primitive calls, operands, per-wire order and feedback remain separately verified. |
+| `get_ctrl_system` | Shared specialized control and control-stack owners preserve positive/negative activation and whole word/array wrappers. Literal direct source control-zero activates on one and is retained by source capture. Its corrected native specialization remains separately labeled. |
+| `adjoint` | Exact directional child recipes and parent unary reversal remain native owners. Ecosystem independently captures the actual source adjoint rather than reversing a measured flat stream. |
+| `_apply_lth_bloq`, `_APPLY_LTH_BLOQ_DOC` | Original T/H/Z/X factory, six identities, signature and accepted complete notebook use the ordinary append workflow and independent resource query. |
+
+Generic source child capture is an Ecosystem conversion of complete decomposable
+objects to owned IR, not a new public foreign-object execution protocol. The
+source child owns its allocations and exact inverse. The multi-register fixture
+checks a two-bit word, two-element flag array, private clean storage and both
+directions through the same consumer. A source-success child unsupported by the
+SDK capture gate contract would require an additional boundary implementation;
+this disposition does not promise arbitrary future gate families or codecs.
+
+The source's direct negative-control defect, mixed-empty-axis assertion, repeated
+control-adder scalar-array failure and object-array serialization failure remain
+explicit reproductions. They are source failures, not missing successful native
+execution paths. Source symbolic/unbound dimensions still do not become physical
+wire allocations. Native data-only children continue to reject unsupported
+profiles before execution. No frozen source is modified or corrected.
+
+Fresh concentrated validation passes 616 cases with the real locked Kickmix
+Simulator, covering whole-file source bindings, exact typed calls, all applicable
+small complex operator columns and raw measurement histories, named work
+ownership, complete cleanup, JSON and ordinary append. Existing source32-pass
+with expected count/serialization failures, independent source/native notebooks,
+strict checks of unchanged owners and prior local integration are reused.
+No Python implementation changes are needed for this complete-source disposition.
+
+Resources remain the separate measured and modeled accounts above: the
+four-child example emits 12 T-family, 22 CX, three measurements, one controlled
+phase and one CH, with six reserved wires. Its source model has three And,
+12 Cliffords, three rotations, three measurements and six peak logical wires.
+Its 45 modeled T equivalents are not 45 emitted T gates. The word/array control
+fixtures retain eight emitted T-family, two measurements, one controlled phase
+and one CH, separately from two And/seven Cliffords/three rotations.
+
+The independent Cirq 1.6 lane passes 170 complete source-binding, typed
+selection and control-stack cases. Current Compiler scope, English, links and
+whitespace pass. Architecture, IR, protected API and local integration proofs
+are reused from the immediately preceding unchanged owners. Historical strict
+diagnostics of the unchanged dynamic source reader above are not relabeled
+as a globally clean typing result. Receipts use
+`g2-apply-lth-source-closure-*20261128`; publication and parent status are tracked
+in the integration ledger.
