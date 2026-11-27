@@ -7,10 +7,12 @@ from typing import Any
 import pytest
 import torch
 
+from tests._reference_dependencies import unavailable_reference
+
 try:
     import numpy as np
-except ModuleNotFoundError:
-    pytest.importorskip("numpy")
+except ModuleNotFoundError as _reference_import_error:
+    unavailable_reference(_reference_import_error)
 
 from flagquantum.core.ir.program import register_types as types
 from flagquantum.core.ir.program import verify_program_record
@@ -30,7 +32,7 @@ pytestmark = [pytest.mark.unit, pytest.mark.ftqc_reference]
 
 
 def pair(kind: str) -> tuple[RegisterType, Any]:
-    import qualtran as q
+    import qualtran._infra.data_types as q
 
     constructors: dict[str, tuple[Any, Any]] = {
         "bit": (types.quantum_bit_type, q.QBit),
@@ -174,9 +176,9 @@ def test_empty_array_policy_is_delegated_to_each_original_codec(
 
 @pytest.mark.parametrize("kind", KINDS)
 def test_default_dense_entry_replaces_handwritten_dispatch(kind: str) -> None:
-    from qualtran import Bloq
-    from qualtran import Register as SourceRegister
-    from qualtran import Signature as SourceSignature
+    from qualtran._infra.bloq import Bloq
+    from qualtran._infra.registers import Register as SourceRegister
+    from qualtran._infra.registers import Signature as SourceSignature
     from qualtran.simulation.tensor._tensor_from_classical import (
         bloq_to_dense_via_classical_action,
     )
@@ -184,7 +186,7 @@ def test_default_dense_entry_replaces_handwritten_dispatch(kind: str) -> None:
     dtype, source_dtype = pair(kind)
     # A full-capacity bound lets every binary input reach the value action.
     if kind in {"bounded", "cbounded"}:
-        import qualtran as q
+        import qualtran._infra.data_types as q
 
         dtype = (
             types.bounded_unsigned_register_type(2)
@@ -277,21 +279,18 @@ def test_logical_fixed_point_storage_respects_approved_physical_admission(
     assert verify_program_record(changed) == ()
     from flagquantum.compiler.registers.register_binding import bind_register_program
 
-    if signed:
-        with pytest.raises(ValueError, match="unsupported executable register"):
-            bind_register_program(changed, ((0, 1),))
-    else:
-        # Proposal 115 explicitly admits concrete unsigned fixed-point storage.
-        assert bind_register_program(changed, ((0, 1),)) == bind_register_program(
-            record, ((0, 1),)
-        )
+    # Proposals 115 and 116 admit unsigned and signed raw storage respectively.
+    assert bind_register_program(changed, ((0, 1),)) == bind_register_program(
+        record, ((0, 1),)
+    )
 
 
 @pytest.mark.parametrize("depth", [1, 3])
 def test_default_tensor_codecs_match_add_gates_all_complex_branches(depth: int) -> None:
     from collections import Counter
 
-    from qualtran.resource_counting import QECGatesCost, get_cost_value
+    from qualtran.resource_counting._bloq_counts import QECGatesCost
+    from qualtran.resource_counting._costing import get_cost_value
     from qualtran.simulation.tensor._tensor_from_classical import (
         bloq_to_dense_via_classical_action,
     )
