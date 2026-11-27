@@ -5,17 +5,12 @@
 
 """Typed Frobenius graphs sharing the existing mathematical matrix authority."""
 
-import numpy as np
-
 from ....core.ir.program import ProgramRecord
-from ....core.ir.program.register_bindings import RegisterBinding
 from ....core.ir.program.registers import RegisterType
-from ....core.ir.program.signatures import Signature
-from ..component_builder import ComponentProgramBuilder
 from .field_linear import _frobenius_matrix
 from .field_multiplication import _validate_field
 from .field_word import binary_field_word_width
-from .linear_component import binary_linear_program
+from .linear_component import field_linear_program
 
 
 def field_frobenius_program(
@@ -38,12 +33,4 @@ def field_frobenius_program(
     if type(count) is not int or count < 0:
         raise ValueError("Frobenius count must be a nonnegative concrete integer")
     matrix = tuple(tuple(row) for row in _frobenius_matrix(width, count, modulus))
-    linear = binary_linear_program(matrix, adjoint=adjoint)
-    builder = ComponentProgramBuilder(Signature.build_from_dtypes(x=dtype))
-    word = builder.inputs["x"]
-    assert isinstance(word, RegisterBinding)
-    coefficients = builder.split(word)[::-1]
-    result = builder.call_program(linear, {"q": coefficients})["q"]
-    return builder.finalize(
-        {"x": builder.join(np.asarray(result, dtype=object)[::-1], dtype)}
-    )
+    return field_linear_program(dtype, matrix, adjoint=adjoint)

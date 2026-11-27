@@ -9,12 +9,14 @@ import numpy as np
 
 from ....core.ir import CircuitIR, Instruction
 from ....core.ir.program import ProgramRecord
+from ....core.ir.program.register_bindings import RegisterBinding
 from ....core.ir.program.register_types import quantum_bit_type
-from ....core.ir.program.registers import Register
+from ....core.ir.program.registers import Register, RegisterType
 from ....core.ir.program.signatures import Signature
 from ..component_builder import ComponentProgramBuilder
 from ..component_gate_function import bit_gate_function
 from .field_multiplication import _FieldEmitter
+from .field_word import binary_field_word_width
 
 
 def binary_linear_program(
@@ -64,3 +66,23 @@ def binary_linear_program(
         )
         bits[control], bits[target] = result["ctrl"], result["target"]
     return builder.finalize({"q": bits[list(outputs)]})
+
+
+def field_linear_program(
+    dtype: RegisterType,
+    matrix: tuple[tuple[int, ...], ...],
+    *,
+    adjoint: bool = False,
+) -> ProgramRecord:
+    """Adapt a binary field word to the shared coefficient-array linear owner."""
+    if binary_field_word_width(dtype) != len(matrix):
+        raise ValueError("Field linear matrix must match the word width")
+    linear = binary_linear_program(matrix, adjoint=adjoint)
+    builder = ComponentProgramBuilder(Signature.build_from_dtypes(x=dtype))
+    word = builder.inputs["x"]
+    assert isinstance(word, RegisterBinding)
+    coefficients = builder.split(word)[::-1]
+    result = builder.call_program(linear, {"q": coefficients})["q"]
+    return builder.finalize(
+        {"x": builder.join(np.asarray(result, dtype=object)[::-1], dtype)}
+    )
