@@ -1,7 +1,10 @@
 """Compare momentum-transfer costs and live workspace with the locked source."""
 
+from __future__ import annotations
+
 from itertools import product
 from math import sqrt
+from typing import Any
 
 import pytest
 import torch
@@ -23,15 +26,20 @@ from flagquantum.compiler.registers.preparation.uniform_preparation import (
     source_uniform_preparation_cost,
     uniform_preparation_requirements,
 )
+from flagquantum.core.ir.program.signatures import Signature
 from flagquantum.dynamic import DynamicCircuit
+from tests._reference_dependencies import unavailable_reference
 from tests.unit.measurement_checks import forced_branch
 from tests.unit.test_first_quantization_resource_model import assert_source_model
 
 pytestmark = [pytest.mark.unit, pytest.mark.ftqc_reference]
 
 
-def _assert_signature(native, source):
-    from qualtran import QAny, QBit
+def _assert_signature(native: Signature, source: Any) -> None:
+    try:
+        from qualtran._infra.data_types import QAny, QBit
+    except ModuleNotFoundError as error:
+        unavailable_reference(error)
 
     assert [
         (
@@ -46,10 +54,12 @@ def _assert_signature(native, source):
 
 @pytest.mark.parametrize("count", [2, 3, 5, 6, 8, 9, 14, 31, 32768])
 def test_uniform_cost(count: int) -> None:
-    pytest.importorskip("qualtran")
-    from qualtran.bloqs.state_preparation.prepare_uniform_superposition import (
-        PrepareUniformSuperposition,
-    )
+    try:
+        from qualtran.bloqs.state_preparation.prepare_uniform_superposition import (
+            PrepareUniformSuperposition,
+        )
+    except ModuleNotFoundError as error:
+        unavailable_reference(error)
 
     assert_source_model(
         source_uniform_preparation_cost(count), PrepareUniformSuperposition(count)
@@ -60,9 +70,12 @@ def test_uniform_cost(count: int) -> None:
     ("left", "right"), [(1, 1), (1, 2), (2, 1), (2, 4), (5, 3), (4, 8), (8, 4)]
 )
 def test_momentum_arithmetic_costs(left: int, right: int) -> None:
-    pytest.importorskip("qualtran")
-    from qualtran import DecomposeNotImplementedError
-    from qualtran.bloqs.arithmetic import GreaterThan, Product, SumOfSquares
+    try:
+        from qualtran._infra.bloq import DecomposeNotImplementedError
+        from qualtran.bloqs.arithmetic.comparison import GreaterThan
+        from qualtran.bloqs.arithmetic.multiplication import Product, SumOfSquares
+    except ModuleNotFoundError as error:
+        unavailable_reference(error)
 
     assert_source_model(source_greater_cost(left, right), GreaterThan(left, right))
     for model, source in (
@@ -79,16 +92,20 @@ def test_momentum_arithmetic_costs(left: int, right: int) -> None:
 )
 @pytest.mark.parametrize("adjoint", [False, True])
 def test_prepare_nu_cost_and_bystanders(p: int, m: int, adjoint: bool) -> None:
-    pytest.importorskip("qualtran")
-    from qualtran import Adjoint, DecomposeNotImplementedError, LeftDangle
-    from qualtran.bloqs.chemistry.pbc.first_quantization.prepare_nu import (
-        PrepareNuState,
-    )
-    from qualtran.bloqs.state_preparation.prepare_uniform_superposition import (
-        PrepareUniformSuperposition,
-    )
+    try:
+        from qualtran._infra.adjoint import Adjoint
+        from qualtran._infra.bloq import DecomposeNotImplementedError
+        from qualtran._infra.quantum_graph import LeftDangle
+        from qualtran.bloqs.chemistry.pbc.first_quantization.prepare_nu import (
+            PrepareNuState,
+        )
+        from qualtran.bloqs.state_preparation.prepare_uniform_superposition import (
+            PrepareUniformSuperposition,
+        )
+    except ModuleNotFoundError as error:
+        unavailable_reference(error)
 
-    source = PrepareNuState(p, m)
+    source: Any = PrepareNuState(p, m)
     if adjoint:
         source = source.adjoint()
     _assert_signature(prepare_nu_signature(p, m), source.signature)
@@ -139,20 +156,22 @@ def test_prepare_nu_cost_and_bystanders(p: int, m: int, adjoint: bool) -> None:
 @pytest.mark.parametrize("adjoint", [False, True])
 @pytest.mark.parametrize("projectile", [False, True])
 def test_momentum_m_native_append_matches_source_state_and_feedback(
-    adjoint, projectile
-):
-    pytest.importorskip("qualtran")
-    import cirq
-    import numpy as np
-    from qualtran.bloqs.chemistry.pbc.first_quantization.prepare_nu import (
-        PrepareNuState,
-    )
-    from qualtran.bloqs.chemistry.pbc.first_quantization.projectile.prepare_nu import (
-        PrepareNuStateWithProj,
-    )
-    from qualtran.bloqs.state_preparation.prepare_uniform_superposition import (
-        PrepareUniformSuperposition,
-    )
+    adjoint: bool, projectile: bool
+) -> None:
+    try:
+        import cirq
+        import numpy as np
+        from qualtran.bloqs.chemistry.pbc.first_quantization.prepare_nu import (
+            PrepareNuState,
+        )
+        from qualtran.bloqs.chemistry.pbc.first_quantization.projectile.prepare_nu import (
+            PrepareNuStateWithProj,
+        )
+        from qualtran.bloqs.state_preparation.prepare_uniform_superposition import (
+            PrepareUniformSuperposition,
+        )
+    except ModuleNotFoundError as error:
+        unavailable_reference(error)
 
     count = 3
     parent = (
@@ -226,11 +245,14 @@ def test_momentum_m_native_append_matches_source_state_and_feedback(
 
 
 def test_prepare_nu_source_empty_m_is_explicit() -> None:
-    pytest.importorskip("qualtran")
-    from qualtran.bloqs.chemistry.pbc.first_quantization.prepare_nu import (
-        PrepareNuState,
-    )
-    from qualtran.resource_counting import QubitCount, get_cost_value
+    try:
+        from qualtran.bloqs.chemistry.pbc.first_quantization.prepare_nu import (
+            PrepareNuState,
+        )
+        from qualtran.resource_counting._costing import get_cost_value
+        from qualtran.resource_counting._qubit_counts import QubitCount
+    except ModuleNotFoundError as error:
+        unavailable_reference(error)
 
     _assert_signature(prepare_nu_signature(2, 1), PrepareNuState(2, 1).signature)
     with pytest.raises(RuntimeError, match="does not accept Soquets"):
