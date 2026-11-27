@@ -267,3 +267,12 @@ places dense JAX readout, physical output contractions and weighted native/eager
 scalar evaluation in Simulation. Runtime keeps validation, reconstruction,
 weight-cache ownership, device policy and result/evidence. The public native
 provider remains unchanged; its old internal Runtime import alias is retired.
+
+## MPS local numerical response
+
+The constrained rank protocol delegates the computations that actually supply
+its state, score and derivative to existing Simulation pullback numerics.
+See [ownership](migration/runtime-mps-local-numerical-ownership.md) and
+[acceptance](migration/runtime-mps-local-numerical-acceptance.md). Runtime
+retains communication, optimizer policy, independent analytic validation and
+evidence-only tensor allocations. No directory, dependency or forwarding is added.

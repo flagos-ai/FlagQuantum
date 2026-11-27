@@ -10019,6 +10019,50 @@
       "compatibility": "Unused executor alias retired after its production invocation moved; actual public native function and all published exports/identities are unchanged.",
       "remaining_imports": "Simulation invokes the existing public native provider through its module; no old Runtime alias or forwarding is retained.",
       "native_public_api_preserved": "flagquantum.simulation.native_cpu.fused_observable_expectation"
+    },
+    {
+      "group": "runtime-mps-local-numerics",
+      "old": "flagquantum/runtime/executors/jax/mps/backward.py",
+      "new": "flagquantum/simulation/mps/jax/pullbacks.py",
+      "symbols": [],
+      "partial": true,
+      "same_import_path": false,
+      "extracted_helpers": [
+        "_jax_mps_ry_site_response",
+        "_numpy_mps_ry_site_response",
+        "_numpy_mps_ry_weighted_gradient"
+      ],
+      "extraction_scope": "Actual RY sites, local Z contractions and local derivative computation; Runtime keeps rank exchange/timing",
+      "compatibility": "Existing Runtime functions, signatures and defining locators remain; no new facade, re-export or forwarding. Existing published Simulation functions are unchanged.",
+      "remaining_imports": "Runtime resolves the defining Simulation module. Device admission, pmap/ppermute, CPU copies, timers, optimizer policy, memory witnesses and independent validation oracles remain Runtime."
+    },
+    {
+      "group": "runtime-mps-local-numerics",
+      "old": "flagquantum/runtime/executors/jax/mps/canonicalization.py",
+      "new": "flagquantum/simulation/mps/jax/pullbacks.py",
+      "symbols": [],
+      "partial": true,
+      "same_import_path": false,
+      "extracted_helpers": [
+        "_jax_mps_ry_z_response"
+      ],
+      "extraction_scope": "Direct RY Z/derivative for actual owner-rank optimizer updates; Runtime keeps SGD and collective",
+      "compatibility": "Existing Runtime functions, signatures and defining locators remain; no new facade, re-export or forwarding. Existing published Simulation functions are unchanged.",
+      "remaining_imports": "Runtime resolves the defining Simulation module. Device admission, pmap/ppermute, CPU copies, timers, optimizer policy, memory witnesses and independent validation oracles remain Runtime."
+    },
+    {
+      "group": "runtime-mps-local-numerics",
+      "old": "flagquantum/runtime/executors/jax/mps/pullbacks.py",
+      "new": "flagquantum/simulation/mps/jax/pullbacks.py",
+      "symbols": [],
+      "partial": true,
+      "same_import_path": false,
+      "extracted_helpers": [
+        "_numpy_mps_owner_local_scores"
+      ],
+      "extraction_scope": "Actual local scores that feed received VJP cotangents; evidence-only tensor allocations stay Runtime",
+      "compatibility": "Existing Runtime functions, signatures and defining locators remain; no new facade, re-export or forwarding. Existing published Simulation functions are unchanged.",
+      "remaining_imports": "Runtime resolves the defining Simulation module. Device admission, pmap/ppermute, CPU copies, timers, optimizer policy, memory witnesses and independent validation oracles remain Runtime."
     }
   ],
   "retired_namespace_parents": [

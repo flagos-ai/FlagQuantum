@@ -579,3 +579,7 @@ Each row names the authoritative owner. Partial rows move only the listed defini
 | runtime-observable-numerics | `flagquantum/runtime/_rydberg_presence.py` | `flagquantum/simulation/dynamics/rydberg_presence.py` | partial: Physical presence trajectory output contraction only; replay/RNG/result policy remains |
 | runtime-observable-numerics | `flagquantum/runtime/executors/statevector/reverse_adjoint.py` | `flagquantum/simulation/statevector/adjoint.py` | partial: Existing native/eager scalar evaluation; weight-cache admission/ownership remains Runtime |
 | runtime-observable-numerics | `flagquantum/runtime/executors/statevector/reverse_adjoint.py` | `flagquantum/simulation/native_cpu/adjoint.py` | partial: retire only the old imported native function binding; published provider/definition unchanged |
+
+| runtime-mps-local-numerics | `flagquantum/runtime/executors/jax/mps/backward.py` | `flagquantum/simulation/mps/jax/pullbacks.py` | partial: Actual RY sites, local Z contractions and local derivative computation; Runtime keeps rank exchange/timing |
+| runtime-mps-local-numerics | `flagquantum/runtime/executors/jax/mps/canonicalization.py` | `flagquantum/simulation/mps/jax/pullbacks.py` | partial: Direct RY Z/derivative for actual owner-rank optimizer updates; Runtime keeps SGD and collective |
+| runtime-mps-local-numerics | `flagquantum/runtime/executors/jax/mps/pullbacks.py` | `flagquantum/simulation/mps/jax/pullbacks.py` | partial: Actual local scores that feed received VJP cotangents; evidence-only tensor allocations stay Runtime |

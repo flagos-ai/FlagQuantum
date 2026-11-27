@@ -136,3 +136,59 @@ def jax_mps_canonicalization_pullback(
         canonical_gradient,
         truncation_gradient,
     )
+
+
+def _jax_mps_ry_site_response(theta: Any) -> tuple[Any, ...]:
+    """Build the rank-local RY site, Z contraction and derivative."""
+
+    import jax.numpy as jnp
+
+    site = jnp.stack(
+        (
+            jnp.cos(theta / 2.0),
+            jnp.sin(theta / 2.0),
+        )
+    )
+    local_z = site[0] * site[0] - site[1] * site[1]
+    local_dz = -jnp.sin(theta)
+    return site, local_z, local_dz
+
+
+def _numpy_mps_ry_site_response(parameter_values: Any) -> tuple[Any, ...]:
+    """Build CPU development sites and their original local contractions."""
+
+    import numpy as np
+
+    half_angles = parameter_values / 2.0
+    site_arrays = np.stack(
+        (np.cos(half_angles), np.sin(half_angles)),
+        axis=1,
+    )
+    local_z_values = site_arrays[:, 0] ** 2 - site_arrays[:, 1] ** 2
+    return site_arrays, local_z_values
+
+
+def _numpy_mps_ry_weighted_gradient(parameter_values: Any, remote_z_values: Any) -> Any:
+    """Evaluate the local RY derivative against received rank contributions."""
+
+    import numpy as np
+
+    return -np.sin(parameter_values) * remote_z_values
+
+
+def _jax_mps_ry_z_response(theta: Any) -> tuple[Any, ...]:
+    """Evaluate the direct local RY Z response used by owner-rank updates."""
+
+    import jax.numpy as jnp
+
+    local_z = jnp.cos(theta)
+    local_dz = -jnp.sin(theta)
+    return local_z, local_dz
+
+
+def _numpy_mps_owner_local_scores(parameter_values: Any) -> Any:
+    """Evaluate local RY/RXX Z scores before cotangent exchange."""
+
+    import numpy as np
+
+    return np.cos(parameter_values)
