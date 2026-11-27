@@ -16,13 +16,7 @@ import numpy as np
 from numpy.typing import ArrayLike
 
 from ....core.ir import Instruction
-from ....core.ir.program.register_types import (
-    bounded_unsigned_register_type,
-    opaque_register_type,
-)
-from ....core.ir.program.registers import Register
 from ....core.ir.program.signatures import Signature
-from ....core.value_parameters import is_symbolic_value
 from ..._component_trace.resource_model import ComponentCost
 from ..._component_trace.symbolic_math import SymbolicInt, bit_length
 from ..layout.partition import RegisterLayout, partition_register
@@ -30,6 +24,7 @@ from ..resources.symbolic_resource_model import (
     SymbolicResourceFormula,
     source_qrom_resource_formula,
 )
+from .qrom_declaration import qrom_signature
 from .qrom_resource_model import source_qrom_cost
 from .source_qrom import source_qrom_ir, source_qrom_workspace_size
 
@@ -223,28 +218,14 @@ class QromTable:
     @cached_property
     def signature(self) -> Signature:
         """Retain source encoding, side and shape before physical flattening."""
-        registers = (
-            [Register("control", opaque_register_type(self.num_controls))]
-            if self.num_controls
-            else []
+        self._selection_layout()
+        return qrom_signature(
+            self.shape,
+            self.selection_bitsizes,
+            self.target_bitsizes,
+            self.target_shapes,
+            self.num_controls,
         )
-        selected_axes = (
-            extent for extent in self.shape if is_symbolic_value(extent) or extent > 1
-        )
-        for (name, width), extent in zip(
-            self._selection_layout(), selected_axes, strict=True
-        ):
-            registers.append(
-                Register(name, bounded_unsigned_register_type(width, extent))
-            )
-        registers.extend(
-            Register(f"target{index}_", opaque_register_type(width), shape=shape)
-            for index, (width, shape) in enumerate(
-                zip(self.target_bitsizes, self.target_shapes, strict=True)
-            )
-            if is_symbolic_value(width) or width
-        )
-        return Signature(registers)
 
     def bind_packed(
         self,
