@@ -240,3 +240,35 @@ source identity and real Kickmix 0.1 Simulator are verified. The first literal
 comparison used the unrelated flat temporary labels and failed; the final
 comparison above uses the unchanged stored child actually invoked, preserving
 all operand, feedback, semantic and workspace assertions at their stated scopes.
+
+
+## Whole-file acceptance under the approved closure rule, 2026-11-28
+
+Q-0204 closes the entire 99-line source: both fields, THRU xs/pi signature,
+bounded index dtype, exact Comparator/adjoint/Xor multiplicities and empty
+DocSpec. There are no original factory functions, classical callback or root
+physical decomposition to omit. Default source factories retain bodyless typed
+declarations; concrete/symbolic and signed/unsigned/opaque metadata, models and
+foreign transports are already owned and verified. Proposal120 covers logical
+symbolic array declarations; unknown-size physical execution still refuses.
+
+The extra native paper construction is not needed to pretend that the source
+contains a gate body. Its existing distinct signed/unsigned sorting, clean pi,
+matching-rank inverse, complete small complex vectors/history/work-zero and
+source-comparable child streams retain their accepted scope. Duplicate inputs
+and arbitrary occupied pi remain outside that independent synthesis contract.
+Original no-body, zero-length peak and symbol-assumption-loss boundaries stay
+explicit; larger expanded-index allocation/order differences remain native
+optimization follow-ups. They do not block migration of a complete model-only
+source. No root primitive equality or duplicate-capable physical sorter is
+claimed. Earlier open conclusions are superseded for this source-file parent.
+
+Current acceptance receipts use `g2-list-primitives-full-closure-*20261128`:
+842 concentrated cases and 99 independent Cirq1.6 cases pass; 109 frozen blobs
+are unchanged. Existing original full tests/notebook, exact primitive/model
+resource rows and strict owner checks are reused. This batch changes only
+these complete source dispositions. The immediately preceding 32 local
+integration checks remain valid for the unchanged list owners. Compiler scope,
+English/links, architecture/IR/API/required checks and whitespace pass; reference
+policy retains 570 existing findings with no new consumer or waiver. No source,
+algorithm, public contract, checker or dependency exclusion is changed.
