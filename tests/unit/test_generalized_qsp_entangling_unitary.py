@@ -5,8 +5,16 @@ from collections.abc import Mapping
 from itertools import product
 from typing import Any
 
-import cirq
-import numpy as np
+from tests._reference_dependencies import unavailable_reference
+
+try:
+    import cirq
+except ModuleNotFoundError as _reference_import_error:
+    unavailable_reference(_reference_import_error)
+try:
+    import numpy as np
+except ModuleNotFoundError as _reference_import_error:
+    unavailable_reference(_reference_import_error)
 import pytest
 import torch
 
@@ -67,9 +75,11 @@ def entangling_unitary(
     repeats: int,
 ) -> tuple[dict[tuple[int | None, bool], ProgramRecord], Any]:
     """Store a shared H(a), CNOT(a,b), ZPow(b) layer on named QBit ports."""
-    from qualtran import BloqBuilder
-    from qualtran import Signature as SourceSignature
-    from qualtran.bloqs.basic_gates import CNOT, Hadamard, ZPowGate
+    from qualtran._infra.composite_bloq import BloqBuilder
+    from qualtran._infra.registers import Signature as SourceSignature
+    from qualtran.bloqs.basic_gates.cnot import CNOT
+    from qualtran.bloqs.basic_gates.hadamard import Hadamard
+    from qualtran.bloqs.basic_gates.rotation import ZPowGate
 
     bit = quantum_bit_type()
     existing, _ = stored_unitary(1)
@@ -151,7 +161,7 @@ def emitter(programs: dict[tuple[int | None, bool], ProgramRecord]) -> UnitaryEm
 def test_entangling_control_and_adjoint_full_source_leaves(
     repeats: int, value: int | None, adjoint: bool
 ) -> None:
-    from qualtran import CtrlSpec
+    from qualtran._infra.controlled import CtrlSpec
 
     from tests.unit.register_source_graph import SourcePorts
 
@@ -242,7 +252,8 @@ def assert_costs(
     system_width: int = 2,
 ) -> None:
     """Use existing primitive query identities; never infer model from emitted IR."""
-    from qualtran.resource_counting import QECGatesCost, get_cost_value
+    from qualtran.resource_counting._bloq_counts import QECGatesCost
+    from qualtran.resource_counting._costing import get_cost_value
 
     from flagquantum.algorithms.primitives.generalized_qsp_model import (
         source_generalized_qsp_cost,
