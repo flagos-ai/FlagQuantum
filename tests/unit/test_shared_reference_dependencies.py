@@ -39,7 +39,8 @@ sys.meta_path.insert(0, MissingSDK())
 try:
     module = import_module(module_name)
     if entry:
-        getattr(module, entry)(3, 4)
+        arguments = (3, 4) if entry == 'source_encoder' else ()
+        getattr(module, entry)(*arguments)
 except pytest.skip.Exception as error:
     result = {'outcome': 'explicit_skip', 'reason': str(error)}
 except ModuleNotFoundError as error:
@@ -62,6 +63,18 @@ print(json.dumps(result))
         ("register_example_checks", "numpy", None),
         ("register_source_workspace", "cirq", None),
         ("rotation_lattice_fixtures", "numpy", None),
+        ("test_controlled_unitary_synthesis", "numpy", None),
+        ("test_register_su2_rotation", "numpy", None),
+        (
+            "test_global_phase_source_binding",
+            "cirq",
+            "test_original_external_scalar_conventions_and_static_refusal",
+        ),
+        (
+            "test_foreign_phase_addition",
+            "cirq",
+            "test_private_phase_keys_do_not_alias_source_measurements",
+        ),
     ],
 )
 def test_actual_fixture_dependency_absence(
