@@ -185,3 +185,13 @@ and measured-adjoint append. `tests/unit/test_field_erasure_all_branches.py`
 reuses the common exact phase checker to certify all256 eight-bit histories on
 all65536 input pairs, including common Kraus amplitude and clean physical clearing.
 The same test retains the defective original product/erase channel as a failure.
+
+`inverse_component.py` keeps one Itoh–Tsujii root schedule with two explicit
+child profiles. `field_inverse_program` uses correct mathematical children;
+`inverse_decomposition.field_inverse_decomposition_program` uses untouched-source
+literal square/product recipes. Both retain RIGHT logical junk. The literal
+execution refuses root temporary releases without a clean-work proof; the
+original four/eight-bit release violations are documented in the inverse audit.
+Run `tests/unit/test_field_inverse_literal.py` for complete source primitive,
+complex-amplitude, alias and private-padding checks. Literal catalog dispatch
+is still a separate open part of the complete inverse source acceptance.

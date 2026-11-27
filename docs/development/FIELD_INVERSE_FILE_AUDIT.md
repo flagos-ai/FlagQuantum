@@ -393,3 +393,38 @@ separately diagnose source-invalid clean releases; no clean-free contract may
 be weakened to make it execute. Valid-source literal calls still need native
 implementation. Q-0516 remains open pending that implementation and the complete
 approved defect disposition. Count equality is not amplitude or cleanup evidence.
+
+## Literal inverse dependency closure — 2026-11-27
+
+`inverse_component._field_inverse_schedule` now owns one Itoh–Tsujii root
+schedule. The existing mathematical `field_inverse_program` supplies exact
+Frobenius and Karatsuba children. The new
+`inverse_decomposition.field_inverse_decomposition_program` supplies literal
+square and Karatsuba children, including their original declared adjoints.
+Neither profile replaces or repairs the frozen reference. The degree-one raw
+branch keeps its existing independent nonbinary storage behavior.
+
+Inputs and outputs retain the existing MSB-first THRU x and RIGHT result/junk
+interface. Logical junk is returned, not called clean work. Recursive padding
+is private and checked at every free point. There are no measurement branches
+in this forward source file. An exact inverse of the emitted native circuit
+restores the physical input; it is distinct from the source's declared square
+adjoint, whose original linear implementation ignores direction.
+
+At degrees 2, 3, 5 and 9, the complete unchanged root with native literal child
+adapters constructs exactly the same Program. A second observer descends the
+untouched original dependencies to CNOT/Toffoli leaves and matches every
+primitive operand and output alias. All input columns satisfy private releases
+and leave unused work zero. Small degrees 2/3 additionally match the complete
+original complex tensor with an entangled spectator via `circuit.append(op)`.
+The mathematical profile's earlier complex, junk and clean-work checks rerun.
+
+The executable literal constructor currently refuses every degree whose root
+schedule frees the temporary word before later multiplication. Four/eight-bit
+source violations are proven above. Refusing other unproved degrees is an
+explicit coverage boundary, not an assertion that they all contain that bug.
+A static original graph and the correct mathematical execution remain distinct
+witnesses. The existing inverse catalog still selects the mathematical profile
+for higher-degree roots; literal catalog dispatch and complete original-invalid
+static graph qualification remain required before Q-0516 closes. No parent
+acceptance is inferred from this dependency delivery.
