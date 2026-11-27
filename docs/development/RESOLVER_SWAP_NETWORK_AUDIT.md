@@ -93,3 +93,39 @@ two unchanged original test files pass 40 cases with two original skips and
 no deselection. Strict typing covers all three changed Python files; Black,
 Ruff, Compiler scope, language, architecture, IR and API checks pass. Dependency
 output matches exactly the existing 720 findings; no new finding is introduced.
+
+
+## SwapWithZero complete source acceptance (2026-11-28)
+
+The approved faithful-migration closure rule supersedes historical open status
+for Q-0712. Complete source review covers scalar/array/iterable conversion,
+axis-count validation, recursive inner-axis-first stage traversal, selectors,
+target shape/signature, CSwapApprox leaf, sequence reversal, composite body,
+product-minus-one call model, diagrams, classical in-place callback, adjoint,
+string, all three examples and DocSpec. Existing Compiler routing, relative-swap
+and Simulation callback owners remain separate and are reused.
+
+Selector words are MSB-first; source stage indices are little-endian offsets
+converted explicitly. Targets are row-major and caller-owned. Reversing stage
+order preserves the source child phase rather than replacing it with an exact
+Fredkin. Small complete complex maps, padded selectors, multi-axis arrays,
+trailing zero-bit axes, true inverse composition, callback strided views and
+keyword insertion order remain checked. Bare networks allocate no private work
+and have only the empty measurement history.
+
+Leading zero-width axes followed by live exchanges still fail upstream with
+IndexError and are refused explicitly before native emission. Unresolved axes
+and widths do not imply executable storage. The 136-wire original example has
+complete structural/primitive/resource evidence; no exponential-size numerical
+simulation is claimed. The source model, actual instructions and live/physical
+workspace categories remain separate. Q-0709 and Q-0707 full-source acceptance
+is recorded in their respective linked source/constructor audits.
+
+
+The complete three-file closure passes 335 concentrated source/primitive/
+complex-execution cases and 51 independent Cirq 1.6 constructor cases. All 54
+frozen source/dependency/asset blobs are unchanged. Algorithms scope, language,
+links, architecture, IR, protected API baseline and whitespace pass. Existing
+strict Python, 32 local integration and real Kickmix Simulator evidence from
+the accepted preceding batches is reused: no Python code changes here. Original
+source tests/notebook outcomes and separately recorded defects remain intact.
