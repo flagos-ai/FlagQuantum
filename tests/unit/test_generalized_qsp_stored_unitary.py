@@ -6,8 +6,16 @@ from itertools import product
 from math import pi
 from typing import Any
 
-import cirq
-import numpy as np
+from tests._reference_dependencies import unavailable_reference
+
+try:
+    import cirq
+except ModuleNotFoundError as _reference_import_error:
+    unavailable_reference(_reference_import_error)
+try:
+    import numpy as np
+except ModuleNotFoundError as _reference_import_error:
+    unavailable_reference(_reference_import_error)
 import pytest
 import torch
 
@@ -52,8 +60,9 @@ def stored_unitary(
     repeats: int,
 ) -> tuple[dict[tuple[int | None, bool], ProgramRecord], Any]:
     """Build H then phase; its inverse must phase backwards before applying H."""
-    from qualtran import BloqBuilder
-    from qualtran.bloqs.basic_gates import Hadamard, ZPowGate
+    from qualtran._infra.composite_bloq import BloqBuilder
+    from qualtran.bloqs.basic_gates.hadamard import Hadamard
+    from qualtran.bloqs.basic_gates.rotation import ZPowGate
 
     bit = quantum_bit_type()
     base, _ = fixture_program(1)
@@ -119,16 +128,13 @@ def source_gates(
     source: Any, ports: SourcePorts, slots: int
 ) -> tuple[Instruction, ...]:
     """Read original connections with the same declared atomic normalization."""
-    from qualtran.bloqs.basic_gates import (
-        CNOT,
-        CHadamard,
-        Hadamard,
-        Toffoli,
-        XGate,
-        ZPowGate,
-    )
+    from qualtran.bloqs.basic_gates.cnot import CNOT
+    from qualtran.bloqs.basic_gates.hadamard import CHadamard, Hadamard
+    from qualtran.bloqs.basic_gates.rotation import ZPowGate
     from qualtran.bloqs.basic_gates.su2_rotation import SU2RotationGate
-    from qualtran.bloqs.mcmt import And
+    from qualtran.bloqs.basic_gates.toffoli import Toffoli
+    from qualtran.bloqs.basic_gates.x_basis import XGate
+    from qualtran.bloqs.mcmt.and_bloq import And
 
     erased = 0
 
@@ -205,7 +211,7 @@ def emitter(programs: dict[tuple[int | None, bool], ProgramRecord]) -> UnitaryEm
 def test_stored_control_and_exact_adjoint_match_original_leaves(
     repeats: int, value: int | None, adjoint: bool
 ) -> None:
-    from qualtran import CtrlSpec
+    from qualtran._infra.controlled import CtrlSpec
 
     programs, source = stored_unitary(repeats)
     if adjoint:
@@ -281,7 +287,8 @@ def test_complete_stored_u_gqsp_all_measurement_histories(
 
 def assert_costs(source: Any, length: int, negative_power: int, repeats: int) -> None:
     """Price actual child identities separately from physical primitive counts."""
-    from qualtran.resource_counting import QECGatesCost, get_cost_value
+    from qualtran.resource_counting._bloq_counts import QECGatesCost
+    from qualtran.resource_counting._costing import get_cost_value
 
     from flagquantum.algorithms.primitives.generalized_qsp_model import (
         source_generalized_qsp_cost,
