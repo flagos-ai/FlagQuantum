@@ -449,15 +449,7 @@ def test_strategy_imports_preserve_records_and_serialized_evidence(
 
 @pytest.mark.parametrize(
     "name",
-    (
-        "_estimate_routing_cost",
-        "_estimate_swap_plan",
-        "_plan_sabre_for_topology",
-        "_select_routing_strategy",
-        "_count_sabre_orientation_swaps",
-        "_plan_sabre_trial",
-        "_select_sabre_trials",
-    ),
+    ("_select_routing_strategy",),
 )
 def test_retained_private_routing_helpers_are_canonical_aliases(name: str) -> None:
     from flagquantum.compiler.topology import routing, routing_strategy

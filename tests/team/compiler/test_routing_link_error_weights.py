@@ -38,6 +38,7 @@ from flagquantum.compiler.routing import (
     route_to_topology,
     select_routing_strategy,
 )
+from flagquantum.compiler.topology import link_error_rates as topology_link_error_rates
 from flagquantum.compiler.topology.directed_topology import DirectedCouplingMap
 from flagquantum.core.ir import CircuitIR
 
@@ -574,11 +575,11 @@ def test_calibration_imports_preserve_class_lookup_and_weighted_routes(
     import pickle
     from importlib import import_module
 
-    from flagquantum.compiler.topology import link_error_rates, routing_cost
+    from flagquantum.compiler.topology import link_error_rates
 
     cls = import_module(module_path).LinkErrorRates
     assert cls is link_error_rates.LinkErrorRates
-    assert routing_cost._quantized is link_error_rates._quantized
+    assert topology_link_error_rates._quantized is link_error_rates._quantized
     assert pickle.loads(pickle.dumps(cls)) is cls
     assert (
         pickle.loads(b"cflagquantum.compiler.topology.routing_cost\nLinkErrorRates\n.")

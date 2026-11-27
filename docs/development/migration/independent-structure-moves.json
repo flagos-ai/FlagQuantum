@@ -9626,6 +9626,266 @@
       ],
       "compatibility": "unused internal import aliases retired; existing defining module and all public/serialization identities unchanged",
       "remaining_imports": "actual execution dependencies remain direct; all operational consumers use defining modules"
+    },
+    {
+      "group": "qec-private-binding-retirement",
+      "old": "flagquantum/qec/codes/__init__.py",
+      "new": "flagquantum/qec/codes/_css_helpers.py",
+      "symbols": [],
+      "partial": true,
+      "same_import_path": false,
+      "retired_reexports": [
+        "_DISTANCE_SEARCH_WEIGHT"
+      ],
+      "retired_private_members": [
+        "_DISTANCE_SEARCH_WEIGHT"
+      ],
+      "compatibility": "Unused internal aliases removed; frozen surviving namespace and pickle bindings retained unchanged.",
+      "remaining_imports": "Consumers import defining owners directly."
+    },
+    {
+      "group": "qec-private-binding-retirement",
+      "old": "flagquantum/qec/codes/__init__.py",
+      "new": "flagquantum/qec/codes/steane.py",
+      "symbols": [],
+      "partial": true,
+      "same_import_path": false,
+      "retired_reexports": [
+        "_STEANE_CHECK_SUPPORTS",
+        "_STEANE_LOGICAL_SUPPORT"
+      ],
+      "retired_private_members": [
+        "_STEANE_CHECK_SUPPORTS",
+        "_STEANE_LOGICAL_SUPPORT"
+      ],
+      "compatibility": "Unused internal aliases removed; frozen surviving namespace and pickle bindings retained unchanged.",
+      "remaining_imports": "Consumers import defining owners directly."
+    },
+    {
+      "group": "qec-private-binding-retirement",
+      "old": "flagquantum/qec/dem/construction.py",
+      "new": "flagquantum/qec/codes/matrices.py",
+      "symbols": [],
+      "partial": true,
+      "same_import_path": false,
+      "retired_reexports": [
+        "_binary_matrix"
+      ],
+      "retired_private_members": [
+        "_binary_matrix"
+      ],
+      "compatibility": "Unused internal aliases removed; frozen surviving namespace and pickle bindings retained unchanged.",
+      "remaining_imports": "Consumers import defining owners directly."
+    },
+    {
+      "group": "qec-private-binding-retirement",
+      "old": "flagquantum/qec/dem/construction.py",
+      "new": "flagquantum/qec/dem/matrices.py",
+      "symbols": [],
+      "partial": true,
+      "same_import_path": false,
+      "retired_reexports": [
+        "_code_matrix_entries",
+        "_column_supports"
+      ],
+      "retired_private_members": [
+        "_code_matrix_entries",
+        "_column_supports"
+      ],
+      "compatibility": "Unused internal aliases removed; frozen surviving namespace and pickle bindings retained unchanged.",
+      "remaining_imports": "Consumers import defining owners directly."
+    },
+    {
+      "group": "qec-private-binding-retirement",
+      "old": "flagquantum/qec/dem/construction.py",
+      "new": "flagquantum/qec/execution/signatures.py",
+      "symbols": [],
+      "partial": true,
+      "same_import_path": false,
+      "retired_reexports": [
+        "_FAULT_KIND_BY_LETTER"
+      ],
+      "retired_private_members": [
+        "_FAULT_KIND_BY_LETTER"
+      ],
+      "compatibility": "Unused internal aliases removed; frozen surviving namespace and pickle bindings retained unchanged.",
+      "remaining_imports": "Consumers import defining owners directly."
+    },
+    {
+      "group": "qec-private-binding-retirement",
+      "old": "flagquantum/qec/dem/matrices.py",
+      "new": "flagquantum/qec/codes/matrices.py",
+      "symbols": [],
+      "partial": true,
+      "same_import_path": false,
+      "retired_reexports": [
+        "_binary_matrix"
+      ],
+      "retired_private_members": [
+        "_binary_matrix"
+      ],
+      "compatibility": "Unused internal aliases removed; frozen surviving namespace and pickle bindings retained unchanged.",
+      "remaining_imports": "Consumers import defining owners directly."
+    },
+    {
+      "group": "qec-private-binding-retirement",
+      "old": "flagquantum/qec/execution/signatures.py",
+      "new": "flagquantum/simulation/stabilizer/_fault_signatures.py",
+      "symbols": [],
+      "partial": true,
+      "same_import_path": false,
+      "retired_reexports": [
+        "_pauli_channel_terms"
+      ],
+      "retired_private_members": [
+        "_pauli_channel_terms"
+      ],
+      "compatibility": "Unused internal aliases removed; frozen surviving namespace and pickle bindings retained unchanged.",
+      "remaining_imports": "Consumers import defining owners directly."
+    },
+    {
+      "group": "compiler-runtime-private-binding-retirement",
+      "old": "flagquantum/compiler/topology/routing.py",
+      "new": "flagquantum/compiler/lowering/operand_semantics.py",
+      "symbols": [],
+      "partial": true,
+      "same_import_path": false,
+      "retired_reexports": [
+        "_require_multi_qubit_device_local"
+      ],
+      "retired_private_members": [
+        "_require_multi_qubit_device_local"
+      ],
+      "compatibility": "Unused internal aliases retired; protected public exports and actual function/class identities unchanged.",
+      "remaining_imports": "Existing dependencies remain direct; test consumers use defining modules."
+    },
+    {
+      "group": "compiler-runtime-private-binding-retirement",
+      "old": "flagquantum/compiler/topology/routing.py",
+      "new": "flagquantum/compiler/topology/routing_cost.py",
+      "symbols": [],
+      "partial": true,
+      "same_import_path": false,
+      "retired_reexports": [
+        "_TopologyCostModel",
+        "_count_sabre_orientation_swaps",
+        "_source_routing_counts"
+      ],
+      "retired_private_members": [
+        "_TopologyCostModel",
+        "_count_sabre_orientation_swaps",
+        "_source_routing_counts"
+      ],
+      "compatibility": "Unused internal aliases retired; protected public exports and actual function/class identities unchanged.",
+      "remaining_imports": "Existing dependencies remain direct; test consumers use defining modules."
+    },
+    {
+      "group": "compiler-runtime-private-binding-retirement",
+      "old": "flagquantum/compiler/topology/routing.py",
+      "new": "flagquantum/compiler/topology/routing_emission.py",
+      "symbols": [],
+      "partial": true,
+      "same_import_path": false,
+      "retired_reexports": [
+        "_remap_instruction",
+        "_routing_metadata",
+        "_swap_instruction"
+      ],
+      "retired_private_members": [
+        "_remap_instruction",
+        "_routing_metadata",
+        "_swap_instruction"
+      ],
+      "compatibility": "Unused internal aliases retired; protected public exports and actual function/class identities unchanged.",
+      "remaining_imports": "Existing dependencies remain direct; test consumers use defining modules."
+    },
+    {
+      "group": "compiler-runtime-private-binding-retirement",
+      "old": "flagquantum/compiler/topology/routing.py",
+      "new": "flagquantum/compiler/topology/routing_strategy.py",
+      "symbols": [],
+      "partial": true,
+      "same_import_path": false,
+      "retired_reexports": [
+        "_estimate_routing_cost",
+        "_estimate_swap_plan",
+        "_plan_sabre_for_topology"
+      ],
+      "retired_private_members": [
+        "_estimate_routing_cost",
+        "_estimate_swap_plan",
+        "_plan_sabre_for_topology"
+      ],
+      "compatibility": "Unused internal aliases retired; protected public exports and actual function/class identities unchanged.",
+      "remaining_imports": "Existing dependencies remain direct; test consumers use defining modules."
+    },
+    {
+      "group": "compiler-runtime-private-binding-retirement",
+      "old": "flagquantum/compiler/topology/routing.py",
+      "new": "flagquantum/compiler/topology/sabre.py",
+      "symbols": [],
+      "partial": true,
+      "same_import_path": false,
+      "retired_reexports": [
+        "_plan_sabre_trial",
+        "_select_sabre_trials"
+      ],
+      "retired_private_members": [
+        "_plan_sabre_trial",
+        "_select_sabre_trials"
+      ],
+      "compatibility": "Unused internal aliases retired; protected public exports and actual function/class identities unchanged.",
+      "remaining_imports": "Existing dependencies remain direct; test consumers use defining modules."
+    },
+    {
+      "group": "compiler-runtime-private-binding-retirement",
+      "old": "flagquantum/compiler/topology/routing_cost.py",
+      "new": "flagquantum/compiler/topology/link_error_rates.py",
+      "symbols": [],
+      "partial": true,
+      "same_import_path": false,
+      "retired_reexports": [
+        "_quantized"
+      ],
+      "retired_private_members": [
+        "_quantized"
+      ],
+      "compatibility": "Unused internal aliases retired; protected public exports and actual function/class identities unchanged.",
+      "remaining_imports": "Existing dependencies remain direct; test consumers use defining modules."
+    },
+    {
+      "group": "compiler-runtime-private-binding-retirement",
+      "old": "flagquantum/compiler/topology/sabre.py",
+      "new": "flagquantum/compiler/topology/layout_restore.py",
+      "symbols": [],
+      "partial": true,
+      "same_import_path": false,
+      "retired_reexports": [
+        "_restore_path"
+      ],
+      "retired_private_members": [
+        "_restore_path"
+      ],
+      "compatibility": "Unused internal aliases retired; protected public exports and actual function/class identities unchanged.",
+      "remaining_imports": "Existing dependencies remain direct; test consumers use defining modules."
+    },
+    {
+      "group": "compiler-runtime-private-binding-retirement",
+      "old": "flagquantum/runtime/dynamic/__init__.py",
+      "new": "flagquantum/runtime/dynamic/_conditions.py",
+      "symbols": [],
+      "partial": true,
+      "same_import_path": false,
+      "retired_reexports": [
+        "_classical_width",
+        "_instruction_conditions"
+      ],
+      "retired_private_members": [
+        "_classical_width",
+        "_instruction_conditions"
+      ],
+      "compatibility": "Unused internal aliases retired; protected public exports and actual function/class identities unchanged.",
+      "remaining_imports": "Existing dependencies remain direct; test consumers use defining modules."
     }
   ],
   "retired_namespace_parents": [

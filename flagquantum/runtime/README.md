@@ -250,3 +250,12 @@ recorded numeric results as `.fqx` experiments without executing a program.
 owns bounded JSON and tensor encoding. Historical plans remain data; existing
 live execution-plan validation is unchanged. See the [format reference](../../docs/reference/EXPERIMENT_FILES.md)
 and [CPU example](../../examples/training/save_experiment.py).
+
+## Internal Dynamic condition helpers
+
+`dynamic/_conditions.py` owns `classical_width` and `instruction_conditions`.
+Internal consumers import that module directly. The Dynamic runtime package
+removes only its unused underscored aliases and their internal export-list
+entries. Public `flagquantum.dynamic.DynamicCircuit` and experimental task
+entry points retain their declared exports and identities; construction/IR
+relocation remains in the existing PR1084-gated family.

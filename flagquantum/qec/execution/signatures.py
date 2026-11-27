@@ -26,9 +26,6 @@ from ...runtime.dynamic.hybrid_session import (
 from ...simulation.stabilizer._fault_signatures import (
     _clifford_product_signatures,
 )
-from ...simulation.stabilizer._fault_signatures import (
-    _pauli_channel_terms as _pauli_channel_terms,
-)
 from ..circuits.memory import MeasurementRef, MemoryCircuit
 
 # One shared vocabulary for the physical fault families enumerated by both routes.

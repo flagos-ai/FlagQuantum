@@ -78,3 +78,13 @@ builds and installed native acceptance passed, including an environment without
 the Stim Python package. See the implementation acceptance record in
 `docs/development/QEC_COMPILED_DEM_SAMPLING_PROPOSAL.md`. This bounded
 capability makes no performance, threshold, full-parity or scalability claim.
+
+## Direct numerical imports
+
+Channel-term extraction belongs to Simulation Stabilizer fault signatures.
+Matrix validation belongs to QEC Codes; circuit and matrix DEM construction
+keep their actual algorithms. Unused aliases are removed, while contract-owned
+historical replacement definitions and namespace names remain unchanged.
+
+Private count/index validation used by decoders comes from `dem/model.py`;
+registered `qec.dem` pickle locators remain stable for external payloads.

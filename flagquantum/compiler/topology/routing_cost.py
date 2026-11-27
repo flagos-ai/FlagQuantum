@@ -16,7 +16,6 @@ from ..optimization.ordering_barrier import is_ordering_barrier
 from .coupling import CouplingMap
 from .directed_topology import DirectedCouplingMap
 from .link_error_rates import LinkErrorRates as LinkErrorRates
-from .link_error_rates import _quantized as _quantized
 
 
 class _TopologyCostModel:
