@@ -285,6 +285,20 @@ def contract_errors(
         }
     ]:
         errors.append("Cirq controlled-Hadamard contract drifted from Proposal 122")
+    controlled_y = [
+        op
+        for op in operations
+        if isinstance(op, dict) and op.get("flagquantum") == "cy"
+    ]
+    if controlled_y != [
+        {
+            "cirq_symbol": "CY",
+            "cirq_gate_type": "ControlledGate",
+            "cirq_form": "one_positive_binary_control;YPowGate_or_CYPowGate_exponent=1;global_shift=0",
+            "flagquantum": "cy",
+        }
+    ]:
+        errors.append("Cirq controlled-Y contract drifted from Proposal 127")
     expected_opcodes = set(OPERATOR_SCHEMAS) - excluded
     if set(mapped) != expected_opcodes:
         errors.append(
@@ -330,6 +344,7 @@ def sdk_errors(contract: dict[str, Any]) -> tuple[str, ...]:
             errors.append("Cirq MatrixGate unitary protocol shape drifted")
     constructors = {
         "CH": cirq.H.controlled(),
+        "CY": cirq.Y.controlled(),
         "SDG": cirq.S**-1,
         "TDG": cirq.T**-1,
         "ZPowGate": cirq.ZPowGate(exponent=0.5),
@@ -350,6 +365,7 @@ def sdk_errors(contract: dict[str, Any]) -> tuple[str, ...]:
         gate_type = type(gate).__name__
         declared_type = operation["cirq_gate_type"]
         compatible_types = {
+            "CY": {"ControlledGate", "CYPowGate"},
             "X": {"XPowGate", "_PauliX"},
             "Y": {"YPowGate", "_PauliY"},
             "Z": {"ZPowGate", "_PauliZ"},

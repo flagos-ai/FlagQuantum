@@ -205,3 +205,12 @@ def test_contract_requires_matrix_gates_to_stay_unsupported() -> None:
     contract["unsupported"]["cirq_features"].remove("matrix_gates")
     errors = contract_errors(contract, policy)
     assert "Cirq matrix gates must remain unsupported until implemented" in errors
+
+
+def test_controlled_y_rejects_unapproved_control_contract_drift() -> None:
+    contract, policy = _inputs()
+    entry = next(op for op in contract["operations"] if op["flagquantum"] == "cy")
+    entry["cirq_form"] = "arbitrary_controls"
+    assert "Cirq controlled-Y contract drifted from Proposal 127" in contract_errors(
+        contract, policy
+    )
