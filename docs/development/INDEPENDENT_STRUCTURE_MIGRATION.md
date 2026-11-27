@@ -261,3 +261,9 @@ The [readout sampling numerical batch](migration/runtime-readout-sampling-owners
 places final trajectory, Pauli-distribution and retained noisy-MPS mixture
 sampling in their existing Simulation owners. Runtime keeps request/RNG policy,
 readout corrections and published result validation; no forwarding is added.
+
+The [observable numerical family](migration/runtime-observable-numerical-ownership.md)
+places dense JAX readout, physical output contractions and weighted native/eager
+scalar evaluation in Simulation. Runtime keeps validation, reconstruction,
+weight-cache ownership, device policy and result/evidence. The public native
+provider remains unchanged; its old internal Runtime import alias is retired.

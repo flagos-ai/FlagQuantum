@@ -96,13 +96,18 @@ class JAXShardedTensorNetworkResult:
     wavefunction = state
 
     def probabilities(self) -> Any:
-        torch = _require_torch()
-        return torch.abs(self.state()) ** 2
+        _require_torch()
+        state = self.state()
+        from flagquantum.simulation.numerics.probabilities import (
+            _statevector_readout_probabilities,
+        )
+
+        return _statevector_readout_probabilities(state)
 
     probability = probabilities
 
     def expectation_z(self, qubit: int | None = None) -> Any:
-        torch = _require_torch()
+        _require_torch()
         qubits = tuple(range(self.n_qubits)) if qubit is None else (int(qubit),)
         # A negative qubit makes the shift below negative, which silently selects
         # the wrong basis bit instead of failing, so the range is checked first.
@@ -112,16 +117,16 @@ class JAXShardedTensorNetworkResult:
             message="observable qubit index out of range",
         )
         state = self.state()
-        probabilities = torch.abs(state) ** 2
-        values = []
-        indices = torch.arange(2**self.n_qubits, device=state.device)
-        for target in qubits:
-            mask = 1 << (self.n_qubits - int(target) - 1)
-            signs = torch.where((indices & mask) == 0, 1.0, -1.0).to(
-                device=state.device, dtype=probabilities.real.dtype
-            )
-            values.append((probabilities * signs.reshape(1, -1)).sum(dim=-1))
-        return torch.stack(values, dim=-1)
+        from flagquantum.simulation.numerics.probabilities import (
+            _statevector_readout_z_expectations,
+        )
+
+        return _statevector_readout_z_expectations(
+            state,
+            qubits,
+            n_qubits=self.n_qubits,
+            total_amplitudes=2**self.n_qubits,
+        )
 
     def summary(self) -> dict[str, Any]:
         """Flatten this result into the payload the scalability audit reads.

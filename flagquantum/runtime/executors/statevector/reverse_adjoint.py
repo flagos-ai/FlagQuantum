@@ -11,7 +11,7 @@ from typing import Any
 import torch
 
 from ....core.ir import CircuitIR
-from ....simulation.native_cpu import fused_observable_expectation
+from ....simulation.statevector import adjoint as _adjoint_numerics
 from ....simulation.statevector.adjoint import (
     z_expectation_adjoint_chunk as _z_expectation_adjoint_chunk,
 )
@@ -230,9 +230,9 @@ def _local_expectation_z_hamiltonian_and_weights(
             )
         if cache_key is not None:
             _cache_observable_weights(cache_key, weights)
-    value = fused_observable_expectation(shard_state.amplitudes, weights)
-    if value is None:
-        value = (shard_state.amplitudes.abs().square() * weights.reshape(1, -1)).sum()
+    value = _adjoint_numerics._weighted_observable_expectation(
+        shard_state.amplitudes, weights
+    )
     return value, weights
 
 

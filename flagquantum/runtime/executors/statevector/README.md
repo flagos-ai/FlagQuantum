@@ -37,3 +37,10 @@ equivalence; a local reference run alone does not establish distributed support.
 
 [Protocol and specialized-path details](IMPLEMENTATION.md) explain precision
 experiments, noisy execution, and the boundary between transport and numerics.
+
+## Cached observable diagonals
+
+Runtime owns the observable weight cache and its limits, keys, LRU and rollback.
+The numerical scalar uses `simulation.statevector.adjoint` directly, which
+retains the existing native provider and exact Tensor route. The old imported
+Runtime `fused_observable_expectation` binding is removed.

@@ -230,3 +230,11 @@ def _continue_rydberg_presence(
         solve_tolerance=solve_tolerance,
     )
     return torch.cat((prefix[:-1], suffix))
+
+
+def _presence_output_expectation(
+    trajectory: torch.Tensor, operator: torch.Tensor
+) -> torch.Tensor:
+    """Evaluate the existing physical output contraction without policy."""
+
+    return torch.einsum("tij,ji->t", trajectory, operator).real

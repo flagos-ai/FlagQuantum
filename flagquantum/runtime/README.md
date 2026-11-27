@@ -259,3 +259,9 @@ removes only its unused underscored aliases and their internal export-list
 entries. Public `flagquantum.dynamic.DynamicCircuit` and experimental task
 entry points retain their declared exports and identities; construction/IR
 relocation remains in the existing PR1084-gated family.
+
+## Physical output readout
+
+Ising and Rydberg presence plan execution retain admission, replay, operator
+placement and output/evidence assembly. Their final physical observable
+contractions call the existing Dynamics owners directly.
