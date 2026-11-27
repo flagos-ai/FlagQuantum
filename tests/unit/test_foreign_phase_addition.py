@@ -14,6 +14,7 @@ import torch
 from flagquantum.compiler.registers.phase.phase_addition import phase_add_workspace_size
 from flagquantum.core.ir import CircuitIR
 from flagquantum.ecosystem.cirq._component_snapshot import _snapshot
+from tests._reference_dependencies import unavailable_reference
 from tests.unit.measurement_checks import certified_and_channel_map, forced_branch
 
 pytestmark = [pytest.mark.unit, pytest.mark.ftqc_reference]
@@ -25,7 +26,7 @@ def frozen_source() -> None:
     from qualtran.bloqs.rotations import phase_gradient
 
     assert version("qualtran") == "0.7.0"
-    assert kickmix.__version__ == "0.1" and hasattr(kickmix, "Simulator")
+    assert getattr(kickmix, "__version__") == "0.1" and hasattr(kickmix, "Simulator")
     raw = Path(phase_gradient.__file__).read_bytes()
     assert (
         sha1(b"blob %d\0" % len(raw) + raw).hexdigest()
@@ -96,9 +97,10 @@ def test_source_permutation_all_inputs_and_complete_erased_channel(
 
 
 def test_missing_original_physical_recipe_is_not_an_emission_model() -> None:
-    from qualtran import DecomposeNotImplementedError
+    from qualtran._infra.bloq import DecomposeNotImplementedError
     from qualtran.bloqs.rotations.phase_gradient import AddIntoPhaseGrad
-    from qualtran.resource_counting import QECGatesCost, get_cost_value
+    from qualtran.resource_counting._bloq_counts import QECGatesCost
+    from qualtran.resource_counting._costing import get_cost_value
 
     source = AddIntoPhaseGrad(2, 2)
     with pytest.raises(DecomposeNotImplementedError):
@@ -112,9 +114,13 @@ def test_missing_original_physical_recipe_is_not_an_emission_model() -> None:
 
 
 def test_private_phase_keys_do_not_alias_source_measurements() -> None:
-    import cirq
+    try:
+        import cirq
+    except ModuleNotFoundError as _reference_import_error:
+        unavailable_reference(_reference_import_error)
     from attrs import frozen
-    from qualtran import GateWithRegisters, Signature
+    from qualtran._infra.gate_with_registers import GateWithRegisters
+    from qualtran._infra.registers import Signature
     from qualtran.bloqs.rotations.phase_gradient import AddIntoPhaseGrad
 
     @frozen
