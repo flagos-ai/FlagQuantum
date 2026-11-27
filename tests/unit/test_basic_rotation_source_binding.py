@@ -20,6 +20,7 @@ from flagquantum.compiler.registers.primitives.pauli_rotation import (
 from flagquantum.core.ir import CircuitIR, Instruction
 from flagquantum.ecosystem.cirq._register_emitter import import_register_emitter
 from flagquantum.simulation.unitary import get_unitary
+from tests._reference_dependencies import unavailable_reference
 
 pytestmark = [pytest.mark.unit, pytest.mark.ftqc_reference]
 
@@ -44,10 +45,15 @@ def test_actual_atomic_rotation_source_stream_and_native_replacement(
     power: bool,
     parameter: float,
 ) -> None:
-    import cirq
-    from qualtran import DecomposeTypeError
+    try:
+        import cirq
+    except ModuleNotFoundError as _reference_import_error:
+        unavailable_reference(_reference_import_error)
+    from qualtran._infra.bloq import DecomposeTypeError
     from qualtran.bloqs.basic_gates import rotation
-    from qualtran.resource_counting import QECGatesCost, QubitCount, get_cost_value
+    from qualtran.resource_counting._bloq_counts import QECGatesCost
+    from qualtran.resource_counting._costing import get_cost_value
+    from qualtran.resource_counting._qubit_counts import QubitCount
 
     from flagquantum.ecosystem.cirq._feedback_import import (
         _has_explicit_matrix,
@@ -122,7 +128,10 @@ def test_actual_atomic_rotation_source_stream_and_native_replacement(
 
 @pytest.mark.parametrize("axis", ("x", "y", "z"))
 def test_original_radian_adapter_round_trips(axis: PauliAxis) -> None:
-    import cirq
+    try:
+        import cirq
+    except ModuleNotFoundError as _reference_import_error:
+        unavailable_reference(_reference_import_error)
     from qualtran.bloqs.basic_gates import rotation
 
     from flagquantum.ecosystem.cirq import from_cirq, to_cirq
@@ -152,9 +161,9 @@ def test_original_radian_adapter_round_trips(axis: PauliAxis) -> None:
 def test_complete_atomic_source_display(
     axis: PauliAxis, power: bool, symbolic: bool
 ) -> None:
-    from qualtran import BloqBuilder
+    from qualtran._infra.composite_bloq import BloqBuilder
     from qualtran.bloqs.basic_gates import rotation
-    from qualtran.drawing import get_musical_score_data
+    from qualtran.drawing.musical_score import get_musical_score_data
     from sympy import Symbol
 
     from flagquantum.core.ir.program.register_types import opaque_register_type
@@ -192,8 +201,11 @@ def test_complete_atomic_source_display(
 def test_shifted_power_atoms_keep_source_absolute_phase(
     axis: PauliAxis, shift: float
 ) -> None:
-    import cirq
-    from qualtran.bloqs.basic_gates import XPowGate, YPowGate
+    try:
+        import cirq
+    except ModuleNotFoundError as _reference_import_error:
+        unavailable_reference(_reference_import_error)
+    from qualtran.bloqs.basic_gates.rotation import XPowGate, YPowGate
 
     from flagquantum.ecosystem.cirq._feedback_import import import_cirq_feedback
     from tests.unit.test_controlled_unitary_synthesis import assert_source_stream
@@ -222,7 +234,7 @@ def test_shifted_power_atoms_keep_source_absolute_phase(
 
 @pytest.mark.parametrize("controlled", (False, True))
 def test_zpower_native_signed_repetition_and_source_power(controlled: bool) -> None:
-    from qualtran.bloqs.basic_gates import CZPowGate, ZPowGate
+    from qualtran.bloqs.basic_gates.rotation import CZPowGate, ZPowGate
 
     from flagquantum.compiler.registers.primitives.controlled_rotation import (
         controlled_z_power_ir,
@@ -299,7 +311,8 @@ def test_actual_crz_named_capture_and_all_original_factories() -> None:
         example = getattr(rotation, name).make()
         # Original symbolic examples bind through the approved parameter contract.
         if name in {"_rz", "_crz"}:
-            from qualtran.resource_counting import QECGatesCost, get_cost_value
+            from qualtran.resource_counting._bloq_counts import QECGatesCost
+            from qualtran.resource_counting._costing import get_cost_value
 
             from flagquantum.compiler._component_trace.resource_generalization import (
                 ControlledZRotationCall,
