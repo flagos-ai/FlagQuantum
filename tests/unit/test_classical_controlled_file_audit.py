@@ -5,7 +5,12 @@ from importlib.metadata import version
 from itertools import product
 from pathlib import Path
 
-import numpy as np
+from tests._reference_dependencies import unavailable_reference
+
+try:
+    import numpy as np
+except ModuleNotFoundError as _reference_import_error:
+    unavailable_reference(_reference_import_error)
 import pytest
 import torch
 
@@ -36,12 +41,13 @@ pytestmark = [pytest.mark.unit, pytest.mark.ftqc_reference]
 
 def test_locked_files_classical_port_admission_and_scalar_truth_table() -> None:
     import kickmix
-    from qualtran import CBit, CtrlSpec, CUInt, QBit
-    from qualtran.bloqs.basic_gates import XGate
+    from qualtran._infra.controlled import CtrlSpec
+    from qualtran._infra.data_types import CBit, CUInt, QBit
+    from qualtran.bloqs.basic_gates.x_basis import XGate
     from qualtran.bloqs.mcmt import classically_controlled
 
     assert version("qualtran") == "0.7.0"
-    assert kickmix.__version__ == "0.1" and hasattr(kickmix, "Simulator")
+    assert getattr(kickmix, "__version__") == "0.1" and hasattr(kickmix, "Simulator")
     source_dir = Path(classically_controlled.__file__).parent
     for name, digest in (
         ("classically_controlled.py", "a4236872f616527a1dbc92b5453cb647b656650f"),
@@ -61,7 +67,7 @@ def test_locked_files_classical_port_admission_and_scalar_truth_table() -> None:
         == "ctrl"
     )
 
-    wide = wrapper(XGate(), CtrlSpec(CUInt(2), cvs=np.asarray([1, 2])))
+    wide = wrapper(XGate(), CtrlSpec(CUInt(2), cvs=np.asarray([1, 2], dtype=int)))
     native_wide = classical_control_signature(
         ports, ((classical_unsigned_register_type(2), (2,)),)
     )
@@ -96,10 +102,12 @@ def test_locked_files_classical_port_admission_and_scalar_truth_table() -> None:
 
 
 def test_shaped_control_attachment_collision_and_every_readout_branch() -> None:
-    from qualtran import BloqBuilder, CBit, CtrlSpec, QBit
-    from qualtran import Register as SourceRegister
-    from qualtran import Signature as SourceSignature
-    from qualtran.bloqs.basic_gates import XGate
+    from qualtran._infra.composite_bloq import BloqBuilder
+    from qualtran._infra.controlled import CtrlSpec
+    from qualtran._infra.data_types import CBit, QBit
+    from qualtran._infra.registers import Register as SourceRegister
+    from qualtran._infra.registers import Signature as SourceSignature
+    from qualtran.bloqs.basic_gates.x_basis import XGate
     from qualtran.bloqs.mcmt.classically_controlled import ClassicallyControlled
 
     q = quantum_bit_type()
@@ -110,7 +118,7 @@ def test_shaped_control_attachment_collision_and_every_readout_branch() -> None:
     )
     source_in["ctrl"] = source_bb.add(XGate(), q=source_in["ctrl"])
     child = source_bb.finalize(**source_in)
-    cv = (np.asarray([1, 0]), np.asarray(1))
+    cv = (np.asarray([1, 0], dtype=int), np.asarray(1, dtype=int))
     source, attach = ClassicallyControlled.make_ctrl_system(
         child, CtrlSpec((CBit(), CBit()), cvs=cv)
     )
@@ -204,14 +212,14 @@ def test_shaped_control_attachment_collision_and_every_readout_branch() -> None:
     for settings in product((0, 1), repeat=3):
         expected = torch.zeros_like(amplitudes)
         prefix = 4 * settings[0] + 2 * settings[1] + settings[2]
-        for u, v in product((0, 1), repeat=2):
+        for input_u, input_v in product((0, 1), repeat=2):
             result = original.call_classically(
-                flags=np.asarray(settings[:2]), enable=settings[2], u=u, v=v
+                flags=np.asarray(settings[:2]), enable=settings[2], u=input_u, v=input_v
             )
             np.testing.assert_array_equal(result[0], settings[:2])
             assert result[1] == settings[2]
             expected[4 * prefix + 2 * result[2] + result[3]] = amplitudes[
-                4 * prefix + 2 * u + v
+                4 * prefix + 2 * input_u + input_v
             ]
         torch.testing.assert_close(
             forced_branch(initial, body, settings), expected, atol=2e-12, rtol=0
