@@ -88,5 +88,10 @@ def test_self_hosted_cpu_capacity_groups_do_not_serialize_ready_work() -> None:
         "coverage-shard",
         "dependency-bounds",
         "distributed-cpu-shard",
-        "prepare-source",
     } <= set(found)
+    for workflow in ("ci.yml", "local-gpu.yml"):
+        publisher = yaml.safe_load((WORKFLOWS / workflow).read_text())["jobs"][
+            "prepare-source"
+        ]
+        assert publisher["runs-on"] == "ubuntu-latest"
+        assert publisher["concurrency"] == {"group": "flagquantum-gh-5", "queue": "max"}

@@ -382,9 +382,8 @@ def test_linux_prerequisites_keep_forks_off_private_cpu_runners(
     document = yaml.safe_load((WORKFLOWS / workflow).read_text())
     job = document["jobs"][name]
     if name == "prepare-source":
-        assert job["runs-on"] == FULL_CPU_ROUTE
-        assert f"self-hosted-{{0}}-{name}-{{1}}" in job["concurrency"]["group"]
-        assert "github.run_id" in job["concurrency"]["group"]
+        assert job["runs-on"] == "ubuntu-latest"
+        assert job["concurrency"]["group"] == "flagquantum-gh-5"
         assert job["env"]["GIT_CONFIG_COUNT"] == "1"
         assert job["env"]["GIT_CONFIG_KEY_0"] == "http.version"
         assert job["env"]["GIT_CONFIG_VALUE_0"] == "HTTP/1.1"

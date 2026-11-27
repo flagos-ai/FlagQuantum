@@ -52,9 +52,8 @@ jobs:
   prepare-source:
     outputs:
       artifact-key: ${{ steps.pack-source.outputs.artifact-key }}
-    runs-on: ${{ fromJSON((github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository) && '["self-hosted","linux","x64","flagquantum-cpu"]' || '["ubuntu-latest"]') }}
-    # Cold migration trees can require up to 2,048 verified API objects.
-    # Keep ten minutes for checkout fallback, packing and artifact upload.
+    runs-on: ubuntu-latest
+    # Source publication needs GitHub networking, not scientific CPU resources.
     timeout-minutes: 30
     env:
       # Self-hosted GitHub connections can reset HTTP/2 streams.
@@ -64,7 +63,7 @@ jobs:
     permissions:
       contents: read
     concurrency:
-      group: flagquantum-${{ (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository) && format('self-hosted-{0}-prepare-source-{1}', github.run_id, strategy.job-index || 0) || 'gh' }}-5
+      group: flagquantum-gh-5
       queue: max
     steps:
       - name: Restore verified source through the GitHub API

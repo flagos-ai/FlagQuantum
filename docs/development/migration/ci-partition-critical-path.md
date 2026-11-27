@@ -362,3 +362,26 @@ its call; four projection-embedding cases each spend 695–734 seconds repeating
 the module fixture. Additional fan-out alone cannot shorten them. Their original
 workloads, complete amplitudes, optimizer budgets and assertions remain intact;
 fixture/resource optimization requires separate measured verification.
+
+
+## Source publication placement
+
+The first successor head `b9b4ad6da30217ff53fd707684e1f2123dfba9ec`
+reached a source-preparation network tail before any CPU partition could start.
+Main CI run `46027287200`, source job `140601846799` on
+`fq-bw1100-11-cpu13`, spent 15:43:04–15:46:50 UTC in API restoration and
+then entered the existing Git checkout fallback. Its original job remains
+observed until superseded by this concrete routing correction; log evidence
+must determine the exact restoration error, rather than attributing it to the
+new SDK without proof.
+
+Both main and GPU source publishers now use hosted Ubuntu in the existing
+shared bucket 5. Source publication needs Git/GitHub networking rather than a
+scientific image or private accelerator. The existing hosted checkout path,
+read-only permissions, credential persistence prohibition, HTTP/1.1 setting,
+30-minute finite budget, exact-commit packing, unique per-run artifact keys,
+source digest checks and complete/incremental consumers remain unchanged.
+Trusted and fork sources both remain on hosted publication capacity. Scientific
+CPU/GPU consumers keep their existing qualified routes and source checks.
+The eight-group hosted ceiling is unchanged. Actual new-head publication and
+whole-job timing still require CI verification.
