@@ -60,3 +60,34 @@ contract/ADR change before implementation." PUBLIC_API_PROTECTION.md protects
 accepted public types and failure behavior. Approved Proposal 125 explicitly
 retains symbolic physical refusal; Proposal 120 covers array shapes, not these
 field parameter declarations. Neither approves this distinct logical extension.
+
+
+## Implementation and evidence
+
+Core field validation now has one focused owner,
+`core/ir/program/field_register_validation.py`. Its concrete admission body is
+moved unchanged from the shared register verifier. Logical field declarations
+validate canonical parameter order, integral/symbolic dimensions, concrete
+minimums, exact order and exact packed width. Physical and classical admission
+still use the unchanged concrete validator. No foreign or numerical type enters
+Core and no Program field or opcode is added.
+
+All six original identity graphs and native equivalents pass. Native declarations
+and nested typed identity calls cover scalar, shaped and empty arrays. Every
+unresolved profile still fails physical binding; classical symbolic field ports
+remain refused. Malformed order, width, storage, duplicate metadata, boolean
+and invalid concrete dimensions retain rejection. The focused field/previous
+classical-cast regression passes 164 cases; strict typing passes three changed
+files. Physical primitive inventories and complete complex-state evidence for
+concrete fields are reused because that validation body and all execution
+owners are unchanged. Unresolved declarations have no physical gate or amplitude
+execution claim.
+
+
+The combined 124/126 acceptance batch passes 665 concentrated cases and 32
+local integration cases. Five changed Python files pass strict typing; Black,
+Ruff, scope, language/links, architecture, IR/public API, required-check mapping
+and whitespace checks pass. The moved concrete field validator is AST-identical
+to its published body. Three additional frozen field/OnEach source blobs are
+verified; earlier Cast/QROAM source evidence is retained. Receipts are
+`ftqc-reference-env/g2-storage-declarations-*` outside the repository.

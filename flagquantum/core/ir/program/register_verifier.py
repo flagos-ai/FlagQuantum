@@ -13,6 +13,10 @@ from typing import cast
 from ...value_math import SymbolicInt
 from ...value_parameters import is_symbolic_value
 from ..diagnostics import LevelDiagnostic, _diagnostic
+from .field_register_validation import (
+    _field_register_width,
+    logical_field_register_width,
+)
 from .model import BlockRecord, FunctionRecord, OpcodeSignature, ValueRef
 from .register_compatibility import check_register_types_consistent
 from .register_types import (
@@ -25,61 +29,6 @@ from .register_types import (
 )
 from .registers import Register, RegisterSide, RegisterType
 from .signatures import Signature
-
-
-def _field_register_width(dtype: RegisterType) -> int:
-    """Validate structural field metadata independently of numerical construction."""
-    width = dtype.quantum_bits
-    if (
-        type(width) is not int
-        or width <= 0
-        or type(dtype.classical_bits) is not int
-        or dtype.classical_bits != 0
-        or not isinstance(dtype.parameters, tuple)
-        or any(
-            not isinstance(pair, tuple)
-            or len(pair) != 2
-            or not isinstance(pair[0], str)
-            or type(pair[1]) is not int
-            for pair in dtype.parameters
-        )
-    ):
-        raise ValueError(f"unsupported executable register descriptor {dtype!r}")
-    names = tuple(name for name, _ in dtype.parameters)
-    parameters = {name: cast(int, value) for name, value in dtype.parameters}
-    if dtype.encoding == "finite_field_polynomial":
-        if not names or names[0] != "polynomial_degree":
-            raise ValueError(f"unsupported executable register descriptor {dtype!r}")
-        degree = parameters["polynomial_degree"]
-        order = parameters.get("order")
-        if degree < 0 or order is None or order < 2:
-            raise ValueError(f"unsupported executable register descriptor {dtype!r}")
-        coefficient_width = (order - 1).bit_length()
-        if width != (degree + 1) * coefficient_width:
-            raise ValueError(f"unsupported executable register descriptor {dtype!r}")
-        coefficient = RegisterType(
-            "finite_field", coefficient_width, parameters=dtype.parameters[1:]
-        )
-        _field_register_width(coefficient)
-        return width
-    base = ("characteristic", "degree", "order")
-    polynomial = (
-        "polynomial",
-        "polynomial_field_characteristic",
-        "polynomial_field_degree",
-        "polynomial_field_primitive_element",
-        "polynomial_field_modulus",
-    )
-    if names in (base, base + polynomial):
-        characteristic, degree, order = (parameters[name] for name in base)
-        if (
-            characteristic >= 2
-            and degree > 0
-            and order == characteristic**degree
-            and width == (order - 1).bit_length()
-        ):
-            return width
-    raise ValueError(f"unsupported executable register descriptor {dtype!r}")
 
 
 def executable_register_width(dtype: RegisterType) -> int:
@@ -134,7 +83,7 @@ def logical_register_width(dtype: RegisterType) -> SymbolicInt:
     if not isinstance(dtype, RegisterType):
         raise ValueError("a logical word needs a neutral RegisterType")
     if dtype.encoding in {"finite_field", "finite_field_polynomial"}:
-        return executable_register_width(dtype)
+        return logical_field_register_width(dtype)
     width = dtype.quantum_bits
     if (
         (not is_symbolic_value(width) and (type(width) is not int or width < 0))
