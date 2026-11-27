@@ -5,7 +5,12 @@ from importlib.metadata import version
 from pathlib import Path
 from typing import Any
 
-import numpy as np
+from tests._reference_dependencies import unavailable_reference
+
+try:
+    import numpy as np
+except ModuleNotFoundError as _reference_import_error:
+    unavailable_reference(_reference_import_error)
 import pytest
 
 from flagquantum.compiler._component_trace.qec_gate_cost import (
@@ -40,7 +45,7 @@ def locked_source() -> Any:
     from qualtran import cirq_interop
 
     assert version("qualtran") == "0.7.0"
-    assert kickmix.__version__ == "0.1" and hasattr(kickmix, "Simulator")
+    assert getattr(kickmix, "__version__") == "0.1" and hasattr(kickmix, "Simulator")
     folder = Path(cirq_interop.__file__).parent
     for name, digest in (
         ("_cirq_to_bloq.py", "29c7a89a164836eb2e9af2527c2b78294b952e0e"),
@@ -184,7 +189,8 @@ def test_decomposition_does_not_strip_tags_controls_or_unknown_leaves(
 def test_original_symbolic_swap_power_decomposition_resources(
     cirq: Any, locked_source: Any
 ) -> None:
-    from qualtran.resource_counting import QECGatesCost, get_cost_value
+    from qualtran.resource_counting._bloq_counts import QECGatesCost
+    from qualtran.resource_counting._costing import get_cost_value
     from sympy import Symbol
 
     theta = Symbol("theta", real=True)
