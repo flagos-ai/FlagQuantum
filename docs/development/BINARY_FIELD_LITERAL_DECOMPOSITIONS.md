@@ -87,3 +87,32 @@ only. Source left/right shift constructors receive a signed iteration count;
 negative counts emit no loop, rather than a mathematical opposite shift. A
 separate literal shift entry preserves that behavior using the existing no-shift
 word views. Numerical callbacks remain separately owned by Simulation.
+
+
+## Raw nonbinary physical consumers
+
+Existing approved raw field storage may flow through literal decomposition
+profiles without admitting numerical nonbinary quantum arithmetic. Compiler
+accepts a concrete raw field word using existing Core validation. Numerical
+constant matrices stay in Simulation; a typed constant-matrix wrapper only
+adapts its provided binary coefficient matrix and declared direction.
+
+The literal monomial owner interprets the provided integer polynomial in its
+metadata characteristic, retaining source nonzero degrees and the distinction
+between field degree and raw bit width. It shares the existing shift loop.
+For degree one, the source omits its final coefficient reversal; retain the raw
+bit reversal even for count zero. The mathematical binary shift stays unchanged.
+
+The literal quadratic owner shares its entire schedule with the mathematical
+binary owner, injecting literal left/right shift children and looping over raw
+word width. Its RIGHT output is caller data; its exact LEFT inverse releases
+only a matching computed value. No private quantum work or measurements arise.
+Degree-one inverse allocates a same-type RIGHT word and calls the existing
+literal degree-prefix addition, with no junk port. Source numerical callbacks
+remain separate, including their disagreement with these raw circuits.
+
+Examples own actual catalog selection and numerical matrix construction. Static
+Compiler transforms import no source SDK or numerical field library. Retain
+source nonbinary Karatsuba and higher inverse decomposition failures. No public
+API, IR, Core storage or numerical arithmetic admission changes are authorized
+or needed for these internal consumers.
