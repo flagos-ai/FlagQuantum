@@ -3,7 +3,12 @@
 from itertools import product
 from typing import Any
 
-import numpy as np
+from tests._reference_dependencies import unavailable_reference
+
+try:
+    import numpy as np
+except ModuleNotFoundError as _reference_import_error:
+    unavailable_reference(_reference_import_error)
 import pytest
 import torch
 
@@ -34,9 +39,10 @@ def test_original_mixed_quantum_classical_axis_order_and_contraction(
     sides: tuple[str, ...], shape: tuple[int, ...]
 ) -> None:
     import quimb.tensor as qtn
-    from qualtran import CBit, QAny, Side
-    from qualtran import Register as SourceRegister
-    from qualtran import Signature as SourceSignature
+    from qualtran._infra.data_types import CBit, QAny
+    from qualtran._infra.registers import Register as SourceRegister
+    from qualtran._infra.registers import Side
+    from qualtran._infra.registers import Signature as SourceSignature
     from qualtran.simulation.tensor._dense import _group_outer_inds, quimb_to_dense
 
     source = SourceSignature(
@@ -47,7 +53,7 @@ def test_original_mixed_quantum_classical_axis_order_and_contraction(
         ]
     )
     sig = native_signature(source)
-    labels: dict[tuple[str, int], int] = {}
+    labels: dict[tuple[object, int], int] = {}
     _, inc = source_bindings(source.lefts(), "in", labels)
     _, out = source_bindings(source.rights(), "out", labels)
     groups = register_superoperator_label_groups(sig, inc, out)
@@ -84,10 +90,13 @@ def test_original_mixed_quantum_classical_axis_order_and_contraction(
 
 
 def test_measurement_channel_classical_output_and_discard_scalar() -> None:
-    from qualtran import BloqBuilder, CBit, QBit, Side
-    from qualtran import Register as SourceRegister
-    from qualtran import Signature as SourceSignature
-    from qualtran.bloqs.basic_gates import Discard, MeasureZ
+    from qualtran._infra.composite_bloq import BloqBuilder
+    from qualtran._infra.data_types import CBit, QBit
+    from qualtran._infra.registers import Register as SourceRegister
+    from qualtran._infra.registers import Side
+    from qualtran._infra.registers import Signature as SourceSignature
+    from qualtran.bloqs.basic_gates.discard import Discard
+    from qualtran.bloqs.basic_gates.z_basis import MeasureZ
     from qualtran.simulation.tensor._dense import quimb_to_dense
     from qualtran.simulation.tensor._quimb import cbloq_to_superquimb
 

@@ -4,7 +4,12 @@ from collections import Counter
 from itertools import product
 from typing import Any
 
-import numpy as np
+from tests._reference_dependencies import unavailable_reference
+
+try:
+    import numpy as np
+except ModuleNotFoundError as _reference_import_error:
+    unavailable_reference(_reference_import_error)
 import pytest
 import torch
 
@@ -29,9 +34,10 @@ pytestmark = [pytest.mark.unit, pytest.mark.ftqc_reference]
 def test_original_placeholder_count_and_dense_identity(
     width: int, shape: tuple[int, ...]
 ) -> None:
-    from qualtran import BloqBuilder, QAny
-    from qualtran import Register as SourceRegister
-    from qualtran import Signature as SourceSignature
+    from qualtran._infra.composite_bloq import BloqBuilder
+    from qualtran._infra.data_types import QAny
+    from qualtran._infra.registers import Register as SourceRegister
+    from qualtran._infra.registers import Signature as SourceSignature
     from qualtran.simulation.tensor._dense import quimb_to_dense
     from qualtran.simulation.tensor._quimb import cbloq_to_quimb
 
@@ -39,7 +45,7 @@ def test_original_placeholder_count_and_dense_identity(
     bb, data = BloqBuilder.from_signature(source_sig)
     source = bb.finalize(**data)
     original = cbloq_to_quimb(source)
-    labels: dict[tuple[str, int], int] = {}
+    labels: dict[tuple[object, int], int] = {}
     _, incoming = source_bindings(source_sig, "in", labels)
     _, outgoing = source_bindings(source_sig, "out", labels)
     signature = native_signature(source_sig)
@@ -64,12 +70,16 @@ def test_original_placeholder_count_and_dense_identity(
 def test_idle_word_with_controlled_operation_all_branches_and_append(
     values: tuple[int, ...],
 ) -> None:
-    from qualtran import BloqBuilder, Controlled, CtrlSpec, QUInt
-    from qualtran import Register as SourceRegister
-    from qualtran import Signature as SourceSignature
-    from qualtran.bloqs.basic_gates import XGate
+    from qualtran._infra.composite_bloq import BloqBuilder
+    from qualtran._infra.controlled import Controlled, CtrlSpec
+    from qualtran._infra.data_types import QUInt
+    from qualtran._infra.registers import Register as SourceRegister
+    from qualtran._infra.registers import Signature as SourceSignature
+    from qualtran.bloqs.basic_gates.x_basis import XGate
     from qualtran.bloqs.mcmt.controlled_via_and import ControlledViaAnd
-    from qualtran.resource_counting import QECGatesCost, QubitCount, get_cost_value
+    from qualtran.resource_counting._bloq_counts import QECGatesCost
+    from qualtran.resource_counting._costing import get_cost_value
+    from qualtran.resource_counting._qubit_counts import QubitCount
     from qualtran.simulation.tensor._dense import quimb_to_dense
     from qualtran.simulation.tensor._quimb import cbloq_to_quimb
 
@@ -96,7 +106,7 @@ def test_idle_word_with_controlled_operation_all_branches_and_append(
     )
     source = bb.finalize(**returned, idle=data["idle"])
     signature = native_signature(source_sig)
-    labels: dict[tuple[str, int], int] = {}
+    labels: dict[tuple[object, int], int] = {}
     _, incoming = source_bindings(source_sig, "in", labels)
     _, outgoing = source_bindings(source_sig, "out", labels)
     dense = controlled_register_tensor(

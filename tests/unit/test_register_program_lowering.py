@@ -18,6 +18,12 @@ from flagquantum.core.ir.program import (
     verify_program_record,
 )
 from flagquantum.core.ir.program.registers import Register, RegisterType
+from tests._reference_dependencies import unavailable_reference
+
+try:
+    import numpy as numpy
+except ModuleNotFoundError as _reference_import_error:
+    unavailable_reference(_reference_import_error)
 from tests.unit.program_call_fixtures import explicit_block
 from tests.unit.test_program_registers import word_function
 
@@ -321,12 +327,18 @@ def test_existing_append_consumer_accepts_packed_rebinding_replacement(
 def test_rebound_output_matches_original_source_complex_tensor_with_spectator(
     permutation: tuple[int, ...],
 ) -> None:
-    import numpy as np
+    try:
+        import numpy as np
+    except ModuleNotFoundError as _reference_import_error:
+        unavailable_reference(_reference_import_error)
     import torch
-    from qualtran import BloqBuilder, QAny, Side, Signature
-    from qualtran import Register as SourceRegister
-    from qualtran.bloqs.basic_gates import XGate
-    from qualtran.bloqs.bookkeeping import Join, Split
+    from qualtran._infra.composite_bloq import BloqBuilder
+    from qualtran._infra.data_types import QAny
+    from qualtran._infra.registers import Register as SourceRegister
+    from qualtran._infra.registers import Side, Signature
+    from qualtran.bloqs.basic_gates.x_basis import XGate
+    from qualtran.bloqs.bookkeeping.join import Join
+    from qualtran.bloqs.bookkeeping.split import Split
 
     import flagquantum as fq
 

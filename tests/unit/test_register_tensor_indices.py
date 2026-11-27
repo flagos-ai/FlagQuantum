@@ -3,7 +3,12 @@
 from itertools import product
 from typing import Any
 
-import numpy as np
+from tests._reference_dependencies import unavailable_reference
+
+try:
+    import numpy as np
+except ModuleNotFoundError as _reference_import_error:
+    unavailable_reference(_reference_import_error)
 import pytest
 import torch
 
@@ -15,6 +20,7 @@ from flagquantum.simulation.tensor_network.register_superoperator_binding import
 from flagquantum.simulation.tensor_network.register_tensor_indices import (
     register_tensor_outer_indices,
 )
+from tests.unit.classical_source_callbacks import source_placeholder_soquet
 from tests.unit.test_register_tensor import native_signature
 from tests.unit.test_register_tensor_binding import source_bindings
 
@@ -28,9 +34,16 @@ def test_original_tuple_and_friendly_names_with_classical_ports(
     sides: tuple[str, ...], shape: tuple[int, ...], superoperator: bool
 ) -> None:
     import quimb.tensor as qtn
-    from qualtran import CBit, Connection, LeftDangle, QAny, RightDangle, Side, Soquet
-    from qualtran import Register as SourceRegister
-    from qualtran import Signature as SourceSignature
+    from qualtran._infra.data_types import CBit, QAny
+    from qualtran._infra.quantum_graph import (
+        Connection,
+        LeftDangle,
+        RightDangle,
+        Soquet,
+    )
+    from qualtran._infra.registers import Register as SourceRegister
+    from qualtran._infra.registers import Side
+    from qualtran._infra.registers import Signature as SourceSignature
     from qualtran.simulation.tensor._quimb import (
         _get_outer_indices,
         _get_outer_superindices,
@@ -44,7 +57,7 @@ def test_original_tuple_and_friendly_names_with_classical_ports(
         ]
     )
     sig = native_signature(source)
-    labels: dict[tuple[str, int], int] = {}
+    labels: dict[tuple[object, int], int] = {}
     _, inc = source_bindings(source.lefts(), "in", labels)
     _, out = source_bindings(source.rights(), "out", labels)
     nodes = []
@@ -59,7 +72,7 @@ def test_original_tuple_and_friendly_names_with_classical_ports(
                 endpoint = Soquet(
                     LeftDangle if side == "l" else RightDangle, reg, index
                 )
-                middle = Soquet(None, reg, index)
+                middle = source_placeholder_soquet(reg, index)
                 cxn = (
                     Connection(endpoint, middle)
                     if side == "l"

@@ -7,7 +7,12 @@ from dataclasses import replace
 from itertools import product
 from typing import Any
 
-import numpy as np
+from tests._reference_dependencies import unavailable_reference
+
+try:
+    import numpy as np
+except ModuleNotFoundError as _reference_import_error:
+    unavailable_reference(_reference_import_error)
 import pytest
 import torch
 
@@ -31,6 +36,10 @@ from flagquantum.core.ir.program.registers import Register, RegisterSide, Regist
 from flagquantum.core.ir.program.signatures import Signature
 from flagquantum.dynamic import DynamicCircuit
 from flagquantum.runtime.dynamic.execution import run_dynamic
+from tests.unit.classical_source_callbacks import (
+    source_controlled_tensor,
+    source_measurement_tensors,
+)
 from tests.unit.measurement_checks import forced_branch
 from tests.unit.test_program_classical_registers import identity
 from tests.unit.test_program_owned_measurement import measured_function
@@ -157,8 +166,10 @@ def test_entry_initializations_are_fresh_before_measurement_and_parity(
 def test_every_classical_input_and_measurement_branch_matches_original_complex_tensors(
     count: int, polarity: bool, measured: bool
 ) -> None:
-    from qualtran import CBit, CtrlSpec
-    from qualtran.bloqs.basic_gates import MeasureZ, XGate, ZGate
+    from qualtran._infra.controlled import CtrlSpec
+    from qualtran._infra.data_types import CBit
+    from qualtran.bloqs.basic_gates.x_basis import XGate
+    from qualtran.bloqs.basic_gates.z_basis import MeasureZ, ZGate
     from qualtran.bloqs.bookkeeping.cast import Cast
     from qualtran.bloqs.gf_arithmetic.gf2_multiplication import Parity
 
@@ -197,7 +208,7 @@ def test_every_classical_input_and_measurement_branch_matches_original_complex_t
                     dtype=np.uint8,
                 )
             if measured:
-                copy, _ = MeasureZ().my_tensors({"q": "q"}, {"c": "c"})
+                copy, _ = source_measurement_tensors(MeasureZ(), {"q": "q"}, {"c": "c"})
                 expected = np.moveaxis(
                     np.tensordot(
                         copy.data[:, :, history[0]].T, expected, axes=([1], [3])
@@ -208,9 +219,9 @@ def test_every_classical_input_and_measurement_branch_matches_original_complex_t
             source_inputs = np.array([*original, *history], dtype=np.uint8)
             _, parity = Parity(count + int(measured)).call_classically(x=source_inputs)
             for gate, wire in ((ZGate(), 0), (XGate(), 1)):
-                tensor = gate.controlled(
-                    CtrlSpec(qdtypes=[CBit()], cvs=[int(polarity)])
-                )._tensor_data()
+                tensor = source_controlled_tensor(
+                    gate.controlled(CtrlSpec(qdtypes=[CBit()], cvs=[int(polarity)]))
+                )
                 matrix = tensor[int(parity), :, int(parity), :]
                 expected = np.moveaxis(
                     np.tensordot(matrix, expected, axes=([1], [wire])), 0, wire
@@ -362,9 +373,11 @@ def test_gate_only_entry_layout_preserves_existing_quantum_callers() -> None:
 def test_original_entry_assignment_matches_native_row_major_slots(
     shape: tuple[int, ...],
 ) -> None:
-    from qualtran import BloqBuilder, CBit, LeftDangle, RightDangle, Soquet
-    from qualtran import Register as SourceRegister
-    from qualtran import Signature as SourceSignature
+    from qualtran._infra.composite_bloq import BloqBuilder
+    from qualtran._infra.data_types import CBit
+    from qualtran._infra.quantum_graph import LeftDangle, RightDangle, Soquet
+    from qualtran._infra.registers import Register as SourceRegister
+    from qualtran._infra.registers import Signature as SourceSignature
     from qualtran.simulation.classical_sim import ClassicalSimState
 
     source_register = SourceRegister("c", CBit(), shape=shape)

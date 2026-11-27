@@ -6,7 +6,12 @@ from collections import Counter
 from dataclasses import replace
 from itertools import product
 
-import numpy as np
+from tests._reference_dependencies import unavailable_reference
+
+try:
+    import numpy as np
+except ModuleNotFoundError as _reference_import_error:
+    unavailable_reference(_reference_import_error)
 import pytest
 import torch
 
@@ -28,6 +33,12 @@ from flagquantum.core.ir.program.registers import Register, RegisterSide
 from flagquantum.core.ir.program.signatures import Signature
 from flagquantum.dynamic import DynamicCircuit
 from flagquantum.runtime.dynamic.execution import run_dynamic
+from tests.unit.classical_source_callbacks import (
+    source_controlled_tensor,
+    source_discard_index,
+    source_discard_tensors,
+    source_measurement_tensors,
+)
 from tests.unit.measurement_checks import forced_branch
 from tests.unit.test_program_owned_measurement import measured_function
 from tests.unit.test_register_classical_parity import feedback_function
@@ -117,12 +128,14 @@ def test_discard_emits_no_gate_slot_or_quantum_retirement(count: int) -> None:
 def test_discard_all_complex_branches_match_original_tensors(
     count: int, polarity: bool
 ) -> None:
-    from qualtran import CBit, CtrlSpec
-    from qualtran.bloqs.basic_gates import MeasureZ, XGate, ZGate
+    from qualtran._infra.controlled import CtrlSpec
+    from qualtran._infra.data_types import CBit
     from qualtran.bloqs.basic_gates.discard import Discard
+    from qualtran.bloqs.basic_gates.x_basis import XGate
+    from qualtran.bloqs.basic_gates.z_basis import MeasureZ, ZGate
     from qualtran.bloqs.gf_arithmetic.gf2_multiplication import Parity
-    from qualtran.resource_counting import QECGatesCost, get_cost_value
-    from qualtran.simulation.tensor import DiscardInd
+    from qualtran.resource_counting._bloq_counts import QECGatesCost
+    from qualtran.resource_counting._costing import get_cost_value
 
     bound = bind_register_program(
         discard_feedback_program(count, polarity),
@@ -144,7 +157,7 @@ def test_discard_all_complex_branches_match_original_tensors(
     state /= state.norm()
     with_work = torch.zeros(1 << (count + 4), dtype=torch.complex128)
     with_work[::2] = state
-    copy, _ = MeasureZ().my_tensors({"q": "input"}, {"c": "output"})
+    copy, _ = source_measurement_tensors(MeasureZ(), {"q": "input"}, {"c": "output"})
     total = 0.0
     expected_density = np.zeros((8, 8), dtype=np.complex128)
     actual_density = np.zeros((8, 8), dtype=np.complex128)
@@ -159,11 +172,13 @@ def test_discard_all_complex_branches_match_original_tensors(
         _, parity = Parity(count).call_classically(x=np.array(history, dtype=np.uint8))
         for bit in (*history, int(parity)):
             assert Discard().on_classical_vals(c=bit) == {}
-        assert Discard().my_tensors({"c": "c"}, {}) == [DiscardInd(("c", 0))]
+        assert source_discard_tensors(Discard(), {"c": "c"}, {}) == [
+            source_discard_index("c", 0)
+        ]
         for op, wire in ((ZGate(), count), (XGate(), count + 1)):
-            matrix = op.controlled(
-                CtrlSpec(qdtypes=[CBit()], cvs=[int(polarity)])
-            )._tensor_data()
+            matrix = source_controlled_tensor(
+                op.controlled(CtrlSpec(qdtypes=[CBit()], cvs=[int(polarity)]))
+            )
             matrix = matrix[int(parity), :, int(parity), :]
             original = np.moveaxis(
                 np.tensordot(matrix, original, axes=([1], [wire])), 0, wire

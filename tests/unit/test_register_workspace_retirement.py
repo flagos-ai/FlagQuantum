@@ -4,7 +4,12 @@ from collections import Counter
 from itertools import product
 from typing import Any, Literal
 
-import numpy as np
+from tests._reference_dependencies import unavailable_reference
+
+try:
+    import numpy as np
+except ModuleNotFoundError as _reference_import_error:
+    unavailable_reference(_reference_import_error)
 import pytest
 import torch
 
@@ -19,6 +24,7 @@ from flagquantum.core.ir.program.register_types import (
 )
 from flagquantum.core.ir.program.registers import Register, RegisterSide
 from flagquantum.core.ir.program.signatures import Signature
+from tests.unit.classical_source_callbacks import source_measurement_tensors
 from tests.unit.measurement_checks import forced_branch
 from tests.unit.test_program_owned_measurement import measured_function
 from tests.unit.test_register_classical_discard import discard_feedback_program
@@ -118,8 +124,9 @@ def test_reset_reuses_input_wire_but_retirement_exhausts_pool(
 def test_all_branches_match_source_instrument_with_snapshot_feedback(
     count: int, polarity: bool, policy: Literal["retire", "reset"]
 ) -> None:
-    from qualtran.bloqs.basic_gates import MeasureZ
-    from qualtran.resource_counting import QECGatesCost, get_cost_value
+    from qualtran.bloqs.basic_gates.z_basis import MeasureZ
+    from qualtran.resource_counting._bloq_counts import QECGatesCost
+    from qualtran.resource_counting._costing import get_cost_value
 
     record = discard_feedback_program(count, polarity)
     inputs = tuple((i,) for i in range(count + 3))
@@ -152,7 +159,7 @@ def test_all_branches_match_source_instrument_with_snapshot_feedback(
     )
     model = get_cost_value(MeasureZ(), QECGatesCost())
     assert model.measurement == 1 and model.total_t_count() == 0
-    copy, _ = MeasureZ().my_tensors({"q": "q"}, {"c": "c"})
+    copy, _ = source_measurement_tensors(MeasureZ(), {"q": "q"}, {"c": "c"})
     state = torch.zeros(2 ** (count + 4), dtype=torch.complex128)
     state[::2] = torch.randn(
         2 ** (count + 3),

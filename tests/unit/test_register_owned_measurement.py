@@ -6,7 +6,12 @@ from collections import Counter
 from dataclasses import replace
 from itertools import product
 
-import numpy as np
+from tests._reference_dependencies import unavailable_reference
+
+try:
+    import numpy as np
+except ModuleNotFoundError as _reference_import_error:
+    unavailable_reference(_reference_import_error)
 import pytest
 import torch
 
@@ -27,6 +32,7 @@ from flagquantum.core.ir.program.register_types import (
 )
 from flagquantum.core.ir.program.registers import Register, RegisterSide
 from flagquantum.core.ir.program.signatures import Signature
+from tests.unit.classical_source_callbacks import source_measurement_tensors
 from tests.unit.measurement_checks import forced_branch
 from tests.unit.test_program_classical_registers import identity
 from tests.unit.test_program_owned_measurement import measured_function
@@ -78,12 +84,15 @@ def test_measurement_slots_survive_nested_calls_and_reordered_array_outputs() ->
 
 @pytest.mark.ftqc_reference
 def test_all_complex_branches_match_original_tensor_instrument_and_work_zero() -> None:
-    from qualtran import BloqBuilder, CBit, QBit, Side
-    from qualtran import Register as SourceRegister
-    from qualtran import Signature as SourceSignature
-    from qualtran.bloqs.basic_gates import MeasureZ
+    from qualtran._infra.composite_bloq import BloqBuilder
+    from qualtran._infra.data_types import CBit, QBit
+    from qualtran._infra.registers import Register as SourceRegister
+    from qualtran._infra.registers import Side
+    from qualtran._infra.registers import Signature as SourceSignature
+    from qualtran.bloqs.basic_gates.z_basis import MeasureZ
     from qualtran.bloqs.bookkeeping.cast import Cast
-    from qualtran.resource_counting import QECGatesCost, get_cost_value
+    from qualtran.resource_counting._bloq_counts import QECGatesCost
+    from qualtran.resource_counting._costing import get_cost_value
 
     original, inputs = BloqBuilder.from_signature(
         SourceSignature(
@@ -94,6 +103,7 @@ def test_all_complex_branches_match_original_tensor_instrument_and_work_zero() -
         )
     )
     returned = []
+    assert isinstance(inputs["q"], np.ndarray)
     for q in inputs["q"]:
         c = original.add(MeasureZ(), q=q)
         for _ in range(2):
@@ -122,7 +132,7 @@ def test_all_complex_branches_match_original_tensor_instrument_and_work_zero() -
     state /= state.norm()
     with_work = torch.zeros(16, dtype=torch.complex128)
     with_work[::2] = state
-    copy, _ = MeasureZ().my_tensors({"q": "input"}, {"c": "output"})
+    copy, _ = source_measurement_tensors(MeasureZ(), {"q": "input"}, {"c": "output"})
     total_probability = 0.0
     for history in product((0, 1), repeat=2):
         outcomes = {gate.wires[0]: b for gate, b in zip(gates, history, strict=True)}

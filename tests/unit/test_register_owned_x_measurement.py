@@ -4,13 +4,19 @@ from __future__ import annotations
 
 from collections import Counter
 
-import numpy as np
+from tests._reference_dependencies import unavailable_reference
+
+try:
+    import numpy as np
+except ModuleNotFoundError as _reference_import_error:
+    unavailable_reference(_reference_import_error)
 import pytest
 import torch
 
 from flagquantum.compiler.registers.component_measurement import measure_x_word_function
 from flagquantum.compiler.registers.register_binding import bind_register_program
 from flagquantum.core.ir.program import ProgramRecord
+from tests.unit.classical_source_callbacks import source_measurement_tensors
 from tests.unit.measurement_checks import forced_branch
 
 pytestmark = pytest.mark.unit
@@ -19,8 +25,9 @@ pytestmark = pytest.mark.unit
 @pytest.mark.ftqc_reference
 @pytest.mark.parametrize("wire", [0, 1])
 def test_owned_x_measurement_preserves_original_joint_branch_density(wire: int) -> None:
-    from qualtran.bloqs.basic_gates import MeasureX
-    from qualtran.resource_counting import QECGatesCost, get_cost_value
+    from qualtran.bloqs.basic_gates.x_basis import MeasureX
+    from qualtran.resource_counting._bloq_counts import QECGatesCost
+    from qualtran.resource_counting._costing import get_cost_value
 
     bound = bind_register_program(
         ProgramRecord((measure_x_word_function("main"),)), ((wire,),), clean=(2,)
@@ -33,7 +40,7 @@ def test_owned_x_measurement_preserves_original_joint_branch_density(wire: int) 
         4, dtype=torch.complex128, generator=torch.Generator().manual_seed(108430)
     )
     state /= state.norm()
-    tensor, _ = MeasureX().my_tensors({"q": "q"}, {"c": "c"})
+    tensor, _ = source_measurement_tensors(MeasureX(), {"q": "q"}, {"c": "c"})
     h = np.array([[1, 1], [1, -1]]) / np.sqrt(2)
     for outcome in (0, 1):
         branch = (

@@ -4,7 +4,12 @@ from collections import Counter
 from dataclasses import replace
 from typing import SupportsInt
 
-import numpy as np
+from tests._reference_dependencies import unavailable_reference
+
+try:
+    import numpy as np
+except ModuleNotFoundError as _reference_import_error:
+    unavailable_reference(_reference_import_error)
 import pytest
 import sympy
 import torch
@@ -16,6 +21,7 @@ from flagquantum.core.ir.program.signatures import Signature
 from flagquantum.simulation.binary_field_encoding import resolve_binary_field_encoding
 from flagquantum.simulation.component_classical_state import ComponentClassicalState
 from flagquantum.simulation.finite_field_encoding import FiniteFieldEncoding
+from tests.unit.register_source_graph import source_line_qubit_index
 from tests.unit.test_classical_field_registers import field_add_function
 
 pytestmark = [pytest.mark.unit, pytest.mark.ftqc_reference]
@@ -26,7 +32,7 @@ pytestmark = [pytest.mark.unit, pytest.mark.ftqc_reference]
 def test_admitted_projection_restores_source_class_and_complete_scalar_codecs(
     width: int, polynomial: str
 ) -> None:
-    from qualtran import QGF
+    from qualtran._infra.data_types import QGF
 
     original = (
         FiniteFieldEncoding(2, width)
@@ -67,7 +73,7 @@ def test_coefficient_field_and_ignored_target_polynomial_are_not_collapsed(
     characteristic: int, degree: int, primitive: int | None, modulus: int | None
 ) -> None:
     import galois
-    from qualtran import QGF
+    from qualtran._infra.data_types import QGF
 
     coefficient = galois.GF(
         characteristic,
@@ -92,7 +98,7 @@ def test_nondefault_binary_modulus_preserves_source_multiplication(
     modulus: int,
 ) -> None:
     import galois
-    from qualtran import QGF
+    from qualtran._infra.data_types import QGF
 
     polynomial = galois.Poly.Int(modulus)
     field = FiniteFieldEncoding(2, 3, polynomial)
@@ -256,13 +262,17 @@ def test_integer_graph_does_not_request_a_field_codec(
 def test_automatic_field_graph_matches_source_full_matrix_gate_stream_and_append(
     width: int, polynomial: str
 ) -> None:
-    import cirq
+    try:
+        import cirq
+    except ModuleNotFoundError as _reference_import_error:
+        unavailable_reference(_reference_import_error)
     import galois
-    from qualtran import QGF
-    from qualtran.bloqs.basic_gates import CNOT
+    from qualtran._infra.data_types import QGF
+    from qualtran.bloqs.basic_gates.cnot import CNOT
     from qualtran.bloqs.gf_arithmetic.gf2_addition import GF2Addition
-    from qualtran.cirq_interop import BloqAsCirqGate
-    from qualtran.resource_counting import QECGatesCost, get_cost_value
+    from qualtran.cirq_interop._bloq_to_cirq import BloqAsCirqGate
+    from qualtran.resource_counting._bloq_counts import QECGatesCost
+    from qualtran.resource_counting._costing import get_cost_value
     from qualtran.simulation.classical_sim import (
         ClassicalSimState,
         get_classical_truth_table,
@@ -334,7 +344,9 @@ def test_automatic_field_graph_matches_source_full_matrix_gate_stream_and_append
     expected = []
     for gate in source_circuit.all_operations():
         assert gate.gate in {cirq.CNOT, BloqAsCirqGate(CNOT())}
-        expected.append(("cx", tuple(qubit.x for qubit in gate.qubits)))
+        expected.append(
+            ("cx", tuple(source_line_qubit_index(qubit) for qubit in gate.qubits))
+        )
     assert [(gate.name, gate.wires) for gate in bound.circuit.instructions] == expected
     assert Counter(gate.name for gate in bound.circuit.instructions) == {"cx": width}
     assert get_cost_value(source, QECGatesCost()).clifford == width

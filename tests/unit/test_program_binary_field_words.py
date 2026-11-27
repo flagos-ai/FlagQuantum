@@ -15,6 +15,14 @@ from flagquantum.compiler.registers.register_programs import lower_register_prog
 from flagquantum.core.ir.program import ProgramRecord, verify_program_record
 from flagquantum.core.ir.program.register_verifier import executable_register_width
 from flagquantum.core.ir.program.registers import RegisterType
+from tests._reference_dependencies import unavailable_reference
+
+try:
+    import numpy as numpy
+except ModuleNotFoundError as _reference_import_error:
+    unavailable_reference(_reference_import_error)
+
+from tests.unit.classical_source_callbacks import source_classical_values
 
 pytestmark = pytest.mark.unit
 
@@ -102,9 +110,13 @@ def test_binary_field_execution_rejects_unresolved_or_unsupported_profile(
 @pytest.mark.ftqc_reference
 @pytest.mark.parametrize("width", [1, 2, 3, 8])
 def test_original_binary_field_projection_and_split_join(width: int) -> None:
-    import numpy as np
-    from qualtran import QGF
-    from qualtran.bloqs.bookkeeping import Join, Split
+    try:
+        import numpy as np
+    except ModuleNotFoundError as _reference_import_error:
+        unavailable_reference(_reference_import_error)
+    from qualtran._infra.data_types import QGF
+    from qualtran.bloqs.bookkeeping.join import Join
+    from qualtran.bloqs.bookkeeping.split import Split
 
     from flagquantum.simulation.finite_field_encoding import FiniteFieldEncoding
 
@@ -116,5 +128,8 @@ def test_original_binary_field_projection_and_split_join(width: int) -> None:
     for value in range(1 << width):
         bits = Split(source).on_classical_vals(reg=source.gf_type(value))["reg"]
         np.testing.assert_array_equal(bits, source.to_bits(source.gf_type(value)))
-        assert int(Join(source).on_classical_vals(reg=bits)["reg"]) == value
+        assert isinstance(bits, np.ndarray)
+        joined = source_classical_values(Join(source), reg=bits)["reg"]
+        assert isinstance(joined, np.ndarray)
+        assert int(joined) == value
         assert field.to_bits(field.gf_type(value)) == list(bits)

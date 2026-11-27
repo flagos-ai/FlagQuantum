@@ -4,7 +4,12 @@ from __future__ import annotations
 
 from itertools import product
 
-import numpy as np
+from tests._reference_dependencies import unavailable_reference
+
+try:
+    import numpy as np
+except ModuleNotFoundError as _reference_import_error:
+    unavailable_reference(_reference_import_error)
 import pytest
 
 from flagquantum.core.ir.program.register_types import classical_bit_type
@@ -13,7 +18,9 @@ pytestmark = [pytest.mark.unit, pytest.mark.ftqc_reference]
 
 
 def test_original_cbit_parity_preserves_owned_elements_and_big_endian_values() -> None:
-    from qualtran import BloqBuilder, CBit, Register, Side, Signature
+    from qualtran._infra.composite_bloq import BloqBuilder
+    from qualtran._infra.data_types import CBit
+    from qualtran._infra.registers import Register, Side, Signature
     from qualtran.bloqs.gf_arithmetic.gf2_multiplication import Parity
 
     signature = Signature(
@@ -36,8 +43,13 @@ def test_original_cbit_parity_preserves_owned_elements_and_big_endian_values() -
 
 
 def test_original_cbit_output_is_not_cirq_exportable() -> None:
-    import cirq
-    from qualtran import BloqBuilder, CBit, Register, Side, Signature
+    try:
+        import cirq
+    except ModuleNotFoundError as _reference_import_error:
+        unavailable_reference(_reference_import_error)
+    from qualtran._infra.composite_bloq import BloqBuilder
+    from qualtran._infra.data_types import CBit
+    from qualtran._infra.registers import Register, Side, Signature
     from qualtran.bloqs.gf_arithmetic.gf2_multiplication import Parity
 
     signature = Signature(
@@ -56,9 +68,13 @@ def test_original_cbit_output_is_not_cirq_exportable() -> None:
 
 
 def test_original_measurement_creates_classical_right_port() -> None:
-    from qualtran import BloqBuilder, CBit, QBit, Register, Side, Signature
-    from qualtran.bloqs.basic_gates import MeasureZ
-    from qualtran.resource_counting import QECGatesCost, QubitCount, get_cost_value
+    from qualtran._infra.composite_bloq import BloqBuilder
+    from qualtran._infra.data_types import CBit, QBit
+    from qualtran._infra.registers import Register, Side, Signature
+    from qualtran.bloqs.basic_gates.z_basis import MeasureZ
+    from qualtran.resource_counting._bloq_counts import QECGatesCost
+    from qualtran.resource_counting._costing import get_cost_value
+    from qualtran.resource_counting._qubit_counts import QubitCount
 
     signature = Signature(
         [

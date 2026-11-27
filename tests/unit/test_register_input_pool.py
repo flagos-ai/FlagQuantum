@@ -7,7 +7,12 @@ from dataclasses import replace
 from itertools import product
 from typing import Any
 
-import numpy as np
+from tests._reference_dependencies import unavailable_reference
+
+try:
+    import numpy as np
+except ModuleNotFoundError as _reference_import_error:
+    unavailable_reference(_reference_import_error)
 import pytest
 import torch
 
@@ -180,12 +185,19 @@ def test_mixed_adopted_and_allocated_words_return_to_origin_pools() -> None:
 def test_released_input_restores_complex_joint_state_and_exact_resource_counts(
     dirty: bool, free_dirty: bool
 ) -> None:
-    import cirq
-    from qualtran import BloqBuilder, QAny, Side
-    from qualtran import Register as SourceRegister
-    from qualtran import Signature as SourceSignature
-    from qualtran.bloqs.basic_gates import CNOT
-    from qualtran.resource_counting import QECGatesCost, QubitCount, get_cost_value
+    try:
+        import cirq
+    except ModuleNotFoundError as _reference_import_error:
+        unavailable_reference(_reference_import_error)
+    from qualtran._infra.composite_bloq import BloqBuilder
+    from qualtran._infra.data_types import QAny
+    from qualtran._infra.registers import Register as SourceRegister
+    from qualtran._infra.registers import Side
+    from qualtran._infra.registers import Signature as SourceSignature
+    from qualtran.bloqs.basic_gates.cnot import CNOT
+    from qualtran.resource_counting._bloq_counts import QECGatesCost
+    from qualtran.resource_counting._costing import get_cost_value
+    from qualtran.resource_counting._qubit_counts import QubitCount
 
     import flagquantum as fq
     from examples.algorithms.binary_field_arithmetic import FieldOperation
@@ -289,10 +301,12 @@ def test_released_input_restores_complex_joint_state_and_exact_resource_counts(
 def test_adopted_input_release_after_measured_and_matches_both_source_branches(
     dirty: bool,
 ) -> None:
-    from qualtran import BloqBuilder
-    from qualtran import Signature as SourceSignature
+    from qualtran._infra.composite_bloq import BloqBuilder
+    from qualtran._infra.registers import Signature as SourceSignature
     from qualtran.bloqs.mcmt.and_bloq import And
-    from qualtran.resource_counting import QECGatesCost, QubitCount, get_cost_value
+    from qualtran.resource_counting._bloq_counts import QECGatesCost
+    from qualtran.resource_counting._costing import get_cost_value
+    from qualtran.resource_counting._qubit_counts import QubitCount
 
     from flagquantum.compiler.registers.primitives.and_compute import (
         and_compute_ir,

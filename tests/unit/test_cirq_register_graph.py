@@ -5,6 +5,13 @@ from collections import Counter
 from itertools import product
 from typing import Any
 
+from tests._reference_dependencies import unavailable_reference
+
+try:
+    import cirq
+except ModuleNotFoundError as error:
+    unavailable_reference(error)
+
 import pytest
 import torch
 
@@ -264,7 +271,6 @@ def test_live_leaf_without_a_physical_protocol_is_rejected() -> None:
 
 
 def test_distinct_live_phases_do_not_require_unique_constructor_wires() -> None:
-    import cirq
     from qualtran._infra.bloq import Bloq
     from qualtran._infra.composite_bloq import BloqBuilder
     from qualtran._infra.registers import Signature
