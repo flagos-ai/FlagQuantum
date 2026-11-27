@@ -4,7 +4,12 @@
 
 """Retain canonical field-child order while reversing polynomial calls."""
 
-import numpy as np
+from tests._reference_dependencies import unavailable_reference
+
+try:
+    import numpy as np
+except ModuleNotFoundError as _reference_import_error:
+    unavailable_reference(_reference_import_error)
 import pytest
 
 from flagquantum.compiler.registers.finite_field.field_polynomial_addition import (
@@ -14,6 +19,7 @@ from flagquantum.compiler.registers.finite_field.field_polynomial_addition impor
 from flagquantum.compiler.registers.finite_field.field_polynomial_layout import (
     FieldPolynomialLayout,
 )
+from tests.unit.register_source_graph import source_line_qubit_index
 
 pytestmark = [pytest.mark.unit, pytest.mark.ftqc_reference]
 
@@ -23,9 +29,12 @@ pytestmark = [pytest.mark.unit, pytest.mark.ftqc_reference]
 def test_literal_generic_adjoint_matches_unchanged_source(
     constant: bool, degree: int, width: int
 ) -> None:
-    import cirq
+    try:
+        import cirq
+    except ModuleNotFoundError as _reference_import_error:
+        unavailable_reference(_reference_import_error)
     import galois
-    from qualtran import QGF, QGFPoly
+    from qualtran._infra.data_types import QGF, QGFPoly
     from qualtran.bloqs.gf_poly_arithmetic.gf2_poly_add import GF2PolyAdd
     from qualtran.bloqs.gf_poly_arithmetic.gf2_poly_add_k import GF2PolyAddK
 
@@ -52,10 +61,11 @@ def test_literal_generic_adjoint_matches_unchanged_source(
         original.adjoint()
         .decompose_bloq()
         .flatten()
-        .to_cirq_circuit_and_quregs(**registers)
+        .to_cirq_circuit_and_quregs(qubit_manager=None, **registers)
     )
     assert [
-        tuple(q.x for q in operation.qubits) for operation in inverse.all_operations()
+        tuple(source_line_qubit_index(q) for q in operation.qubits)
+        for operation in inverse.all_operations()
     ] == [gate.wires for gate in gates]
     for name, qubits in registers.items():
         np.testing.assert_array_equal(outputs[name], qubits)
