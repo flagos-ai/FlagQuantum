@@ -275,3 +275,44 @@ New published-head acceptance must verify all actual selected node inventories,
 root execution reports, source bindings and whole-job durations. Neither the
 old run's successful shards nor this replay certify the candidate as all green
 or within ten minutes.
+
+
+## Runtime recipient qualification and live capacity
+
+After coverage planning completed in run `46006910591`, the active-job count rose
+from approximately 35 to 208, including 188 coverage partitions. The pre-plan idle
+period was a dependency boundary. Later Runtime work still queued behind the
+A800-only route while ordinary CPU slots became idle.
+
+Read-only qualification runs `46010078828` and `46010700562` at exact source
+`f42066f001fb1f6aaabd7a18ff33e03a1701cddd` verify all four existing locked profiles
+on every one of 126 online BW1100 registrations. Eight representative BW slots
+passed first, followed by all remaining 118 exact selectors. The four MC550
+representatives failed on missing core-py3.10; their later profiles were not
+executed or inferred to pass. Offline and unqualified slots are excluded from
+new Runtime recipients. The [qualification record](ci-cpu-cache-qualification.json)
+retains each selector, actual runner, run/job IDs, source workflow and image-lock
+binding. No image is downloaded/imported and no runner configuration is changed.
+
+The first 32 of the existing 128 Runtime partitions retain the A800 pool. Replay
+of the original 14,260-node inventory confirms that these include all thirty
+actual sole-heavy selections. The remaining 96 receive distinct qualified BW
+selectors, balanced twelve per each of eight hosts. Existing admission measures
+their actual four-CPU service budgets; the collector and actual execution reports
+must record those real resources rather than assuming twelve workers. LPT,
+selection, count, marker semantics, finite safety limits and scientific workloads
+are unchanged. Forks retain hosted execution with eight bounded groups. This
+expands placement capacity; actual candidate whole-job timing remains required.
+
+The same original run contains twelve diagnosed coverage failures after all their
+tests passed: the runner timed out fetching the official upload Action archive
+before artifact upload. Original logs and reports are retained as failed evidence.
+This is distinct from a test failure and cannot be reclassified as green.
+
+The self-hosted security job spent approximately nineteen minutes preparing
+source and installing dependencies, exhausting its twenty-minute job limit about
+one minute after starting audit. Run that fresh, network-dependent job on hosted
+Ubuntu in bucket 2, preserving the same complete requirements snapshot, strict
+no-resolver audit, sixty-second request timeout, eight-minute audit step, Bandit,
+SBOM checks and twenty-minute total safety budget. This correction changes its
+execution placement rather than weakening the audit or increasing its timeout.

@@ -35,6 +35,11 @@ PREINSTALLED_A800_CPU_ROUTE = A800_CPU_ROUTE.replace(
     '"flagquantum-cpu"]', '"flagquantum-cpu","flagquantum-a800-cpu"]'
 )
 
+QUALIFIED_RUNTIME_CPU_ROUTE = A800_CPU_ROUTE.replace(
+    '\'["self-hosted","linux","x64","flagquantum-cpu"]\'',
+    'format(\'["self-hosted","linux","x64","flagquantum-cpu","{0}"]\', matrix.runner)',
+)
+
 PREWARM_CPU_LABELS = [
     "self-hosted",
     "linux",
@@ -217,6 +222,7 @@ def _allows_untrusted_code(job: dict[str, object], reaching: frozenset[str]) -> 
             MC550_CPU_ROUTE,
             COVERAGE_CPU_ROUTE,
             HEAVY_COVERAGE_CPU_ROUTE,
+            QUALIFIED_RUNTIME_CPU_ROUTE,
         )
     )
 
@@ -440,6 +446,7 @@ def test_trigger_parsing_reads_both_ways_a_workflow_can_spell_on(
         PREINSTALLED_A800_CPU_ROUTE,
         COVERAGE_CPU_ROUTE,
         HEAVY_COVERAGE_CPU_ROUTE,
+        QUALIFIED_RUNTIME_CPU_ROUTE,
     ],
 )
 def test_cpu_route_rejects_missing_guards_and_other_untrusted_events(
@@ -466,7 +473,11 @@ def test_cpu_route_rejects_missing_guards_and_other_untrusted_events(
 def test_dedicated_cpu_lanes_keep_fork_code_on_hosted_runners() -> None:
     jobs = _jobs(WORKFLOWS / "ci.yml")
     for name in ("cpu-core", "cpu-core-3-12-tests", "cpu-runtime"):
-        assert jobs[name]["runs-on"] == PREINSTALLED_A800_CPU_ROUTE
+        assert jobs[name]["runs-on"] == (
+            QUALIFIED_RUNTIME_CPU_ROUTE
+            if name == "cpu-runtime"
+            else PREINSTALLED_A800_CPU_ROUTE
+        )
         assert _is_self_hosted(jobs[name])
         assert not _allows_untrusted_code(jobs[name], frozenset({"pull_request"}))
     coverage = jobs["coverage-shard"]

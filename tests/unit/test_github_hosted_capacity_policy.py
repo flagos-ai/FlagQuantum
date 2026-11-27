@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import hashlib
 import json
 import os
 import re
@@ -345,12 +346,39 @@ def test_python_312_required_check_aggregates_parallel_suites() -> None:
 
 def test_expensive_cpu_runtime_proofs_run_once_on_the_newest_python() -> None:
     job = _document("ci.yml")["jobs"]["cpu-runtime"]
-    assert job["strategy"] == {
-        "fail-fast": False,
-        "matrix": {
-            "include": [{"shard": i, "hosted-bucket": i % 8} for i in range(128)]
-        },
+    assert job["strategy"]["fail-fast"] is False
+    rows = job["strategy"]["matrix"]["include"]
+    assert [row["shard"] for row in rows] == list(range(128))
+    assert all(row["hosted-bucket"] == row["shard"] % 8 for row in rows)
+    assert all(row["runner"] == "flagquantum-a800-cpu" for row in rows[:32])
+    recipients = [row["runner"] for row in rows[32:]]
+    assert len(recipients) == len(set(recipients)) == 96
+    record = json.loads(
+        (
+            ROOT / "docs/development/migration/ci-cpu-cache-qualification.json"
+        ).read_text()
+    )
+    qualified = {row["selector"] for row in record["qualified_slots"]}
+    assert set(recipients) <= qualified
+    assert all(
+        re.fullmatch(r"fq-bw1100-\d+-cpu\d+-validation", name) for name in recipients
+    )
+    assert not any("mc550" in name for name in recipients)
+    assert set(record["profiles"]) == {
+        "core-py3.10",
+        "core-py3.11",
+        "core-py3.12",
+        "coverage-py3.12",
     }
+    lock = (ROOT / "docker/ci/images.lock").read_bytes()
+    assert hashlib.sha1(
+        b"blob " + str(len(lock)).encode() + b"\0" + lock
+    ).hexdigest() == (record["image_lock_git_blob"])
+    assert all(
+        row["run"] in {46010078828, 46010700562} and row["job"] > 0
+        for row in record["qualified_slots"]
+    )
+
     budget = next(
         step
         for step in _steps("ci.yml", "cpu-runtime")

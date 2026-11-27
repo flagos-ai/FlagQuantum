@@ -979,9 +979,12 @@ updated revision remain merge prerequisites until their evidence is recorded.
 ## CPU runner routing and reliability
 
 Trusted same-repository PRs run distributed and coverage suites on the
-self-hosted CPU pool. Core compatibility, Python 3.12 unit tests, and runtime
-suites use the 16 A800 CPU slots with qualified locked image caches. Each
-matrix leg has a run-specific concurrency group. Source preparation uses the
+self-hosted CPU pool. Core compatibility and Python 3.12 unit tests retain the
+existing A800 CPU pool. Runtime keeps its first 32 heavier LPT partitions on
+that pool and assigns the remaining 96 to distinct, positively qualified BW1100
+registrations, twelve per host. The recorded 126 successful slot qualifications
+bind all four locked profiles; newly returning or unqualified slots are not
+added by a broad pool label. Each matrix leg has a run-specific concurrency group. Source preparation uses the
 generic CPU pool. Pre-commit and fork PRs use GitHub-hosted runners.
 
 The images in `docker/ci/images.lock` pin both the registry manifest digest and
@@ -1205,8 +1208,8 @@ gh workflow run prewarm-ci-cpu.yml --ref <verified-branch> \
 ```
 
 Use the unique CPU labels from the current runner inventory and omit offline
-registrations. Qualification is bounded to sixteen simultaneous probes. MC550
-host labels select a representative slot; they do not identify a specific
+registrations. Selectors keep independent concurrency groups without a global
+self-hosted matrix cap. MC550 host labels select a representative slot; they do not identify a specific
 registration. A host-wide success does not certify another user or daemon's cache; qualify each registration that will receive the new profile. The probe
 retains the same four locked images, digest checks, dependency and CPU-only
 checks, core optional-framework absence, `--pull never` and `--network none`.
@@ -1216,3 +1219,32 @@ administrator provisioning process. Route changes require positive qualification
 of their actual recipient slots; they are separate from this read-only probe.
 The trusted same-repository guard and hosted PR fallback remain in effect for
 test workflows, and fork PRs cannot reach qualification on a self-hosted runner.
+
+
+### Avoiding idle Runtime capacity and audit setup exhaustion
+
+Coverage has a collection dependency: its 256 matrix jobs are created only after
+the complete source-bound plan is published. A measured snapshot grew from about
+35 active jobs to 208 after this dependency completed; 35 is not a repository-wide
+self-hosted concurrency limit. Runtime previously queued all 128 partitions on
+sixteen A800 registrations while the larger general CPU pool became idle again.
+
+The [per-registration cache record](migration/ci-cpu-cache-qualification.json)
+binds successful read-only probes to their workflow source and the current image
+lock. Runtime's 96 additional recipients are selected only from that record;
+o runner labels, services, CPU quotas or memory quotas change. Replay of the
+original 14,260-case inventory with the existing weights keeps all thirty actual
+sole-heavy Runtime selections inside the reserved first 32 A800 partitions.
+Shard count, LPT mapping, original marker selection, once-only rank probes and
+actual resource admission remain unchanged. The recorded ordinary serial work
+estimate is at most 267.4877 seconds; this is scheduling evidence, not a measured
+job-time acceptance claim. Future timing changes require the same observed checks.
+
+The security job runs on a hosted Ubuntu runner in hosted concurrency bucket 2.
+The previous self-hosted run spent approximately nineteen minutes restoring
+source and installing a fresh audit environment, then exhausted the existing
+twenty-minute job limit about one minute after starting `pip-audit`. Moving that
+network-bound setup retains the fresh environment, complete installed-dependency
+snapshot, strict no-resolver audit, request timeout, eight-minute audit-step limit,
+twenty-minute job budget, Bandit and SBOM validation. No dependency, vulnerability,
+scientific case or failed outcome is filtered out.
