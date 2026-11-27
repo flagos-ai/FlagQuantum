@@ -17,7 +17,14 @@ from dataclasses import dataclass
 from typing import Literal
 
 from flagquantum.core.operators.fermion import FermionOperator
-from flagquantum.core.operators.pauli import PauliOperator, count, pauli
+from flagquantum.core.operators.pauli import (
+    Factors,
+    PauliOperator,
+    PauliTerm,
+    count,
+    pauli,
+    scalar,
+)
 
 Encoding = Literal["jordan_wigner", "parity", "bravyi_kitaev"]
 ENCODINGS: tuple[Encoding, ...] = ("jordan_wigner", "parity", "bravyi_kitaev")
@@ -133,7 +140,9 @@ def encode_fermion(
     width = count(n_modes, "n_modes", minimum=1)
     if encoding not in ENCODINGS:
         raise ValueError(f"unsupported encoding {encoding!r}")
-    result = PauliOperator()
+    # Rebuilding the whole sum per monomial is quadratic. Preserve canonical
+    # arithmetic, including its leading zero and finite check, for each update.
+    merged: dict[Factors, complex] = {}
     for term in operator.terms:
         image = pauli(term.coefficient)
         for modes, creating in ((term.creations, True), (term.annihilations, False)):
@@ -141,5 +150,13 @@ def encode_fermion(
                 if mode >= width:
                     raise ValueError("fermionic mode outside the declared space")
                 image = image * _ladder(mode, creating, width, encoding)
-        result = result + image
+        for item in image.terms:
+            value = scalar((0j + merged.get(item.factors, 0j)) + item.coefficient)
+            if value == 0:
+                merged.pop(item.factors, None)
+            else:
+                merged[item.factors] = value
+    result = PauliOperator(
+        tuple(PauliTerm(value, factors) for factors, value in sorted(merged.items()))
+    )
     return EncodedOperator(result, encoding, width)

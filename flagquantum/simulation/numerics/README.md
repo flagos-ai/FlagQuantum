@@ -37,3 +37,11 @@ in Runtime.
 `probabilities.py` also owns raw Statevector probabilities and ordered dense Z
 expectation values used by existing JAX result adapters. It does not reconstruct
 rank state, normalize the input or admit optional Runtime dependencies.
+
+## JAX gate preparation
+
+`jax.py` owns successive gate composition and operator batch materialization
+used by Runtime MPS lowering. These lazy JAX primitives preserve multiplication
+order, dtype, matmul precision and autodifferentiation. Circuit grouping and
+fast-path admission remain in Runtime. Run
+`tests/unit/test_jax_mps_preparation_ownership.py` with optional JAX installed.

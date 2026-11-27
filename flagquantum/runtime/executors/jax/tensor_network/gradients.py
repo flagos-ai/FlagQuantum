@@ -2,11 +2,11 @@
 
 from __future__ import annotations
 
-from collections.abc import Callable, Mapping, Sequence
+from collections.abc import Callable, Sequence
 from typing import Any
 
 from flagquantum.runtime.distributed import placement as _placement
-from flagquantum.simulation.numerics.jax import _jax_pauli_matrix
+from flagquantum.simulation.tensor_network.jax import kernels as _tn_kernels
 from flagquantum.simulation.tensor_network.jax.kernels import (
     jax_tensor_network_loss_from_output as _jax_tn_loss_from_output,
 )
@@ -14,7 +14,6 @@ from flagquantum.simulation.tensor_network.jax.models import JAXTensorNetworkNod
 
 from ....distributed.backend_policy import DistributedBackendPolicy
 from ..array_conversions import (
-    _jax_nodes_from_torch_nodes,
     _jax_parameter_array_from_input,
     _torch_parameters_for_static_build,
 )
@@ -34,123 +33,12 @@ from .contraction import (
     _jax_contract_tensor_slices_by_backend,
     _pauli_ops_from_term,
 )
-from .execution import _resolve_tn_compute_backend
+from .execution import _jax_nodes_from_torch_nodes, _resolve_tn_compute_backend
 from .planning import _tn_tasks
 from .records import (
     JAXSlicedTensorNetworkGradientResult,
     JAXSlicedTensorNetworkParameterGradientResult,
 )
-
-
-def _jax_parameterized_tn_state_nodes(
-    circuit: Any,
-    n_qubits: int,
-    *,
-    bsz: int,
-    complex_bytes: int,
-    batch_label: int,
-    start_label: int,
-    conjugate: bool,
-) -> tuple[list[JAXTensorNetworkNode], list[int], int]:
-    _, jnp = _require_jax()
-    from flagquantum.simulation.numerics.jax import _jax_instruction_matrix
-
-    next_label = int(start_label)
-    current_labels: list[int] = []
-    nodes: list[JAXTensorNetworkNode] = []
-    zero = jnp.zeros((int(bsz), 2), dtype=_jax_complex_dtype(complex_bytes))
-    zero = zero.at[:, 0].set(1.0 + 0.0j)
-    for qubit in range(int(n_qubits)):
-        label = next_label
-        next_label += 1
-        current_labels.append(label)
-        nodes.append(
-            JAXTensorNetworkNode(
-                tensor=zero, labels=(int(batch_label), label), name=f"init_{qubit}"
-            )
-        )
-    for index, instruction in enumerate(circuit.to_ir()):
-        if instruction.metadata.get("is_channel"):
-            raise NotImplementedError(
-                "JAX parameterized sliced TN currently supports unitary circuit instructions."
-            )
-        qubits = tuple(int(qubit) for qubit in instruction.wires)
-        matrix = _jax_instruction_matrix(instruction)
-        if conjugate:
-            matrix = jnp.conj(matrix)
-        if len(tuple(matrix.shape)) != 2:
-            raise NotImplementedError(
-                "JAX parameterized sliced TN expects unbatched gate matrices."
-            )
-        tensor = matrix.reshape((2,) * (2 * len(qubits)))
-        input_labels = tuple(current_labels[qubit] for qubit in qubits)
-        output_labels = tuple(range(next_label, next_label + len(qubits)))
-        next_label += len(qubits)
-        for qubit, label in zip(qubits, output_labels, strict=True):
-            current_labels[qubit] = label
-        nodes.append(
-            JAXTensorNetworkNode(
-                tensor=tensor,
-                labels=output_labels + input_labels,
-                name=f"{index}:{instruction.name}",
-                metadata={"qubits": qubits},
-            )
-        )
-    return nodes, current_labels, next_label
-
-
-def _jax_parameterized_tn_expectation_nodes(
-    circuit: Any,
-    n_qubits: int,
-    *,
-    bsz: int,
-    complex_bytes: int,
-    ops: Mapping[int, str],
-) -> tuple[tuple[JAXTensorNetworkNode, ...], tuple[int, ...]]:
-    _, jnp = _require_jax()
-    ket_nodes, ket_outputs, next_label = _jax_parameterized_tn_state_nodes(
-        circuit,
-        n_qubits,
-        bsz=bsz,
-        complex_bytes=complex_bytes,
-        batch_label=0,
-        start_label=1,
-        conjugate=False,
-    )
-    max_label = max((label for node in ket_nodes for label in node.labels), default=0)
-    offset = max(int(next_label), int(max_label) + 1)
-    bra_nodes, bra_outputs, _ = _jax_parameterized_tn_state_nodes(
-        circuit,
-        n_qubits,
-        bsz=bsz,
-        complex_bytes=complex_bytes,
-        batch_label=offset,
-        start_label=offset + 1,
-        conjugate=True,
-    )
-    nodes: list[JAXTensorNetworkNode] = list(ket_nodes) + list(bra_nodes)
-    batch_identity = jnp.eye(int(bsz), dtype=_jax_complex_dtype(complex_bytes))
-    nodes.append(
-        JAXTensorNetworkNode(
-            tensor=batch_identity,
-            labels=(0, offset),
-            name="batch_identity",
-        )
-    )
-    for qubit in range(int(n_qubits)):
-        matrix = _jax_pauli_matrix(
-            ops.get(int(qubit), "i"),
-            dtype=_jax_complex_dtype(complex_bytes),
-        )
-        nodes.append(
-            JAXTensorNetworkNode(
-                tensor=matrix,
-                labels=(int(bra_outputs[qubit]), int(ket_outputs[qubit])),
-                name=f"obs_{qubit}",
-                metadata={"qubit": int(qubit)},
-            )
-        )
-    return tuple(nodes), (0,)
 
 
 def _static_expectation_plan_for_parameterized_tn(
@@ -244,11 +132,11 @@ def _jax_parameterized_tn_observable_loss(
         )
         total = jnp.zeros((), dtype=_jax_real_dtype(complex_bytes))
         for qubit in qubits:
-            nodes, _ = _jax_parameterized_tn_expectation_nodes(
+            nodes, _ = _tn_kernels.jax_parameterized_tn_expectation_nodes(
                 circuit,
                 n_qubits,
                 bsz=bsz,
-                complex_bytes=complex_bytes,
+                dtype=_jax_complex_dtype(complex_bytes),
                 ops={int(qubit): "z"},
             )
             total = total + _jax_parameterized_tn_scalar_from_nodes(
@@ -261,11 +149,11 @@ def _jax_parameterized_tn_observable_loss(
             )
         return total
     if normalized == "state_norm":
-        nodes, _ = _jax_parameterized_tn_expectation_nodes(
+        nodes, _ = _tn_kernels.jax_parameterized_tn_expectation_nodes(
             circuit,
             n_qubits,
             bsz=bsz,
-            complex_bytes=complex_bytes,
+            dtype=_jax_complex_dtype(complex_bytes),
             ops={},
         )
         return _jax_parameterized_tn_scalar_from_nodes(
@@ -279,11 +167,11 @@ def _jax_parameterized_tn_observable_loss(
     if normalized == "hamiltonian":
         total = jnp.zeros((), dtype=_jax_real_dtype(complex_bytes))
         for coefficient, term_ops in hamiltonian_terms:
-            nodes, _ = _jax_parameterized_tn_expectation_nodes(
+            nodes, _ = _tn_kernels.jax_parameterized_tn_expectation_nodes(
                 circuit,
                 n_qubits,
                 bsz=bsz,
-                complex_bytes=complex_bytes,
+                dtype=_jax_complex_dtype(complex_bytes),
                 ops=_pauli_ops_from_term(term_ops),
             )
             total = total + jnp.asarray(
@@ -580,11 +468,11 @@ def jax_sliced_tensor_network_parameter_value_and_grad(
     previous_dtype = _set_active_jax_compute_dtype(compute_dtype)
     try:
         summary_circuit = circuit_builder(_JAXParameterProxy(jax_parameters))
-        summary_nodes, _ = _jax_parameterized_tn_expectation_nodes(
+        summary_nodes, _ = _tn_kernels.jax_parameterized_tn_expectation_nodes(
             summary_circuit,
             int(n_qubits),
             bsz=static_plan.bsz,
-            complex_bytes=complex_bytes,
+            dtype=_jax_complex_dtype(complex_bytes),
             ops={},
         )
     finally:
