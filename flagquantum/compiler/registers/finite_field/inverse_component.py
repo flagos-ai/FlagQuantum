@@ -5,6 +5,8 @@
 
 """Store the Itoh--Tsujii source schedule with explicit result and logical junk."""
 
+from collections.abc import Callable
+
 import numpy as np
 
 from ....core.ir.program import ProgramRecord
@@ -28,6 +30,23 @@ def field_inverse_program(dtype: RegisterType, *, modulus: int) -> ProgramRecord
     retain their separately recorded differences from the frozen source.
     """
     width = field_word_width(dtype, modulus)
+    return _field_inverse_schedule(
+        dtype,
+        width,
+        karatsuba_multiplication_program(dtype, modulus=modulus) if width > 1 else None,
+        lambda count, adjoint: field_frobenius_program(
+            dtype, count, modulus=modulus, adjoint=adjoint
+        ),
+    )
+
+
+def _field_inverse_schedule(
+    dtype: RegisterType,
+    width: int,
+    product: ProgramRecord | None,
+    square_program: Callable[[int, bool], ProgramRecord],
+) -> ProgramRecord:
+    """Share the original root ordering, aliases and ownership across profiles."""
     registers = [
         Register("x", dtype),
         Register("result", dtype, side=RegisterSide.RIGHT),
@@ -45,7 +64,7 @@ def field_inverse_program(dtype: RegisterType, *, modulus: int) -> ProgramRecord
         )
         return builder.finalize({"x": result["x"], "result": result["y"]})
 
-    product = karatsuba_multiplication_program(dtype, modulus=modulus)
+    assert product is not None
     weight = (width - 1).bit_count()
     top = (width - 1).bit_length() - 1
     last = max(top + weight - 1, top + 1)
@@ -53,7 +72,7 @@ def field_inverse_program(dtype: RegisterType, *, modulus: int) -> ProgramRecord
     for i in range(1, top + 1):
         added = builder.call_program(addition, {"x": words[i - 1], "y": words[last]})
         words[i - 1], words[last] = added["x"], added["y"]
-        square = field_frobenius_program(dtype, 2 ** (i - 1), modulus=modulus)
+        square = square_program(2 ** (i - 1), False)
         words[last] = builder.call_program(square, {"x": words[last]})["x"]
         multiplied = builder.call_program(
             product, {"x": words[i - 1], "y": words[last]}
@@ -63,9 +82,7 @@ def field_inverse_program(dtype: RegisterType, *, modulus: int) -> ProgramRecord
             multiplied["y"],
             multiplied["result"],
         )
-        inverse_square = field_frobenius_program(
-            dtype, 2 ** (i - 1), modulus=modulus, adjoint=True
-        )
+        inverse_square = square_program(2 ** (i - 1), True)
         words[last] = builder.call_program(inverse_square, {"x": words[last]})["x"]
         added = builder.call_program(addition, {"x": words[i - 1], "y": words[last]})
         words[i - 1], words[last] = added["x"], added["y"]
@@ -75,7 +92,7 @@ def field_inverse_program(dtype: RegisterType, *, modulus: int) -> ProgramRecord
         assert isinstance(temporary, RegisterBinding)
         builder.free(temporary)
     for s, bit in enumerate(bits[1:], start=1):
-        square = field_frobenius_program(dtype, 2**bit, modulus=modulus)
+        square = square_program(2**bit, False)
         words[top + s - 1] = builder.call_program(square, {"x": words[top + s - 1]})[
             "x"
         ]
@@ -92,7 +109,7 @@ def field_inverse_program(dtype: RegisterType, *, modulus: int) -> ProgramRecord
             added = builder.call_program(addition, {"x": words[0], "y": words[last]})
             words[0], words[last] = added["x"], added["y"]
         words[top], words[last] = words[last], words[top]
-    square = field_frobenius_program(dtype, modulus=modulus)
+    square = square_program(1, False)
     words[last] = builder.call_program(square, {"x": words[last]})["x"]
     return builder.finalize(
         {
