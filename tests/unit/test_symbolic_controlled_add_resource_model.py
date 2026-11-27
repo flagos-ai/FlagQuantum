@@ -1,10 +1,22 @@
 """Original CAdd symbolic declaration dispatch, QEC profiles and width fallback."""
 
+from __future__ import annotations
+
 from dataclasses import fields
 from itertools import product
+from typing import Any
 
 import pytest
-import sympy
+
+from flagquantum.compiler._component_trace.arithmetic_call import ArithmeticCall
+from flagquantum.compiler._component_trace.resource_generalization import ResourceCall
+from flagquantum.core.value_math import SymbolicInt
+from tests._reference_dependencies import unavailable_reference
+
+try:
+    import sympy
+except ModuleNotFoundError as error:
+    unavailable_reference(error)
 
 from flagquantum.compiler._component_trace.resource_model import (
     ComponentCost,
@@ -22,7 +34,7 @@ from flagquantum.compiler.registers.resources.symbolic_resource_model import (
 pytestmark = [pytest.mark.unit, pytest.mark.ftqc_reference]
 
 
-def width_case(mode):
+def width_case(mode: str) -> tuple[int | sympy.Expr, int | sympy.Expr]:
     m, n = sympy.symbols("m n", integer=True, positive=True)
     return {
         "concrete": (2, 3),
@@ -38,8 +50,13 @@ def width_case(mode):
     }[mode]
 
 
-def assert_formula(formula, source, legacy):
-    from qualtran.resource_counting import QECGatesCost, QubitCount, get_cost_value
+def assert_formula(formula: SymbolicResourceFormula, source: Any, legacy: bool) -> None:
+    try:
+        from qualtran.resource_counting._bloq_counts import QECGatesCost
+        from qualtran.resource_counting._costing import get_cost_value
+        from qualtran.resource_counting._qubit_counts import QubitCount
+    except ModuleNotFoundError as error:
+        unavailable_reference(error)
 
     expected = get_cost_value(source, QECGatesCost(legacy_shims=legacy))
     for field in fields(formula):
@@ -78,9 +95,14 @@ def assert_formula(formula, source, legacy):
         )
     ),
 )
-def test_original_cadd_declarations_both_directions(mode, cv, legacy, dtype):
-    from qualtran import QMontgomeryUInt, QUInt
-    from qualtran.bloqs.arithmetic.controlled_addition import CAdd
+def test_original_cadd_declarations_both_directions(
+    mode: str, cv: int, legacy: bool, dtype: str
+) -> None:
+    try:
+        from qualtran._infra.data_types import QMontgomeryUInt, QUInt
+        from qualtran.bloqs.arithmetic.controlled_addition import CAdd
+    except ModuleNotFoundError as error:
+        unavailable_reference(error)
 
     m, n = width_case(mode)
     formula = source_controlled_add_resource_formula(
@@ -111,9 +133,14 @@ def test_original_cadd_declarations_both_directions(mode, cv, legacy, dtype):
         )
     ),
 )
-def test_shared_add_formula_keeps_original_profile_and_dispatch(mode, legacy):
-    from qualtran import QUInt
-    from qualtran.bloqs.arithmetic import Add
+def test_shared_add_formula_keeps_original_profile_and_dispatch(
+    mode: str, legacy: bool
+) -> None:
+    try:
+        from qualtran._infra.data_types import QUInt
+        from qualtran.bloqs.arithmetic.addition import Add
+    except ModuleNotFoundError as error:
+        unavailable_reference(error)
 
     m, n = width_case(mode)
     formula = source_add_resource_formula(m, n, legacy_shims=legacy)
@@ -123,8 +150,8 @@ def test_shared_add_formula_keeps_original_profile_and_dispatch(mode, legacy):
 
 
 def test_shared_symbolic_children_are_replaceable_and_all_categories_propagate(
-    monkeypatch,
-):
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
     import flagquantum.compiler.registers.arithmetic.controlled_add_resource_model as module
 
     n = sympy.Symbol("n", positive=True, integer=True)
@@ -135,14 +162,18 @@ def test_shared_symbolic_children_are_replaceable_and_all_categories_propagate(
         29,
         GateCost(measurement=1, clifford=3, toffoli=3, cswap=5, rotation=7),
     )
-    calls = []
+    calls: list[tuple[object, ...]] = []
 
-    def addition(m, r, *, legacy_shims=False):
+    def addition(
+        m: SymbolicInt, r: SymbolicInt, *, legacy_shims: bool = False
+    ) -> SymbolicResourceFormula:
         assert m is n
         calls.append(("add", m, r, legacy_shims))
         return add
 
-    def predicate(values, *, uncompute=False, legacy_shims=False):
+    def predicate(
+        values: tuple[int, ...], *, uncompute: bool = False, legacy_shims: bool = False
+    ) -> ComponentCost:
         calls.append(("predicate", values, uncompute, legacy_shims))
         return cleanup if uncompute else compute
 
@@ -168,14 +199,16 @@ def test_shared_symbolic_children_are_replaceable_and_all_categories_propagate(
     ]
 
 
-def test_concrete_dispatch_uses_composed_peak_instead_of_root_ports(monkeypatch):
+def test_concrete_dispatch_uses_composed_peak_instead_of_root_ports(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
     import flagquantum.compiler.registers.arithmetic.controlled_add_resource_model as module
 
     child = ComponentCost("child", 29, GateCost(t=3))
     root = ComponentCost("root", 11, calls=(CostCall(child, 2, 3),))
-    calls = []
+    calls: list[tuple[object, ...]] = []
 
-    def concrete(m, n, **kwargs):
+    def concrete(m: SymbolicInt, n: SymbolicInt, **kwargs: bool | int) -> ComponentCost:
         calls.append((m, n, kwargs))
         return root
 
@@ -187,18 +220,27 @@ def test_concrete_dispatch_uses_composed_peak_instead_of_root_ports(monkeypatch)
     assert calls == [(2, 3, dict(control_value=0, legacy_shims=True))]
 
 
-def test_symbolic_substitution_does_not_invent_concrete_loaded_and_carry_lifetimes():
-    from qualtran import QUInt
-    from qualtran.bloqs.arithmetic.controlled_addition import CAdd
-    from qualtran.resource_counting import QubitCount, get_cost_value
+def test_symbolic_substitution_does_not_invent_concrete_loaded_and_carry_lifetimes() -> (
+    None
+):
+    try:
+        from qualtran._infra.data_types import QUInt
+        from qualtran.bloqs.arithmetic.controlled_addition import CAdd
+        from qualtran.resource_counting._costing import get_cost_value
+        from qualtran.resource_counting._qubit_counts import QubitCount
+    except ModuleNotFoundError as error:
+        unavailable_reference(error)
 
     n = sympy.Symbol("n", integer=True, positive=True)
     formula = source_controlled_add_resource_formula(n, n)
     literal = source_controlled_add_resource_formula(sympy.Integer(3), sympy.Integer(3))
     concrete = source_controlled_add_resource_formula(3, 3)
+    assert isinstance(formula.logical_qubits, sympy.Expr)
     assert formula.logical_qubits.subs(n, 3) == literal.logical_qubits == 7
     assert concrete.logical_qubits == 12
-    assert get_cost_value(CAdd(QUInt(n)), QubitCount()).subs(n, 3) == 7
+    original_symbolic_peak = get_cost_value(CAdd(QUInt(n)), QubitCount())
+    assert isinstance(original_symbolic_peak, sympy.Expr)
+    assert original_symbolic_peak.subs(n, 3) == 7
     assert get_cost_value(CAdd(QUInt(3)), QubitCount()) == 12
     for field in fields(formula):
         if field.name != "logical_qubits":
@@ -218,7 +260,7 @@ def test_symbolic_substitution_does_not_invent_concrete_loaded_and_carry_lifetim
         {"legacy_shims": 0},
     ],
 )
-def test_formula_parameters_are_explicit(kwargs):
+def test_formula_parameters_are_explicit(kwargs: dict[str, Any]) -> None:
     with pytest.raises(ValueError):
         source_controlled_add_resource_formula(
             **(dict(left_width=2, right_width=3) | kwargs)
@@ -226,25 +268,32 @@ def test_formula_parameters_are_explicit(kwargs):
 
 
 @pytest.mark.parametrize("legacy", [None, 0, 1, "legacy"])
-def test_shared_add_profile_requires_boolean(legacy):
+def test_shared_add_profile_requires_boolean(legacy: Any) -> None:
     with pytest.raises(ValueError):
         source_add_resource_formula(2, 3, legacy_shims=legacy)
 
 
 @pytest.mark.parametrize("value", [None, "3"])
-def test_unknown_width_objects_do_not_silently_enter_symbolic_dispatch(value):
+def test_unknown_width_objects_do_not_silently_enter_symbolic_dispatch(
+    value: Any,
+) -> None:
     with pytest.raises(ValueError, match="Python integers or symbolic expressions"):
         source_controlled_add_resource_formula(value, 3)
 
 
-def test_numpy_width_requires_explicit_native_integer_conversion():
-    import numpy as np
+def test_numpy_width_requires_explicit_native_integer_conversion() -> None:
+    try:
+        import numpy as np
+    except ModuleNotFoundError as error:
+        unavailable_reference(error)
 
     with pytest.raises(ValueError, match="Python integers or symbolic expressions"):
         source_controlled_add_resource_formula(np.int64(3), 3)
 
 
-def test_symbolic_formula_consumes_replaceable_native_call_recipe(monkeypatch):
+def test_symbolic_formula_consumes_replaceable_native_call_recipe(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
     import flagquantum.compiler.registers.arithmetic.controlled_add_resource_model as module
     from flagquantum.compiler._component_trace.arithmetic_call import ArithmeticCall
     from flagquantum.compiler._component_trace.resource_generalization import FixedTCall
@@ -252,7 +301,7 @@ def test_symbolic_formula_consumes_replaceable_native_call_recipe(monkeypatch):
     n = sympy.Symbol("n", integer=True, positive=True)
     seen = []
 
-    def recipe(root):
+    def recipe(root: ArithmeticCall) -> dict[ResourceCall, SymbolicInt]:
         seen.append(root)
         return {FixedTCall("fredkin"): 2 * n}
 
