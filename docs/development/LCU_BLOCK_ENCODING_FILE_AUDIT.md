@@ -363,3 +363,36 @@ measurement outcomes. Changed erasure controls and dirty returned work remain
 rejected. The previous snapshot implementation reproduces the earlier CY
 certificate failure, separating this pre-existing verification issue from the
 field-factory output-alias repair. Original QEC declarations remain separate.
+
+
+## Faithful complete-source acceptance (2026-11-28)
+
+The approved faithful-migration closure rule supersedes the historical open
+status for Q-0283. Complete source review covers `_total_bits`, both classes'
+constructors, every size/register/signature/normalization/error/signal property,
+composite body, drawing method, LCU specialized control and adjoint, four
+factories and two DocSpecs. Existing typed SELECT-only and PREPARE/SELECT/exact
+unprepare owners retain the source call chains. The newly accepted Hubbard
+and packed-oracle dependencies are reused, without implementing another LCU.
+
+Selection, THRU junk and system remain logical MSB-first outputs. RIGHT local
+preparation outputs survive across SELECT until exact unprepare consumes them;
+private work cannot alias those live outputs. The existing directed lifetime,
+zero-selection, shaped/packed ports, complete small complex operators and all
+applicable erasure-history/private-zero evidence remains authoritative. Larger
+3-by-3 fixtures use bounded coherent inputs plus channel certificates, not an
+exhaustive exponential-size operator or history enumeration.
+
+The original LEFT-junk fixture still omits the required input from the block
+signature and fails with KeyError in both directions. No external operand is
+invented. Original specialized-adjoint enum, packed tuple codecs and singleton
+child failures remain separate source boundaries. Wire-free scalars use the
+existing accepted private carrier, not an unapproved Core operation. The two
+SDK CY representations are already covered by the exact operand-view owner;
+prior signature-only failures do not remain missing implementation here.
+
+Batch validation passes 256 concentrated LCU/Phase/rewrite cases and 44
+independent Cirq 1.6 constructor/snapshot cases. All 76 reviewed frozen
+source/dependency/asset blobs remain unchanged. Existing strict production,
+32 local integration, original source/notebook and actual Kickmix Simulator
+receipts are reused because this closure changes no Python implementation.
