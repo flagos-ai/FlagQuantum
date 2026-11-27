@@ -129,6 +129,22 @@ class BinaryMatrix:
 
     def plu(self) -> tuple[BinaryMatrix, BinaryMatrix, BinaryMatrix] | None:
         """Return P,L,U with self=P*L*U, retaining the source first-pivot order."""
+        return self._plu(require_invertible=True)
+
+    def plu_with_zero_pivots(
+        self,
+    ) -> tuple[BinaryMatrix, BinaryMatrix, BinaryMatrix] | None:
+        """Retain PLU factors even when a square matrix has missing pivots.
+
+        This matches the factorization consumed by literal source synthesis;
+        it does not assert that its subsequent reversible gates implement a
+        singular linear map. The ordinary plu method keeps its failure sentinel.
+        """
+        return self._plu(require_invertible=False)
+
+    def _plu(
+        self, *, require_invertible: bool
+    ) -> tuple[BinaryMatrix, BinaryMatrix, BinaryMatrix] | None:
         if self.rows != self.columns:
             return None
         values = list(self.packed_rows)
@@ -139,7 +155,9 @@ class BinaryMatrix:
                 None,
             )
             if pivot is None:
-                return None
+                if require_invertible:
+                    return None
+                continue
             values[column], values[pivot] = values[pivot], values[column]
             permutation[column], permutation[pivot] = (
                 permutation[pivot],
