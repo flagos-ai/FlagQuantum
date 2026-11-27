@@ -214,3 +214,9 @@ def contract_assigned_slices(
             slice_nodes(nodes, dict(assignments)), output_labels
         )
     return partial
+
+
+def sum_tensor_network_partials(partials: Sequence[Any]) -> Any:
+    import jax.numpy as jnp
+
+    return jnp.sum(jnp.stack(partials, axis=0), axis=0)

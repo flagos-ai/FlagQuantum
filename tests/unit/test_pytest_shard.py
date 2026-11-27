@@ -98,3 +98,74 @@ def test_shard_helper_does_not_require_posix_resource_on_windows(monkeypatch):
     monkeypatch.setattr(pytest_shard, "os", SimpleNamespace(name="nt"))
     monkeypatch.setitem(sys.modules, "resource", None)
     assert pytest_shard._cpu_seconds() >= 0
+
+
+@pytest.mark.parametrize("workers", [0, 2])
+def test_complete_per_node_timing_keeps_serial_parallel_and_failure_outcomes(
+    tmp_path, workers
+):
+    import os
+    import subprocess
+    import sys
+    from pathlib import Path
+
+    root = Path(__file__).resolve().parents[2]
+    tests = tmp_path / "tests"
+    tests.mkdir()
+    (tests / "test_duration_sample.py").write_text(
+        "import pytest\n"
+        "@pytest.mark.parametrize('value', range(6))\n"
+        "def test_value(value):\n"
+        "    if value == 4:\n        pytest.skip('deliberate boundary')\n"
+        "    assert value != 5\n"
+    )
+    (tmp_path / "pytest.ini").write_text("[pytest]\n")
+    report = tmp_path / "reports"
+    report.mkdir()
+    (report / "resources.json").write_text(
+        json.dumps({"effective_cpus": 2, "shared_registrations_budgeted": 1})
+    )
+    environment = dict(
+        os.environ,
+        PYTHONPATH=str(root),
+        PYTEST_ADDOPTS="",
+        FQ_CI_REPORT_DIR=str(report),
+        GITHUB_SHA="d" * 40,
+    )
+    command = [
+        sys.executable,
+        "-m",
+        "pytest",
+        "-p",
+        "tools.ci.pytest_shard",
+        "-q",
+        "--tb=short",
+    ]
+    if workers:
+        command += ["-n", str(workers)]
+    result = subprocess.run(
+        command,
+        cwd=tmp_path,
+        env=environment,
+        capture_output=True,
+        text=True,
+        timeout=45,
+    )
+    assert result.returncode == 1
+    assert "1 failed" in result.stdout
+    assert "4 passed" in result.stdout
+    assert "1 skipped" in result.stdout
+    timing = json.loads((report / "test-durations.json").read_text())
+    assert timing["schema"] == "flagquantum_pytest_durations_v1"
+    assert timing["source_sha"] == "d" * 40
+    assert timing["exit_status"] == 1
+    assert timing["complete"] is True
+    assert timing["selected_nodes"] == timing["recorded_nodes"] == 6
+    expected = {f"tests/test_duration_sample.py::test_value[{i}]" for i in range(6)}
+    assert set(timing["tests"]) == expected
+    for phases in timing["tests"].values():
+        assert set(phases) == {"setup", "call", "teardown"}
+        assert all(seconds >= 0 for seconds in phases.values())
+    usage = json.loads((report / "test-usage.json").read_text())
+    assert usage["failed_tests"] == 1
+    assert usage["exit_status"] == 1

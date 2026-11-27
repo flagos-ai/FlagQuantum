@@ -40,7 +40,13 @@ FORBIDDEN_PAPER_SUFFIXES = {
     ".log",
     ".out",
 }
-ALLOWED_LARGE_FILES: dict[Path, int] = {}
+# The official upload action is already a CI dependency. Retaining its complete
+# bundle removes a separate action-archive download from every partition's tail.
+# Its exact upstream Git/SHA-256 identities are checked by the artifact tests;
+# this byte ceiling does not admit other SDKs or generated production artifacts.
+ALLOWED_LARGE_FILES: dict[Path, int] = {
+    Path(".github/actions/upload-artifact/vendor/dist/upload/index.js"): 5_051_718,
+}
 DEFAULT_MAX_FILE_BYTES = 1_800_000
 # The integrated MPS/statevector evidence corpus is part of the reproducibility
 # contract and is referenced by benchmark-contract tests and public reports.

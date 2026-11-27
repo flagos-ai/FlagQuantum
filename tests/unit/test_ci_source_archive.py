@@ -580,3 +580,44 @@ def test_nullable_classification_does_not_admit_malformed_blob_metadata(
     client = _GraphQLSource("https://api.github.com/graphql", "owner/repo", {})
     with pytest.raises(ValueError, match="incomplete source blob metadata"):
         client.objects([(sha, "blob")], forbidden_rest)
+
+
+def test_source_archive_restores_complete_local_upload_action(tmp_path: Path) -> None:
+    root = Path(__file__).resolve().parents[2]
+    source = tmp_path / "source"
+    source.mkdir()
+    _git(source, "init", "--quiet")
+    _git(source, "config", "user.name", "FlagQuantum")
+    _git(source, "config", "user.email", "liuwei.chem.phys@gmail.com")
+    vendor = ".github/actions/upload-artifact/vendor"
+    paths = [
+        f"{vendor}/{name}" for name in ("action.yml", "LICENSE", "dist/upload/index.js")
+    ]
+    paths.append(".github/actions/upload-artifact/action.yml")
+    for name in paths:
+        target = source / name
+        target.parent.mkdir(parents=True, exist_ok=True)
+        target.write_bytes((root / name).read_bytes())
+    _git(source, "add", "--force", "--all")
+    _git(source, "commit", "--quiet", "-m", "source upload closure")
+    commit = _Commit(
+        _git(source, "rev-parse", "HEAD").decode().strip(),
+        _git(source, "rev-parse", "HEAD^{tree}").decode().strip(),
+        _git(source, "cat-file", "commit", "HEAD"),
+    )
+    archive = tmp_path / "source.tar"
+    _git(
+        source,
+        "archive",
+        "--format=tar",
+        "--prefix=source/",
+        "-o",
+        str(archive),
+        "HEAD",
+    )
+    destination = tmp_path / "restored"
+    destination.mkdir()
+    _restore(destination, archive, commit)
+    for name in paths:
+        assert (destination / name).read_bytes() == (root / name).read_bytes()
+    assert _git(destination, "status", "--porcelain") == b""
