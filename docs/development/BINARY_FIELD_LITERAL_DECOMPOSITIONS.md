@@ -116,3 +116,21 @@ Compiler transforms import no source SDK or numerical field library. Retain
 source nonbinary Karatsuba and higher inverse decomposition failures. No public
 API, IR, Core storage or numerical arithmetic admission changes are authorized
 or needed for these internal consumers.
+
+
+## Declared inverse identity and complete caller qualification
+
+Literal square and constant inverse calls retain distinct existing named
+function definitions even when their primitive recipes coincide. Typed word
+composition binds each child's actual entry. Mathematical components continue
+using their exact inverse definitions. No scalar no-op, block-label tag or new
+Core metadata is introduced.
+
+The product catalog selects literal Karatsuba. Examples may qualify a constant /
+linear direction only from a complete match of the owning literal product
+schedule: the first constant child is declared inverse, the second forward, and
+each has one linear child. Treat generated names as opaque IDs. Do not infer a
+source direction from a function-name suffix or equivalent primitive body.
+Incorrect bodies, ambiguous sharing or an unmatched owning schedule do not gain
+a source label. Existing mathematical inverse catalog graphs keep their explicit
+separate scope until the full inverse owner is closed.
