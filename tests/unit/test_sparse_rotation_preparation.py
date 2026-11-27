@@ -13,6 +13,13 @@ from math import sqrt, tau
 from pathlib import Path
 from typing import Any
 
+from tests._reference_dependencies import unavailable_reference
+
+try:
+    import numpy as numpy
+except ModuleNotFoundError as _reference_import_error:
+    unavailable_reference(_reference_import_error)
+
 import pytest
 import torch
 
@@ -45,10 +52,16 @@ pytestmark = pytest.mark.unit
 def assert_sparse_source_stream(
     source: Any, native: SparseRotationPreparation, width: int
 ) -> tuple[tuple[Instruction, ...], int]:
-    import cirq
-    import numpy as np
+    try:
+        import cirq
+    except ModuleNotFoundError as _reference_import_error:
+        unavailable_reference(_reference_import_error)
+    try:
+        import numpy as np
+    except ModuleNotFoundError as _reference_import_error:
+        unavailable_reference(_reference_import_error)
     from qualtran.bloqs.arithmetic.permutation import Permutation
-    from qualtran.bloqs.bookkeeping import Partition
+    from qualtran.bloqs.bookkeeping.partition import Partition
     from qualtran.bloqs.state_preparation.state_preparation_via_rotation import (
         StatePreparationViaRotations,
     )
@@ -98,9 +111,14 @@ def assert_sparse_source_stream(
             children.append("permutation")
             assert inputs["x"] == target
             marker, carries = work[0], work[1:width]
+            assert isinstance(bloq.cycles, tuple)
+            cycles: list[tuple[int, ...]] = []
+            for cycle in bloq.cycles:
+                assert isinstance(cycle, tuple)
+                cycles.append(cycle)
             allocation_plan = tuple(
                 wire
-                for cycle in bloq.cycles
+                for cycle in cycles
                 for i in range(len(cycle) + 1)
                 for wire in (*carries, *((marker,) if i == 0 else ()))
             )
@@ -151,7 +169,8 @@ def test_source_sparse_preparation(
     from qualtran.bloqs.state_preparation.sparse_state_preparation_via_rotations import (
         SparseStatePreparationViaRotations,
     )
-    from qualtran.resource_counting import QECGatesCost, get_cost_value
+    from qualtran.resource_counting._bloq_counts import QECGatesCost
+    from qualtran.resource_counting._costing import get_cost_value
 
     source = SparseStatePreparationViaRotations(
         indices, coefficients, size, phase_width, width
@@ -233,7 +252,7 @@ def test_source_sparse_preparation(
 @pytest.mark.ftqc_reference
 def test_source_loses_a_prefix_and_singleton_lacks_target_port() -> None:
     pytest.importorskip("qualtran")
-    from qualtran import BloqError
+    from qualtran._infra.composite_bloq import BloqError
     from qualtran.bloqs.state_preparation.sparse_state_preparation_via_rotations import (
         SparseStatePreparationViaRotations,
     )
@@ -276,7 +295,7 @@ def locked_sparse_source() -> Any:
     from qualtran.bloqs.state_preparation import sparse_state_preparation_via_rotations
 
     assert version("qualtran") == "0.7.0"
-    assert kickmix.__version__ == "0.1" and hasattr(kickmix, "Simulator")
+    assert getattr(kickmix, "__version__") == "0.1" and hasattr(kickmix, "Simulator")
     source = Path(sparse_state_preparation_via_rotations.__file__)
     for path, digest in (
         (source, "e5d631263c199129e23c246bfab0fd36fd5f774a"),
@@ -330,7 +349,11 @@ def test_original_sparse_state_grid(
     locked_sparse_source: Any, target_width: int | None
 ) -> None:
     import attrs
-    import numpy as np
+
+    try:
+        import numpy as np
+    except ModuleNotFoundError as _reference_import_error:
+        unavailable_reference(_reference_import_error)
     from qualtran.bloqs.state_preparation.sparse_state_preparation_via_rotations_test import (
         get_prepared_state_vector,
     )
@@ -392,7 +415,10 @@ def test_original_sparse_state_grid(
 def test_coefficient_vector_keeps_source_order_dtype_and_gates(
     locked_sparse_source: Any, dtype: str
 ) -> None:
-    import numpy as np
+    try:
+        import numpy as np
+    except ModuleNotFoundError as _reference_import_error:
+        unavailable_reference(_reference_import_error)
 
     values = [0.6, 0.8, 0.0] if dtype == "float32" else [0.6, 0.8j, 0.0]
     vector = np.asarray(values, dtype=dtype)
@@ -421,7 +447,10 @@ def test_coefficient_vector_keeps_source_order_dtype_and_gates(
 def test_sparse_vector_shape_failures_differ_from_valid_flat_vectors(
     locked_sparse_source: Any,
 ) -> None:
-    import numpy as np
+    try:
+        import numpy as np
+    except ModuleNotFoundError as _reference_import_error:
+        unavailable_reference(_reference_import_error)
     from scipy.sparse import csr_array
 
     source_factory = locked_sparse_source.SparseStatePreparationViaRotations
