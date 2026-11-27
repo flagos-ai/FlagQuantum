@@ -59,3 +59,29 @@ The concentrated regression passed 560 tests with four warnings. Strict mypy
 for both Python files, Black, Ruff, Algorithms scope, architecture, multi-level
 IR and protected API checks passed. The warnings remain visible in the batch
 log. The separate unchanged source-suite outcome is recorded above.
+
+## Complete-source closure review
+
+Q-0602 is eligible for complete-file acceptance under the explicitly approved
+[faithful-migration rule](G2_FAITHFUL_MIGRATION_CLOSURE_PROPOSAL.md). All three
+classes, four example factories, DocSpec, signatures, self-adjoint query
+identities, every direct resource call and the defined typed root have native
+owners. The native root preserves the original positional assignment: return
+reverse k and release reverse T. Sparsity remains metadata because the original
+root does not consult it. Neither behavior is silently corrected.
+
+The current dependency regression reuses complete source-call/operand/output
+comparisons and every QEC category for both query classes, concrete/symbolic
+instances and both graph directions. The actual neighbor root succeeds in both
+implementations at Python ell zero, one and two. Exact SymPy Integer(2) and a
+positive symbolic ell both fail original decomposition because their array
+shapes are symbolic; native finite composition retains its refusal. No new
+symbolic-array physical contract is inferred from Proposal 130.
+
+The two query leaves have no original physical body. Their supposed no-junk
+classical algorithms are prose, not an executable source decomposition. A child
+identity used to inspect root wiring is not a quantum implementation or a
+zero-work certificate. The original return/free alias defect, absent leaf
+bodies and instance serialization failure remain separate source follow-ups.
+They no longer impose an invented implementation prerequisite on faithful
+migration. Existing real primitive owners retain circuit.append(op).
