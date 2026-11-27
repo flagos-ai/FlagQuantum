@@ -1,7 +1,10 @@
 """Check the concrete Hubbard notebook graph and gate queries."""
 
+from __future__ import annotations
+
 from collections import Counter
 from dataclasses import asdict
+from typing import Any
 
 import pytest
 
@@ -17,14 +20,18 @@ from flagquantum.algorithms.primitives.hubbard_qubitization_resource_model impor
 )
 from flagquantum.compiler._component_trace.call_graph import modeled_call_graph
 from flagquantum.compiler._component_trace.resource_model import (
+    ModeledResources,
     estimate_component_resources,
 )
+from flagquantum.core.ir.program.registers import Register
+from flagquantum.core.ir.program.signatures import Signature
 from flagquantum.qec.resources.estimation import estimate_symbolic_ftqc_resources
+from tests._reference_dependencies import unavailable_reference
 
 pytestmark = [pytest.mark.unit, pytest.mark.ftqc_reference]
 
 
-def _assert_signature(native, source):
+def _assert_signature(native: Signature, source: Any) -> None:
     assert [
         (port.name, port.bitsize, port.side.value, port.shape, port.dtype)
         for port in source
@@ -40,25 +47,41 @@ def _assert_signature(native, source):
     ]
 
 
-def _source_dtype(port):
-    from qualtran import BQUInt, QAny, QBit
+def _source_dtype(port: Register) -> Any:
+    try:
+        from qualtran._infra.data_types import BQUInt, QAny, QBit
+    except ModuleNotFoundError as error:
+        unavailable_reference(error)
 
     if port.dtype.encoding == "bit":
         return QBit()
     if port.dtype.encoding == "uint":
-        return BQUInt(port.bitsize, dict(port.dtype.parameters)["bound"])
+        try:
+            from sympy import Expr
+        except ModuleNotFoundError as error:
+            unavailable_reference(error)
+        bound = dict(port.dtype.parameters)["bound"]
+        assert isinstance(bound, (int, Expr))
+        return BQUInt(port.bitsize, bound)
     assert port.dtype.encoding == "opaque"
     return QAny(port.bitsize)
 
 
-def test_hubbard_notebook_models_match_locked_child_costs_and_multiplicities():
-    pytest.importorskip("qualtran")
-    from qualtran.bloqs.chemistry.hubbard_model.qubitization import (
-        PrepareHubbard,
-        SelectHubbard,
-    )
-    from qualtran.resource_counting import QECGatesCost, QubitCount, get_cost_value
-    from qualtran.resource_counting.generalizers import ignore_split_join
+def test_hubbard_notebook_models_match_locked_child_costs_and_multiplicities() -> None:
+    actual: Signature | ModeledResources
+    try:
+        from qualtran.bloqs.chemistry.hubbard_model.qubitization.prepare_hubbard import (
+            PrepareHubbard,
+        )
+        from qualtran.bloqs.chemistry.hubbard_model.qubitization.select_hubbard import (
+            SelectHubbard,
+        )
+        from qualtran.resource_counting._bloq_counts import QECGatesCost
+        from qualtran.resource_counting._costing import get_cost_value
+        from qualtran.resource_counting._qubit_counts import QubitCount
+        from qualtran.resource_counting.generalizers import ignore_split_join
+    except ModuleNotFoundError as error:
+        unavailable_reference(error)
 
     source_models = (
         (4, SelectHubbard(4, 4)),
@@ -113,14 +136,20 @@ def test_hubbard_notebook_models_match_locked_child_costs_and_multiplicities():
 
 @pytest.mark.parametrize("controlled", [False, True])
 @pytest.mark.parametrize("majorana", [False, True])
-def test_hubbard_symbolic_leaf_costs_and_concrete_width(controlled, majorana):
-    pytest.importorskip("qualtran")
-    sympy = pytest.importorskip("sympy")
-    from qualtran.bloqs.chemistry.hubbard_model.qubitization import (
-        HubbardMajorannaOperator,
-        HubbardSpinUpZ,
-    )
-    from qualtran.resource_counting import QECGatesCost, QubitCount, get_cost_value
+def test_hubbard_symbolic_leaf_costs_and_concrete_width(
+    controlled: bool, majorana: bool
+) -> None:
+    try:
+        import sympy
+        from qualtran.bloqs.chemistry.hubbard_model.qubitization.select_hubbard import (
+            HubbardMajorannaOperator,
+            HubbardSpinUpZ,
+        )
+        from qualtran.resource_counting._bloq_counts import QECGatesCost
+        from qualtran.resource_counting._costing import get_cost_value
+        from qualtran.resource_counting._qubit_counts import QubitCount
+    except ModuleNotFoundError as error:
+        unavailable_reference(error)
 
     constructor = HubbardMajorannaOperator if majorana else HubbardSpinUpZ
     formula = (
@@ -129,6 +158,7 @@ def test_hubbard_symbolic_leaf_costs_and_concrete_width(controlled, majorana):
     control_value = 1 if controlled else None
     n = sympy.Symbol("n")
     symbolic = estimate_symbolic_ftqc_resources(formula(n, controlled=controlled))
+    assert isinstance(symbolic.logical.logical_qubits, sympy.Expr)
     source = constructor(n, n, control_val=control_value)
     _assert_signature(
         notebook_consumer_signature(n, majorana=majorana, controlled=controlled),
@@ -171,14 +201,18 @@ def test_hubbard_symbolic_leaf_costs_and_concrete_width(controlled, majorana):
         assert actual.logical_qubits > symbolic.logical.logical_qubits.subs(n, side)
 
 
-def test_large_hubbard_select_score_matches_source_operands():
-    pytest.importorskip("qualtran")
-    import cirq
-    from qualtran._infra.gate_with_registers import get_named_qubits
-    from qualtran.bloqs.chemistry.hubbard_model.qubitization import SelectHubbard
-    from qualtran.cirq_interop import BloqAsCirqGate
+def test_large_hubbard_select_score_matches_source_operands() -> None:
+    try:
+        import cirq
+        from qualtran._infra.gate_with_registers import get_named_qubits
+        from qualtran.bloqs.chemistry.hubbard_model.qubitization.select_hubbard import (
+            SelectHubbard,
+        )
+        from qualtran.cirq_interop._bloq_to_cirq import BloqAsCirqGate
+    except ModuleNotFoundError as error:
+        unavailable_reference(error)
 
-    source = SelectHubbard(11, 11, control_val=1)
+    source: Any = SelectHubbard(11, 11, control_val=1)
     registers = get_named_qubits(source.signature)
     names = {wire: name for name, group in registers.items() for wire in group.flat}
     ops = cirq.flatten_op_tree(
@@ -188,12 +222,20 @@ def test_large_hubbard_select_score_matches_source_operands():
         notebook_controlled_select_score().columns, key=lambda column: column.ordinal
     )
     for column, operation in zip(columns, ops, strict=True):
+        assert isinstance(operation, cirq.Operation)
         touched = {names[wire] for wire in operation.qubits}
         assert set(column.step.inputs) == set(column.step.outputs) == touched
         gate = operation.gate
         if isinstance(gate, BloqAsCirqGate):
             name = type(gate.bloq).__name__
             if name == "HubbardMajorannaOperator":
+                try:
+                    from qualtran.bloqs.chemistry.hubbard_model.qubitization.select_hubbard import (
+                        HubbardMajorannaOperator,
+                    )
+                except ModuleNotFoundError as error:
+                    unavailable_reference(error)
+                assert isinstance(gate.bloq, HubbardMajorannaOperator)
                 name += f"({gate.bloq.gate})"
         elif gate == cirq.S**-1:
             name = "SGate"
@@ -206,19 +248,23 @@ def test_large_hubbard_select_score_matches_source_operands():
 
 @pytest.mark.parametrize("side", [2, 3, 10, 11])
 @pytest.mark.parametrize("controlled", [False, True])
-def test_source_majorana_count_gap_is_the_controlled_y_leaf(side, controlled):
-    pytest.importorskip("qualtran")
-    import cirq
-    from qualtran.bloqs.chemistry.hubbard_model.qubitization import (
-        HubbardMajorannaOperator,
-    )
-    from qualtran.cirq_interop import CirqGateAsBloq
-    from qualtran.resource_counting.generalizers import (
-        generalize_cvs,
-        ignore_alloc_free,
-        ignore_cliffords,
-        ignore_split_join,
-    )
+def test_source_majorana_count_gap_is_the_controlled_y_leaf(
+    side: int, controlled: bool
+) -> None:
+    try:
+        import cirq
+        from qualtran.bloqs.chemistry.hubbard_model.qubitization.select_hubbard import (
+            HubbardMajorannaOperator,
+        )
+        from qualtran.cirq_interop._cirq_to_bloq import CirqGateAsBloq
+        from qualtran.resource_counting.generalizers import (
+            generalize_cvs,
+            ignore_alloc_free,
+            ignore_cliffords,
+            ignore_split_join,
+        )
+    except ModuleNotFoundError as error:
+        unavailable_reference(error)
 
     source = HubbardMajorannaOperator(side, side, control_val=1 if controlled else None)
     generalizer = [
