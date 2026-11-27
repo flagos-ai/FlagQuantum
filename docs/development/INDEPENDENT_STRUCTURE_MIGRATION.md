@@ -53,7 +53,7 @@ Repeat the overlap and consumer audit if either input advances before integratio
 | Root configuration | Architecture/team policies live in `config/`; the Conda recipe lives in `config/environments/`, with its editable path adjusted to the same repository checkout. |
 | Workshops | Executable material lives in `examples/workshops/flagos2026/`; standalone guides live in `docs/guides/workshops/flagos2026/`. The six-notebook localization exception moves with the same notebooks. |
 
-The cumulative 533-row [path map](migration/independent-structure-path-map.md) and
+The cumulative 535-row [path map](migration/independent-structure-path-map.md) and
 [machine-readable symbol ledger](migration/independent-structure-moves.json)
 identify every relocated file and every partial extraction. An implementation
 has one owner even when more than one historical public module exports it.
@@ -223,3 +223,8 @@ The [shared gradient numerics batch](migration/shared-gradient-numerics-migratio
 places the one finite-difference quotient and step calculation in Simulation
 Numerics. Public gradient requests, results and frozen source identifiers stay
 unchanged. The old internal Core file is removed without a forwarding entry.
+
+The [Runtime trajectory kernel batch](migration/runtime-state-kernel-ownership.md)
+places trajectory collapse and static state application in Simulation. Runtime
+retains seeds, feedback decisions, shot records and resource/evidence assembly.
+Forward/reverse local block composition shares one Simulation tensor product.

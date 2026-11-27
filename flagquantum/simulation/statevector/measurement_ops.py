@@ -130,3 +130,44 @@ def _expectation_from_operators(
     for matrix, qubits in ops:
         circuit.any(*qubits, matrix=matrix)
     return complex_mul(complex_conj(input_state), state(circuit)).sum(dim=-1)
+
+
+def _measure_wire(
+    state: torch.Tensor,
+    wire: int,
+    n_wires: int,
+    *,
+    generator: torch.Generator,
+) -> tuple[torch.Tensor, int]:
+    shaped = state.reshape((2,) * n_wires)
+    axes = tuple(axis for axis in range(n_wires) if axis != wire)
+    magnitudes = torch.abs(shaped) ** 2
+    probabilities = magnitudes.sum(dim=axes) if axes else magnitudes
+    bit = int(torch.multinomial(probabilities, 1, generator=generator).item())
+    selector = torch.arange(2, device=state.device) == bit
+    view_shape = [1] * n_wires
+    view_shape[wire] = 2
+    collapsed = shaped * selector.reshape(view_shape)
+    norm = torch.linalg.vector_norm(collapsed)
+    return (collapsed / norm).reshape(1, -1), bit
+
+
+def _measure_wires_batched(
+    state: torch.Tensor,
+    wire: int,
+    n_wires: int,
+    *,
+    generator: torch.Generator,
+) -> tuple[torch.Tensor, torch.Tensor]:
+    shaped = state.reshape((state.shape[0],) + (2,) * n_wires)
+    axes = tuple(axis + 1 for axis in range(n_wires) if axis != wire)
+    probabilities = (
+        (torch.abs(shaped) ** 2).sum(dim=axes) if axes else (torch.abs(shaped) ** 2)
+    )
+    bits = torch.multinomial(probabilities, 1, generator=generator).reshape(-1)
+    selector = torch.arange(2, device=state.device).reshape(1, 2) == bits.reshape(-1, 1)
+    view_shape = [state.shape[0]] + [1] * n_wires
+    view_shape[wire + 1] = 2
+    collapsed = shaped * selector.reshape(view_shape)
+    norms = torch.linalg.vector_norm(collapsed.reshape(state.shape[0], -1), dim=1)
+    return collapsed.reshape_as(state) / norms.reshape(-1, 1), bits

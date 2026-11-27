@@ -9341,6 +9341,52 @@
       "same_import_path": false,
       "compatibility": "none",
       "retirement": "FQ-GRADIENT-API-20261002 explicitly identifies both helpers as nonpublic; all consumers use the Simulation numerical owner."
+    },
+    {
+      "group": "runtime-state-numerics",
+      "old": "flagquantum/runtime/dynamic/execution.py",
+      "new": "flagquantum/simulation/statevector/measurement_ops.py",
+      "symbols": [
+        "_measure_wire",
+        "_measure_wires_batched"
+      ],
+      "split_symbols": [
+        "_measure_wire",
+        "_measure_wires_batched"
+      ],
+      "partial": true,
+      "same_import_path": false,
+      "retired_private_members": [
+        "_measure_wire",
+        "_measure_wires_batched"
+      ],
+      "compatibility": "internal helpers removed from Runtime; lifecycle remains there",
+      "retired_reexports": [
+        "_measure_wire",
+        "_measure_wires_batched"
+      ],
+      "remaining_imports": "module owners called directly; old private attributes removed; no compatibility facade"
+    },
+    {
+      "group": "runtime-state-numerics",
+      "old": "flagquantum/runtime/dynamic/execution.py",
+      "new": "flagquantum/simulation/statevector/instruction.py",
+      "symbols": [
+        "_apply_instruction"
+      ],
+      "split_symbols": [
+        "_apply_instruction"
+      ],
+      "partial": true,
+      "same_import_path": false,
+      "retired_private_members": [
+        "_apply_instruction"
+      ],
+      "compatibility": "internal helpers removed from Runtime; lifecycle remains there",
+      "retired_reexports": [
+        "_apply_instruction"
+      ],
+      "remaining_imports": "module owners called directly; old private attributes removed; no compatibility facade"
     }
   ],
   "retired_namespace_parents": [

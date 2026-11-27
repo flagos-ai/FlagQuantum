@@ -18,6 +18,7 @@ from flagquantum.runtime.executors.statevector.reverse_adjoint_kernels import (
     _fused_sharded_1q_vjp_adjoint,
     _MatrixJVP,
 )
+from flagquantum.simulation.gate_matrix import _tensor_product_matrices
 from flagquantum.simulation.statevector.adjoint import (
     _fused_single_process_cpu_reversible_vjp,
 )
@@ -828,9 +829,7 @@ class _ReversibleAdjointSweep:
                 )
                 self.skipped_fixed_block_indices.update(range(cursor + 1, index))
                 return True
-        combined = matrices[0]
-        for matrix in matrices[1:]:
-            combined = torch.kron(combined, matrix)
+        combined = _tensor_product_matrices(matrices)
         ket = _apply_matrix(
             self.reversible_state.amplitudes,
             combined,

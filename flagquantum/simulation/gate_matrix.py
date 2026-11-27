@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from collections.abc import Iterator, Mapping
+from collections.abc import Iterator, Mapping, Sequence
 from contextlib import contextmanager
 from contextvars import ContextVar
 from typing import Any
@@ -298,3 +298,11 @@ def gate_matrix(
 
 
 __all__ = ("gate_matrix", "parameter_tensor")
+
+
+def _tensor_product_matrices(matrices: Sequence[torch.Tensor]) -> torch.Tensor:
+    """Compose one nonempty local block in its supplied qubit order."""
+    combined = matrices[0]
+    for matrix in matrices[1:]:
+        combined = torch.kron(combined, matrix)
+    return combined

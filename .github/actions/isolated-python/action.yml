@@ -4,6 +4,9 @@ inputs:
   torch-spec:
     description: CPU PyTorch requirement to seed from the verified local wheel cache
     default: "torch>=2.13,<2.14"
+  inherit-installed-dependencies:
+    description: Allow the runner dependency overlay; disable when testing missing optional packages
+    default: "true"
   self-hosted-pypi-index:
     description: PyPI mirror for this job on self-hosted Linux runners
     default: ""
@@ -14,6 +17,7 @@ runs:
       env:
         FQ_SELF_HOSTED_PYPI_INDEX: ${{ inputs.self-hosted-pypi-index }}
         FQ_TORCH_SPEC: ${{ inputs.torch-spec }}
+        FQ_INHERIT_INSTALLED_DEPENDENCIES: ${{ inputs.inherit-installed-dependencies }}
       run: |
         # Keep build and installer scratch space on the runner's job volume.
         job_tmp="$(mktemp -d "$RUNNER_TEMP/fq-build.XXXXXX")"
@@ -34,7 +38,8 @@ runs:
         done
         echo "LD_LIBRARY_PATH=$library_path" >> "$GITHUB_ENV"
         export LD_LIBRARY_PATH="$library_path"
-        if [ "${FQ_RUNNER_KIND:-}" = cpu ] && [ -d "${FQ_BASE_ENV:-/unavailable}" ] && [ -x "${ACTIONS_RUNNER_HOOK_JOB_STARTED:-/unavailable}" ]; then
+        if [ "${FQ_INHERIT_INSTALLED_DEPENDENCIES:-true}" = true ] && \
+          [ "${FQ_RUNNER_KIND:-}" = cpu ] && [ -d "${FQ_BASE_ENV:-/unavailable}" ] && [ -x "${ACTIONS_RUNNER_HOOK_JOB_STARTED:-/unavailable}" ]; then
           FQ_JOB_PYTHON="$(command -v python)" FQ_JOB_VENV="$RUNNER_TEMP/fq-python" bash "$ACTIONS_RUNNER_HOOK_JOB_STARTED"
           if [ -d /opt/flagquantum-runners/tools/public-wheels ]; then
             if ! "$RUNNER_TEMP/fq-python/bin/python" -m pip install --no-index --no-deps \

@@ -6,20 +6,14 @@ from time import perf_counter
 import torch
 
 from flagquantum.core.noise import NoiseModel
-from flagquantum.core.operators.schema import canonical_opcode
+from flagquantum.simulation.statevector import instruction as _statevector_instruction
+from flagquantum.simulation.statevector import (
+    measurement_ops as _statevector_measurements,
+)
 
 from ...core.classical_control import validate_classical_control
 from ...core.ir import Instruction
 from ...errors import ValidationError
-from ...simulation.gate_matrix import gate_matrix
-from ...simulation.statevector.operations import (
-    _DIAGONAL_STATEVECTOR_GATES,
-    _apply_diagonal_matrix,
-    _apply_fixed_permutation,
-    _apply_matrix,
-    _apply_single_qubit_fixed,
-    _statevector_layout,
-)
 from ._conditions import classical_width, instruction_condition_clauses
 from ._feedback import (
     DynamicFeedbackAction,
@@ -70,66 +64,6 @@ def _validate_feedback_plan(
         raise ValueError("feedback allowed wire is outside the circuit")
 
 
-def _measure_wire(
-    state: torch.Tensor,
-    wire: int,
-    n_wires: int,
-    *,
-    generator: torch.Generator,
-) -> tuple[torch.Tensor, int]:
-    shaped = state.reshape((2,) * n_wires)
-    axes = tuple(axis for axis in range(n_wires) if axis != wire)
-    magnitudes = torch.abs(shaped) ** 2
-    probabilities = magnitudes.sum(dim=axes) if axes else magnitudes
-    bit = int(torch.multinomial(probabilities, 1, generator=generator).item())
-    selector = torch.arange(2, device=state.device) == bit
-    view_shape = [1] * n_wires
-    view_shape[wire] = 2
-    collapsed = shaped * selector.reshape(view_shape)
-    norm = torch.linalg.vector_norm(collapsed)
-    return (collapsed / norm).reshape(1, -1), bit
-
-
-def _apply_instruction(
-    state: torch.Tensor,
-    instruction: Instruction,
-    *,
-    n_wires: int,
-) -> torch.Tensor:
-    """Apply one static instruction without constructing a temporary circuit."""
-
-    name = canonical_opcode(instruction.name)
-    carries_matrix = instruction.matrix is not None
-    if not carries_matrix and name in {"x", "cx", "swap"}:
-        return _apply_fixed_permutation(state, name, instruction.wires, n_wires)
-    if not carries_matrix and name == "y":
-        return _apply_single_qubit_fixed(
-            state,
-            name,
-            instruction.wires[0],
-            n_wires,
-        )
-    matrix = gate_matrix(
-        instruction,
-        bsz=state.shape[0],
-        device=state.device,
-        dtype=state.dtype,
-        parameter_bindings=None,
-    )
-    apply_gate = (
-        _apply_diagonal_matrix
-        if not carries_matrix and name in _DIAGONAL_STATEVECTOR_GATES
-        else _apply_matrix
-    )
-    return apply_gate(
-        state,
-        matrix,
-        instruction.wires,
-        n_wires,
-        layout=_statevector_layout(n_wires, instruction.wires),
-    )
-
-
 def _apply_noisy_instruction(
     state: torch.Tensor,
     instruction: Instruction,
@@ -139,7 +73,9 @@ def _apply_noisy_instruction(
 ) -> tuple[torch.Tensor, int, int]:
     """Apply one instruction followed by its configured gate noise."""
 
-    state = _apply_instruction(state, instruction, n_wires=n_wires)
+    state = _statevector_instruction._apply_instruction(
+        state, instruction, n_wires=n_wires
+    )
     next_state: torch.Tensor
     applications: int
     events: int
@@ -223,7 +159,7 @@ def _measure_instruction(
 ) -> tuple[torch.Tensor, int, int, int, int]:
     """Measure one qubit and apply its configured readout noise."""
 
-    state, true_bit = _measure_wire(
+    state, true_bit = _statevector_measurements._measure_wire(
         state,
         instruction.wires[0],
         n_wires,
@@ -283,14 +219,14 @@ def _reset_instruction(
 ) -> tuple[torch.Tensor, int]:
     """Measure and return one qubit to the zero state."""
 
-    state, bit = _measure_wire(
+    state, bit = _statevector_measurements._measure_wire(
         state,
         instruction.wires[0],
         n_wires,
         generator=generator,
     )
     if bit:
-        state = _apply_instruction(
+        state = _statevector_instruction._apply_instruction(
             state, Instruction("x", instruction.wires), n_wires=n_wires
         )
     return state, bit
@@ -495,27 +431,6 @@ def _run_dynamic_trajectory(
     )
 
 
-def _measure_wires_batched(
-    state: torch.Tensor,
-    wire: int,
-    n_wires: int,
-    *,
-    generator: torch.Generator,
-) -> tuple[torch.Tensor, torch.Tensor]:
-    shaped = state.reshape((state.shape[0],) + (2,) * n_wires)
-    axes = tuple(axis + 1 for axis in range(n_wires) if axis != wire)
-    probabilities = (
-        (torch.abs(shaped) ** 2).sum(dim=axes) if axes else (torch.abs(shaped) ** 2)
-    )
-    bits = torch.multinomial(probabilities, 1, generator=generator).reshape(-1)
-    selector = torch.arange(2, device=state.device).reshape(1, 2) == bits.reshape(-1, 1)
-    view_shape = [state.shape[0]] + [1] * n_wires
-    view_shape[wire + 1] = 2
-    collapsed = shaped * selector.reshape(view_shape)
-    norms = torch.linalg.vector_norm(collapsed.reshape(state.shape[0], -1), dim=1)
-    return collapsed.reshape_as(state) / norms.reshape(-1, 1), bits
-
-
 def _apply_masked_instruction(
     state: torch.Tensor,
     active: torch.Tensor,
@@ -524,12 +439,16 @@ def _apply_masked_instruction(
     n_wires: int,
 ) -> torch.Tensor:
     if bool(torch.all(active)):
-        return _apply_instruction(state, instruction, n_wires=n_wires)
+        return _statevector_instruction._apply_instruction(
+            state, instruction, n_wires=n_wires
+        )
     indices = torch.nonzero(active, as_tuple=False).reshape(-1)
     if indices.numel() == 0:
         return state
     selected = state.index_select(0, indices)
-    updated = _apply_instruction(selected, instruction, n_wires=n_wires)
+    updated = _statevector_instruction._apply_instruction(
+        selected, instruction, n_wires=n_wires
+    )
     return state.index_copy(0, indices, updated)
 
 
@@ -568,7 +487,7 @@ def _measure_or_reset_active_shots(
     """Measure active shots, applying readout noise or reset correction."""
 
     indices = torch.nonzero(active, as_tuple=False).reshape(-1)
-    selected, bits = _measure_wires_batched(
+    selected, bits = _statevector_measurements._measure_wires_batched(
         state.index_select(0, indices),
         instruction.wires[0],
         n_wires,

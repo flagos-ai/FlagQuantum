@@ -541,3 +541,5 @@ Each row names the authoritative owner. Partial rows move only the listed defini
 | experimental-owner-closure | `flagquantum/experimental/controlled_pauli.py` | `flagquantum/simulation/pauli.py` | `controlled_pauli`; public experimental facade only |
 | experimental-owner-closure | `flagquantum/experimental/qec.py` | `flagquantum/qec/execution/experiments.py` | `run_stim_matching_experiment`; public experimental facade only |
 | shared-gradient-numerics | `flagquantum/core/finite_differences.py` | `flagquantum/simulation/numerics/finite_differences.py` | internal file removed; no compatibility |
+| runtime-state-numerics | `flagquantum/runtime/dynamic/execution.py` | `flagquantum/simulation/statevector/measurement_ops.py` | `_measure_wire`, `_measure_wires_batched`; no compatibility |
+| runtime-state-numerics | `flagquantum/runtime/dynamic/execution.py` | `flagquantum/simulation/statevector/instruction.py` | `_apply_instruction`; no compatibility |
