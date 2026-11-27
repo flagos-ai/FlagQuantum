@@ -4,7 +4,12 @@ from dataclasses import replace
 from types import SimpleNamespace
 from typing import Any
 
-import numpy as np
+from tests._reference_dependencies import unavailable_reference
+
+try:
+    import numpy as np
+except ModuleNotFoundError as _reference_import_error:
+    unavailable_reference(_reference_import_error)
 import pytest
 
 from flagquantum.core.ir.program.registers import Register, RegisterType
@@ -23,13 +28,14 @@ pytestmark = [pytest.mark.unit, pytest.mark.ftqc_reference]
 
 
 def assert_domain_and_table(dtype: RegisterType, source: Any) -> None:
-    from qualtran import Register as SourceRegister
-    from qualtran import Signature as SourceSignature
+    from qualtran._infra.registers import Register as SourceRegister
+    from qualtran._infra.registers import Signature as SourceSignature
     from qualtran.simulation.classical_sim import (
         format_classical_truth_table as source_format,
     )
-    from qualtran.simulation.classical_sim import (
-        get_classical_truth_table,
+
+    from tests.unit.classical_source_callbacks import (
+        source_truth_table as get_classical_truth_table,
     )
 
     register = Register("x", dtype)
@@ -75,7 +81,7 @@ def test_fields_keep_typed_elements_and_exact_domain(
 @pytest.mark.parametrize("signed", [False, True])
 @pytest.mark.parametrize("width", [0, 1, 2, 4])
 def test_integer_source_domain_including_zero_width(width: int, signed: bool) -> None:
-    from qualtran import QInt, QUInt
+    from qualtran._infra.data_types import QInt, QUInt
 
     source = (QInt if signed else QUInt)(width)
     if width == 0 and signed:
@@ -91,7 +97,7 @@ def test_integer_source_domain_including_zero_width(width: int, signed: bool) ->
 
 @pytest.mark.parametrize("bound", [-1, 0, 1, 5])
 def test_bound_is_not_repaired_to_capacity(bound: int) -> None:
-    from qualtran import BQUInt
+    from qualtran._infra.data_types import BQUInt
 
     from flagquantum.core.ir.program.register_types import (
         bounded_unsigned_register_type,
@@ -105,7 +111,7 @@ def test_bound_is_not_repaired_to_capacity(bound: int) -> None:
 
 @pytest.mark.parametrize("modulus", [None, -1, 0, 1, 3])
 def test_montgomery_domain_keeps_source_modulus_policy(modulus: int | None) -> None:
-    from qualtran import QMontgomeryUInt
+    from qualtran._infra.data_types import QMontgomeryUInt
 
     from flagquantum.core.ir.program.register_types import montgomery_register_type
 
