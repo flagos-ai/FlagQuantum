@@ -5,7 +5,12 @@ from __future__ import annotations
 from importlib.metadata import version
 from typing import Any
 
-import numpy as np
+from tests._reference_dependencies import unavailable_reference
+
+try:
+    import numpy as np
+except ModuleNotFoundError as _reference_import_error:
+    unavailable_reference(_reference_import_error)
 import pytest
 
 from flagquantum.simulation.finite_field_addition import binary_field_encoding
@@ -19,7 +24,7 @@ def locked_reference() -> None:
     import kickmix
 
     assert version("qualtran") == "0.7.0"
-    assert kickmix.__version__ == "0.1" and hasattr(kickmix, "Simulator")
+    assert getattr(kickmix, "__version__") == "0.1" and hasattr(kickmix, "Simulator")
 
 
 @pytest.mark.parametrize("width", range(1, 9))
@@ -34,6 +39,7 @@ def test_all_field_elements_and_exact_original_junk(width: int) -> None:
         assert source is value
         assert result == expected["result"]
         np.testing.assert_array_equal(junk, expected["junk"])
+        assert isinstance(expected["junk"], np.ndarray)
         assert junk.dtype == expected["junk"].dtype
         assert (int(result) == 0) if int(value) == 0 else value * result == 1
     invalid: Any = 1
@@ -54,4 +60,5 @@ def test_larger_fields_original_junk_shapes_and_values(width: int) -> None:
         expected = original.on_classical_vals(x=source)
         assert result == expected["result"]
         np.testing.assert_array_equal(junk, expected["junk"])
+        assert isinstance(expected["junk"], np.ndarray)
         assert junk.dtype == expected["junk"].dtype
