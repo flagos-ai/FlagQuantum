@@ -227,3 +227,22 @@ Strict typing passed for 22 files, alongside Black, Ruff, Compiler scope,
 architecture, multi-level IR and protected API checks. Six frozen source blobs
 match. The dependency scan reports 688 existing repository findings and zero
 batch findings.
+
+## Complete-file acceptance after ordered symbolic graph closure
+
+The [inverse/product ordered graph review](INVERSE_PRODUCT_ORDERED_GRAPH_AUDIT.md)
+now fills every source-defined symbolic root, including comparison/exchange/
+arithmetic layers, iteration, implementation and both public directions. Native
+metadata preserves all source parameters and exact inlined connection roles;
+retained 4n history remains an output or matching consumed input. Concrete
+artifacts use the existing nine physical owners with identical whole circuits,
+feedback, output bindings and workspace events. Earlier generic symbolic notes
+are superseded by this exact defined/refused disposition.
+
+Fresh original-only all-ones, nonunit, step-five overflow and step-six odd-input
+witnesses retain their documented domains and protocol differences. Existing
+source streams, complex phases, all-history cleanup, matching inverse and
+independent model evidence remain authoritative at unchanged numerical owners.
+All 48 definitions are accounted for. Q-0573 is eligible for faithful-source
+acceptance after verified publication and final checks. Global constructor/SDK
+qualification remains separately tracked; no source failure is silently repaired.

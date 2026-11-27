@@ -212,3 +212,22 @@ Simulator availability, resource substitution receipts and dependency findings
 are recorded in `g2-modular-mul-native-*` in the external evidence directory.
 Q-0576 remains open for the exact source failures, absent physical adjoint leaf
 and generic symbolic, strict-type, count-mode and foreign admission boundaries.
+
+## Complete-file acceptance after ordered symbolic word-root closure
+
+The [inverse/product ordered graph review](INVERSE_PRODUCT_ORDERED_GRAPH_AUDIT.md)
+completes the missing native symbolic doubling and constant-product libraries.
+The literal symbolic reciprocal branch is retained, including its sign difference
+from the concrete branch. Source-rejected symbolic windows remain declarations;
+no unknown table data or physical leaf is fabricated. Existing five concrete
+owners, scalar lookup/measured erasure, exact literal adjoints, root graphs,
+complex/work certificates and ordinary append replacement remain authoritative.
+
+Fresh checks prove QROAMCleanAdjoint lacks both Bloq and SDK physical recipes.
+Its analytical model and the independent native paper-based erasure retain
+separate evidence. The source window overflow, final-reduction and Fermat/
+composite-modulus callback differences are preserved. All 45 own definitions
+have native responsibility and direct dependency closure. Q-0576 is eligible
+after verified publication and final local checks under the approved faithful
+rule. Missing generic SDK/serialization providers remain in Q-0866/Q-0876, not
+waived or claimed by this source-file acceptance.

@@ -1530,3 +1530,27 @@ Run `tests/unit/test_symbolic_modular_library.py` for source connections and
 physical owner replacement, and `test_modular_catalog_libraries.py` for operation
 object consumers. The complete domain and evidence boundary is documented in
 `docs/development/SYMBOLIC_MODULAR_GRAPH_AUDIT.md`.
+
+### Kaliski and product constructor graphs
+
+`formats/inverse_modular_library.py` retains the source-defined ordering,
+exchange, arithmetic, iteration, implementation and public inverse graphs.
+`formats/_inverse_iteration_library.py` owns the separate layer recipes.
+`formats/product_modular_library.py` retains word doubling and constant-product
+roots. These use the shared typed builder and metadata exporter; public inverse
+inlining and reversal reuse existing Compiler engines with explicit leaf maps.
+
+For example, `inverse_modular_component_library("KaliskiModInverse", 4, p)`
+preserves an unbound modulus in the existing ComponentLibrary. The `uncompute`
+direction takes matching logical history rather than claiming it is clean work.
+Concrete artifacts feed existing constructor factories and physical owners.
+Unbound declarations cannot execute. The symbolic product graph keeps the
+original positive reciprocal expression; rebuilding with bound integer values
+selects the original concrete negative-inverse branch. Constructor data is not
+encoded in function names, and model estimates do not become primitive counts.
+
+Run `test_inverse_modular_library.py` and `test_product_modular_library.py` for
+complete source endpoints, source generic adjoints/inlining and SDK-free native
+registry consumers. See `docs/development/INVERSE_PRODUCT_ORDERED_GRAPH_AUDIT.md`
+for source domain witnesses, missing original erasure recipes and the distinct
+resource accounts. The application entry remains `circuit.append(op)`.
