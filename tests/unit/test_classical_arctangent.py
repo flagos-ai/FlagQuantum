@@ -5,7 +5,12 @@ from collections.abc import Iterable
 from itertools import product
 from typing import Any
 
-import numpy as np
+from tests._reference_dependencies import unavailable_reference
+
+try:
+    import numpy as np
+except ModuleNotFoundError as _reference_import_error:
+    unavailable_reference(_reference_import_error)
 import pytest
 
 from flagquantum.ecosystem.classical_arctangent import (
@@ -20,7 +25,7 @@ pytestmark = [pytest.mark.unit, pytest.mark.ftqc_reference]
 def test_full_source_callback_quantization_occupied_outputs_and_self_inverse(
     width: int,
 ) -> None:
-    from qualtran.bloqs.arithmetic.trigonometric import ArcTan
+    from qualtran.bloqs.arithmetic.trigonometric.arctan import ArcTan
 
     original = ArcTan(256, width)
     values = (0, 1, -1, 2, 3, 7, 255, 4095, 4096, 8191, 2**32, 2**53, 2**60, 2**200)
@@ -42,7 +47,7 @@ def test_full_source_callback_quantization_occupied_outputs_and_self_inverse(
 
 
 def test_binary64_endpoint_retains_original_wrap_instead_of_clipping() -> None:
-    from qualtran.bloqs.arithmetic.trigonometric import ArcTan
+    from qualtran.bloqs.arithmetic.trigonometric.arctan import ArcTan
 
     for value in (2**60, -(2**60)):
         output = normalized_arctangent_value(value)
@@ -55,7 +60,7 @@ def test_binary64_endpoint_retains_original_wrap_instead_of_clipping() -> None:
 
 @pytest.mark.parametrize("value", (2**1024, float("nan")))
 def test_original_numeric_failures_remain_visible(value: Any) -> None:
-    from qualtran.bloqs.arithmetic.trigonometric import ArcTan
+    from qualtran.bloqs.arithmetic.trigonometric.arctan import ArcTan
 
     try:
         ArcTan(2048, 8).apply(value, 0, 0)
@@ -68,7 +73,7 @@ def test_original_numeric_failures_remain_visible(value: Any) -> None:
 
 def test_symbolic_width_stays_a_declaration_not_a_numeric_encoding() -> None:
     import sympy
-    from qualtran.bloqs.arithmetic.trigonometric import ArcTan
+    from qualtran.bloqs.arithmetic.trigonometric.arctan import ArcTan
 
     width = sympy.Symbol("p")
     with pytest.raises(ValueError):
@@ -160,8 +165,8 @@ def test_callback_operator_matches_append_every_small_branch_and_zero_work(
 def test_generic_owned_qrom_covers_source_operator_beyond_lookup_profile(
     left: int, right: int
 ) -> None:
-    from qualtran.bloqs.arithmetic.trigonometric import ArcTan
-    from qualtran.bloqs.data_loading import QROM
+    from qualtran.bloqs.arithmetic.trigonometric.arctan import ArcTan
+    from qualtran.bloqs.data_loading.qrom import QROM
 
     from examples.algorithms.binary_field_arithmetic import FieldOperation
     from flagquantum.compiler.registers.lookup.qrom_component import qrom_program
