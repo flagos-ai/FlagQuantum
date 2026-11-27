@@ -286,3 +286,42 @@ changed test files pass strict typing, Black and Ruff. Integration scope,
 language, links, architecture, IR and protected API checks pass. Four frozen
 source/test blobs and native Kickmix 0.1 Simulator are verified. Receipts use
 `g2-list-source-closure-*20261125`; no source body was modified.
+
+
+## Whole-file acceptance under the approved closure rule, 2026-11-28
+
+Q-0201 closes the entire 176-line source, including fields, signature, half-LT
+property, ordered body, call model, raw classical callback, self-adjoint and
+specialized-control protocols, all three factories and exact DocSpec subset.
+The existing Compiler graph and constructor, Simulation callback and model
+owners remain authoritative. No implementation is copied or replaced in this
+batch. MSB-first signed/unsigned xs, dirty XOR flag and final optional ctrl are
+caller-owned; comparison history and predicate work are private and reverse-
+consumed on the source-valid channels. The literal inverse aliases remain.
+
+Complete current tests reuse full source calls/operands/feedback, valid small
+complex states and all applicable histories, private zero, exact constructor
+binding, symbolic declarations and both foreign SDK lanes. The callback's
+ignored ctrl and the quantum controlled shell are explicitly different source
+interfaces. Original swapped aliases, invalid three-word And erasure, empty
+uncontrolled/singleton failure, signed zero-width/SDK SignExtend failures and
+deeper HasLength serialization refusal remain independently witnessed defects.
+They do not become ideal duplicate detection merely because migration closes.
+
+Proposal120 already admits symbolic logical arrays. Unresolved physical sizes
+remain unsupported just as the original executable graph requires concrete
+length. Historical notes requiring rejection of symbolic declarations are
+superseded by that approved implementation. Negative empty-list model counts
+are retained diagnostic estimates, never actual gate inventories. This faithful
+source disposition supersedes earlier whole-file holds; existing mathematical
+preserving-order paths keep their separately tested contracts.
+
+Current acceptance receipts use `g2-list-primitives-full-closure-*20261128`:
+842 concentrated cases and 99 independent Cirq1.6 cases pass; 109 frozen blobs
+are unchanged. Existing original full tests/notebook, exact primitive/model
+resource rows and strict owner checks are reused. This batch changes only
+these complete source dispositions. The immediately preceding 32 local
+integration checks remain valid for the unchanged list owners. Compiler scope,
+English/links, architecture/IR/API/required checks and whitespace pass; reference
+policy retains 570 existing findings with no new consumer or waiver. No source,
+algorithm, public contract, checker or dependency exclusion is changed.
