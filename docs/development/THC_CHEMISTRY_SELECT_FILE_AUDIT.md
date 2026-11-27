@@ -142,3 +142,26 @@ whose blob is independently verified. This batch does not infer the global
 complete-constructor total from registration presence: the old 117/303 display
 was a historical snapshot preceding later sparse/Hubbard receipts, and complete
 aggregate constructor reconciliation remains an explicit Q-0876 obligation.
+
+
+## Complete file disposition, 2026-11-28
+
+Q-0419 closes the complete source under the approved faithful-migration rule:
+all rotation fields/signature/adjoint/label/model branches, SELECT fields and
+register properties, fifteen-call body, generic control dispatch, actual example
+and documentation declaration are accounted for by the owners above. Both
+rotation flags, nondefault erasure block factors and both external control
+polarities retain source behavior. Existing call/operand, typed source context,
+exact phase-wrapper primitive/feedback, full small complex state, inverse and
+private-work evidence is reused.
+
+THCRotations is explicitly a placeholder in the unchanged source. Its missing
+physical recipe and the source external-control bystander are source limitations,
+not absent native implementations of available source code. The original
+source file supplies no independent controlled rotation algorithm to transplant.
+The mathematical network operation remains an explicit separate execution
+profile; it is not used as evidence that the literal rotation exists. Physical
+binding refuses missing bodies before allocation. The older whole-file hold
+above is superseded by this approved disposition, with no claimed physical
+primitive inventory for the literal root. Actual large native Walk composition
+remains Q-0422/Q-0658, and is not closed by this SELECT acceptance.
