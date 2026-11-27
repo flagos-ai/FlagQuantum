@@ -1,5 +1,7 @@
 """Locked nullable source decomposition and native coherent phase oracle."""
 
+from __future__ import annotations
+
 from cmath import exp
 from collections import Counter
 from hashlib import sha1
@@ -7,9 +9,18 @@ from importlib.metadata import version
 from itertools import product
 from math import pi, sqrt
 from pathlib import Path
+from typing import TYPE_CHECKING
 
-import cirq
-import numpy as np
+from tests._reference_dependencies import unavailable_reference
+
+try:
+    import cirq
+except ModuleNotFoundError as _reference_import_error:
+    unavailable_reference(_reference_import_error)
+try:
+    import numpy as np
+except ModuleNotFoundError as _reference_import_error:
+    unavailable_reference(_reference_import_error)
 import pytest
 
 from examples.algorithms.binary_field_arithmetic import FieldOperation
@@ -30,6 +41,9 @@ from tests.unit.test_register_subtraction import assert_source
 from tests.unit.test_source_qrom import source_qrom_gates
 from tests.unit.test_sparse_chemistry_prepare import _branch
 
+if TYPE_CHECKING:
+    from qualtran.bloqs.arithmetic.trigonometric.arctan import ArcTan
+
 pytestmark = [pytest.mark.unit, pytest.mark.ftqc_reference]
 
 
@@ -39,7 +53,7 @@ def frozen_source(pytestconfig: pytest.Config) -> None:
     from qualtran.bloqs.mean_estimation import complex_phase_oracle
 
     assert version("qualtran") == "0.7.0"
-    assert kickmix.__version__ == "0.1" and hasattr(kickmix, "Simulator")
+    assert getattr(kickmix, "__version__") == "0.1" and hasattr(kickmix, "Simulator")
     root = Path(complex_phase_oracle.__file__).parent
     for name, digest in (
         ("complex_phase_oracle.py", "6abd4c2811b54184eb1ba33e06c1d11d919c852c"),
@@ -48,6 +62,14 @@ def frozen_source(pytestconfig: pytest.Config) -> None:
         contents = (root / name).read_bytes()
         assert sha1(f"blob {len(contents)}\0".encode() + contents).hexdigest() == digest
     pytestconfig.addinivalue_line("markers", "slow: original reference suite")
+
+
+def _arctan_outputs(source: ArcTan, word: int) -> tuple[int, int, int]:
+    """Validate the concrete tuple behind the source ArithmeticGate-wide return type."""
+    result = source.apply(word, 0, 0)
+    assert isinstance(result, tuple) and len(result) == 3
+    assert all(isinstance(value, int) for value in result)
+    return result
 
 
 def fixture(n: int, precision: int, *, adjoint: bool = False) -> DynamicCircuit:
@@ -85,7 +107,7 @@ def test_original_phase_grid_and_all_work_zero(n: int, precision: int) -> None:
     state = {x << work: complex(x + 1, x - 2) / scale for x in range(1 << n)}
     expected = {}
     for x in range(1 << n):
-        returned, sign, magnitude = source.apply(x, 0, 0)
+        returned, sign, magnitude = _arctan_outputs(source, x)
         assert returned == x
         expected[x << work] = state[x << work] * exp(
             (-1 if sign else 1) * 1j * pi * magnitude / (1 << precision)
@@ -116,7 +138,9 @@ def test_source_models_and_direct_calls(n: int, precision: int) -> None:
     )
     from qualtran.bloqs.mean_estimation.complex_phase_oracle_test import ExampleSelect
     from qualtran.cirq_interop.testing import GateHelper
-    from qualtran.resource_counting import QECGatesCost, QubitCount, get_cost_value
+    from qualtran.resource_counting._bloq_counts import QECGatesCost
+    from qualtran.resource_counting._costing import get_cost_value
+    from qualtran.resource_counting._qubit_counts import QubitCount
 
     source = SourceOracle(ExampleSelect(n), precision)
     native = ComplexPhaseOracle(
@@ -183,7 +207,7 @@ def test_lookup_stages_match_source_qrom_for_literal_arctan_words(
     phases = [i for i, g in enumerate(gates) if g.name == "cphase"]
     start, end = phases[0] - 1, phases[-1] + 1
     source = ArcTan(n, precision)
-    data = tuple(source.apply(x, 0, 0) for x in range(1 << n))
+    data = tuple(_arctan_outputs(source, x) for x in range(1 << n))
     qrom = QROM(
         (np.asarray([r[1] for r in data]), np.asarray([r[2] for r in data])),
         (n,),
@@ -270,7 +294,7 @@ def test_controlled_protocol_and_non_self_adjoint_encoder() -> None:
 
     expected = {
         index: amp
-        * exp(-1j * pi * ArcTan(2, 3).apply(i & 3 if i >> 2 else 0, 0, 0)[2] / 8)
+        * exp(-1j * pi * _arctan_outputs(ArcTan(2, 3), i & 3 if i >> 2 else 0)[2] / 8)
         for i, (index, amp) in enumerate(data.items())
     }
     count = sum(g.name == "measure" for g in circuit.to_ir().instructions)
