@@ -41,3 +41,24 @@ source model counts. No measurements occur in these linear fixtures. Existing
 source tests, notebooks and presentation evidence are reused after checking that
 the selected dependency paths are unchanged. Source defects do not waive a
 missing valid-source native path.
+
+
+## Karatsuba literal dependency profile
+
+Compiler may compose a separately named literal Karatsuba implementation and
+RIGHT-result shell using the existing polynomial, shift and constant owners.
+The original generic constant adjoint reverses its logical child direction,
+but the resulting linear physical builder still emits forward PLU. The literal
+physical profile must therefore use forward constant scaling at that location.
+The established mathematical Karatsuba owner keeps exact inverse scaling.
+Both profiles share one root schedule and allocation shell; do not duplicate the
+recursive polynomial algorithm or claim literal output is a mathematical product.
+
+The implementation has three MSB-first THRU words f/g/h. Its h is arbitrary
+logical data, not clean work. The public source shell has THRU x/y and RIGHT
+result, initially allocated zero. Recursive high padding is private clean work
+and must be verified zero. Frozen source degree-one public refusal is retained.
+Before this closes Q-0519, qualify actual catalog calls and logical adjoint
+identities, validate raw source operators/aliases and independent resource models,
+and retain measured-erasure compatibility or failure as a separate observation.
+No public API, IR vocabulary or numerical execution contract changes here.
