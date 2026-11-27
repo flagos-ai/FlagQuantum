@@ -1,3 +1,5 @@
+from tests._reference_dependencies import unavailable_reference
+
 #  Copyright 2025 Google LLC
 #
 #  Licensed under the Apache License, Version 2.0 (the "License");
@@ -15,7 +17,10 @@
 # Adapted from Qualtran v0.7.0 rotation_synthesis/lattice/test_utils_test.py.
 # https://github.com/quantumlib/Qualtran/blob/bcb17bb25360ed68ce3bc084645db3e929799389/qualtran/rotation_synthesis/lattice/test_utils_test.py
 
-import numpy as np
+try:
+    import numpy as np
+except ModuleNotFoundError as _reference_import_error:
+    unavailable_reference(_reference_import_error)
 
 from flagquantum.synth import _lattice as lattice
 from tests.unit import rotation_lattice_fixtures as tu

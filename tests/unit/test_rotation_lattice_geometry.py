@@ -1,3 +1,5 @@
+from tests._reference_dependencies import unavailable_reference
+
 #  Copyright 2025 Google LLC
 #
 #  Licensed under the Apache License, Version 2.0 (the "License");
@@ -15,9 +17,16 @@
 # Adapted from Qualtran v0.7.0 rotation_synthesis/lattice/geometry_test.py.
 # https://github.com/quantumlib/Qualtran/blob/bcb17bb25360ed68ce3bc084645db3e929799389/qualtran/rotation_synthesis/lattice/geometry_test.py
 
-import numpy as np
+try:
+    import numpy as np
+except ModuleNotFoundError as _reference_import_error:
+    unavailable_reference(_reference_import_error)
 import pytest
-from numpy.typing import NDArray
+
+try:
+    from numpy.typing import NDArray
+except ModuleNotFoundError as _reference_import_error:
+    unavailable_reference(_reference_import_error)
 
 import flagquantum.synth._rotation_math as mc
 import flagquantum.synth._rotation_types as rst
@@ -88,8 +97,13 @@ class TestEllipse:
 
 def test_locked_numeric_bound_types_and_plot() -> None:
     import mpmath
-    from matplotlib.figure import Figure
-    from qualtran.rotation_synthesis import lattice as source
+
+    try:
+        from matplotlib.figure import Figure
+    except ModuleNotFoundError as _reference_import_error:
+        unavailable_reference(_reference_import_error)
+    from qualtran.rotation_synthesis.lattice._geometry import Ellipse as SourceEllipse
+    from qualtran.rotation_synthesis.lattice._geometry import Range as SourceRange
 
     inputs = [
         (0, np.int64(2)),
@@ -99,7 +113,7 @@ def test_locked_numeric_bound_types_and_plot() -> None:
     ]
     for start, end in inputs:
         bounds = lattice.Range.from_bounds(start, end)
-        expected = source.Range.from_bounds(start, end)
+        expected = SourceRange.from_bounds(start, end)
         assert (type(bounds.start), type(bounds.end)) == (
             type(expected.start),
             type(expected.end),
@@ -109,7 +123,7 @@ def test_locked_numeric_bound_types_and_plot() -> None:
     matrix = [[2.0, -0.3], [-0.3, 1.0]]
     center = [0.5, -1.0]
     native = lattice.Ellipse(matrix, center)
-    reference = source.Ellipse(matrix, center)
+    reference = SourceEllipse(matrix, center)
     assert native.as_formula(".2f") == reference.as_formula(".2f")
     axes = Figure().subplots()
     locked_axes = Figure().subplots()

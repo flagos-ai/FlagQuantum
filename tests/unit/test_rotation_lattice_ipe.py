@@ -11,15 +11,18 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
-
 # Adapted from Qualtran v0.7.0 rotation_synthesis/lattice/ipe_test.py.
 # https://github.com/quantumlib/Qualtran/blob/bcb17bb25360ed68ce3bc084645db3e929799389/qualtran/rotation_synthesis/lattice/ipe_test.py
-
 import itertools
 import math
 from collections.abc import Iterator
 
-import numpy as np
+from tests._reference_dependencies import unavailable_reference
+
+try:
+    import numpy as np
+except ModuleNotFoundError as _reference_import_error:
+    unavailable_reference(_reference_import_error)
 import pytest
 
 import flagquantum.synth._rotation_math as mc
@@ -131,8 +134,23 @@ def test_get_points_from_state(state: lattice.SelingerState) -> None:
 def test_lockstep_order_and_state_transforms(float_backend: bool) -> None:
     import mpmath
     from qualtran.rotation_synthesis import _math_config as source_math
-    from qualtran.rotation_synthesis import lattice as source
     from qualtran.rotation_synthesis.lattice import _test_utils as source_fixtures
+    from qualtran.rotation_synthesis.lattice._geometry import Range as SourceRange
+    from qualtran.rotation_synthesis.lattice._geometry import (
+        Rectangle as SourceRectangle,
+    )
+    from qualtran.rotation_synthesis.lattice._ipe import (
+        enumerate_1d as source_enumerate_1d,
+    )
+    from qualtran.rotation_synthesis.lattice._ipe import (
+        enumerate_upright as source_enumerate_upright,
+    )
+    from qualtran.rotation_synthesis.lattice._ipe import (
+        get_overall_action as source_get_overall_action,
+    )
+    from qualtran.rotation_synthesis.lattice._ipe import (
+        get_points_from_state as source_get_points_from_state,
+    )
 
     with mpmath.workdps(60):
         config = mc.NumpyConfig if float_backend else mc.with_dps(60)
@@ -146,14 +164,14 @@ def test_lockstep_order_and_state_transforms(float_backend: bool) -> None:
         ]:
             interval = lattice.Range.from_bounds(*bounds)
             comp_interval = lattice.Range.from_bounds(*complement)
-            locked_interval = source.Range.from_bounds(*bounds)
-            locked_comp_interval = source.Range.from_bounds(*complement)
+            locked_interval = SourceRange.from_bounds(*bounds)
+            locked_comp_interval = SourceRange.from_bounds(*complement)
             assert [
                 (p.a, p.b)
                 for p in lattice.enumerate_1d(interval, comp_interval, config)
             ] == [
                 (p.a, p.b)
-                for p in source.enumerate_1d(
+                for p in source_enumerate_1d(
                     locked_interval, locked_comp_interval, locked_config
                 )
             ]
@@ -162,9 +180,9 @@ def test_lockstep_order_and_state_transforms(float_backend: bool) -> None:
                 lattice.Rectangle.make_square(comp_interval),
                 config,
             )
-            reference = source.enumerate_upright(
-                source.Rectangle.make_square(locked_interval),
-                source.Rectangle.make_square(locked_comp_interval),
+            reference = source_enumerate_upright(
+                SourceRectangle.make_square(locked_interval),
+                SourceRectangle.make_square(locked_comp_interval),
                 locked_config,
             )
             assert [point.coords for point in points] == [
@@ -175,7 +193,7 @@ def test_lockstep_order_and_state_transforms(float_backend: bool) -> None:
             tu.make_states(20), source_fixtures.make_states(20), strict=True
         ):
             action = lattice.get_overall_action(state, config)
-            locked_action = source.get_overall_action(locked_state, locked_config)
+            locked_action = source_get_overall_action(locked_state, locked_config)
             assert action.path == locked_action.path
             assert [(v.a, v.b) for v in action.g.matrix.flat] == [
                 (v.a, v.b) for v in locked_action.g.matrix.flat
@@ -190,12 +208,16 @@ def test_lockstep_order_and_state_transforms(float_backend: bool) -> None:
                 p.coords for p in lattice.get_points_from_state(reduced, config)
             ] == [
                 p.coords
-                for p in source.get_points_from_state(locked_reduced, locked_config)
+                for p in source_get_points_from_state(locked_reduced, locked_config)
             ]
 
 
 def test_lattice_namespace_and_zero_width_boundary() -> None:
     from qualtran.rotation_synthesis import lattice as source
+    from qualtran.rotation_synthesis.lattice._geometry import Range as SourceRange
+    from qualtran.rotation_synthesis.lattice._ipe import (
+        enumerate_1d as source_enumerate_1d,
+    )
 
     assert set(lattice.__all__) == {
         name
@@ -212,7 +234,7 @@ def test_lattice_namespace_and_zero_width_boundary() -> None:
         from qualtran.rotation_synthesis import _math_config as source_math
 
         list(
-            source.enumerate_1d(
-                source.Range(1, 1), source.Range(0, 1), source_math.MathConfig()
+            source_enumerate_1d(
+                SourceRange(1, 1), SourceRange(0, 1), source_math.MathConfig()
             )
         )

@@ -11,15 +11,20 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
-
 # Adapted from Qualtran v0.7.0 rotation_synthesis/lattice/_test_utils.py.
 # https://github.com/quantumlib/Qualtran/blob/bcb17bb25360ed68ce3bc084645db3e929799389/qualtran/rotation_synthesis/lattice/_test_utils.py
-
 from collections.abc import Iterator
-from typing import cast
 
-import numpy as np
-from numpy.typing import NDArray
+from tests._reference_dependencies import unavailable_reference
+
+try:
+    import numpy as np
+except ModuleNotFoundError as _reference_import_error:
+    unavailable_reference(_reference_import_error)
+try:
+    from numpy.typing import NDArray
+except ModuleNotFoundError as _reference_import_error:
+    unavailable_reference(_reference_import_error)
 
 import flagquantum.synth._lattice._grid_operators as go
 from flagquantum.synth._lattice import _geometry, _state
@@ -43,7 +48,7 @@ def make_psd(rng: np.random.Generator) -> NDArray[np.float64]:
         a = (rng.random((2, 2)) * 2 - 1) * 10
     ret = a @ a.T
     ret /= np.sqrt(np.linalg.det(ret))
-    return cast(NDArray[np.float64], ret)
+    return ret
 
 
 def random_grid_operator(
