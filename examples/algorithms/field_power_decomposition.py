@@ -21,6 +21,9 @@ from flagquantum.compiler.registers.finite_field.frobenius_component import (
 from flagquantum.compiler.registers.finite_field.inverse_component import (
     field_inverse_program,
 )
+from flagquantum.compiler.registers.finite_field.inverse_decomposition import (
+    field_inverse_degree_one_program,
+)
 from flagquantum.compiler.registers.finite_field.karatsuba_component import (
     karatsuba_multiplication_program,
 )
@@ -62,6 +65,8 @@ def field_power_program(
     dtype = resolve_quantum_field_storage(dtype)
     modulus = int(resolve_finite_field_encoding(dtype).gf_type.irreducible_poly)
     if operation == "GF2Inverse":
+        if dict(dtype.parameters).get("degree") == 1:
+            return field_inverse_degree_one_program(dtype)
         return field_inverse_program(dtype, modulus=modulus)
     count, adjoint = parameters["k"], parameters["uncompute"]
     if not isinstance(count, SupportsIndex) or type(adjoint) is not bool:

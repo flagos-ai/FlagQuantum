@@ -10,6 +10,7 @@ from flagquantum.compiler.registers.component_definition_match import (
     matches_component_definition,
 )
 from flagquantum.compiler.registers.finite_field.constant_multiplication_component import (
+    constant_matrix_decomposition_program,
     constant_multiplication_decomposition_program,
     constant_multiplication_program,
 )
@@ -25,7 +26,7 @@ from flagquantum.compiler.registers.finite_field.monomial_component import (
     monomial_multiplication_program,
 )
 from flagquantum.compiler.registers.finite_field.multiplication_component import (
-    field_multiplication_program,
+    field_multiplication_decomposition_program,
 )
 from flagquantum.compiler.registers.finite_field.polynomial_product_component import (
     binary_polynomial_program,
@@ -33,7 +34,10 @@ from flagquantum.compiler.registers.finite_field.polynomial_product_component im
 )
 from flagquantum.core.ir.program import ProgramRecord
 from flagquantum.core.ir.program.signatures import Signature
-from flagquantum.simulation.finite_field_metadata import resolve_finite_field_encoding
+from flagquantum.simulation.finite_field_metadata import (
+    resolve_finite_field_encoding,
+    resolve_quantum_field_storage,
+)
 from flagquantum.simulation.finite_field_multiplication import field_scale_matrix
 
 
@@ -60,21 +64,26 @@ def field_product_catalog_program(
     dtype = ports[0].dtype
     if type(dtype.num_qubits) is not int:
         return None
-    modulus = int(resolve_finite_field_encoding(dtype).gf_type.irreducible_poly)
+    dtype = resolve_quantum_field_storage(dtype)
+    encoding = resolve_finite_field_encoding(dtype)
+    modulus = int(encoding.gf_type.irreducible_poly)
     if operation == "GF2Multiplication":
         accumulate = parameters["plus_equal_prod"]
         assert type(accumulate) is bool
-        return field_multiplication_program(
+        return field_multiplication_decomposition_program(
             dtype, modulus=modulus, plus_equal_prod=accumulate
         )
     if operation == "GF2MulViaKaratsuba":
         return karatsuba_multiplication_program(dtype, modulus=modulus)
     if operation == "GF2MulK":
         constant = parameters["const"]
-        assert type(constant) is int
-        return constant_multiplication_decomposition_program(
-            dtype, constant, modulus=modulus
+        if type(constant) not in (int, bool):
+            return None
+        matrix = tuple(
+            tuple(int(bit) for bit in row)
+            for row in field_scale_matrix(encoding, constant)
         )
+        return constant_matrix_decomposition_program(dtype, matrix)
     shift = parameters["k"]
     if type(shift) is not int:
         return None
@@ -96,6 +105,8 @@ def field_product_definition(
     Exact native linear inverses retain a dagger label because the frozen
     SynthesizeLRCircuit ignores its adjoint flag in its decomposition.
     """
+    if dict(root_ports[0].dtype.parameters).get("characteristic") not in (None, 2):
+        return None
     function = next(f for f in record.functions if f.name == entry)
     registers = function.registers or ()
     ports = tuple(r.name for r in registers)
