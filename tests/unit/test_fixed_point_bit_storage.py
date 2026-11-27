@@ -52,16 +52,16 @@ def test_other_storage_and_noncanonical_records_are_rejected(
         executable_register_width(dtype)
 
 
-def test_symbolic_storage_retains_physical_refusal() -> None:
+def test_unknown_wire_width_refuses_but_approved_interpretation_can_remain_symbolic() -> (
+    None
+):
     import sympy
 
     width = sympy.Symbol("n", integer=True, positive=True)
-    for dtype in (
-        fixed_point_register_type(width, 1),
-        fixed_point_register_type(1, width),
-    ):
-        with pytest.raises(ValueError):
-            executable_register_width(dtype)
+    with pytest.raises(ValueError):
+        executable_register_width(fixed_point_register_type(width, 1))
+    # Proposal 130 changes raw storage admission, not fixed-point arithmetic.
+    assert executable_register_width(fixed_point_register_type(1, width)) == 1
 
 
 @pytest.mark.parametrize("fraction", (-1, -2, -7))

@@ -31,51 +31,68 @@ from .registers import Register, RegisterSide, RegisterType
 from .signatures import Signature
 
 
-def executable_register_width(dtype: RegisterType) -> int:
-    """Return the concrete width admitted for a packed quantum word.
+def _storage_integer(value: object) -> int:
+    """Resolve exact integral constants without evaluating free parameters."""
+    if type(value) is int:
+        return value
+    from sympy import Expr
 
-    Execution admits concrete bit, opaque, integer and raw field storage,
-    including packed polynomials (Proposals 109 and 125). Nonbinary storage
-    does not admit numerical field arithmetic or control interpretations.
-    Proposals 113 through 116 admit concrete unsigned fixed-point storage,
-    including empty words, and signed fixed-point words. Proposal 124 admits
-    signed empty words only when their concrete fractional width is negative.
-    Canonical parameters retain their metadata identity during binding.
+    if (
+        isinstance(value, Expr)
+        and not value.free_symbols
+        and value.is_integer is True
+        and value.is_finite is True
+    ):
+        return int(value)
+    raise ValueError("storage requires an exact concrete integer width")
+
+
+def _storage_validation_view(dtype: RegisterType) -> RegisterType:
+    """Validate resolved constants while retaining unresolved interpretation fields."""
+    if type(dtype.quantum_bits) is int and all(
+        type(value) in (int, bool) for _, value in dtype.parameters
+    ):
+        return dtype
+    from sympy import Expr
+
+    parameters = []
+    for name, value in dtype.parameters:
+        if isinstance(value, Expr):
+            if not value.free_symbols:
+                value = _storage_integer(value)
+            elif value.is_integer is False:
+                raise ValueError("storage metadata must be integral or unresolved")
+        parameters.append((name, value))
+    return replace(
+        dtype,
+        quantum_bits=_storage_integer(dtype.quantum_bits),
+        parameters=tuple(parameters),
+    )
+
+
+def executable_register_width(dtype: RegisterType) -> int:
+    """Resolve raw quantum storage without interpreting numerical metadata.
+
+    Proposal 130 admits known-size canonical quantum words with unresolved
+    interpretation parameters. Validation uses exact constant projections while
+    the original descriptor remains attached to every port and operation.
+    Numerical arithmetic, classical storage and array extents are independent.
     """
     if not isinstance(dtype, RegisterType):
         raise ValueError("an executable word needs a neutral RegisterType")
-    width = dtype.quantum_bits
-    if dtype.encoding in {"finite_field", "finite_field_polynomial"}:
-        return _field_register_width(dtype)
-    if dtype.encoding == "fixed_point":
-        logical_register_width(dtype)
-        parameters = dict(dtype.parameters)
-        if (
-            type(width) is int
-            and width >= 0
-            and type(parameters["fractional_width"]) is int
-            and parameters["fractional_width"] <= width
-        ):
-            return width
-        raise ValueError(f"unsupported executable register descriptor {dtype!r}")
-    if (
-        dtype.encoding
-        not in {"bit", "opaque", "uint", "signed", "ones_complement", "montgomery"}
-        or type(width) is not int
-        or width < 0
-        or type(dtype.classical_bits) is not int
-        or dtype.classical_bits != 0
-        or any(type(value) is not int for _, value in dtype.parameters)
-        or (dtype.encoding == "bit" and width != 1)
-    ):
-        raise ValueError(f"unsupported executable register descriptor {dtype!r}")
     try:
+        # Logical validation checks canonical names/order before destructuring.
         logical_register_width(dtype)
-    except ValueError as error:
+        view = _storage_validation_view(dtype)
+        width = dtype.quantum_bits if view is dtype else logical_register_width(view)
+        resolved = _storage_integer(width)
+        if resolved < 0:
+            raise ValueError("storage width must be nonnegative")
+        return resolved
+    except (ValueError, TypeError) as error:
         raise ValueError(
             f"unsupported executable register descriptor {dtype!r}"
         ) from error
-    return width
 
 
 def logical_register_width(dtype: RegisterType) -> SymbolicInt:
@@ -143,10 +160,13 @@ def logical_register_width(dtype: RegisterType) -> SymbolicInt:
 
 def concrete_logical_register_width(dtype: RegisterType) -> int:
     """Resolve logical bit arity for split/join without physical admission."""
-    width = logical_register_width(dtype)
-    if type(width) is not int:
-        raise ValueError("split/join requires a concrete logical register width")
-    return width
+    logical_register_width(dtype)
+    try:
+        return _storage_integer(logical_register_width(_storage_validation_view(dtype)))
+    except ValueError as error:
+        raise ValueError(
+            "split/join requires a concrete logical register width"
+        ) from error
 
 
 def logical_classical_register_width(dtype: RegisterType) -> SymbolicInt:
