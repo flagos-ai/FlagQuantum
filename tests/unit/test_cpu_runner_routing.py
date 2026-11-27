@@ -455,8 +455,14 @@ def test_image_provisioning_keeps_credentials_off_the_import_hosts() -> None:
     assert export["concurrency"] == {"group": "flagquantum-gh-6", "queue": "max"}
     imported = document["jobs"]["prewarm"]
     assert imported["needs"] == "export"
-    assert "flagquantum-a800-cpu" in imported["runs-on"]
-    assert imported["strategy"]["matrix"]["host"] == ["a800-171", "a800-172"]
+    assert "flagquantum-cpu" in imported["runs-on"]
+    assert imported["strategy"]["max-parallel"] == 16
+    assert imported["strategy"]["matrix"]["host"] == (
+        '${{ fromJSON(inputs.runner-labels || \'["a800-171","a800-172"]\') }}'
+    )
+    dispatch = document[True]["workflow_dispatch"]["inputs"]
+    assert dispatch["runner-labels"]["default"] == '["a800-171","a800-172"]'
+    assert dispatch["runner-labels"]["type"] == "string"
     assert "head.repo.full_name == github.repository" in imported["if"]
     assert "needs.export.result == 'skipped'" in imported["if"]
     commands = "\n".join(step.get("run", "") for step in imported["steps"])

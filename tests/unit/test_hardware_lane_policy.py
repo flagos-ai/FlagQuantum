@@ -39,7 +39,7 @@ PREWARM_CPU_LABELS = [
     "self-hosted",
     "linux",
     "x64",
-    "flagquantum-a800-cpu",
+    "flagquantum-cpu",
     "${{ matrix.host }}",
 ]
 PREWARM_CPU_GUARD = (
@@ -483,6 +483,16 @@ def test_cpu_image_qualification_rejects_forks_and_unprovisioned_hardware() -> N
     job = _jobs(WORKFLOWS / "prewarm-ci-cpu.yml")["prewarm"]
     assert job["runs-on"] == PREWARM_CPU_LABELS
     assert job["if"] == PREWARM_CPU_GUARD
+    document = yaml.safe_load((WORKFLOWS / "prewarm-ci-cpu.yml").read_text())
+    dispatch = document[True]["workflow_dispatch"]["inputs"]
+    assert dispatch["runner-labels"]["type"] == "string"
+    assert dispatch["runner-labels"]["default"] == '["a800-171","a800-172"]'
+    assert job["strategy"]["matrix"]["host"] == (
+        '${{ fromJSON(inputs.runner-labels || \'["a800-171","a800-172"]\') }}'
+    )
+    commands = "\n".join(step.get("run", "") for step in job["steps"])
+    assert "--pull never --network none" in commands
+    assert "docker pull" not in commands and "docker load" not in commands
     assert _is_self_hosted(job)
     assert not _allows_untrusted_code(job, frozenset({"pull_request"}))
     for event in ("workflow_run", "pull_request_target"):

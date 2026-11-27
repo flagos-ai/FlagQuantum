@@ -1191,3 +1191,27 @@ sole measured-heavy cases use the existing CPU admission owner's exclusive
 profile. Normal local tier commands keep their existing behavior. See the
 [critical-path implementation record](migration/ci-partition-critical-path.md)
 for evidence preservation and the pending full-job timing objective.
+
+
+### Read-only qualification of additional CPU slots
+
+The default prewarm run still targets the two A800 hosts. Before broadening any
+core or Runtime routing, qualify the exact existing CPU runner registrations:
+
+```bash
+gh workflow run prewarm-ci-cpu.yml --ref <verified-branch> \
+  -f export-bundle=false \
+  -f 'runner-labels=["fq-mc550-111-cpu01-validation"]'
+```
+
+Use the unique CPU labels from the current runner inventory and omit offline
+registrations. Qualification is bounded to sixteen simultaneous probes. A host-wide success does not certify another user or daemon's
+cache; qualify each registration that will receive the new profile. The probe
+retains the same four locked images, digest checks, dependency and CPU-only
+checks, core optional-framework absence, `--pull never` and `--network none`.
+It does not install, import or download images, change quotas, restart services
+or alter runner labels. Missing profiles remain failures requiring the existing
+administrator provisioning process. Route changes require positive qualification
+of their actual recipient slots; they are separate from this read-only probe.
+The trusted same-repository guard and hosted PR fallback remain in effect for
+test workflows, and fork PRs cannot reach qualification on a self-hosted runner.
