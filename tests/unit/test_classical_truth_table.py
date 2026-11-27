@@ -6,7 +6,12 @@ from itertools import product
 from types import SimpleNamespace
 from typing import Any
 
-import numpy as np
+from tests._reference_dependencies import unavailable_reference
+
+try:
+    import numpy as np
+except ModuleNotFoundError as _reference_import_error:
+    unavailable_reference(_reference_import_error)
 import pytest
 import torch
 
@@ -66,7 +71,7 @@ def source_adapter(
     ],
 )
 def test_existing_value_domains_match_source_table_and_text(kind: str) -> None:
-    from qualtran import (
+    from qualtran._infra.data_types import (
         BQUInt,
         CBit,
         QBit,
@@ -76,12 +81,15 @@ def test_existing_value_domains_match_source_table_and_text(kind: str) -> None:
         QMontgomeryUInt,
         QUInt,
     )
-    from qualtran import Register as SourceRegister
-    from qualtran import Signature as SourceSignature
+    from qualtran._infra.registers import Register as SourceRegister
+    from qualtran._infra.registers import Signature as SourceSignature
     from qualtran.simulation.classical_sim import (
         format_classical_truth_table as source_format,
     )
-    from qualtran.simulation.classical_sim import get_classical_truth_table
+
+    from tests.unit.classical_source_callbacks import (
+        source_truth_table as get_classical_truth_table,
+    )
 
     types: dict[str, Any] = {
         "bit": QBit(),
@@ -130,7 +138,9 @@ def test_existing_value_domains_match_source_table_and_text(kind: str) -> None:
 def test_cartesian_order_duplicates_empty_domains_and_output_identity(
     domains: tuple[Sequence[object], Sequence[object]],
 ) -> None:
-    from qualtran.simulation.classical_sim import get_classical_truth_table
+    from tests.unit.classical_source_callbacks import (
+        source_truth_table as get_classical_truth_table,
+    )
 
     signature = Signature.build(a=2, b=2)
     outputs: list[Sequence[object]] = []
@@ -162,11 +172,13 @@ def test_cartesian_order_duplicates_empty_domains_and_output_identity(
 
 @pytest.mark.parametrize("shape", [(1,), (0,), (1, 0), (2, 2)])
 def test_all_input_shapes_are_refused_before_any_domain(shape: tuple[int, ...]) -> None:
-    from qualtran.simulation.classical_sim import get_classical_truth_table
+    from tests.unit.classical_source_callbacks import (
+        source_truth_table as get_classical_truth_table,
+    )
 
     bit = next(iter(Signature.build(x=1))).dtype
     signature = Signature((Register("scalar", bit), Register("array", bit, shape)))
-    for action in (
+    actions: tuple[Callable[[], object], ...] = (
         lambda: classical_truth_table(
             signature,
             lambda r: pytest.fail("domain"),
@@ -179,7 +191,8 @@ def test_all_input_shapes_are_refused_before_any_domain(shape: tuple[int, ...]) 
                 lambda v: pytest.fail("evaluate"),
             )
         ),
-    ):
+    )
+    for action in actions:
         with pytest.raises(NotImplementedError) as error:
             action()
         assert str(error.value) == ""
@@ -189,7 +202,9 @@ def test_all_input_shapes_are_refused_before_any_domain(shape: tuple[int, ...]) 
     "mode", ["empty", "prepare", "discard", "paired_names", "shaped_output"]
 )
 def test_directional_ports_and_empty_input_cartesian_identity(mode: str) -> None:
-    from qualtran.simulation.classical_sim import get_classical_truth_table
+    from tests.unit.classical_source_callbacks import (
+        source_truth_table as get_classical_truth_table,
+    )
 
     bit = next(iter(Signature.build(x=1))).dtype
     registers = {
@@ -220,7 +235,9 @@ def test_directional_ports_and_empty_input_cartesian_identity(mode: str) -> None
 
 @pytest.mark.parametrize("failure", ["domain", "iteration", "evaluate"])
 def test_provider_errors_propagate_with_the_same_trace(failure: str) -> None:
-    from qualtran.simulation.classical_sim import get_classical_truth_table
+    from tests.unit.classical_source_callbacks import (
+        source_truth_table as get_classical_truth_table,
+    )
 
     signature = Signature.build(a=1, b=1)
     trace: list[object] = []
@@ -244,10 +261,11 @@ def test_provider_errors_propagate_with_the_same_trace(failure: str) -> None:
         raise error
 
     expected: list[object] | None = None
-    for run in (
+    runs: tuple[Callable[[], object], ...] = (
         lambda: classical_truth_table(signature, domain, evaluate),
         lambda: get_classical_truth_table(source_adapter(signature, domain, evaluate)),
-    ):
+    )
+    for run in runs:
         with pytest.raises(RuntimeError) as caught:
             run()
         assert caught.value is error
@@ -284,11 +302,14 @@ def test_formatting_exact_separator_newline_and_raw_objects(
 
 
 def test_table_evaluator_uses_native_graph_and_complete_measured_branches() -> None:
-    from qualtran.resource_counting import QECGatesCost, get_cost_value
-    from qualtran.simulation.classical_sim import get_classical_truth_table
+    from qualtran.resource_counting._bloq_counts import QECGatesCost
+    from qualtran.resource_counting._costing import get_cost_value
 
     from flagquantum.compiler.registers.register_binding import bind_register_program
     from flagquantum.simulation.component_classical_state import ComponentClassicalState
+    from tests.unit.classical_source_callbacks import (
+        source_truth_table as get_classical_truth_table,
+    )
     from tests.unit.measurement_checks import forced_branch
     from tests.unit.test_component_classical_state import add_values, order
     from tests.unit.test_component_hierarchy_adjoint import wrapped_add
