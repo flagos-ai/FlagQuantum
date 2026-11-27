@@ -126,7 +126,17 @@ def _bookkeeping_factory(
                 (),
                 registers=tuple(cast_signature(source, target, tuple(dimensions))),
             )
-            if source.is_symbolic() or target.is_symbolic()
+            if any(
+                (
+                    isinstance(dtype.quantum_bits, sympy.Expr)
+                    and bool(dtype.quantum_bits.free_symbols)
+                )
+                or (
+                    dtype.parameters[:1] == (("storage", "classical"),)
+                    and dtype.is_symbolic()
+                )
+                for dtype in (source, target)
+            )
             else cast_word_function(name, source, target, tuple(dimensions))
         )
     else:
@@ -140,6 +150,10 @@ def _bookkeeping_factory(
             )
             function = constructor(name, dtype, bool(dirty))
         else:
+            if dtype.is_symbolic():
+                raise SerializationError(
+                    f"{kind} does not accept a symbolic source dtype"
+                )
             rebind = split_word_function if kind == "Split" else join_word_function
             function = rebind(name, dtype)
     if registers is not None and function.registers != registers:

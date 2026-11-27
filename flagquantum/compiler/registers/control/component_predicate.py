@@ -42,6 +42,8 @@ def validate_control_ports(
             "finite_field": "unsigned",
             "finite_field_polynomial": "unsigned",
         }.get(register.dtype.encoding)
+        if register.dtype.is_symbolic():
+            raise ValueError("control predicates require a nonsymbolic source dtype")
         width = executable_register_width(register.dtype)
         if (
             register.dtype.encoding in {"finite_field", "finite_field_polynomial"}
