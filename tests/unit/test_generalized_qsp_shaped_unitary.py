@@ -4,8 +4,16 @@ from collections.abc import Mapping
 from itertools import product
 from typing import Any
 
-import cirq
-import numpy as np
+from tests._reference_dependencies import unavailable_reference
+
+try:
+    import cirq
+except ModuleNotFoundError as _reference_import_error:
+    unavailable_reference(_reference_import_error)
+try:
+    import numpy as np
+except ModuleNotFoundError as _reference_import_error:
+    unavailable_reference(_reference_import_error)
 import pytest
 import torch
 
@@ -73,9 +81,11 @@ def shaped_unitary(
     width: int, shape: tuple[int, ...]
 ) -> tuple[dict[tuple[int | None, bool], ProgramRecord], Any]:
     """Expose packed or shaped THRU words around the accepted entangling child."""
-    from qualtran import BloqBuilder, QBit, QUInt
-    from qualtran import Register as SourceRegister
-    from qualtran import Signature as SourceSignature
+    from qualtran._infra.composite_bloq import BloqBuilder
+    from qualtran._infra.data_types import QBit, QUInt
+    from qualtran._infra.quantum_graph import Soquet
+    from qualtran._infra.registers import Register as SourceRegister
+    from qualtran._infra.registers import Signature as SourceSignature
 
     base, u = entangling_unitary(1)
     dtype = quantum_bit_type() if width == 1 else unsigned_register_type(width)
@@ -97,11 +107,17 @@ def shaped_unitary(
     )
     native_words = np.asarray(native.inputs["word"], dtype=object)
     source_words = np.asarray(source["word"], dtype=object)
-    native_bits, source_bits = [], []
+    from flagquantum.core.ir.program.register_bindings import RegisterBinding
+
+    native_bits: list[RegisterBinding] = []
+    source_bits: list[Soquet] = []
     for index in np.ndindex(shape):
         if width == 1:
-            native_bits.append(native_words[index])
-            source_bits.append(source_words[index])
+            native_word, source_word = native_words[index], source_words[index]
+            assert isinstance(native_word, RegisterBinding)
+            assert isinstance(source_word, Soquet)
+            native_bits.append(native_word)
+            source_bits.append(source_word)
         else:
             unpacked = native.call_dict("unpack", {"reg": native_words[index]})["reg"]
             assert isinstance(unpacked, np.ndarray)
@@ -111,9 +127,13 @@ def shaped_unitary(
         outputs = native.call_dict(
             "entangle", {"a": native_bits[i], "b": native_bits[i + 1]}
         )
+        assert isinstance(outputs["a"], RegisterBinding)
+        assert isinstance(outputs["b"], RegisterBinding)
         native_bits[i : i + 2] = [outputs["a"], outputs["b"]]
-        outputs = bb.add_d(u, a=source_bits[i], b=source_bits[i + 1])
-        source_bits[i : i + 2] = [outputs["a"], outputs["b"]]
+        source_outputs = bb.add_d(u, a=source_bits[i], b=source_bits[i + 1])
+        assert isinstance(source_outputs["a"], Soquet)
+        assert isinstance(source_outputs["b"], Soquet)
+        source_bits[i : i + 2] = [source_outputs["a"], source_outputs["b"]]
     native_output = np.empty(shape, dtype=object)
     source_output = np.empty(shape, dtype=object)
     for ordinal, index in enumerate(np.ndindex(shape)):
@@ -197,7 +217,7 @@ def binding(
 def test_typed_shaped_control_and_adjoint_source_instructions(
     width: int, shape: tuple[int, ...], value: int | None, adjoint: bool
 ) -> None:
-    from qualtran import CtrlSpec
+    from qualtran._infra.controlled import CtrlSpec
 
     from tests.unit.register_source_graph import SourcePorts
 
