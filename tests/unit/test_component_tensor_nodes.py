@@ -4,7 +4,12 @@ from collections import Counter
 from dataclasses import replace
 from typing import Any
 
-import numpy as np
+from tests._reference_dependencies import unavailable_reference
+
+try:
+    import numpy as np
+except ModuleNotFoundError as _reference_import_error:
+    unavailable_reference(_reference_import_error)
 import pytest
 import torch
 
@@ -37,10 +42,11 @@ pytestmark = [pytest.mark.unit, pytest.mark.ftqc_reference]
 
 
 def fixture(width: int, shape: tuple[int, ...]) -> tuple[ProgramRecord, Any]:
-    from qualtran import BloqBuilder, QAny
-    from qualtran import Register as SourceRegister
-    from qualtran import Signature as SourceSignature
-    from qualtran.bloqs.basic_gates import Hadamard
+    from qualtran._infra.composite_bloq import BloqBuilder
+    from qualtran._infra.data_types import QAny
+    from qualtran._infra.registers import Register as SourceRegister
+    from qualtran._infra.registers import Signature as SourceSignature
+    from qualtran.bloqs.basic_gates.hadamard import Hadamard
 
     base, _ = _hierarchy(1, 1)
     leaf = base.functions[1]
@@ -62,6 +68,7 @@ def fixture(width: int, shape: tuple[int, ...]) -> tuple[ProgramRecord, Any]:
         ]
     )
     bb, values = BloqBuilder.from_signature(source_signature)
+    assert isinstance(values["q"], np.ndarray)
     for index in (0, 1, 0):
         values["q"][index] = bb.add(Hadamard(), q=values["q"][index])
     return record, bb.finalize(**values)
@@ -91,7 +98,8 @@ def h_supplier(
 def test_array_edges_partial_direct_ports_and_original_dense(
     width: int, shape: tuple[int, ...]
 ) -> None:
-    from qualtran.resource_counting import QECGatesCost, get_cost_value
+    from qualtran.resource_counting._bloq_counts import QECGatesCost
+    from qualtran.resource_counting._costing import get_cost_value
     from qualtran.simulation.tensor._dense import quimb_to_dense
     from qualtran.simulation.tensor._quimb import cbloq_to_quimb
 
@@ -386,8 +394,9 @@ def test_measured_add_graph_tensor_and_all_history_pairs() -> None:
 
 
 def test_fanin_and_disjoint_call_order_match_original_connections() -> None:
-    from qualtran import BloqBuilder
-    from qualtran.bloqs.basic_gates import CNOT, Hadamard
+    from qualtran._infra.composite_bloq import BloqBuilder
+    from qualtran.bloqs.basic_gates.cnot import CNOT
+    from qualtran.bloqs.basic_gates.hadamard import Hadamard
     from qualtran.simulation.tensor._dense import quimb_to_dense
     from qualtran.simulation.tensor._quimb import cbloq_to_quimb
 
@@ -462,8 +471,9 @@ def test_fanin_and_disjoint_call_order_match_original_connections() -> None:
 
 @pytest.mark.parametrize("width", [0, 1, 2])
 def test_directional_ket_bra_calls_and_scalar_network(width: int) -> None:
-    from qualtran import BloqBuilder
-    from qualtran.bloqs.bookkeeping import Allocate, Free
+    from qualtran._infra.composite_bloq import BloqBuilder
+    from qualtran.bloqs.bookkeeping.allocate import Allocate
+    from qualtran.bloqs.bookkeeping.free import Free
     from qualtran.simulation.tensor._quimb import cbloq_to_quimb
 
     from flagquantum.compiler.registers.layout.component_workspace import (
@@ -499,7 +509,7 @@ def test_directional_ket_bra_calls_and_scalar_network(width: int) -> None:
     assert actual.item() == 1
     bb = BloqBuilder()
     # Original finite pure-state Allocate/Free tensors implement zero projection.
-    from qualtran import QAny
+    from qualtran._infra.data_types import QAny
 
     bb.add(Free(QAny(width)), reg=bb.add(Allocate(QAny(width))))
     source = bb.finalize()

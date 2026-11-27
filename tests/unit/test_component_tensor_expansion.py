@@ -3,7 +3,12 @@
 from collections import Counter
 from typing import Any
 
-import numpy as np
+from tests._reference_dependencies import unavailable_reference
+
+try:
+    import numpy as np
+except ModuleNotFoundError as _reference_import_error:
+    unavailable_reference(_reference_import_error)
 import pytest
 import torch
 
@@ -25,9 +30,9 @@ pytestmark = [pytest.mark.unit, pytest.mark.ftqc_reference]
 
 def source_custom() -> Any:
     import quimb.tensor as qtn
-    from qualtran import Bloq
-    from qualtran import Signature as SourceSignature
-    from qualtran.bloqs.basic_gates import Hadamard
+    from qualtran._infra.bloq import Bloq
+    from qualtran._infra.registers import Signature as SourceSignature
+    from qualtran.bloqs.basic_gates.hadamard import Hadamard
 
     def signature(self: object) -> Any:
         return SourceSignature.build(q=1)
@@ -51,7 +56,7 @@ def source_custom() -> Any:
 
 
 def fixture(depth: int, repeats: int) -> tuple[ProgramRecord, Any]:
-    from qualtran import BloqBuilder
+    from qualtran._infra.composite_bloq import BloqBuilder
 
     base, _ = _hierarchy(1, 2)
     custom = base.functions[0]
@@ -110,7 +115,8 @@ def native_tensor(record: ProgramRecord) -> torch.Tensor:
 def test_pinned_custom_tensor_precedence_graph_labels_contraction_and_append(
     depth: int, repeats: int, full: bool
 ) -> None:
-    from qualtran.resource_counting import QECGatesCost, get_cost_value
+    from qualtran.resource_counting._bloq_counts import QECGatesCost
+    from qualtran.resource_counting._costing import get_cost_value
     from qualtran.simulation.tensor._dense import bloq_to_dense
     from qualtran.simulation.tensor._flattening import flatten_for_tensor_contraction
 
@@ -217,9 +223,12 @@ def test_measured_add_consumer_preserves_gates_all_history_pairs_and_work(
 ) -> None:
     from itertools import product
 
-    from qualtran import QUInt
+    from qualtran._infra.bloq import Bloq
+    from qualtran._infra.data_types import QUInt
     from qualtran.bloqs.arithmetic.addition import Add
-    from qualtran.resource_counting import QECGatesCost, QubitCount, get_cost_value
+    from qualtran.resource_counting._bloq_counts import QECGatesCost
+    from qualtran.resource_counting._costing import get_cost_value
+    from qualtran.resource_counting._qubit_counts import QubitCount
 
     from examples.algorithms.binary_field_arithmetic import FieldOperation
     from flagquantum.compiler.registers.component_adjoint import (
@@ -247,7 +256,7 @@ def test_measured_add_consumer_preserves_gates_all_history_pairs_and_work(
         outputs.append(bound)
     forward, backward = outputs
     for is_inverse, bound in enumerate(outputs):
-        child = Add(QUInt(2), QUInt(3))
+        child: Bloq = Add(QUInt(2), QUInt(3))
         if is_inverse:
             child = child.adjoint()
         measurements = [g for g in bound.circuit.instructions if g.name == "measure"]

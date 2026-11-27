@@ -3,10 +3,19 @@
 from collections import Counter
 from typing import Any
 
-import numpy as np
+from tests._reference_dependencies import unavailable_reference
+
+try:
+    import numpy as np
+except ModuleNotFoundError as _reference_import_error:
+    unavailable_reference(_reference_import_error)
 import pytest
 import torch
-from numpy.typing import NDArray
+
+try:
+    from numpy.typing import NDArray
+except ModuleNotFoundError as _reference_import_error:
+    unavailable_reference(_reference_import_error)
 
 from flagquantum.core.ir.program.register_types import (
     classical_bit_type,
