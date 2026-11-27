@@ -36,6 +36,42 @@ def karatsuba_implementation_program(
     Coefficient recursion owns and clears its high padding.
     """
     width = field_word_width(dtype, modulus)
+    constant = 1 | (1 << ((width + 1) // 2))
+    inverse_scale = (
+        constant_multiplication_program(dtype, constant, modulus=modulus, adjoint=True)
+        if width > 1
+        else None
+    )
+    return _karatsuba_implementation_program(
+        dtype, modulus=modulus, inverse_scale=inverse_scale
+    )
+
+
+def karatsuba_decomposition_implementation(
+    dtype: RegisterType, *, modulus: int
+) -> ProgramRecord:
+    """Preserve the original raw f/g/h circuit, including forward scale adjoint.
+
+    The source linear physical builder ignores its declared inverse direction.
+    This profile therefore supplies forward scaling at that call. It is separate
+    from the mathematical implementation and does not promise h += f*g.
+    """
+    width = field_word_width(dtype, modulus)
+    constant = 1 | (1 << ((width + 1) // 2))
+    inverse_scale = (
+        constant_multiplication_program(dtype, constant, modulus=modulus)
+        if width > 1
+        else None
+    )
+    return _karatsuba_implementation_program(
+        dtype, modulus=modulus, inverse_scale=inverse_scale
+    )
+
+
+def _karatsuba_implementation_program(
+    dtype: RegisterType, *, modulus: int, inverse_scale: ProgramRecord | None
+) -> ProgramRecord:
+    width = field_word_width(dtype, modulus)
     builder = ComponentProgramBuilder(
         Signature.build_from_dtypes(f=dtype, g=dtype, h=dtype), product_bit_functions()
     )
@@ -64,9 +100,10 @@ def karatsuba_implementation_program(
         for i in range(width - k):
             bits[k + i], bits[i] = product_cx(builder, bits[k + i], bits[i])
     constant = 1 | (1 << k)
+    assert inverse_scale is not None
     h = field_word_call(
         builder,
-        constant_multiplication_program(dtype, constant, modulus=modulus, adjoint=True),
+        inverse_scale,
         "g",
         h,
         dtype,
@@ -113,6 +150,29 @@ def karatsuba_multiplication_program(
     is the independently owned measured product-erasure program, not generic
     reversal of the defective frozen linear child.
     """
+    return _karatsuba_output_program(
+        dtype, karatsuba_implementation_program(dtype, modulus=modulus), modulus=modulus
+    )
+
+
+def karatsuba_decomposition_program(
+    dtype: RegisterType, *, modulus: int
+) -> ProgramRecord:
+    """Allocate the original RIGHT result and execute its literal physical body.
+
+    The output matches the frozen source circuit, including its product defect.
+    It is not interchangeable with the native mathematical multiplication.
+    """
+    return _karatsuba_output_program(
+        dtype,
+        karatsuba_decomposition_implementation(dtype, modulus=modulus),
+        modulus=modulus,
+    )
+
+
+def _karatsuba_output_program(
+    dtype: RegisterType, implementation: ProgramRecord, *, modulus: int
+) -> ProgramRecord:
     width = field_word_width(dtype, modulus)
     if width < 2:
         raise ValueError("Karatsuba field multiplication requires degree at least two")
@@ -127,7 +187,7 @@ def karatsuba_multiplication_program(
     )
     result = builder.allocate(dtype=dtype)
     values = builder.inline_calls(
-        karatsuba_implementation_program(dtype, modulus=modulus),
+        implementation,
         {"f": builder.inputs["x"], "g": builder.inputs["y"], "h": result},
     )
     return builder.finalize({"x": values["f"], "y": values["g"], "result": values["h"]})
