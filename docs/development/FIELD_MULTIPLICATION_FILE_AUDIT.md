@@ -709,3 +709,57 @@ recipe separately. The source negative-shift builder performs no iterations,
 while its scalar callback computes a mathematical negative power. This intake
 is recorded in `g2-field-product-remaining-probe-20261127.json`; it is not an
 implementation or acceptance claim. Q-0519 remains open for these concrete gaps.
+
+
+## Zero-pivot linear, zero constant and signed-count physical closure — 2026-11-27
+
+The successful source paths identified above now have native literal owners.
+Private Core `BinaryMatrix.plu_with_zero_pivots` shares the existing packed-row
+loop while allowing missing pivots. Ordinary `plu` retains its original singular
+None result and every prior invertible factor. Compiler's two profiles reuse one
+PLU gate schedule. `binary_linear_decomposition_program` emits the actual
+reversible source recipe for singular inputs and preserves declared inverse
+identity separately from its ignored physical flag. It does not claim to apply
+a singular linear map. The mathematical Program still refuses singular inputs.
+
+`constant_multiplication_decomposition_program` now accepts zero in binary fields,
+using the same word adapter and literal linear child. Its original source
+numerical callback maps every input to zero, but its physical circuit is identity.
+The existing mathematical multiplier still rejects zero. `monomial_decomposition_program`
+preserves signed loop counts for both source directions: negative counts run no
+iterations. Existing mathematical negative powers still perform an inverse shift.
+Actual catalog constructors now select these literal zero/negative paths.
+
+All binary matrices of dimensions1/2/3 are checked against the unchanged galois
+PLU dependency and source builder, in both declared directions. Full factors,
+ordered primitive operands, returned aliases and raw declared resource counts
+match. Singular examples additionally compare complete original complex
+operators, coherent spectators, a clean unused bit and exact native inverse
+restoration. Every small binary-field constant, including zero, and both
+source directions match actual flattened source tensors. Both source shift
+directions include negative/zero/positive counts. No reference body is patched.
+
+| Source profile | Actual primitive CX | Original declared Clifford | Mathematical boundary |
+|---|---:|---:|---|
+| 2x2 zero matrix | 0 | -2 | Singular map rejected by mathematical emitter |
+| rank-one [[1,1],[0,0]] | 1 | 0 | Singular map rejected by mathematical emitter |
+| binary degree3, constant0 | 0 | -3 in its linear child | Zero scaling rejected by invertible mathematical entry |
+| binary degree3, either direction, count -1 | 0 | -1 for modulus0xB | Mathematical negative exponent is a nontrivial shift |
+
+Negative declarations are preserved source observations, not measured counts or
+valid upper bounds. No model is clamped to make the two accounts match. These
+forward physical profiles allocate zero work and perform no measurements.
+
+The batch passes 619 focused and 32 local integration cases. All eight changed
+Python files pass strict mypy, Black/Ruff, scope, architecture, multilevel IR,
+required-check mapping, language/links and whitespace. Cirq 1.6.1 passes 45 direct
+consumer/matrix cases. Eleven original source/test/notebook blobs remain frozen;
+Qualtran 0.7.0 and actual Kickmix 0.1 Simulator are verified. Existing complete
+original suites, numerical callbacks, notebooks and protocol receipts are reused.
+Evidence uses `g2-zero-pivot-*` in the external reference directory.
+
+Q-0519/Q-0516 remain open for complete declared-adjoint catalog identity,
+measured root dispatch and recorded branch obligations. Raw nonbinary constructor
+successes must be audited against the new binary-field literal entries rather
+than assumed accepted from raw storage alone. This batch does not change the
+complete-parent count or claim those remaining calls implemented.

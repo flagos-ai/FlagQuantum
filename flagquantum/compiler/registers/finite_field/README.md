@@ -136,3 +136,17 @@ retaining the original physical linear-adjoint defect. Run
 complex operators and every degree-five raw target with clean-padding checks.
 The literal output is not promised to be a numerical field product. Complete
 catalog adjoint-identity integration remains in the multiplication audit.
+
+
+`binary_linear_decomposition_program` is the original physical recipe on any
+nonempty square binary matrix, including missing pivots. It shares the packed
+Core factorization and Compiler gate schedule with invertible synthesis, but
+never promises the matrix's numerical action for singular input. Its declared
+inverse uses its own named entry; bind the returned first function explicitly
+when that entry is selected. `constant_multiplication_decomposition_program`
+composes this child and includes zero. `monomial_decomposition_program` uses
+source signed loop counts, keeping negative counts distinct from mathematical
+negative powers. The normal catalog resolves zero constants and negative shifts
+to these owners. Run `tests/unit/test_field_linear_literal.py` for the executable
+append, source-operator, alias and clean-work scenarios. Measured primitive
+counts and defective source declarations are separate in the multiplication audit.
