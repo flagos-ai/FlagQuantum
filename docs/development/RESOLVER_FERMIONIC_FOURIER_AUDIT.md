@@ -87,3 +87,33 @@ the constructor; replacing the shared gate implementation preserves the
 unchanged Hubbard consumer. Actual emission remains fifteen instructions,
 including two T-family gates and one literal Rz; independent source estimates
 classify Rz separately. Existing source phase/flag defects keep Q-0646 open.
+
+## Faithful whole-file disposition, November 28
+
+The preceding open-parent statement records the earlier acceptance rule.
+Q-0646 is now eligible under the approved
+[G2 closure rule](G2_FAITHFUL_MIGRATION_CLOSURE_PROPOSAL.md): complete source
+declarations, literal constructors, analytic tensors, model, catalog and direct
+dependencies have native owners. Published `074fe5c3e` supplies shared ownership
+and explicit generic-adjoint closure; `d3ec41d32` supplies the catalog group.
+Current constructor inspection confirms that the class flag still selects the
+literal forward body; only explicit generic Adjoint selects the validated
+exact inverse.
+
+The ignored class flag and tensor/decomposition scalar discrepancy remain
+upstream correction follow-ups owned by the shared Fourier component and
+Simulation tensor owners. Native exact inversion cannot certify that the
+source flagged decomposition is an inverse. Existing full complex operator,
+reversed-binding spectator, source-free reconstruction and unchanged Hubbard
+consumer checks are reused. This two-wire recipe has no measurements or work.
+
+Final verification for this disposition: 336 concentrated cases, 217 independent
+Cirq 1.6 cases and 248 local integration cases pass. The three unchanged original
+test files report 61 passes and four original expected failures. Six unchanged
+Compiler owners pass strict typing, format and lint checks. Architecture, IR,
+public API, required checks, Cirq contract, scope, English, links and whitespace
+checks pass. The existing 570 dependency findings remain; none belongs to the
+changed audit paths. Eight source/test blobs are verified by the mandatory
+source-acceptance fixture, which also verifies Qualtran 0.7.0 and the real
+Kickmix 0.1 Simulator. No source file, implementation or test was changed by
+this acceptance batch. Receipts use prefix g2-fourier-source-closure.
