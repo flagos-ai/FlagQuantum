@@ -33,7 +33,7 @@ omitted. The declaration introduces no physical bindings or work slots.
   The native call-graph, phase-estimation and qubitization regression
   passed 334 tests.
 
-## Closure and boundaries
+## Original closure review (superseded below)
 
 Q-0535 and Q-0536 close the complete source initializer and module
 notebook, respectively. Q-0537 remains open for the complete k-XOR
@@ -78,3 +78,75 @@ no primitives. Q-0538 now has both native notebook counterparts and
 remains open for the original KXorInstance serialization expected
 failures. Q-0537 still requires the distinct k-XOR oracle dependency
 chain.
+
+## Complete-file review under the approved faithful-migration rule
+
+The current source owners are
+`flagquantum/algorithms/primitives/guided_hamiltonian_resource_model.py` and
+`examples/algorithms/guided_hamiltonian_models.py`. The latter now constructs
+both original examples through native KXorInstance, GuidingState,
+KikuchiHamiltonian and PackedPrepareDeclaration. The notebook consumes these
+factories instead of copying register-size formulas. This closes the actual
+example dependency-binding gap; it does not supply an unavailable oracle body.
+
+| Complete original responsibility | Native owner and evidence |
+| --- | --- |
+| Phase-estimation fields, resource/system constraints and ordered signature | GuidedPhaseEstimationModel; source factory and numerical parameter comparisons |
+| Walk, Kaiser parameters and QPE dependency | Existing qubitization/window owners; exact nested forward and adjoint call declarations, zero-controlled reflection and reversed QFT |
+| Amplified root fields, eager signature, precision, failure probability and round count | GuidedHamiltonianModel; unchanged symbolic identities and constructor-refusal checks |
+| Guide-ancilla and whole-signature negative reflections | Distinct scoped graph leaves; source phase, reflection signature and inverse identities checked |
+| Root invocation inventories | Exact original Counter multiplicities including the initial QPE, both QPE directions and both reflections |
+| Both symbolic factories and DocSpecs | Native factories and their notebook positions; guide/solve counts, block scale, entry precision, selection and junk widths are obtained from actual native dependency objects |
+| Entire original test file | Both example protocols, both complete notebook counterparts and their original source fixtures; expected source skips and codec failures retained |
+
+The source's third positional KikuchiHamiltonian argument is entry precision,
+although the local variable is named `s`. The native factories preserve that
+argument and leave sparsity at the original instance-derived default. The new
+test checks both values separately; a hand-written shape-only example did not
+exercise that distinction.
+
+The applicable direct dependency chain is already owned by the separate
+k-XOR modules: classical instance preprocessing; guide preparation/sorting/
+duplicate/uncompute declarations; adjacency/index/RHS queries; sparse block
+encoding; QPE, Kaiser, QFT and prepared reflections. Concentrated regression
+exercises these actual owners, their source graph/cost comparisons and the
+available typed/physical child paths. Their wider source parents keep independent
+acceptance reviews. This root review does not certify an entire physical guide,
+an arbitrary black-box oracle, or execution of an absent source decomposition.
+
+Under the explicitly approved
+[faithful-migration closure rule](G2_FAITHFUL_MIGRATION_CLOSURE_PROPOSAL.md),
+Q-0537 and Q-0538 can close after publication and mandatory checks. The source
+roots explicitly lack physical bodies, so their unavailable statevector,
+measurement-history and clean-work experiments are inapplicable; no identity
+substitute is used. The source KXorInstance serialization xfails remain original
+codec limitations, rather than missing native numerical implementations.
+
+### Resource and execution limits
+
+| Layer | Actual primitives and workspace | Model evidence |
+| --- | --- | --- |
+| Both guided roots | No source-defined emitted circuit; no primitive total or private-work certificate claimed | Complete direct guided/QPE invocation graph, forward and adjoint |
+| Query-cost tutorial | Declarative oracles; no emitted primitive inventory | All 14 amplified and 10 phase-only leaves, exact and separately bounded tables |
+| Native k-XOR dependencies | Existing available child streams and applicable measurement/complex-state/work evidence are reused | Existing source query, control and adjoint categories remain separate from physical inventories |
+
+The full guided physical algorithm, generic source-controlled adjoint failures,
+missing oracle bodies and source transport defects remain explicit follow-ups.
+They are not repaired by changing the locked source. Existing executable
+operations continue to use `circuit.append(op)`.
+
+Fresh closure evidence verifies 15 immutable source/direct-dependency blobs.
+The original non-notebook protocols report 2 passes, 6 source-defined skips and
+2 serialization xfails; the two original notebook kernel receipts are reused
+at unchanged blobs. Both native notebooks execute independently with Qualtran
+and Kickmix imports blocked: 9 and 10 code cells, respectively, and four and
+one actual SVG outputs. No dependency installation or protected API change is
+required by this batch.
+
+The final batch passes 149 concentrated dependency cases, 32 local integration
+cases and 32 direct consumers under the independent Cirq 1.6.1 profile. Both
+changed Python files pass strict typing, Black and Ruff. Algorithms scope,
+repository language, local links, architecture, multi-level IR, required-check
+mapping, public API baseline and whitespace checks pass. The external receipts
+use prefix `g2-guided-closure` and retain the mandatory actual Qualtran 0.7.0 /
+Kickmix 0.1 Simulator preflight; no optional native comparison is silently skipped.
