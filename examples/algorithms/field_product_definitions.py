@@ -10,15 +10,18 @@ from flagquantum.compiler.registers.component_definition_match import (
     matches_component_definition,
 )
 from flagquantum.compiler.registers.finite_field.constant_multiplication_component import (
+    constant_multiplication_decomposition_program,
     constant_multiplication_program,
 )
 from flagquantum.compiler.registers.finite_field.karatsuba_component import (
     karatsuba_multiplication_program,
 )
 from flagquantum.compiler.registers.finite_field.linear_component import (
+    binary_linear_decomposition_program,
     binary_linear_program,
 )
 from flagquantum.compiler.registers.finite_field.monomial_component import (
+    monomial_decomposition_program,
     monomial_multiplication_program,
 )
 from flagquantum.compiler.registers.finite_field.multiplication_component import (
@@ -69,12 +72,14 @@ def field_product_catalog_program(
     if operation == "GF2MulK":
         constant = parameters["const"]
         assert type(constant) is int
-        return constant_multiplication_program(dtype, constant, modulus=modulus)
+        return constant_multiplication_decomposition_program(
+            dtype, constant, modulus=modulus
+        )
     shift = parameters["k"]
     if type(shift) is not int:
         return None
-    return monomial_multiplication_program(
-        dtype, shift if operation == "GF2ShiftRight" else -shift, modulus=modulus
+    return monomial_decomposition_program(
+        dtype, shift, modulus=modulus, adjoint=operation == "GF2ShiftLeft"
     )
 
 
@@ -145,11 +150,21 @@ def field_product_definition(
             for adjoint in (False, True):
                 label = "GF2MulK" if ports == ("g",) else "SynthesizeLRCircuit"
                 template = (
-                    constant_multiplication_program(
-                        dtype, constant, modulus=modulus, adjoint=adjoint
+                    (
+                        constant_multiplication_decomposition_program(
+                            dtype, constant, modulus=modulus, adjoint=adjoint
+                        )
+                        if constant == 0
+                        else constant_multiplication_program(
+                            dtype, constant, modulus=modulus, adjoint=adjoint
+                        )
                     )
                     if ports == ("g",)
-                    else binary_linear_program(matrix, adjoint=adjoint)
+                    else (
+                        binary_linear_decomposition_program(matrix, adjoint=adjoint)
+                        if constant == 0
+                        else binary_linear_program(matrix, adjoint=adjoint)
+                    )
                 )
                 candidates.append((label + ("†" if adjoint else ""), template))
     return next(
