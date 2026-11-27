@@ -184,3 +184,45 @@ all four unchanged source tests pass. Strict typing of both new Python files,
 Black, Ruff, Compiler scope, architecture, multilevel IR and the public API
 baseline pass. The 248 original resource-deprecation warnings in concentrated
 regression remain visible. Proposals 116 and 124 now provide their separately approved storage profiles.
+
+
+## Complete one-bit child closure, 2026-11-27
+
+The complete source is reread after approved storage dependencies 116, 124 and
+130. A valid-source gap was reproduced: a single scalar THRU q register with
+QAny(1), QUInt(1) or another compatible quantum dtype was accepted by original
+OnEach but rejected by the native QBit-only body/factory. Both native owners
+now share one child validator and use the existing Core one-bit compatibility.
+No Core rule, opcode, public entry, wire codec or execution owner changes.
+
+The new direct consumers exercise opaque, unsigned, signed, bounded, Montgomery,
+fixed, negative-fraction fixed, binary field, packed polynomial and symbolic
+fixed/Montgomery one-bit children. Each actual source composite applies H then
+T. At widths one and three native calls retain source Split, repeated-child and
+Join order, nominal child declarations and exact operands. Full complex operators
+and entangled spectator states agree, and the explicit inverse restores the
+whole state. There is no private work, event, feedback or measurement in these
+fixtures. Primitive counts are n H and n T; independent source QEC models give
+n Cliffords and n T, and logical width is n. Existing SU2-child carrier lifetimes,
+exact scalar phases, original SDK/body, classical action, glyph, signed-empty
+and symbolic metadata evidence is reused.
+
+The complete foreign composite-child bodies require transport depth at least
+two. At depths zero and one the unchanged source omits that body, reconstructs
+an unequal object and its tensor raises KeyError('q'). Native resolution also
+refuses missing connections; counts never invent a body. At depths two and
+three source reconstruction and ordinary native execution agree. Field codecs
+remain original serialization refusals, and the original Montgomery codec drops
+its symbolic modulus. Direct complete execution evidence is separate from those
+transport failures. No source is patched or endpoint equality weakened.
+
+Wrong child names, widths, domains, shapes and directions remain refused at the
+finite boundary. Logical declaration metadata and the source's failed physical
+constructors retain prior evidence. Symbolic n remains source-refused for
+finite decomposition; optional targets requiring an unavailable source Split
+are not claimed as literal executable source decompositions.
+
+The receipt bundle is `g2-on-each-child-*` in the external reference environment.
+All original source/child-type blobs are frozen. Complete Q-0246 is accepted only
+after the actual corrected body, direct dependency closure and batch checks pass;
+source defects and independent platform/performance follow-ups remain separate.
