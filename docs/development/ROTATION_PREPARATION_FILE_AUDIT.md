@@ -147,3 +147,55 @@ snapshots typing correction passed. Existing notebook and CPU integration
 acceptance is reused: this batch changes only tests and this audit, with no
 production behavior or public contract changes. No new parent or child progress
 item is counted.
+
+
+## Faithful complete-source acceptance (2026-11-28)
+
+The approved faithful-migration closure rule supersedes the historical open
+status above for Q-0703. Complete source review covers the coefficient converter,
+constructor validation and defaults, all signature/width/count properties,
+RotationTree probability accumulation, zero subtrees, amplitude and phase ROM
+rounding, all PRGA properties, both stage helpers, composite and call graphs,
+three examples, DocSpec and PRGA representation. Existing native compile-time
+angle-word construction, typed preparation stages, QROM and phase-add owners
+supply this closure; no production algorithm is added by this acceptance entry.
+
+Logical prepare controls, target and the supplied gradient are MSB-first THRU
+ports. Only angle words, carry/QROM scratch and phase flag are private clean
+work. Exact generic Adjoint reverses explicit child pairs independently of the
+source uncompute table choice. The whole operator includes arbitrary logical
+gradient columns; gradient-eigenstate kickback and entangled spectators are
+additional checks, not replacements for those operator checks.
+
+The original three factories and every concrete PRGA child retain ordered
+recursive calls, operand mappings and exact depth-zero/depth-one definitions.
+Existing controls zero/one/two, prepare/uncompute and exact inverse evidence is
+reused in this batch. Eight-bit words `(8, 51, 153, 231)` retain source calls,
+phase, feedback and all-history erasure certificates; complete private cleanup
+and full small operators remain separately checked. The eight-bit kickback test
+samples two numerical histories in addition to its all-history certificate;
+it is not an exhaustive enumeration of a large dense state simulation.
+
+Known source singleton, HasLength/Shaped codec and unresolved physical-width
+failures remain explicit. The original symbolic analytical approximation uses
+two full-shape PRGA calls in place of concrete prefix-size stages; it is not a
+claim of exact symbolic-to-concrete gate-count identity. AddIntoPhaseGrad is an
+atomic source leaf. Native measured integer arithmetic below it and the six Rx
+leaves remain visible in the primitive inventory, without claiming a missing
+upstream primitive recipe or a fully synthesized Clifford+T stream.
+
+The existing original source test and notebook evidence above is reused without
+changing source files or dropping their skips/expected failures. The independent
+constructor audit and resource receipts remain authoritative for the four exact
+forward/inverse rows, distinct from source uncompute inventories. No new API,
+reference dependency, checker waiver or progress child is introduced.
+
+
+This documentation-only closure reruns 82 dense constructor, complete source,
+complex execution, symbolic resource and exact-adjoint cases plus 17 independent
+Cirq 1.6 constructor cases, all passing. The immediately preceding accepted
+batch's 32 local integration cases, strict production checks and real Kickmix
+Simulator verification are reused because no Python implementation changed.
+All 46 reviewed source/dependency/asset blobs remain identical to the lock.
+Algorithms scope, language, links, architecture, IR, protected API baseline and
+whitespace pass. The global dependency-policy findings remain separately open.
