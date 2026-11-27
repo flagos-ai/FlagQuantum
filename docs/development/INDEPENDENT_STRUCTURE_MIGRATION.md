@@ -299,3 +299,27 @@ at their backend-neutral Runtime owner. All current executor callers import
 that owner directly; private wrappers and duplicate formulas are removed.
 Existing subgroup, environment precedence, communication policy, schemas and
 public class identities retain their semantics.
+
+
+## JAX representation conversions and in-process shard gates
+
+Applied closure: numerical gate application belongs to the existing Simulation
+JAX statevector owner; Runtime retains optional-engine readiness, gate-shape
+admission and shard record reconstruction. Representation-specific MPS split
+evidence and tensor-network conversion move to their existing executor modules,
+with all consumers updated and no old shared forwarding bindings.
+
+See [the boundary and acceptance record](migration/jax-representation-conversion-ownership.md).
+Preview acceptance is not formal source, wheel or published-head qualification.
+
+
+## User-requested test partition critical path
+
+The same change addresses the measured CI bottleneck with source-bound timing
+weights, complete heavy-case isolation, bounded one-worker resource profiles,
+256 coverage partitions, 64 Runtime partitions and four Python3.12 unit
+partitions. Exact CPU Toffoli permutation reuses the existing implementation
+and complete tests from PR1253 without merging its branch. See the
+[implementation and pending elapsed-job acceptance](migration/ci-partition-critical-path.md).
+The ten-minute target still requires the new published run; local scientific
+acceptance and the complete original-corpus replay do not certify it.

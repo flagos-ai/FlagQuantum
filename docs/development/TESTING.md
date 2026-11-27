@@ -1170,3 +1170,14 @@ artifact fallback. The fetched commit ID and complete object closure must match;
 checkout still verifies `GITHUB_SHA`. This avoids the slow Actions blob-storage
 route when Git transport succeeds, without bypassing source identity checks or
 changing the 30-minute dependency-bound job limit.
+
+
+## Test partition elapsed-time target
+
+Coverage, Runtime and unit partitions aim to complete their entire job within
+ten minutes while retaining the complete original selections. See the
+[critical-path implementation and evidence](migration/ci-partition-critical-path.md).
+The actual CI job durations determine acceptance; local replay, extra fan-out
+and a green correctness gate alone do not establish this performance target.
+Heavy cases use one active test worker within their existing CPU share. No
+original workload, assertion, coverage threshold or safety timeout is reduced.

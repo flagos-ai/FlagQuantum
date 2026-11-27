@@ -21,7 +21,9 @@ import os
 import subprocess
 import sys
 import time
+from collections.abc import Generator
 from pathlib import Path
+from typing import Any
 
 import pytest
 
@@ -29,6 +31,7 @@ ROOT = Path(__file__).resolve().parents[2]
 DURATION_HINTS = ROOT / "contracts" / "pytest-duration-hints.json"
 EXPECTED_HINT_SCHEMA = "flagquantum_pytest_duration_hints_v1"
 USAGE_START: pytest.StashKey[tuple[float, float]] = pytest.StashKey()
+PHASE_DURATIONS: pytest.StashKey[dict[str, dict[str, float]]] = pytest.StashKey()
 
 
 def shard_for(nodeid: str, count: int) -> int:
@@ -99,6 +102,7 @@ def pytest_addoption(parser: pytest.Parser) -> None:
 
 def pytest_configure(config: pytest.Config) -> None:
     config.stash[USAGE_START] = (time.monotonic(), _cpu_seconds())
+    config.stash[PHASE_DURATIONS] = {}
     count = int(config.getoption("--fq-shard-count"))
     index = int(config.getoption("--fq-shard-index"))
     if count < 1:
@@ -150,9 +154,23 @@ def _cpu_seconds() -> float:
     return own.ru_utime + own.ru_stime + children.ru_utime + children.ru_stime
 
 
+@pytest.hookimpl(hookwrapper=True)
+def pytest_runtest_makereport(item: pytest.Item) -> Generator[None, Any, None]:
+    """Retain each completed phase without changing its report or outcome."""
+    outcome = yield
+    report = outcome.get_result()
+    item.config.stash[PHASE_DURATIONS].setdefault(item.nodeid, {})[
+        report.when
+    ] = report.duration
+
+
 @pytest.hookimpl(optionalhook=True)
 def pytest_testnodedown(node: object, error: object) -> None:
-    """Retain an available local worker exit status without changing its outcome."""
+    """Merge worker timings and retain available termination evidence."""
+    config = getattr(node, "config", None)
+    if isinstance(config, pytest.Config):
+        output = getattr(node, "workeroutput", {})
+        config.stash[PHASE_DURATIONS].update(output.get("fq_phase_durations", {}))
     if error is None:
         return
     gateway = getattr(node, "gateway", None)
@@ -170,8 +188,11 @@ def pytest_testnodedown(node: object, error: object) -> None:
 
 
 def pytest_sessionfinish(session: pytest.Session, exitstatus: int) -> None:
-    """Record consumed process CPU against the assigned CI quota, including workers."""
+    """Retain completed phase timings and CPU use without changing outcomes."""
     if hasattr(session.config, "workerinput"):
+        session.config.workeroutput["fq_phase_durations"] = session.config.stash[
+            PHASE_DURATIONS
+        ]
         return
     report_directory = os.environ.get("FQ_CI_REPORT_DIR")
     if not report_directory:
@@ -199,4 +220,17 @@ def pytest_sessionfinish(session: pytest.Session, exitstatus: int) -> None:
         "exit_status": int(exitstatus),
     }
     (directory / "test-usage.json").write_text(json.dumps(payload, indent=2) + "\n")
+    durations = session.config.stash[PHASE_DURATIONS]
+    timing = {
+        "schema": "flagquantum_pytest_durations_v1",
+        "source_sha": os.environ.get("GITHUB_SHA"),
+        "run_id": os.environ.get("GITHUB_RUN_ID"),
+        "run_attempt": os.environ.get("GITHUB_RUN_ATTEMPT"),
+        "selected_nodes": session.testscollected,
+        "recorded_nodes": len(durations),
+        "complete": len(durations) == session.testscollected,
+        "exit_status": int(exitstatus),
+        "tests": dict(sorted(durations.items())),
+    }
+    (directory / "test-durations.json").write_text(json.dumps(timing, indent=2) + "\n")
     print("CI quota usage: " + json.dumps(payload), flush=True)

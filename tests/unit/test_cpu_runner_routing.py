@@ -118,7 +118,7 @@ def test_trusted_cpu_jobs_and_matrix_legs_do_not_share_hosted_buckets() -> None:
             if matrix == "${{ fromJSON(needs.coverage-plan.outputs.matrix) }}":
                 matrix = {
                     "include": [
-                        {"shard": i, "hosted-bucket": i % 8} for i in range(192)
+                        {"shard": i, "hosted-bucket": i % 8} for i in range(256)
                     ]
                 }
             rows = matrix.get("include") or [

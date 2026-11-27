@@ -462,3 +462,79 @@ def jax_sharded_statevector_loss(
             signs = 1.0 - 2.0 * bit.astype(probabilities.real.dtype)
             total = total + jnp.sum(probabilities * signs.reshape(1, -1))
     return jnp.real(total)
+
+
+def jax_apply_gate_to_shard_arrays(
+    amplitudes_by_shard: Sequence[Any],
+    global_indices_by_shard: Sequence[Any],
+    global_index_tuples: Sequence[tuple[int, ...]],
+    matrix: Any,
+    qubits: Sequence[int],
+    *,
+    n_qubits: int,
+    diagonal: bool,
+) -> tuple[Any, ...]:
+    """Apply an admitted gate to an in-process collection of shard arrays.
+
+    Runtime validates the gate shape and retains shard records, execution
+    policy, device placement and communication evidence. This numerical path
+    does not perform a distributed collective.
+    """
+    import jax.numpy as jnp
+
+    if diagonal:
+        diagonal_values = jnp.diagonal(matrix)
+        updated_amplitudes = []
+        for amplitudes, global_indices in zip(
+            amplitudes_by_shard, global_indices_by_shard, strict=True
+        ):
+            basis_indices = jax_basis_indices_for_qubits(
+                global_indices, n_qubits=n_qubits, qubits=qubits
+            )
+            factors = diagonal_values[basis_indices].reshape(1, -1)
+            updated_amplitudes.append(amplitudes * factors)
+        return tuple(updated_amplitudes)
+
+    from flagquantum.simulation.statevector.index_basis import _basis_offset, _wire_mask
+
+    gate_dim = 2 ** len(qubits)
+    masks = tuple(_wire_mask(n_qubits, qubit) for qubit in qubits)
+    offsets = tuple(_basis_offset(n_qubits, qubits, basis) for basis in range(gate_dim))
+    positions_by_global: dict[int, tuple[int, int]] = {}
+    for shard_index, global_indices in enumerate(global_index_tuples):
+        for local_index, global_index in enumerate(global_indices):
+            positions_by_global[int(global_index)] = (shard_index, local_index)
+    out_amplitudes = list(amplitudes_by_shard)
+    processed_bases: set[int] = set()
+    for global_indices in global_index_tuples:
+        for global_index in global_indices:
+            base = int(global_index)
+            for mask in masks:
+                base &= ~mask
+            if base in processed_bases:
+                continue
+            processed_bases.add(base)
+            group_indices = tuple(base | offset for offset in offsets)
+            missing = tuple(
+                index for index in group_indices if index not in positions_by_global
+            )
+            if missing:
+                raise ValueError(
+                    f"Shard plan does not cover gate basis group; missing amplitudes {missing}."
+                )
+            locations = tuple(positions_by_global[index] for index in group_indices)
+            vector = jnp.stack(
+                [
+                    amplitudes_by_shard[shard_index][:, local_index]
+                    for shard_index, local_index in locations
+                ],
+                axis=-1,
+            )
+            updated = vector @ jnp.swapaxes(matrix, -2, -1)
+            for basis_index, (shard_index, local_index) in enumerate(locations):
+                out_amplitudes[shard_index] = (
+                    out_amplitudes[shard_index]
+                    .at[:, local_index]
+                    .set(updated[:, basis_index])
+                )
+    return tuple(out_amplitudes)

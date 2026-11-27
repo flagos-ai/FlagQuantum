@@ -9,7 +9,7 @@ from tools.ci.ci_coverage_plan import verify_plan, write_plan
 pytestmark = pytest.mark.unit
 
 
-@pytest.mark.parametrize("requested", [1, 16, 192])
+@pytest.mark.parametrize("requested", [1, 16, 192, 256])
 def test_plan_partitions_real_tests_once_without_empty_shards(
     tmp_path, monkeypatch, requested
 ):
@@ -57,7 +57,7 @@ def test_small_selection_reduces_count_and_refuses_tampered_or_stale_plan(
         ((), 16),
         (("tests/a.py::test_a",) * 2, 16),
         (("tests/a.py::test_a",), 0),
-        (("tests/a.py::test_a",), 193),
+        (("tests/a.py::test_a",), 257),
     ],
 )
 def test_invalid_collection_and_unbounded_fanout_fail(tmp_path, nodes, count):
@@ -245,3 +245,69 @@ def test_measured_full_state_cases_do_not_share_a_partition(
     assert sorted(node for shard in shards for node in shard) == sorted(nodes)
     for node in full_state:
         assert [shard for shard in shards if node in shard] == [[node]]
+
+
+@pytest.mark.parametrize("requested", [1, 2, 4, 16])
+def test_exclusive_cases_and_bounded_fanout_preserve_every_original_node(
+    tmp_path, monkeypatch, requested
+):
+    from tools.ci import ci_coverage_plan
+
+    monkeypatch.setenv("GITHUB_SHA", "a" * 40)
+    monkeypatch.setenv("GITHUB_OUTPUT", str(tmp_path / "output"))
+    nodes = tuple(f"tests/test_large.py::test_case[{i}]" for i in range(8))
+    hints = dict.fromkeys(nodes, 300.0)
+    monkeypatch.setattr(ci_coverage_plan, "load_duration_hints", lambda: (0.05, hints))
+    count = write_plan(nodes, tmp_path / "plan", requested)
+    rows = json.loads((tmp_path / "output").read_text().split("matrix=", 1)[1])[
+        "include"
+    ]
+    shards = [
+        verify_plan(tmp_path / "plan", i).read_text().splitlines() for i in range(count)
+    ]
+    assert sorted(node for shard in shards for node in shard) == sorted(nodes)
+    assert count == min(requested, len(nodes))
+    for row, shard in zip(rows, shards, strict=True):
+        assert row["exclusive"] == (len(shard) == 1)
+        assert row["timeout-minutes"] == 60
+
+
+def test_measured_full_case_has_no_untimed_neighbors(tmp_path, monkeypatch):
+    from tools.ci import ci_coverage_plan
+
+    monkeypatch.setenv("GITHUB_SHA", "b" * 40)
+    monkeypatch.setenv("GITHUB_OUTPUT", str(tmp_path / "output"))
+    heavy = "tests/test_full.py::test_complete_original_workflow"
+    ordinary = tuple(f"tests/test_full.py::test_neighbor[{i}]" for i in range(32))
+    nodes = (heavy, *ordinary)
+    monkeypatch.setattr(
+        ci_coverage_plan, "load_duration_hints", lambda: (0.05, {heavy: 1200.0})
+    )
+    count = write_plan(nodes, tmp_path / "plan", 256)
+    rows = json.loads((tmp_path / "output").read_text().split("matrix=", 1)[1])[
+        "include"
+    ]
+    shards = [
+        verify_plan(tmp_path / "plan", i).read_text().splitlines() for i in range(count)
+    ]
+    owner = next(i for i, shard in enumerate(shards) if heavy in shard)
+    assert shards[owner] == [heavy]
+    assert rows[owner]["exclusive"] is True
+    assert sorted(node for shard in shards for node in shard) == sorted(nodes)
+
+
+def test_full_256_way_plan_remains_nonempty_and_complete(tmp_path, monkeypatch):
+    monkeypatch.setenv("GITHUB_SHA", "c" * 40)
+    monkeypatch.setenv("GITHUB_OUTPUT", str(tmp_path / "output"))
+    nodes = tuple(f"tests/test_{i}.py::test_case" for i in range(300))
+    assert write_plan(nodes, tmp_path / "plan", 256) == 256
+    shards = [
+        verify_plan(tmp_path / "plan", i).read_text().splitlines() for i in range(256)
+    ]
+    assert all(shards)
+    assert sorted(node for shard in shards for node in shard) == sorted(nodes)
+    rows = json.loads((tmp_path / "output").read_text().split("matrix=", 1)[1])[
+        "include"
+    ]
+    assert len(rows) == 256
+    assert not any(row["exclusive"] for row in rows)

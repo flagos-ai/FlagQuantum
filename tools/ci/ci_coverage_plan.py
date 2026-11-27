@@ -19,7 +19,8 @@ from pathlib import Path
 from tools.ci.pytest_shard import balanced_assignments, load_duration_hints
 
 SCHEMA = "flagquantum_coverage_plan_v1"
-MAX_SHARDS = 192
+MAX_SHARDS = 256
+EXCLUSIVE_TEST_SECONDS = 120.0
 MAX_FILE_BATCH_TESTS = 16
 MAX_FILE_BATCH_SECONDS = 60.0
 DEFAULT_TIMEOUT_MINUTES = 60
@@ -38,7 +39,7 @@ def write_plan(nodeids: tuple[str, ...], directory: Path, requested: int) -> int
     if not nodeids or len(nodeids) != len(set(nodeids)):
         raise ValueError("Coverage collection must be nonempty and unique")
     if not 1 <= requested <= MAX_SHARDS:
-        raise ValueError("Coverage shard count must be between 1 and 192")
+        raise ValueError("Coverage shard count must be between 1 and 256")
     files: dict[str, list[str]] = defaultdict(list)
     for nodeid in nodeids:
         filename = nodeid.split("::", 1)[0]
@@ -78,9 +79,25 @@ def write_plan(nodeids: tuple[str, ...], directory: Path, requested: int) -> int
         for name, nodes in batches.items()
     }
     count = min(requested, len(batches))
-    assignments = balanced_assignments(
-        tuple(batches), count, default_seconds=default, durations=weights
+    # A long measured case must not inherit a tail of untimed neighbors. Keep
+    # a separate slot when the requested fan-out has room for the other cases.
+    heavy = sorted(
+        (
+            name
+            for name, nodes in batches.items()
+            if len(nodes) == 1 and weights[name] >= EXCLUSIVE_TEST_SECONDS
+        ),
+        key=lambda name: (-weights[name], name),
     )
+    reserve = min(len(heavy), count - 1) if count < len(batches) else len(heavy)
+    exclusive = heavy[:reserve]
+    assignments = {name: index for index, name in enumerate(exclusive)}
+    remaining = tuple(name for name in batches if name not in assignments)
+    if remaining:
+        balanced = balanced_assignments(
+            remaining, count - reserve, default_seconds=default, durations=weights
+        )
+        assignments.update({name: index + reserve for name, index in balanced.items()})
     shards: list[list[str]] = [[] for _ in range(count)]
     for batch in sorted(batches):
         shards[assignments[batch]].extend(batches[batch])
@@ -109,6 +126,12 @@ def write_plan(nodeids: tuple[str, ...], directory: Path, requested: int) -> int
             {
                 "shard": i,
                 "hosted-bucket": i % 8,
+                "exclusive": len(nodes) == 1
+                and max(
+                    hints.get(nodes[0], default),
+                    LONG_TEST_TIMEOUT_MINUTES.get(nodes[0], 0) * 60,
+                )
+                >= EXCLUSIVE_TEST_SECONDS,
                 "timeout-minutes": max(
                     DEFAULT_TIMEOUT_MINUTES,
                     sum(LONG_TEST_TIMEOUT_MINUTES.get(node, 0) for node in nodes),
