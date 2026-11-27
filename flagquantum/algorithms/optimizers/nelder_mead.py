@@ -413,7 +413,7 @@ class NelderMeadOptimizer:
         values = values[order]
         value_spread, simplex_spread = self._spreads(vertices, values)
         return NelderMeadResult(
-            parameters=vertices[0].clone(),
+            parameters=vertices[0].reshape(parameters.shape).clone(),
             value=float(values[0]),
             simplex=vertices,
             value_spread=value_spread,

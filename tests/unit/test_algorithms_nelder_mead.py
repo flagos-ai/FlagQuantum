@@ -261,6 +261,25 @@ def test_a_float32_starting_point_stays_float32() -> None:
     assert result.value == 0.0
 
 
+def test_the_returned_point_is_shaped_like_the_starting_point() -> None:
+    """The returned best vertex preserves the starting tensor's shape."""
+    grid_result = NelderMeadOptimizer(maxiter=1500, atol=1e-12).minimize(
+        lambda point: ((point - 1.0) ** 2).sum(),
+        torch.zeros((2, 3), dtype=torch.float64),
+    )
+    assert grid_result.parameters.shape == (2, 3)
+    assert torch.allclose(
+        grid_result.parameters, torch.ones((2, 3), dtype=torch.float64), atol=1e-5
+    )
+
+    scalar_result = NelderMeadOptimizer(maxiter=200, atol=1e-14).minimize(
+        lambda point: ((point - 2.0) ** 2).sum(),
+        torch.tensor(0.0, dtype=torch.float64),
+    )
+    assert scalar_result.parameters.shape == ()
+    assert float(scalar_result.parameters) == pytest.approx(2.0, abs=1e-6)
+
+
 def test_a_two_well_quartic_converges_into_the_nearer_well() -> None:
     """The measured local-minimum limit, and what the flag does not say.
 
