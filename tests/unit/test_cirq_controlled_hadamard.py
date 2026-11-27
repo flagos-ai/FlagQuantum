@@ -71,7 +71,6 @@ def test_static_atomic_roundtrip_full_complex_operator_and_inverse(
         cirq.HPowGate(exponent=-1).controlled(),
         cirq.HPowGate(global_shift=1).controlled(),
         cirq.HPowGate(exponent=sympy.Symbol("a")).controlled(),
-        cirq.Y.controlled(),
     ),
 )
 def test_only_canonical_positive_binary_control_is_admitted(gate: Any) -> None:

@@ -38,7 +38,7 @@ own foreign gate types.
 | `test_to_cirq` | Plus and minus preparations followed by Y, identical exported leaf order and complete complex states. |
 | `test_pl_interop` | Source gate objects and full complex matrices, plus native Y and CY PennyLane round trips. |
 | `test_cy_vs_cirq` | Source CY specialization, canonical Cirq matrix, and native atomic binding. |
-| `test_cirq_interop` | Unchanged source circuit shape, exact operand order and native resource identity. Original inverse mapping and native Cirq circuit round trip remain open. |
+| `test_cirq_interop` | Unchanged source circuit shape, exact operand order and native resource identity. Native static round trip is now implemented under approved Proposal 127; original SDK-qualified inverse mapping diagnostics remain separate. |
 | `test_active_cy_is_y` | Both target basis columns after one preparation and one tensor-network effect on the control. |
 | `test_cy_adjoint` | Two consecutive CY operations give the full identity matrix. |
 | `test_cy_t_complexity` | One modeled Clifford and one emitted CY. |
@@ -47,10 +47,10 @@ With Cirq 1.7.0 and PennyLane 0.44.1, the unchanged original suite reports
 10 passed, 6 mode skips, and one failure. The positive-control constructor
 returns canonical `cirq.CY`. Qualtran's inverse lookup recognizes
 `cirq.ControlledGate(cirq.Y)` and wraps `cirq.CY` in `CirqGateAsBloq`. The
-FlagQuantum resource adapter recognizes both forms. The separate protected
-Cirq circuit conversion contract still excludes `cy`, so Q-0271 and Q-0272
-remain open. Generic source wire-symbol dispatch and external object wrappers
-also remain outside the native fixed-gate implementation.
+FlagQuantum resource adapter recognizes both forms. At the time of that run, the separate protected static Cirq contract excluded
+`cy`. Proposal 127 was separately approved on 2026-11-27 and now closes that
+conversion gap. Generic source wire-symbol dispatch and external object wrappers
+are covered by the subsequent capture/presentation evidence below.
 
 | Case | Emitted primitives | Independent source declaration |
 | --- | --- | --- |
@@ -95,8 +95,9 @@ unknown register, retaining the native Register representation in its message.
 
 The source inverse-mapping failure remains directly reproduced. Canonical
 `cirq.Y.controlled()` maps to CirqGateAsBloq, whereas explicit
-`cirq.ControlledGate(cirq.Y)` maps to CYGate. Q-0271 and Q-0272 remain open for
-this original discrepancy and the protected static CY circuit conversion gap.
+`cirq.ControlledGate(cirq.Y)` maps to CYGate. This discrepancy remains an original Cirq 1.7 diagnostic. Cirq 1.6 canonical
+Y.controlled() returns a generic ControlledGate and maps to CYGate directly.
+The native static CY gap is now resolved by approved Proposal 127.
 The generic concrete source wrapper and display gaps are now covered.
 
 The batch passed 149 concentrated cases without warnings or skips, including
@@ -104,3 +105,33 @@ existing nested-control branch/work evidence and optional PennyLane boundaries.
 Strict typing of the four changed Python files, formatting, lint, Compiler and
 Ecosystem scopes, architecture, multilevel IR and protected API checks passed.
 Source blobs remain unchanged. Retained logs use `ftqc-reference-env/g2-y-atom-*.log`.
+
+
+## Complete file acceptance on 2026-11-27
+
+Q-0271 and Q-0272 are accepted under the explicitly approved
+[faithful-migration rule](G2_FAITHFUL_MIGRATION_CLOSURE_PROPOSAL.md).
+Complete source definitions, original examples/DocSpecs, notebook assets,
+register bindings, numerical action, shared controlled-predicate dependencies,
+SDK hooks, full presentation and original test counterparts have the owners and
+evidence above. Proposal 127 supplies the last protected static conversion gap.
+
+Both supported SDK profiles pass 107 interop cases and 45 direct Y/CY cases.
+Full complex operators retain absolute scalar phase under reversed wires and
+spectators; normal append executes without source SDKs. Both atomic directions
+are self-inverse and have no work or measurement. Existing conditional branches
+retain complete complex amplitudes and zero private predicate work. Source
+model one Clifford/two logical wires remains separate from one actual CY.
+
+The untouched original suite's 1.7 inverse-lookup failure and mode skips remain
+recorded. The native diagnostic now follows the actual source constructor and
+converter in each SDK instead of assuming a 1.7 wrapper on 1.6. This is not a
+repair to the source library or a claim that its failing test now passes.
+No runtime kernel, PennyLane admission, public entry or Core opcode is added.
+
+
+Final local checks pass strict typing for all seven changed Python files,
+Black/Ruff, scope, language/links, architecture, IR/public API and both SDK
+contract checks. Frozen Y implementation/test blobs are checked by the actual
+capture fixture. Receipts are `ftqc-reference-env/g2-static-cy-*` outside the
+repository. Source runtime, gate counts and old source failure logs are retained.

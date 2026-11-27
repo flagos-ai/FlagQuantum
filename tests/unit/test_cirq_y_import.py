@@ -20,7 +20,7 @@ def test_canonical_cy_retains_atomic_instruction_and_complex_phase(
     from flagquantum.simulation.unitary import get_unitary
 
     wires = tuple(cirq.LineQubit.range(2))
-    operation = cirq.CY(*wires)
+    operation = cirq.Y.controlled().on(*wires)
     if inverse:
         operation = cirq.inverse(operation)
     result = import_cirq_feedback(cirq.Circuit(operation), qubit_order=wires)
@@ -38,7 +38,7 @@ def test_canonical_cy_feedback_keeps_every_complex_branch(inverse: bool) -> None
     import cirq
 
     control, target, record = cirq.LineQubit.range(3)
-    operation = cirq.CY(control, target)
+    operation = cirq.Y.controlled().on(control, target)
     if inverse:
         operation = cirq.inverse(operation)
     source = cirq.Circuit(

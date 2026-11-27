@@ -76,3 +76,23 @@ runtime execution are outside this proposal.
 
 The user approved this exact scope on 2026-11-27. Contract and implementation
 commits remain separate; review Q-0271/Q-0272 after complete local acceptance.
+
+
+## Implemented acceptance
+
+Static import now recognizes canonical positive CYPowGate and explicit
+ControlledGate(Y); export uses the installed SDK's canonical Y.controlled().
+The existing native `cy` opcode and numerical execution are unchanged. Both
+Cirq 1.6.1 and 1.7.0 pass the complete 107-case interop/contract/conformance
+suite plus 45 direct Y/CY, captured-source, full-operator, measured-feedback and
+nested-predicate cases. Alternate/symbolic powers, shifts, control polarities,
+control dimensions/counts, tags and unsupported controlled gates retain refusal.
+
+The historical CH negative input CY moves to the explicitly approved positive
+suite. Existing CY feedback tests use the actual canonical constructor in both
+SDKs. The original inverse lookup is strictly profile-qualified: generic CY is
+recognized in 1.6; canonical CYPowGate remains wrapped in 1.7. No original
+source was patched and no source failure was made to look like a passing result.
+Measured CY remains one primitive, zero work and zero measurements; the original
+model separately declares one Clifford and two logical qubits. Source erasure
+branches and primitive/model distinctions remain with the existing owners.

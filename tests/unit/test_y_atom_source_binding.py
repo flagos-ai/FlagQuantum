@@ -35,14 +35,16 @@ def frozen_source() -> None:
 def test_actual_factories_atom_capture_and_complete_complex_action(
     gate: Literal["y", "cy"],
 ) -> None:
-    from qualtran import DecomposeTypeError
+    from qualtran._infra.bloq import DecomposeTypeError
     from qualtran.bloqs.basic_gates.y_gate import (
         _CY_GATE_DOC,
         _Y_GATE_DOC,
         _cy_gate,
         _y_gate,
     )
-    from qualtran.resource_counting import QECGatesCost, QubitCount, get_cost_value
+    from qualtran.resource_counting._bloq_counts import QECGatesCost
+    from qualtran.resource_counting._costing import get_cost_value
+    from qualtran.resource_counting._qubit_counts import QubitCount
 
     factory, document = (
         (_y_gate, _Y_GATE_DOC) if gate == "y" else (_cy_gate, _CY_GATE_DOC)
@@ -105,10 +107,11 @@ def test_actual_factories_atom_capture_and_complete_complex_action(
 
 @pytest.mark.parametrize("gate", ("y", "cy"))
 def test_complete_native_score_matches_source(gate: Literal["y", "cy"]) -> None:
-    from qualtran import BloqBuilder, QBit
-    from qualtran import Register as SourceRegister
-    from qualtran.bloqs.basic_gates import CYGate, YGate
-    from qualtran.drawing import get_musical_score_data
+    from qualtran._infra.composite_bloq import BloqBuilder
+    from qualtran._infra.data_types import QBit
+    from qualtran._infra.registers import Register as SourceRegister
+    from qualtran.bloqs.basic_gates.y_gate import CYGate, YGate
+    from qualtran.drawing.musical_score import TextBox, get_musical_score_data
 
     from flagquantum.core.ir.program.register_types import quantum_bit_type
     from flagquantum.core.ir.program.registers import Register
@@ -136,7 +139,9 @@ def test_complete_native_score_matches_source(gate: Literal["y", "cy"]) -> None:
     unknown = Register("unknown", quantum_bit_type())
     if gate == "y":
         assert callback(step, unknown, ()) == ("TextBox", {"text": "Y"})
-        assert source.wire_symbol(SourceRegister("unknown", QBit())).text == "Y"
+        symbol = source.wire_symbol(SourceRegister("unknown", QBit()))
+        assert isinstance(symbol, TextBox)
+        assert symbol.text == "Y"
     else:
         with pytest.raises(ValueError, match="Unknown register"):
             callback(step, unknown, ())
@@ -146,12 +151,14 @@ def test_complete_native_score_matches_source(gate: Literal["y", "cy"]) -> None:
 
 def test_original_cy_inverse_mapping_failure_is_retained() -> None:
     import cirq
-    from qualtran.bloqs.basic_gates import CYGate
-    from qualtran.cirq_interop import cirq_gate_to_bloq
-    from qualtran.cirq_interop._cirq_to_bloq import CirqGateAsBloq
+    from qualtran.bloqs.basic_gates.y_gate import CYGate
+    from qualtran.cirq_interop._cirq_to_bloq import CirqGateAsBloq, cirq_gate_to_bloq
 
     canonical = cirq.Y.controlled()
     converted = cirq_gate_to_bloq(canonical)
-    assert isinstance(converted, CirqGateAsBloq)
-    assert converted != CYGate()
+    if isinstance(canonical, cirq.ControlledGate):
+        assert converted == CYGate()
+    else:
+        assert converted != CYGate()
+        assert isinstance(converted, CirqGateAsBloq)
     assert cirq_gate_to_bloq(cirq.ControlledGate(cirq.Y)) == CYGate()
