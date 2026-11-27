@@ -113,3 +113,37 @@ Q-0357, Q-0358 and Q-0360 close the native Hamiltonian and test coverage.
 Q-0359 remains open for one-step clean preparation junk, the source's
 symbolic width and singleton failures, its mixed-sign norm estimate,
 and direct external object binding.
+
+
+## Faithful complete-source acceptance (2026-11-28)
+
+The approved faithful-migration closure rule supersedes historical open status
+for Q-0359. Complete source review covers all four functions: eigenphase to
+coefficient precision, the signed-sum Pauli norm formula, generic Pauli walk
+construction and the periodic Ising wrapper with its original default strengths.
+Existing Hamiltonian/alias/SELECT/reflection owners provide the implementation.
+Concrete and symbolic precision/norm paths, ordered merged Pauli words, label
+mapping and source normalization are retained without adding another backend.
+
+The signed norm estimate is the original formula, including its unsafe bound
+and negative-radicand witnesses. The native real-Hamiltonian operation refuses
+a nonreal estimate and accepts an explicit bound. It does not claim support for
+source non-Hermitian coefficient admission. Singleton/zero-selection source
+failures and symbolic peak failure remain recorded, separately from native
+concrete-specialized symbolic resource predictions.
+
+The original reflection can leave signal junk occupied. Native joint execution
+retains that environment as caller-owned data; only actual private scratch is
+required zero. A single step is not reported as a clean selection-only unitary.
+Existing complete small histories, full complex joint amplitudes, inverse
+restoration with the same signal environment and actual four-site source
+physical capture remain authoritative. Source ABI refusal prevents silently
+discarding those ports. Larger explicit-state witnesses are not full dense
+operators or brute-force enumeration of every large-example history.
+
+The current concentrated Ising/walk/constructor batch passes 186 cases;
+57 independent Cirq 1.6 context/Ising cases also pass. All 88 reviewed locked
+source/dependency/asset blobs are unchanged. Existing strict production,
+32 local integration and real Kickmix Simulator evidence is reused because no
+Python implementation changes in this acceptance entry. Direct generic walk
+chemistry dependency ownership remains open under Q-0658, not counted here.
