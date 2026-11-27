@@ -3,7 +3,12 @@
 from itertools import product
 from typing import Any
 
-import numpy as np
+from tests._reference_dependencies import unavailable_reference
+
+try:
+    import numpy as np
+except ModuleNotFoundError as _reference_import_error:
+    unavailable_reference(_reference_import_error)
 import pytest
 import sympy
 
@@ -32,9 +37,10 @@ def native_signature(source: Any) -> Signature:
 
 @pytest.mark.parametrize("sides", list(product(("LEFT", "RIGHT", "THRU"), repeat=3)))
 def test_directional_matrix_and_identity_projection(sides: tuple[str, ...]) -> None:
-    from qualtran import QAny, Side
-    from qualtran import Register as SourceRegister
-    from qualtran import Signature as SourceSignature
+    from qualtran._infra.data_types import QAny
+    from qualtran._infra.registers import Register as SourceRegister
+    from qualtran._infra.registers import Side
+    from qualtran._infra.registers import Signature as SourceSignature
     from qualtran.simulation.tensor._tensor_data_manipulation import (
         eye_tensor_for_signature,
         tensor_data_from_unitary_and_signature,
@@ -64,9 +70,9 @@ def test_directional_matrix_and_identity_projection(sides: tuple[str, ...]) -> N
 
 @pytest.mark.parametrize("shape", [(), (0,), (2, 0), (1, 2)])
 def test_zero_width_and_empty_array_have_distinct_axes(shape: tuple[int, ...]) -> None:
-    from qualtran import QAny
-    from qualtran import Register as SourceRegister
-    from qualtran import Signature as SourceSignature
+    from qualtran._infra.data_types import QAny
+    from qualtran._infra.registers import Register as SourceRegister
+    from qualtran._infra.registers import Signature as SourceSignature
     from qualtran.simulation.tensor._tensor_data_manipulation import (
         eye_tensor_for_signature,
     )
