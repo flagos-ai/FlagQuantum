@@ -97,7 +97,9 @@ def test_changed_torch_build_refuses_reader_and_preflight_before_draw(
     text = plan.to_json()
     monkeypatch.setattr(torch, "__version__", "unmatched-build")
     with (
-        patch("flagquantum.runtime.measurements._draw_probability_indices") as draw,
+        patch(
+            "flagquantum.simulation.density_matrix._draw_probability_indices"
+        ) as draw,
         patch(
             "flagquantum.simulation.dynamics.ising_braid._ising_sampled_prefix"
         ) as prefix,
@@ -194,7 +196,7 @@ def test_invalid_or_zero_weight_draw_never_returns_partial_result(
     )
     with (
         patch(
-            "flagquantum.runtime.measurements._draw_probability_indices",
+            "flagquantum.simulation.density_matrix._draw_probability_indices",
             return_value=torch.tensor([[selected]], dtype=torch.int64),
         ),
         pytest.raises(ExecutionError),
@@ -216,7 +218,7 @@ def test_malformed_draw_is_not_coerced(draw: torch.Tensor) -> None:
     plan = _plan()
     with (
         patch(
-            "flagquantum.runtime.measurements._draw_probability_indices",
+            "flagquantum.simulation.density_matrix._draw_probability_indices",
             return_value=draw,
         ),
         pytest.raises(ExecutionError),

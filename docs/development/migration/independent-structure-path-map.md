@@ -543,3 +543,6 @@ Each row names the authoritative owner. Partial rows move only the listed defini
 | shared-gradient-numerics | `flagquantum/core/finite_differences.py` | `flagquantum/simulation/numerics/finite_differences.py` | internal file removed; no compatibility |
 | runtime-state-numerics | `flagquantum/runtime/dynamic/execution.py` | `flagquantum/simulation/statevector/measurement_ops.py` | `_measure_wire`, `_measure_wires_batched`; no compatibility |
 | runtime-state-numerics | `flagquantum/runtime/dynamic/execution.py` | `flagquantum/simulation/statevector/instruction.py` | `_apply_instruction`; no compatibility |
+| density-instrument-numerics | `flagquantum/runtime/measurements.py` | `flagquantum/simulation/density_matrix.py` | `_draw_probability_indices`, `_DensityMatrixTarget`; no compatibility |
+| density-instrument-numerics | `flagquantum/runtime/_terminal_instruments.py` | `flagquantum/simulation/density_matrix.py` | `_instrument_probabilities`; no compatibility |
+| dense-probability-numerics | `flagquantum/runtime/measurements.py` | `flagquantum/simulation/numerics/probabilities.py` | `_reduced_joint_marginal`, `_normalize_joint_marginal`, `_ideal_probabilities`, `_probabilities_from_parity_expectations`; unchanged `_TRACE_TOLERANCE`; no compatibility |

@@ -17,3 +17,10 @@ conformance oracles reuse these functions; neither Core contracts nor this modul
 select a different method or claim the quotient is exact. Run
 `tests/unit/test_finite_differences.py` and `tests/test_gradient_api.py` for the
 reported method, step, scalar objective and parameter-shape behavior.
+
+`probabilities.py` owns shared dense probability extraction, ordered joint
+reduction, normalization and parity reconstruction. It consumes existing
+tensors and retains the delivered arithmetic, tolerance and allocation rules.
+Runtime selects backend/catalog paths and admits requested marginal sizes.
+Run `tests/unit/test_measurements_marginal_reduction.py` and
+`tests/test_modern_measurements.py` for the local readout workflow.

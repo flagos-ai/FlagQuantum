@@ -17,8 +17,8 @@ import torch
 import flagquantum as fq
 from flagquantum.core.ir import IRValidationError
 from flagquantum.errors import CapabilityError, ExecutionError
-from flagquantum.runtime import measurements
 from flagquantum.runtime.results import ExecutionResult
+from flagquantum.simulation import density_matrix as _density_simulation
 from flagquantum.simulation.dynamics.lindblad import EvolutionValidationError
 
 pytestmark = pytest.mark.unit
@@ -331,7 +331,7 @@ def test_both_branches_and_roster_permutation(
     ) -> torch.Tensor:
         return torch.tensor([[index]], dtype=torch.int64)
 
-    monkeypatch.setattr(measurements, "_draw_probability_indices", draw)
+    monkeypatch.setattr(_density_simulation, "_draw_probability_indices", draw)
     results = []
     for reverse in [False, True]:
         source = _program(presence_source, True, reverse)
@@ -450,7 +450,7 @@ def test_selected_zero_weight_is_never_normalized(
     def impossible(*args: Any, **kwargs: Any) -> torch.Tensor:
         return torch.ones((1, 1), dtype=torch.int64)
 
-    monkeypatch.setattr(measurements, "_draw_probability_indices", impossible)
+    monkeypatch.setattr(_density_simulation, "_draw_probability_indices", impossible)
     with pytest.raises(ExecutionError, match="zero-probability"):
         presence_run(plan)
 
@@ -497,7 +497,7 @@ def test_weighted_conditional_paths_recover_unread_continuation(
         def selected(*args: Any, _index: int = index, **kwargs: Any) -> torch.Tensor:
             return torch.tensor([[_index]], dtype=torch.int64)
 
-        monkeypatch.setattr(measurements, "_draw_probability_indices", selected)
+        monkeypatch.setattr(_density_simulation, "_draw_probability_indices", selected)
         result = presence_run(plan)
         assert result.state is not None
         combined += weight * result.state[0]
@@ -538,7 +538,7 @@ def test_fixed_channel_algebra_uses_original_trace(
     def selected(*args: Any, **kwargs: Any) -> torch.Tensor:
         return torch.tensor([[index]], dtype=torch.int64)
 
-    monkeypatch.setattr(measurements, "_draw_probability_indices", selected)
+    monkeypatch.setattr(_density_simulation, "_draw_probability_indices", selected)
     result = presence_run(plan)
     matrix = torch.diag(
         torch.tensor(
@@ -572,7 +572,7 @@ def test_independent_time_integration_convergence(
     def selected(*args: Any, **kwargs: Any) -> torch.Tensor:
         return torch.zeros((1, 1), dtype=torch.int64)
 
-    monkeypatch.setattr(measurements, "_draw_probability_indices", selected)
+    monkeypatch.setattr(_density_simulation, "_draw_probability_indices", selected)
     errors = []
     for intervals in (16, 32):
         source = _program(presence_source, False).measure_presence(
@@ -600,7 +600,7 @@ def test_shared_private_single_draw_witness() -> None:
     probabilities = torch.tensor([[0.5, 0.5]], dtype=torch.float64)
     count = sum(
         int(
-            measurements._draw_probability_indices(
+            _density_simulation._draw_probability_indices(
                 probabilities, 1, generator=generator
             )[0, 0]
         )
@@ -771,7 +771,7 @@ def test_tiny_positive_branch_is_distinct_from_zero(
     def selected(*args: Any, **kwargs: Any) -> torch.Tensor:
         return torch.ones((1, 1), dtype=torch.int64)
 
-    monkeypatch.setattr(measurements, "_draw_probability_indices", selected)
+    monkeypatch.setattr(_density_simulation, "_draw_probability_indices", selected)
     result = presence_run(plan)
     assert result.state is not None
     torch.testing.assert_close(result.state[0], initial, atol=1e-12, rtol=0)
