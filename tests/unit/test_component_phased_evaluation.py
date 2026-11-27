@@ -5,7 +5,12 @@ from dataclasses import replace
 from itertools import product
 from typing import Any
 
-import numpy as np
+from tests._reference_dependencies import unavailable_reference
+
+try:
+    import numpy as np
+except ModuleNotFoundError as _reference_import_error:
+    unavailable_reference(_reference_import_error)
 import pytest
 import torch
 
@@ -56,7 +61,7 @@ def orders(record: ProgramRecord) -> dict[str, tuple[int, ...]]:
 
 
 def wrap(record: ProgramRecord, source: Any, depth: int) -> tuple[ProgramRecord, Any]:
-    from qualtran import Bloq
+    from qualtran._infra.bloq import Bloq
 
     for level in range(depth):
         old = next(f for f in record.functions if f.name == "main")
@@ -141,7 +146,8 @@ def phase_action(function: FunctionRecord, values: dict[str, object]) -> complex
 @pytest.mark.parametrize("n", [0, 1, 2, 3, 7])
 @pytest.mark.parametrize("depth", [1, 2, 4])
 def test_original_composed_phasing_and_physical_append(n: int, depth: int) -> None:
-    from qualtran.resource_counting import QECGatesCost, get_cost_value
+    from qualtran.resource_counting._bloq_counts import QECGatesCost
+    from qualtran.resource_counting._costing import get_cost_value
     from qualtran.simulation.classical_sim import do_phased_classical_simulation
 
     from examples.algorithms.binary_field_arithmetic import FieldOperation
@@ -188,7 +194,7 @@ def test_original_composed_phasing_and_physical_append(n: int, depth: int) -> No
 def test_nested_fixed_measurement_all_complex_branches(
     depth: int, bit: int, outcome: int
 ) -> None:
-    from qualtran.bloqs.basic_gates import MeasureX
+    from qualtran.bloqs.basic_gates.x_basis import MeasureX
     from qualtran.simulation.classical_sim import do_phased_classical_simulation
 
     record, source = wrap(measurement_record(), MeasureX().as_composite_bloq(), depth)
@@ -221,7 +227,7 @@ def test_nested_fixed_measurement_all_complex_branches(
 def test_nested_rng_shares_handler_and_preserves_precedence(
     depth: int, seed: int
 ) -> None:
-    from qualtran.bloqs.basic_gates import MeasureX
+    from qualtran.bloqs.basic_gates.x_basis import MeasureX
     from qualtran.simulation.classical_sim import do_phased_classical_simulation
 
     record, source = wrap(measurement_record(), MeasureX().as_composite_bloq(), depth)
@@ -251,7 +257,7 @@ def test_nested_rng_shares_handler_and_preserves_precedence(
 def test_nested_measurement_reconstructs_complex_superposition_branches(
     depth: int, outcome: int
 ) -> None:
-    from qualtran.bloqs.basic_gates import MeasureX
+    from qualtran.bloqs.basic_gates.x_basis import MeasureX
 
     record, _ = wrap(measurement_record(), MeasureX().as_composite_bloq(), depth)
     coefficients = torch.tensor([1 + 2j, -3 + 4j], dtype=torch.complex128) / 30**0.5
@@ -316,7 +322,7 @@ def test_recursive_evaluation_refuses_missing_policies_and_bad_actions(
     elif kind == "bad_order":
         schedules["outer1"] = ()
     if kind in {"no_handler", "fixed_missing"}:
-        from qualtran.bloqs.basic_gates import MeasureX
+        from qualtran.bloqs.basic_gates.x_basis import MeasureX
 
         record, _ = wrap(measurement_record(), MeasureX().as_composite_bloq(), 2)
         with pytest.raises(KeyError if kind == "fixed_missing" else ValueError):

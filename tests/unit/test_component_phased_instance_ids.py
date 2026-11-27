@@ -6,7 +6,12 @@ from dataclasses import replace
 from itertools import product
 from typing import Any
 
-import numpy as np
+from tests._reference_dependencies import unavailable_reference
+
+try:
+    import numpy as np
+except ModuleNotFoundError as _reference_import_error:
+    unavailable_reference(_reference_import_error)
 import pytest
 import torch
 
@@ -37,11 +42,13 @@ pytestmark = [pytest.mark.unit, pytest.mark.ftqc_reference]
 def pair_fixture(
     depth: int, nested: bool = False
 ) -> tuple[ProgramRecord, Any, dict[str, tuple[int, ...]]]:
-    from qualtran import Bloq, BloqBuilder, CBit, QBit
-    from qualtran import Register as SourceRegister
-    from qualtran import Side as SourceSide
-    from qualtran import Signature as SourceSignature
-    from qualtran.bloqs.basic_gates import MeasureX
+    from qualtran._infra.bloq import Bloq
+    from qualtran._infra.composite_bloq import BloqBuilder
+    from qualtran._infra.data_types import CBit, QBit
+    from qualtran._infra.registers import Register as SourceRegister
+    from qualtran._infra.registers import Side as SourceSide
+    from qualtran._infra.registers import Signature as SourceSignature
+    from qualtran.bloqs.basic_gates.x_basis import MeasureX
 
     record, source = wrap(measurement_record(), MeasureX().as_composite_bloq(), depth)
     record = replace(
@@ -88,6 +95,7 @@ def pair_fixture(
         )
     )
     source_outputs = np.empty((2,), dtype=object)
+    assert isinstance(source_inputs["q"], np.ndarray)
     for index in range(2):
         outputs[index] = builder.call_dict("branch", {"q": inputs[index]})["c"]
         source_outputs[index] = bb.add_d(source, q=source_inputs["q"][index])["c"]
@@ -151,7 +159,8 @@ def reverse_root_storage(record: ProgramRecord) -> ProgramRecord:
 def test_expanded_fixed_labels_values_all_complex_branches_and_work_zero(
     depth: int, outcomes: tuple[int, int], reverse: bool
 ) -> None:
-    from qualtran.resource_counting import QECGatesCost, get_cost_value
+    from qualtran.resource_counting._bloq_counts import QECGatesCost
+    from qualtran.resource_counting._costing import get_cost_value
     from qualtran.simulation.classical_sim import do_phased_classical_simulation
 
     record, source, ids = pair_fixture(depth)
@@ -275,8 +284,8 @@ def test_nested_instance_mapping_is_snapshotted_before_actions() -> None:
 
 
 def test_source_direct_composite_action_pure_recursion_boundary_is_retained() -> None:
-    from qualtran import BloqBuilder
-    from qualtran.bloqs.basic_gates import MeasureX
+    from qualtran._infra.composite_bloq import BloqBuilder
+    from qualtran.bloqs.basic_gates.x_basis import MeasureX
     from qualtran.simulation.classical_sim import do_phased_classical_simulation
 
     bb, inputs = BloqBuilder.from_signature(MeasureX().signature)

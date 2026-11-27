@@ -1,6 +1,11 @@
 """Measurement phase lookup is scoped to this call's declared output ports."""
 
-import numpy as np
+from tests._reference_dependencies import unavailable_reference
+
+try:
+    import numpy as np
+except ModuleNotFoundError as _reference_import_error:
+    unavailable_reference(_reference_import_error)
 import pytest
 
 from flagquantum.compiler.registers.component_builder import ComponentProgramBuilder
@@ -17,8 +22,10 @@ pytestmark = [pytest.mark.unit, pytest.mark.ftqc_reference]
 def test_phase_output_lookup_after_assignment_matches_source(
     shape: tuple[int, ...], lookup: str
 ) -> None:
-    from qualtran import Bloq, QBit, Register
-    from qualtran import Signature as SourceSignature
+    from qualtran._infra.bloq import Bloq
+    from qualtran._infra.data_types import QBit
+    from qualtran._infra.registers import Register
+    from qualtran._infra.registers import Signature as SourceSignature
     from qualtran.simulation.classical_sim import (
         MeasurementPhase,
         PhasedClassicalSimState,
@@ -80,8 +87,11 @@ def test_phase_output_lookup_after_assignment_matches_source(
 
 
 def test_phase_cannot_resolve_a_previous_calls_same_named_output() -> None:
-    from qualtran import Bloq, BloqBuilder, QBit, Register, Side
-    from qualtran import Signature as SourceSignature
+    from qualtran._infra.bloq import Bloq
+    from qualtran._infra.composite_bloq import BloqBuilder
+    from qualtran._infra.data_types import QBit
+    from qualtran._infra.registers import Register, Side
+    from qualtran._infra.registers import Signature as SourceSignature
     from qualtran.simulation.classical_sim import (
         MeasurementPhase,
         PhasedClassicalSimState,

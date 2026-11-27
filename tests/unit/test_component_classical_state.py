@@ -4,7 +4,12 @@ from dataclasses import replace
 from itertools import product
 from typing import Any
 
-import numpy as np
+from tests._reference_dependencies import unavailable_reference
+
+try:
+    import numpy as np
+except ModuleNotFoundError as _reference_import_error:
+    unavailable_reference(_reference_import_error)
 import pytest
 
 from flagquantum.compiler.registers.component_builder import ComponentProgramBuilder
@@ -109,8 +114,10 @@ def test_complete_add_graph_all_inputs_and_explicit_recursive_boundary(
 def test_shaped_passthrough_and_array_storage_match_real_source(
     shape: tuple[int, ...],
 ) -> None:
-    from qualtran import Bloq, QUInt, Register
-    from qualtran import Signature as SourceSignature
+    from qualtran._infra.bloq import Bloq
+    from qualtran._infra.data_types import QUInt
+    from qualtran._infra.registers import Register
+    from qualtran._infra.registers import Signature as SourceSignature
     from qualtran.simulation.classical_sim import ClassicalSimState
 
     from tests.unit.test_classical_action_tensor import signature_from_source
@@ -192,7 +199,7 @@ def measurement_values(function: FunctionRecord, values: dict[str, object]) -> o
 def test_all_measurement_branches_and_occurrence_ids_match_source(
     input_bit: int, outcome: int
 ) -> None:
-    from qualtran.bloqs.basic_gates import MeasureX
+    from qualtran.bloqs.basic_gates.x_basis import MeasureX
     from qualtran.simulation.classical_sim import PhasedClassicalSimState
 
     record = measurement_record()
@@ -230,7 +237,7 @@ def test_all_measurement_branches_and_occurrence_ids_match_source(
 
 
 def test_rng_precedence_and_generator_state_match_source() -> None:
-    from qualtran.bloqs.basic_gates import MeasureX
+    from qualtran.bloqs.basic_gates.x_basis import MeasureX
     from qualtran.simulation.classical_sim import PhasedClassicalSimState
 
     for seed in range(8):
@@ -261,8 +268,8 @@ def test_rng_precedence_and_generator_state_match_source() -> None:
 def test_output_commit_precedes_phase_errors_and_callback_order(
     contribution: complex | None, phased: bool
 ) -> None:
-    from qualtran import Bloq
-    from qualtran import Signature as SourceSignature
+    from qualtran._infra.bloq import Bloq
+    from qualtran._infra.registers import Signature as SourceSignature
     from qualtran.simulation.classical_sim import (
         ClassicalSimState,
         PhasedClassicalSimState,
@@ -311,6 +318,7 @@ def test_output_commit_precedes_phase_errors_and_callback_order(
     source = (PhasedClassicalSimState if phased else ClassicalSimState).from_cbloq(
         source_type().as_composite_bloq(), {"q": 0}
     )
+    assert isinstance(source, PhasedClassicalSimState) == phased
     if contribution is not None and (not phased or abs(contribution) != 1):
         for simulation in (source, state):
             with pytest.raises(ValueError):
@@ -323,7 +331,9 @@ def test_output_commit_precedes_phase_errors_and_callback_order(
         assert state.phase == 1
     else:
         assert state.simulate() == source.simulate() == {"q": 1}
-        assert state.phase == (source.phase if phased else 1)
+        assert state.phase == (
+            source.phase if isinstance(source, PhasedClassicalSimState) else 1
+        )
     assert native_trace == source_trace == ["values", "phase"]
 
 
@@ -419,9 +429,13 @@ def test_phased_graph_reconstructs_full_complex_matrix_and_append() -> None:
     from collections import Counter
 
     import torch
-    from qualtran import BloqBuilder, QBit
-    from qualtran.bloqs.basic_gates import SGate, XGate, ZGate
-    from qualtran.resource_counting import QECGatesCost, get_cost_value
+    from qualtran._infra.composite_bloq import BloqBuilder
+    from qualtran._infra.data_types import QBit
+    from qualtran.bloqs.basic_gates.s_gate import SGate
+    from qualtran.bloqs.basic_gates.x_basis import XGate
+    from qualtran.bloqs.basic_gates.z_basis import ZGate
+    from qualtran.resource_counting._bloq_counts import QECGatesCost
+    from qualtran.resource_counting._costing import get_cost_value
 
     import flagquantum as fq
     from examples.algorithms.binary_field_arithmetic import FieldOperation
