@@ -10,7 +10,12 @@ from math import pi, tau
 from pathlib import Path
 from typing import Any
 
-import numpy as np
+from tests._reference_dependencies import unavailable_reference
+
+try:
+    import numpy as np
+except ModuleNotFoundError as _reference_import_error:
+    unavailable_reference(_reference_import_error)
 import pytest
 import torch
 
@@ -54,7 +59,7 @@ def source() -> Any:
     from qualtran.bloqs.rotations import hamming_weight_phasing
 
     assert version("qualtran") == "0.7.0"
-    assert kickmix.__version__ == "0.1" and hasattr(kickmix, "Simulator")
+    assert getattr(kickmix, "__version__") == "0.1" and hasattr(kickmix, "Simulator")
     folder = Path(hamming_weight_phasing.__file__).parent
     for name, digest in (
         ("__init__.py", "e6c63bdf43262fd6e3771a9eebd5c8e7ad75d4b8"),
@@ -94,9 +99,12 @@ def _source_qvr_gates(
     *,
     adjoint: bool,
 ) -> tuple[tuple[Instruction, ...], Any]:
-    import cirq
-    from qualtran import QUInt
-    from qualtran.bloqs.arithmetic import Add
+    try:
+        import cirq
+    except ModuleNotFoundError as _reference_import_error:
+        unavailable_reference(_reference_import_error)
+    from qualtran._infra.data_types import QUInt
+    from qualtran.bloqs.arithmetic.addition import Add
     from qualtran.bloqs.rotations.phase_gradient import (
         AddIntoPhaseGrad,
         AddScaledValIntoPhaseReg,
@@ -143,7 +151,7 @@ def _source_qvr_gates(
 def _compile_against_source(
     op: HammingPhasingExample, original: Any
 ) -> tuple[DynamicCircuit, Any]:
-    from qualtran import Adjoint
+    from qualtran._infra.adjoint import Adjoint
     from qualtran.bloqs.basic_gates.rotation import ZPowGate
     from qualtran.bloqs.rotations.quantum_variable_rotation import QvrPhaseGradient
 
@@ -198,7 +206,8 @@ def _normalized_state(width: int, inputs: list[int]) -> dict[int, complex]:
 
 @pytest.mark.parametrize("width,exponent", tuple(product(range(2, 9), PHASES)))
 def test_direct_original_phase_grid(width: int, exponent: float, source: Any) -> None:
-    from qualtran.resource_counting import QECGatesCost, get_cost_value
+    from qualtran.resource_counting._bloq_counts import QECGatesCost
+    from qualtran.resource_counting._costing import get_cost_value
 
     op = HammingPhasingExample(width, exponent)
     original = source.HammingWeightPhasing(width, exponent)
@@ -248,7 +257,8 @@ def test_gradient_literal_child_walk_and_phase(
     )
     original = source.HammingWeightPhasingViaPhaseGradient(width, exponent, epsilon)
     assert op.gradient_width == original.b_grad
-    from qualtran.resource_counting import QECGatesCost, get_cost_value
+    from qualtran.resource_counting._bloq_counts import QECGatesCost
+    from qualtran.resource_counting._costing import get_cost_value
 
     model = estimate_component_resources(op.resource_model())
     cost = get_cost_value(original, QECGatesCost())
@@ -306,7 +316,7 @@ def test_gradient_literal_child_walk_and_phase(
 def test_original_tutorial_signature_and_direct_calls(
     via_gradient: bool, source: Any
 ) -> None:
-    from qualtran import Adjoint
+    from qualtran._infra.adjoint import Adjoint
     from qualtran.bloqs.arithmetic.hamming_weight import HammingWeightCompute
     from qualtran.bloqs.basic_gates.rotation import ZPowGate
     from qualtran.bloqs.rotations.quantum_variable_rotation import QvrPhaseGradient
@@ -362,7 +372,8 @@ def test_original_large_direct_counts(width: int, source: Any) -> None:
 
 
 def test_original_five_thousand_bit_complexity(source: Any) -> None:
-    from qualtran.resource_counting import QECGatesCost, get_cost_value
+    from qualtran.resource_counting._bloq_counts import QECGatesCost
+    from qualtran.resource_counting._costing import get_cost_value
 
     n, exponent, epsilon = 5000, 0.01, 0.1
     direct = source.HammingWeightPhasing(n, exponent, epsilon)
