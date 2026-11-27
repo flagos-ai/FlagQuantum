@@ -518,3 +518,73 @@ published-head CI; those remain mandatory. The latest #1084 increment through
 `d4802f79b864b3ae25c3e03efc66f6c06ab6dfb8` has sixteen SHA-verified
 paths and no candidate overlap; both relocation ledgers retain the same
 seventeen unfiltered changed-incoming diagnoses. Integrated G0 remains open.
+
+
+## CPU Toffoli layout follow-up after PR #1349
+
+PR #1349 qualified commit `b0e5856c2335acfcad9a662edbd8378148de0f65` on
+all three workflows at attempt 1: 432 successful checks and four existing
+conditional skips. Its 384 original CPU reports preserve 14,260 Runtime and
+38,540 coverage selection nodes once. Whole executed job maxima were Runtime
+540 seconds, unit 423 seconds and distributed CPU 426 seconds. Only Maxwell
+remained above 600 seconds, at 705 seconds; it waited another 873 seconds
+after the coverage plan was ready.
+
+The follow-up changes only the existing Simulation CPU Toffoli calculation.
+For medium state vectors, grouping untouched axes bounds the indexing rank and
+swapping two cached target views halves the temporary amplitude buffer. The
+owned non-gradient path copies one target half, then exchanges the two views.
+The differentiable path clones the admitted input before either write. Every
+caller continues to use the same Simulation defining function, with its original
+signature, input admission, dtype, output shape and buffer-ownership rules.
+
+The direct-axis layout remains for fewer than twelve qubits and for twenty or
+more qubits. Local calibration found grouped views slower for the smallest
+states and for the measured four-thread large streaming case. Both layouts
+are permanent numerical choices in the same owner. These local timings do not
+qualify the Linux full workload or establish a universal hardware crossover.
+
+Before changing the implementation, 891 complete original outcomes were retained
+from the qualified independent native installation, including raw tensor and
+gradient bytes, strides, conjugation, input mutation, storage aliasing and
+public admission refusals. The actual modified source reproduces all of them
+exactly. The 62 existing independent dense/gradient/ownership references and
+24 added seventeen-qubit batched-layout/gradient cases pass on both the original
+and the modified source. The new cases use the existing generic matrix action
+and the unchanged Toffoli matrix as their independent numerical oracle.
+
+An independent, immutable-source hardware check of the unchanged original
+Maxwell node on the qualified BW17 CPU16 four-CPU/24-GiB profile passed all
+original assertions, but took 940 seconds including preparation. Its container
+reached its 24-GiB hard limit with 12,794 max-limit events and no OOM kills.
+This result does not justify moving Maxwell to BW for the ten-minute goal.
+It does not isolate which construction, compilation or execution allocation
+caused that pressure. Source files were hash-verified before and after the
+read-only test phase, with no temporary numerical override.
+
+The final complete source default selection passes 21,921 tests with 864
+conditional skips in 410 seconds including startup. All 22,785 collected cases
+remain: the earlier 22,761 and the 24 added independent references. One
+historical Git-revision check changes from its existing environment skip to a
+pass; no previously passing case regresses. The relevant native/backend and
+complex-matrix integration modules pass all 188 cases. Together with the 86
+Toffoli cases, the independently installed native wheel passes the same 274
+cases, and reproduces all 891 complete original outcomes exactly.
+
+All 1,265 product Python files match source, wheel and installation, both native
+extensions load from that installation, and all 532 loaded product providers
+resolve there. The BMM test fixture now locates its unchanged kernel through
+the loaded package, allowing the same assertions to run outside the repository.
+Initial source-relative fixture errors and sandbox local-interface failures
+were retained; the full installed selection passed after correcting those test
+environment constraints. No optional dependency resolution is claimed.
+Candidate wheel SHA-256:
+`6c7dcc3b2cea9de23523ed9078fb31ccca93c70b59cfba85ac3c36ece7ffb2ea`.
+
+The follow-up still requires its own exact-head CI with the full original
+scientific node and coverage; the predecessor's green checks do not qualify
+this change or establish its Linux performance. Original
+widths, amplitudes, phases, optimizer budgets, draws, clocks, markers, tolerances,
+assertions, safety limits and coverage thresholds remain unchanged. Native
+source and ABI remain unchanged; no definition relocation is recorded. Rust
+remains deferred until the incoming branch and architecture migration close.
