@@ -248,3 +248,41 @@ separate from accepted receipts. Updated final consumers and Cirq 1.6.1 are
 checked independently in `g2-hubbard-standalone-cirq16-accepted.log`, with all 114 cases passing.
 The initial 1.6.1 diagnostic receipts expose the earlier CY constant/classifier
 assumption and remain preserved. The source files were unchanged in both runs.
+
+
+## Complete original SELECT test-file acceptance (2026-11-28)
+
+The approved faithful-migration rule supersedes historical open status for
+Q-0354. Complete unchanged test review covers five original example/autotest
+entries, controlled adjoint identity, eight dimensions of SELECT cost,
+Majorana count grids with and without control, spin-up count grids and the
+seeded ten-by-25 classical phase trials. Existing native tests and original
+raw run receipts cover these responsibilities. No test is deleted, relabeled
+or patched to force source acceptance.
+
+The complete original SELECT suite on Cirq 1.6 retains 33 passes, eight original
+skips and three original expected failures. On Cirq 1.7 it retains 25 passes,
+eight original CY-classifier failures, eight skips and three expected failures.
+Those are historical unchanged-source results reused here; a fresh native
+concentrated batch does not erase them or imply a universally green upstream
+suite. Native physical CY action and both complete port representations have
+independent accepted evidence. Model calls and literal primitive gate counts
+remain separate. PREPARE source acceptance is recorded in its constructor audit,
+and full SELECT source acceptance in its stored graph audit.
+
+
+Batch validation completes 350 distinct primary cases: the initial bounded run
+completed the PREPARE constructor (83), SELECT constructor (59) and external
+control (58) files before timing out in symbolic weights at 360 seconds, with
+no assertion failure. Those 200 completed cases are retained; the interrupted
+file is not counted from that run. A separate continuation passes all remaining
+150 cases, including the complete symbolic-weight file. The whole initial
+invocation is recorded as timed out, not green. The independent Cirq 1.6
+constructor/control/symbolic profile passes all 139 cases.
+
+All 60 frozen source/dependency/asset blobs remain unchanged. Twelve fresh
+actual-source generic child-control captures preserve their explicit missing
+controlled-erasure diagnostics. Algorithms scope, language, links, architecture,
+IR, protected API baseline and whitespace pass. Strict Python, 32 local
+integration and real Kickmix Simulator checks from the preceding accepted
+batches are reused because this closure changes no Python implementation.
