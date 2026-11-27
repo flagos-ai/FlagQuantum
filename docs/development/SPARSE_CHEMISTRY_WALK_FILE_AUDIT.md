@@ -75,3 +75,33 @@ The concentrated regression passed 132 cases. Strict typing,
 format, ownership, architecture, IR, and public API checks passed.
 Q-0412 and Q-0413 close the original tutorial and tests. Q-0414
 retains the full source-to-physical reflection and erase boundary.
+
+
+## Complete factory and dependency closure, 2026-11-28
+
+Q-0414 closes the complete `get_walk_operator_for_sparse_chem_ham` file and its
+direct PREPARE, SELECT, SelectBlockEncoding, reflection and Walk dependencies.
+Integral shape assertions, integral normalization, source default blocking and
+both precision arguments are accounted for. The literal source context retains
+the source narrow reflection projector and all required `signal_` environment
+ports. It does not substitute the distinct full-signal mathematical reflection
+used by the earlier Algorithms operation.
+
+The subsequent [bank-unitary owner](SPARSE_WALK_BANK_UNITARY_AUDIT.md) supplies
+exact arbitrary-bank load/unload for this composition, without pretending that
+an isometry's measured matching-image erasure is its general inverse. Small
+ordinary and positive-controlled contexts compare original block calls and
+operands, full complex joint states, exact reverse and private work cleanup.
+Existing all-history local certificates and small bank histories are reused;
+full Walk histories and the large dense operator are not exhaustively evaluated.
+The actual original eight-spin, sixty-five-row, twelve-keep-bit factory binds
+and counts both directions with the extra source environment retained. Rejecting
+the narrower old native ABI is intentional; omitting those banks is not fidelity.
+
+The source bystander SELECT control, narrow reflection's changed-junk behavior,
+opaque erase leaf and generic controlled-adjoint model failure stay explicit.
+Under the approved faithful-migration rule these source defects do not keep an
+implemented complete file open. The independent native bank extension is never
+reported as an existing upstream primitive recipe. The earlier open conclusion
+above is superseded for Q-0414. Generic Q-0658 remains open for the actual large
+THC dependency context, not for this now-delivered sparse context.

@@ -118,3 +118,14 @@ Walk binding scope. Original narrow-ABI physical execution, large-case numerical
 coverage, whole THC dependencies and complete Walk constructor acceptance
 remain open. Constructor inventory therefore stays 119/303. G2 continues;
 there is no PR merge or G3 transition.
+
+
+## Whole-source acceptance update, 2026-11-28
+
+The complete sparse PREPARE, SELECT and Walk source reviews now close Q-0408,
+Q-0410 and Q-0414 under the approved faithful-migration rule. Their audits retain
+all source failures and extension boundaries above. The actual sparse context is
+available; Q-0658 remains open specifically for the actual large THC context.
+This update does not expand the large-case numerical or measurement-history
+claims. The earlier constructor count and complete-Walk hold describe that
+historical batch, not the current source-file status.
