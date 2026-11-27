@@ -1,5 +1,13 @@
 # Stored cost-function phasing constructor audit
 
+The [2026-11-28 complete-file review](COST_FUNCTION_PHASING_FILE_AUDIT.md#current-complete-file-disposition-2026-11-28)
+adds the missing source-valid empty cost-register set. Both stage construction
+and the existing constructor preserve evaluation, phase and exact erasure;
+scalar/array extras retain THRU, RIGHT and LEFT ownership. Existing callback
+requirements, nonempty cost validation, source atomic Square and independent
+native arithmetic remain unchanged. Historical source limitations below are
+retained under the explicitly approved faithful-migration rule.
+
 ## Scope and ownership
 
 The complete frozen `rotations/phasing_via_cost_function.py` constructor composes

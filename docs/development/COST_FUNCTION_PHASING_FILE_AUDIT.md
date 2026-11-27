@@ -1,5 +1,91 @@
 # Cost-function phasing source-file audit
 
+## Current complete-file disposition (2026-11-28)
+
+This review applies the approved
+[faithful-migration closure rule](G2_FAITHFUL_MIGRATION_CLOSURE_PROPOSAL.md).
+The definition map below covers all six inventory identifiers, both oracle
+fields, the nested `_extract_soqs`, both original example factories and their
+documentation specification. Compiler owns validation, named typed composition,
+source-order calls and lifetimes. The existing evaluator, phase and exact
+erasure owners supply their definitions; numerical execution remains outside
+Compiler. Original notebooks and test assets retain their published evidence.
+
+A real remaining supported path was reproduced and implemented. The source
+permits `phase_oracle.cost_registers == ()`; its validation loop is empty,
+but evaluation, phase and evaluation adjoint still execute. Native composition
+previously rejected that empty set. It now accepts it while retaining duplicate
+name rejection and every nonempty cost width, shape and RIGHT/THRU check. This
+uses the existing Program builder and constructor callbacks, with no new Core
+contract, opcode, public entry or automatic inverse inference.
+
+New cases use the unchanged original `PhasingViaCostFunction` with explicit
+test oracles implementing its original `QvrInterface`. They compare the actual
+three-call root and producer/operand/result edges through both the direct
+composer and the existing constructor. The phase extras cover scalar and
+two-element arrays in all three directions:
+
+| Extra direction | Native and source ownership |
+| --- | --- |
+| THRU | Caller retains the input/output word, including arbitrary coherence with input and spectator. |
+| RIGHT | Phase produces an owned logical output; allocation ownership transfers to the caller. The prepared one state is not described as zero private work. |
+| LEFT | Caller transfers a valid prepared input image for consumption. Physical output is zero before release. The source effect equals the native clean-output matrix block; arbitrary invalid inputs are not claimed to undergo a runtime projection. |
+
+Full complex matrices of the source unitary/isometry/effect and every valid
+coherent execution agree. Source SDK gates, operands, angles and each wire's
+ordering match. Direct and constructor binding have identical complete IR,
+outputs and allocation/release events; ordinary append and JSON remain valid.
+The SDK reference uses its real qubit manager to allocate transferred LEFT
+inputs, rather than asking it to free unrelated LineQubits. It does not patch
+source code or weaken ownership checks. Independent gates may commute under
+the already-accepted scheduler; the three stored stage calls remain ordered.
+
+A separate nontrivial evaluator computes a private RIGHT copy which the phase
+never reads. It is still evaluated and exactly erased. Full logical operators,
+spectator-entangled complex amplitudes, private-bit zero, precise allocation
+and release, and the original analytical model all match. Native constructor
+and append also run with source SDK imports blocked. Unknown evaluator
+semantics still require an explicit exact-adjoint owner; a supplied inverse is
+not certified merely because its type fits.
+
+Q-0674 is eligible for acceptance after local checks and publication. Original
+Square remains atomic and has no source gate decomposition. Its existing
+native measured arithmetic is an independently specified realization of the
+source value/isometry contract, not a copied source primitive stream. Mixed
+dtype, empty-junk, recursive width and generic transport/SDK failures keep
+their original witnesses and follow-up owners. Unresolved numerical leaves
+remain declarations/refusals. The approved rule changes their disposition,
+not their observed results or the reference code. Generic oracle/adjoint,
+transport, scalar and verification-workflow parents are not closed here.
+
+Inventories and models stay separate. The new empty-cost identity cases emit
+one phase per extra bit, plus one X per bit for RIGHT/LEFT, with zero
+measurements. The private-copy case emits two CX and one phase, allocates and
+frees one clean bit, and has no feedback. Its original model reports two
+Cliffords, one rotation and peak three logical qubits; the numerical test has
+four physical wires because it adds a spectator. Original five-bit tutorial
+tables below retain their separate Toffoli, phase, measurement and width units.
+
+Three additional symbolic-width Square roots retain exact original signatures,
+ordered edges and all three calls: direct QVR with a numerical or symbolic
+coefficient, and gradient QVR with a symbolic coefficient. They remain logical
+Programs with unresolved atomic/physical leaves. The corresponding numerical
+gradient coefficient fails in the unchanged source while constructing an Fxp
+template whose nominally constant widths are still SymPy expressions. This is
+retained as a source failure, not normalized to a different Python-integer path.
+
+Local batch validation passes 170 concentrated cost-phase/QVR/Square cases and
+32 integration cases. Independent Cirq 1.6.1 verification passes 31 constructor,
+port and recursive-decomposition cases. Both changed Python files pass strict
+mypy, Black and Ruff; Compiler scope, architecture, IR, required-check mapping,
+English, Markdown links, public API baseline and whitespace pass. Sixteen
+complete source/asset/dependency blobs, Qualtran 0.7.0 and Kickmix 0.1 Simulator
+are verified. Receipts use `g2-cost-phase-full-closure-*20261128` and the
+explicit symbolic intake in the reference workspace. Existing original grids,
+notebook runs, source refusals, every applicable small measured branch and
+large bounded coherent/resource certificates are reused within their stated
+scopes. No exponential large-statevector or failed original path is claimed.
+
 The reference is unchanged Qualtran v0.7.0 at commit
 `bcb17bb25360ed68ce3bc084645db3e929799389`.
 
