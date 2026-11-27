@@ -5,7 +5,13 @@ from dataclasses import replace
 from typing import Any
 
 import networkx as nx
-import numpy as np
+
+from tests._reference_dependencies import unavailable_reference
+
+try:
+    import numpy as np
+except ModuleNotFoundError as _reference_import_error:
+    unavailable_reference(_reference_import_error)
 import pytest
 
 from flagquantum.core.ir.program.registers import Register, RegisterType
@@ -23,9 +29,9 @@ pytestmark = [pytest.mark.unit, pytest.mark.ftqc_reference]
 def compare(
     dtype: RegisterType, source: Any, shape: tuple[int, ...], value: object
 ) -> None:
-    from qualtran import LeftDangle, Soquet
-    from qualtran import Register as SourceRegister
-    from qualtran import Signature as SourceSignature
+    from qualtran._infra.quantum_graph import LeftDangle, Soquet
+    from qualtran._infra.registers import Register as SourceRegister
+    from qualtran._infra.registers import Signature as SourceSignature
     from qualtran.simulation.classical_sim import ClassicalSimState, _get_in_vals
 
     reg = Register("x", dtype, shape)
@@ -53,6 +59,7 @@ def compare(
         return
     actual = collect_typed_register_value(reg, assignments)
     if isinstance(actual, np.ndarray) and actual.dtype == object:
+        assert isinstance(expected, np.ndarray)
         assert actual.shape == expected.shape
         for a, b in zip(actual.flat, expected.flat, strict=True):
             np.testing.assert_equal(a, b)
