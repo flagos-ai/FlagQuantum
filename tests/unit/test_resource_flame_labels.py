@@ -1,13 +1,24 @@
 """Compare native presentation rules with the unmodified source label helpers."""
 
+from __future__ import annotations
+
 from dataclasses import dataclass, fields, make_dataclass
 from hashlib import sha1
 from pathlib import Path
 from typing import Any
 
-import numpy as np
+from tests._reference_dependencies import unavailable_reference
+
+try:
+    import numpy as np
+except ModuleNotFoundError as error:
+    unavailable_reference(error)
 import pytest
-from sympy import Symbol
+
+try:
+    from sympy import Symbol
+except ModuleNotFoundError as error:
+    unavailable_reference(error)
 
 from flagquantum.compiler._component_trace.resource_generalization import (
     ArithmeticCall,
@@ -75,7 +86,10 @@ def frozen_source() -> None:
     ],
 )
 def test_argument_matches_unmodified_source(value: Any) -> None:
-    from qualtran.drawing.flame_graph import _pretty_arg
+    try:
+        from qualtran.drawing.flame_graph import _pretty_arg
+    except ModuleNotFoundError as error:
+        unavailable_reference(error)
 
     assert _resource_arg(value) == _pretty_arg(value)
 
@@ -86,7 +100,11 @@ def source_metadata(call: ResourceCall) -> Any:
     These are display-only metadata fixtures. They claim no source decomposition
     or foreign-object execution admission.
     """
-    from qualtran import Bloq, Signature
+    try:
+        from qualtran._infra.bloq import Bloq
+        from qualtran._infra.registers import Signature
+    except ModuleNotFoundError as error:
+        unavailable_reference(error)
 
     if isinstance(call, ComponentCost):
         raise AssertionError("Component names have their own native boundary")
@@ -128,7 +146,10 @@ def source_metadata(call: ResourceCall) -> Any:
     ],
 )
 def test_native_constructor_rules_match_source_reflection(call: ResourceCall) -> None:
-    from qualtran.drawing.flame_graph import _pretty_name
+    try:
+        from qualtran.drawing.flame_graph import _pretty_name
+    except ModuleNotFoundError as error:
+        unavailable_reference(error)
 
     assert _resource_title(call) == _pretty_name(source_metadata(call))
     assert "_python" not in _resource_title(call)
@@ -152,8 +173,11 @@ def test_custom_string_and_component_name_precedence() -> None:
 def test_default_native_swap_workflow_matches_source_rows(
     width: int, depth: int | None
 ) -> None:
-    from qualtran.bloqs.basic_gates import CSwap, TwoBitCSwap
-    from qualtran.drawing.flame_graph import _pretty_name, get_flame_graph_data
+    try:
+        from qualtran.bloqs.basic_gates.swap import CSwap, TwoBitCSwap
+        from qualtran.drawing.flame_graph import _pretty_name, get_flame_graph_data
+    except ModuleNotFoundError as error:
+        unavailable_reference(error)
 
     call = ControlledSwapCall(width)
     reference = get_flame_graph_data(CSwap(width), max_depth=depth)
