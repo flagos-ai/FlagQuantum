@@ -5,10 +5,19 @@ from functools import partial
 from itertools import product
 from typing import Any
 
-import numpy as np
+from tests._reference_dependencies import unavailable_reference
+
+try:
+    import numpy as np
+except ModuleNotFoundError as _reference_import_error:
+    unavailable_reference(_reference_import_error)
 import pytest
 import torch
-from numpy.typing import NDArray
+
+try:
+    from numpy.typing import NDArray
+except ModuleNotFoundError as _reference_import_error:
+    unavailable_reference(_reference_import_error)
 
 from flagquantum.core.ir import Instruction
 from flagquantum.core.ir.program.signatures import Signature
@@ -37,7 +46,7 @@ def controlled_pauli(axis: str, control: int) -> tuple[Instruction, ...]:
 
 
 def source_bindings(
-    signature: Any, prefix: str, labels: dict[tuple[str, int], int]
+    signature: Any, prefix: str, labels: dict[tuple[object, int], int]
 ) -> tuple[dict[str, Any], Bindings]:
     source: dict[str, Any] = {}
     native: Bindings = {}
@@ -79,9 +88,10 @@ def test_original_index_order_and_dense_outer_groups(
     sides: tuple[str, ...], shape: tuple[int, ...]
 ) -> None:
     import quimb.tensor as qtn
-    from qualtran import QAny, Side
-    from qualtran import Register as SourceRegister
-    from qualtran import Signature as SourceSignature
+    from qualtran._infra.data_types import QAny
+    from qualtran._infra.registers import Register as SourceRegister
+    from qualtran._infra.registers import Side
+    from qualtran._infra.registers import Signature as SourceSignature
     from qualtran.simulation.tensor._dense import (
         _order_incoming_outgoing_indices,
         quimb_to_dense,
@@ -95,7 +105,7 @@ def test_original_index_order_and_dense_outer_groups(
         ]
     )
     signature = native_signature(source)
-    labels: dict[tuple[str, int], int] = {}
+    labels: dict[tuple[object, int], int] = {}
     source_in, incoming = source_bindings(source.lefts(), "in", labels)
     source_out, outgoing = source_bindings(source.rights(), "out", labels)
     ordered = _order_incoming_outgoing_indices(source, source_in, source_out)
@@ -128,8 +138,9 @@ def test_controlled_tensor_chain_original_contraction_append_and_all_branches(
     values: tuple[int, ...],
 ) -> None:
     import quimb.tensor as qtn
-    from qualtran import Controlled, CtrlSpec
-    from qualtran.bloqs.basic_gates import XGate, ZGate
+    from qualtran._infra.controlled import Controlled, CtrlSpec
+    from qualtran.bloqs.basic_gates.x_basis import XGate
+    from qualtran.bloqs.basic_gates.z_basis import ZGate
     from qualtran.simulation.tensor._dense import quimb_to_dense
 
     from examples.algorithms.binary_field_arithmetic import FieldOperation
@@ -146,7 +157,7 @@ def test_controlled_tensor_chain_original_contraction_append_and_all_branches(
 
     sources = [Controlled(child, CtrlSpec(cvs=values)) for child in (XGate(), ZGate())]
     signature = native_signature(sources[0].signature)
-    labels: dict[tuple[str, int], int] = {}
+    labels: dict[tuple[object, int], int] = {}
     in_src, incoming = source_bindings(sources[0].signature, "in", labels)
     mid_src, middle = source_bindings(sources[0].signature, "mid", labels)
     out_src, outgoing = source_bindings(sources[0].signature, "out", labels)
@@ -203,7 +214,8 @@ def test_controlled_tensor_chain_original_contraction_append_and_all_branches(
         )
     )
     from qualtran.bloqs.mcmt.controlled_via_and import ControlledViaAnd
-    from qualtran.resource_counting import QECGatesCost, get_cost_value
+    from qualtran.resource_counting._bloq_counts import QECGatesCost
+    from qualtran.resource_counting._costing import get_cost_value
 
     from tests.unit.test_register_constant_addition import reference_arithmetic_gates
     from tests.unit.test_register_subtraction import assert_source
