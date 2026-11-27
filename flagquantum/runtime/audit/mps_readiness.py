@@ -11,18 +11,6 @@ from __future__ import annotations
 from collections.abc import Mapping
 from typing import Any
 
-try:
-    from .vocabulary import (
-        MPS_STATE_MODES,
-        RELEASE_CLAIM_EVIDENCE_TYPES,
-    )
-except ImportError:  # legacy benchmark file-loader path
-    from flagquantum.runtime.audit.vocabulary import (
-        MPS_STATE_MODES,
-        RELEASE_CLAIM_EVIDENCE_TYPES,
-    )
-
-
 from .engine import evaluate_distributed_evidence_contract
 from .schema import MPSBackwardReadinessGate
 from .statistics import attach_distributed_evidence_contract
@@ -33,6 +21,7 @@ from .validation_helpers import (
     _training_step_count,
     _unique,
 )
+from .vocabulary import MPS_STATE_MODES, RELEASE_CLAIM_EVIDENCE_TYPES
 
 # The gate's check names, blocker codes and messages. All three are keyed by
 # the same names and all three close over nothing, so they live here rather

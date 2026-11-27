@@ -12,61 +12,60 @@ from collections.abc import Mapping
 from importlib import import_module
 from typing import Any
 
-
-def _claim_evidence_type(payload: Mapping[str, Any]) -> str:
-    from flagquantum.runtime.audit.release_policy import (
-        _claim_evidence_type as classify,
-    )
-
-    return classify(payload)
-
-
-def _release_capacity_evidence_errors(
-    payload: Mapping[str, Any],
-) -> tuple[str, ...]:
-    from flagquantum.runtime.audit.release_policy import (
-        _release_capacity_evidence_errors as validate_capacity,
-    )
-
-    return validate_capacity(payload)
-
-
-def _release_training_evidence_errors(
-    payload: Mapping[str, Any],
-) -> tuple[str, ...]:
-    from flagquantum.runtime.audit.release_policy import (
-        _release_training_evidence_errors as validate_training,
-    )
-
-    return validate_training(payload)
-
-
-try:
-    from .vocabulary import (
-        CLAIM_EVIDENCE_TYPES,
-        CLAIMABILITY_STATUSES,
-        EVIDENCE_BACKEND_FAMILIES,
-        INCOMPLETE_DISTRIBUTION_SEMANTICS,
-        MULTI_NODE_TRANSPORT_BACKENDS,
-        RELEASE_CLAIM_EVIDENCE_TYPES,
-        REPLICATED_DISTRIBUTION_SEMANTICS,
-        SCALABLE_DISTRIBUTION_SEMANTICS,
-        SINGLE_DEVICE_DISTRIBUTION_SEMANTICS,
-        TRANSPORT_EVIDENCE_STATUSES,
-    )
-except ImportError:  # legacy benchmark file-loader path
-    from flagquantum.runtime.audit.vocabulary import (
-        CLAIM_EVIDENCE_TYPES,
-        CLAIMABILITY_STATUSES,
-        EVIDENCE_BACKEND_FAMILIES,
-        INCOMPLETE_DISTRIBUTION_SEMANTICS,
-        MULTI_NODE_TRANSPORT_BACKENDS,
-        RELEASE_CLAIM_EVIDENCE_TYPES,
-        REPLICATED_DISTRIBUTION_SEMANTICS,
-        SCALABLE_DISTRIBUTION_SEMANTICS,
-        SINGLE_DEVICE_DISTRIBUTION_SEMANTICS,
-        TRANSPORT_EVIDENCE_STATUSES,
-    )
+from .errors import DistributedScalabilityError
+from .schema import (
+    DistributedEvidenceContract,
+    DistributedScalabilityAudit,
+    DistributedTransportEvidence,
+    MPSBackwardReadinessGate,
+    StatevectorTrainingClaimabilityGate,
+)
+from .statistics import (
+    attach_distributed_evidence_contract,
+    attach_distributed_scalability_audit,
+)
+from .validation_helpers import (
+    _backend_family,
+    _communication_bytes_reported,
+    _communication_evidence_reported,
+    _communication_plan_has_statevector_route,
+    _has_nonempty,
+    _has_topology_counts,
+    _int_field,
+    _is_nonempty,
+    _looks_like_local_simulation,
+    _looks_like_preflight,
+    _memory_plan_has_shard_and_buffer,
+    _normalized_communication_plan,
+    _normalized_memory_plan,
+    _ownership_nonempty,
+    _ownership_semantics,
+    _rank_memory_reported,
+    _rank_ownership_evidence,
+    _rank_placement_reported,
+    _route_backend,
+    _route_scope,
+    _semantics,
+    _statevector_mode_allowed,
+    _topology_dependent_route,
+    _topology_scope,
+    _training_step_count,
+    _transport_backend,
+    _transport_route,
+    _unique,
+)
+from .vocabulary import (
+    CLAIM_EVIDENCE_TYPES,
+    CLAIMABILITY_STATUSES,
+    EVIDENCE_BACKEND_FAMILIES,
+    INCOMPLETE_DISTRIBUTION_SEMANTICS,
+    MULTI_NODE_TRANSPORT_BACKENDS,
+    RELEASE_CLAIM_EVIDENCE_TYPES,
+    REPLICATED_DISTRIBUTION_SEMANTICS,
+    SCALABLE_DISTRIBUTION_SEMANTICS,
+    SINGLE_DEVICE_DISTRIBUTION_SEMANTICS,
+    TRANSPORT_EVIDENCE_STATUSES,
+)
 
 
 def _payload_blockers(payload: Mapping[str, Any]) -> tuple[str, ...]:
@@ -87,6 +86,8 @@ def evaluate_distributed_transport_evidence(
     payload: Mapping[str, Any],
 ) -> DistributedTransportEvidence:
     """Classify communication evidence without inferring hidden physical routes."""
+
+    from .release_policy import _claim_evidence_type
 
     node_count = _int_field(payload, "node_count", 1)
     backend = _transport_backend(payload)
@@ -213,6 +214,12 @@ def evaluate_distributed_evidence_contract(
     evidence tier, claimability status, blockers, rank ownership, memory, and
     communication.
     """
+
+    from .release_policy import (
+        _claim_evidence_type,
+        _release_capacity_evidence_errors,
+        _release_training_evidence_errors,
+    )
 
     evidence_type = _claim_evidence_type(payload)
     backend_family = _backend_family(payload)
@@ -468,6 +475,14 @@ __all__ = [  # noqa: F822
 def __getattr__(name: str) -> Any:
     if name.startswith("__"):
         raise AttributeError(name)
+    if name not in {
+        "attach_sharded_optimizer_step_evidence",
+        "audit_distributed_scalability",
+        "evaluate_mps_backward_readiness",
+        "require_distributed_scalability",
+        "validate_distributed_claim_evidence",
+    }:
+        raise AttributeError(f"module {__name__!r} has no attribute {name!r}")
     for module_name in (
         "flagquantum.runtime.audit.mps_readiness",
         "flagquantum.runtime.audit.release_policy",
@@ -476,103 +491,3 @@ def __getattr__(name: str) -> Any:
         if hasattr(module, name):
             return getattr(module, name)
     raise AttributeError(f"module {__name__!r} has no attribute {name!r}")
-
-
-# Canonical schema contracts; retained here as identity-compatible aliases.
-try:
-    from .errors import DistributedScalabilityError
-except ImportError:  # legacy benchmark file-loader path
-    from flagquantum.runtime.audit.errors import (
-        DistributedScalabilityError,
-    )
-
-try:
-    from .schema import (
-        DistributedEvidenceContract,
-        DistributedScalabilityAudit,
-        DistributedTransportEvidence,
-        MPSBackwardReadinessGate,
-        StatevectorTrainingClaimabilityGate,
-    )
-except ImportError:  # legacy benchmark file-loader path
-    from flagquantum.runtime.audit.schema import (
-        DistributedEvidenceContract,
-        DistributedScalabilityAudit,
-        DistributedTransportEvidence,
-        MPSBackwardReadinessGate,
-        StatevectorTrainingClaimabilityGate,
-    )
-
-try:
-    from .validation_helpers import (
-        _backend_family,
-        _communication_bytes_reported,
-        _communication_evidence_reported,
-        _communication_plan_has_statevector_route,
-        _has_nonempty,
-        _has_topology_counts,
-        _int_field,
-        _is_nonempty,
-        _looks_like_local_simulation,
-        _looks_like_preflight,
-        _memory_plan_has_shard_and_buffer,
-        _normalized_communication_plan,
-        _normalized_memory_plan,
-        _ownership_nonempty,
-        _ownership_semantics,
-        _rank_memory_reported,
-        _rank_ownership_evidence,
-        _rank_placement_reported,
-        _route_backend,
-        _route_scope,
-        _semantics,
-        _statevector_mode_allowed,
-        _topology_dependent_route,
-        _topology_scope,
-        _training_step_count,
-        _transport_backend,
-        _transport_route,
-        _unique,
-    )
-except ImportError:  # legacy benchmark file-loader path
-    from flagquantum.runtime.audit.validation_helpers import (
-        _backend_family,
-        _communication_bytes_reported,
-        _communication_evidence_reported,
-        _communication_plan_has_statevector_route,
-        _has_nonempty,
-        _has_topology_counts,
-        _int_field,
-        _is_nonempty,
-        _looks_like_local_simulation,
-        _looks_like_preflight,
-        _memory_plan_has_shard_and_buffer,
-        _normalized_communication_plan,
-        _normalized_memory_plan,
-        _ownership_nonempty,
-        _ownership_semantics,
-        _rank_memory_reported,
-        _rank_ownership_evidence,
-        _rank_placement_reported,
-        _route_backend,
-        _route_scope,
-        _semantics,
-        _statevector_mode_allowed,
-        _topology_dependent_route,
-        _topology_scope,
-        _training_step_count,
-        _transport_backend,
-        _transport_route,
-        _unique,
-    )
-
-try:
-    from .statistics import (
-        attach_distributed_evidence_contract,
-        attach_distributed_scalability_audit,
-    )
-except ImportError:  # legacy benchmark file-loader path
-    from flagquantum.runtime.audit.statistics import (
-        attach_distributed_evidence_contract,
-        attach_distributed_scalability_audit,
-    )

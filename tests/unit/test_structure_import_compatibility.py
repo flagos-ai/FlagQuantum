@@ -283,6 +283,14 @@ def test_public_pickle_locators_do_not_forward_internal_helpers() -> None:
     assert not hasattr(public_request, "_complex_tensor")
     assert not hasattr(public_observables, "_real_scalar")
 
+    from flagquantum.runtime.audit import engine as audit_engine
+    from flagquantum.simulation.mps.state import MPSState
+
+    assert not hasattr(audit_engine, "_claim_evidence_type")
+    assert not hasattr(audit_engine, "_release_capacity_evidence_errors")
+    assert not hasattr(audit_engine, "_release_training_evidence_errors")
+    assert not hasattr(MPSState, "_sample_indices")
+
 
 _PUBLIC_ANNOTATION_CASES = json.loads(
     (
@@ -299,3 +307,43 @@ def test_pre_retirement_public_class_field_annotations_still_resolve(
     cls = getattr(importlib.import_module(module), name)
     assert cls.__module__ == module
     assert get_type_hints(cls)
+
+
+def test_runtime_watchdog_reads_original_public_payload() -> None:
+    import hashlib
+    from types import FunctionType
+
+    from flagquantum.runtime.observability.watchdog import (
+        PhaseAwareWatchdog,
+        ProgressSnapshot,
+        StallDiagnosis,
+    )
+
+    fixture = (
+        Path(__file__).resolve().parents[1]
+        / "fixtures/runtime_watchdog/original-public-types-v0.4.pickle.b64"
+    )
+    raw = base64.b64decode(fixture.read_text(encoding="ascii").strip(), validate=True)
+    assert hashlib.sha256(raw).hexdigest() == (
+        "6710083a60095a2e93e65c2cf1f789f2d99602ff1e82149714a407d0b3a48361"
+    )
+    values = pickle.loads(raw)
+    assert len(values) == 21
+    assert values[:3] == [ProgressSnapshot, StallDiagnosis, PhaseAwareWatchdog]
+    for value in values:
+        if isinstance(value, (type, FunctionType)):
+            assert value.__module__ == "flagquantum.testing.watchdog"
+    assert values[3] == ProgressSnapshot(1.0, "input", "read", 1, 100)
+    assert values[4] == StallDiagnosis("stalled_input", "input", "read", "none", 0, 0)
+    watchdog = values[5]
+    assert type(watchdog) is PhaseAwareWatchdog
+    assert vars(watchdog) == {
+        "stall_seconds": 5,
+        "bounded": {"compile": 30, "checkpoint": 45},
+        "_first": values[3],
+        "_last": ProgressSnapshot(3.0, "input", "read", 1, 100),
+    }
+    assert pickle.loads(pickle.dumps(values, protocol=5))[:3] == values[:3]
+    diagnosis = values[6](ProgressSnapshot(10.0, "input", "read", 1, 100))
+    assert type(diagnosis) is StallDiagnosis
+    assert diagnosis == StallDiagnosis("stalled_input", "input", "read", "none", 0, 0)

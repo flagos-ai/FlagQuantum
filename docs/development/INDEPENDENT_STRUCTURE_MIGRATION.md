@@ -282,3 +282,10 @@ evidence-only tensor allocations. No directory, dependency or forwarding is adde
 The [direct-call retirement record](migration/private-direct-call-retirement.md)
 tracks eight private wrapper deletions, their complete current callers, the
 private measurement delta and independent source/installed acceptance.
+
+## Runtime watchdog ownership and private forwarding
+
+The [lazy forwarding record](migration/lazy-private-forwarder-retirement.md)
+tracks four private wrappers, complete direct callers, the finite existing
+public export boundary, Runtime-owned production watchdog, and individually
+proven public serialized callbacks and watchdog payloads.
