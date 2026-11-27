@@ -69,8 +69,52 @@ failure. The native concentrated regression passed 123 cases. Strict
 typing, format, ownership, architecture, IR, and public API checks
 passed.
 
-Q-0409 closes the runnable original tests. Q-0408 stays open for the
-source full one-orbital failure and
-the opaque original measurement erase leaf. Q-0407 also covers the
-SELECT export and the sparse Hamiltonian convention. That package
-boundary remains for the SELECT batch.
+Q-0409 closes the runnable original tests. The earlier Q-0408 hold for the
+source one-orbital failure and opaque erase leaf is superseded by the complete
+source review below; those upstream limitations remain explicit.
+
+
+## Complete source-file closure, 2026-11-28
+
+Q-0408 includes the integral representative enumeration and nested insertion,
+all stored fields, register properties, integral factory, QROM construction and
+renaming, ordered eighteen-call body, resource call graph, source example and
+documentation declaration. Algorithms owns classical integral data; Compiler
+owns typed composition, alias lookup, swap routing and erasure. Ports are
+MSB-first. LEFT inputs and THRU flags remain caller-owned; RIGHT selected and
+retained lookup banks become caller-owned outputs. Only private predicates are
+allocated and cleared internally. Inverse measured erasure consumes outputs of
+the corresponding forward isometry; it is not an arbitrary-bank unitary inverse.
+
+The integral owner now preserves NumPy input precision through vector filtering,
+concatenation, alias cumulative rounding and normalization. The source accepts
+negative and IEEE nonfinite cutoffs as Boolean filters; finite real integral
+validation remains in force. NaN is not serialized as a circuit parameter.
+Previously, float32 input was promoted prematurely: an eight-bit witness changed
+source keep values `(65, 102, 205, 0)` to `(64, 103, 205, 0)`. The corrected
+owner matches the untouched source. Ten dtype/cutoff profiles match all thirteen
+lookup datasets and exact normalization. Forty complete previously accepted
+float64 data records remain identical to published `d4802f79b`.
+
+The new executable-input regression constructs native programs from native
+integral records, compares recursive forward and inverse source calls/operands,
+and exercises ordinary append and IR round-trip. A nine-row negative-cutoff
+case compares full complex forward amplitudes with coherent dirty THRU input,
+checks private work zero, and restores that input through measured erasure.
+Both zero/one representative histories are tested here; this does not claim
+exhaustion of all histories of the larger root. Existing small all-history and
+bank-unitary evidence is reused without rerunning a different reference.
+
+Receipts use `g2-sparse-chemistry-full-closure-*20261128` and
+`g2-sparse-preprocessing-differential-20261128.json`. Actual emitted primitives
+and source model estimates remain separate. The eight-bit four-row forward
+emits 203 T-family gates and fifteen measurements; the nine-row forward emits
+259 T-family gates and twenty-nine measurements. Their matching-image erasures
+emit respectively 55 and 69 measurements. All private leases return; retained
+forward banks are outputs, not uncleared private work.
+
+Q-0408 closes under the approved faithful-migration rule. Source singleton
+`target0_` decomposition failure and atomic model-only erase remain source
+limitations, separately from the native executable extensions. The arbitrary-bank
+owner used by source Walk is documented in
+[the bank-unitary audit](SPARSE_WALK_BANK_UNITARY_AUDIT.md).

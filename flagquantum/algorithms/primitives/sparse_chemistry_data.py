@@ -192,7 +192,7 @@ def sparse_chemistry_data(
     drop_threshold: float = 0,
     log_block_size: int | None = None,
 ) -> SparseChemistryData:
-    """Prepare lookup data from modified one-body and chemists' ERI tensors."""
+    """Prepare source-ordered data, retaining NumPy filtering and rounding precision."""
     one, two = np.asarray(one_body), np.asarray(two_body)
     if one.ndim != 2 or not one.shape[0] or one.shape[0] != one.shape[1]:
         raise ValueError("One-body integrals must be a nonempty square matrix")
@@ -201,11 +201,12 @@ def sparse_chemistry_data(
         raise ValueError("Two-body integrals must have four matching spatial axes")
     if np.iscomplexobj(one) or np.iscomplexobj(two):
         raise ValueError("Sparse chemistry requires finite real integrals")
-    one, two = np.asarray(one, dtype=np.float64), np.asarray(two, dtype=np.float64)
+    if one.dtype.kind not in "fiu":
+        one = np.asarray(one, dtype=np.float64)
+    if two.dtype.kind not in "fiu":
+        two = np.asarray(two, dtype=np.float64)
     if not np.isfinite(one).all() or not np.isfinite(two).all():
         raise ValueError("Sparse chemistry requires finite real integrals")
-    if not isfinite(drop_threshold) or drop_threshold < 0:
-        raise ValueError("Drop threshold must be nonnegative and finite")
     if any(
         type(bits) is not int or bits < 1 for bits in (probability_bits, rotation_bits)
     ):
@@ -214,19 +215,16 @@ def sparse_chemistry_data(
         )
 
     lower = tuple((p, q, 0, 0) for p in range(spatial) for q in range(p + 1))
+    representatives = tuple(_two_body_representatives(spatial))
+    two_values = np.asarray([two[row] for row in representatives], dtype=two.dtype)
+    keep_rows = np.abs(two_values) > drop_threshold
     retained = tuple(
-        row
-        for row in _two_body_representatives(spatial)
-        if abs(float(two[row])) > drop_threshold
+        row for row, keep in zip(representatives, keep_rows, strict=True) if keep
     )
     indices = (*lower, *retained)
-    coefficients = (
-        *(float(one[p, q]) for p, q, _, _ in lower),
-        *(float(two[row]) for row in retained),
-    )
-    alt, keep = alias_numerators(
-        tuple(abs(value) for value in coefficients), mu=probability_bits
-    )
+    values = np.concatenate((one[np.tril_indices(spatial)], two_values[keep_rows]))
+    alt, keep = alias_numerators(tuple(np.abs(values).flat), mu=probability_bits)
+    coefficients = tuple(float(value) for value in values)
     theta = tuple(int(value < 0) for value in coefficients)
     body_flag = (0,) * len(lower) + (1,) * len(retained)
     base = (*zip(*indices, strict=True), theta, body_flag)
