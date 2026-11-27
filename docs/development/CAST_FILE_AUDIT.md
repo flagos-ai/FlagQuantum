@@ -181,3 +181,10 @@ and whitespace checks pass. The moved concrete field validator is AST-identical
 to its published body. Three additional frozen field/OnEach source blobs are
 verified; earlier Cast/QROAM source evidence is retained. Receipts are
 `ftqc-reference-env/g2-storage-declarations-*` outside the repository.
+
+
+## Known-size interpretation storage closure, 2026-11-27
+
+Known-size symbolic-interpretation Cast roots now resolve executable split/join views rather than bodyless declarations. Exact metadata, aliases and coherent states are preserved; the classical and mixed-domain contracts remain unchanged. This repairs the profile that required reopening Q-0321; source shaped-adjoint/tensor diagnostics remain retained.
+
+See [the shared source/native acceptance evidence](G2_CONCRETE_WIDTH_STORAGE_GAPS.md#known-size-interpretation-storage-closure-2026-11-27). Approval alone closes no source owner; verified publication and the external parent ledger record the final disposition.

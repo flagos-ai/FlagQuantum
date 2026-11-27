@@ -334,3 +334,10 @@ checks pass. Five complete lifetime/base source files retain frozen Git blobs.
 The production tree is byte-identical to 89aa7ddf8, so published full-state,
 primitive/model and local integration evidence is reused rather than rerun.
 Receipts are `ftqc-reference-env/g2-lifetime-final-*` outside the repository.
+
+
+## Known-size interpretation storage closure, 2026-11-27
+
+Actual known-size symbolic-metadata Allocate/Free SDK hooks now agree with native clean and borrowed events and full coherent state restoration. This repairs the valid-source profile that required reopening Q-0311/Q-0323. Existing callback, transport, logical-declaration and dirty-tensor dispositions are retained.
+
+See [the shared source/native acceptance evidence](G2_CONCRETE_WIDTH_STORAGE_GAPS.md#known-size-interpretation-storage-closure-2026-11-27). Approval alone closes no source owner; verified publication and the external parent ledger record the final disposition.

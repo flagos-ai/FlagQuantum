@@ -118,3 +118,10 @@ approved scope, exact original failure dispositions, regression and resource
 evidence. Existing owners and circuit.append(op) are reused. This closes the
 approved storage dependency; it does not infer unrestricted dtype or symbolic
 physical support or close the remaining whole-file parent boundaries.
+
+
+## Known-size interpretation storage closure, 2026-11-27
+
+Partition widths now use total storage bits, matching the complete source. Actual classical elements retain logical mixed-domain declarations; empty classical arrays contain no elements and admit ordinary quantum aliases. Known-size symbolic-metadata words bind physically. Source SDK insertion-order and unresolved-width behaviors remain separately recorded.
+
+See [the shared source/native acceptance evidence](G2_CONCRETE_WIDTH_STORAGE_GAPS.md#known-size-interpretation-storage-closure-2026-11-27). Approval alone closes no source owner; verified publication and the external parent ledger record the final disposition.

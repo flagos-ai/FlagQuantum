@@ -106,3 +106,10 @@ approved scope, exact original failure dispositions, regression and resource
 evidence. Existing owners and circuit.append(op) are reused. This closes the
 approved storage dependency; it does not infer unrestricted dtype or symbolic
 physical support or close the remaining whole-file parent boundaries.
+
+
+## Known-size interpretation storage closure, 2026-11-27
+
+Signed-empty approved storage and symbolic-modulus Montgomery roots now bind through both directions with exact leases and zero primitives. Actual external constructors retain original symbolic QFxp/BQUInt refusal; native internal raw views do not claim a nonexistent source decomposition. Existing wire, classical, resource, drawing and notebook evidence is reused.
+
+See [the shared source/native acceptance evidence](G2_CONCRETE_WIDTH_STORAGE_GAPS.md#known-size-interpretation-storage-closure-2026-11-27). Approval alone closes no source owner; verified publication and the external parent ledger record the final disposition.
