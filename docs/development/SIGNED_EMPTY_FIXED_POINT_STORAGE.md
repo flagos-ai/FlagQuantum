@@ -71,3 +71,12 @@ requires a final complete-file disposition before its checkbox changes. Existing
 child, symbolic physical shape and source serialization boundaries remain in
 `ON_EACH_FILE_AUDIT.md`. No broader acceptance is inferred from this storage
 dependency delivery.
+
+
+The combined 124/126 acceptance batch passes 665 concentrated cases and 32
+local integration cases. Five changed Python files pass strict typing; Black,
+Ruff, scope, language/links, architecture, IR/public API, required-check mapping
+and whitespace checks pass. The moved concrete field validator is AST-identical
+to its published body. Three additional frozen field/OnEach source blobs are
+verified; earlier Cast/QROAM source evidence is retained. Receipts are
+`ftqc-reference-env/g2-storage-declarations-*` outside the repository.

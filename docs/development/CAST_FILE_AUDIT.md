@@ -7,7 +7,7 @@ are Apache-2.0, copyright Google LLC.
 | Item | Source file | Frozen Git blob | Disposition |
 | --- | --- | --- | --- |
 | Q-0320 | `cast.ipynb` | `9895dcc29482ecf980c50d16af4776f309e4202c` | Closed by the complete native tutorial. |
-| Q-0321 | `cast.py` | `9fd7bee565a88e97a4aa1b1c7945c5c6529d4381` | Actual source factory foreign resolution and direct SDK views verified. Classical word views are implemented under approved Proposal 118; signed-zero storage and symbolic quantum-field declarations remain pending implementation under approved Proposals 124/126. |
+| Q-0321 | `cast.py` | `9fd7bee565a88e97a4aa1b1c7945c5c6529d4381` | Actual source factory foreign resolution and direct SDK views verified. Classical word views and the remaining signed-zero/symbolic-field storage dependencies are implemented under Proposals 118/124/126. Complete source disposition is reviewed below. |
 | Q-0322 | `cast_test.py` | `c018d2af7aa811b11ff75753927ef19a1da85ecb` | Closed for the runnable original scenarios and notebook. |
 
 Compiler Cast retains the original bit pattern. Bind the left and right
@@ -99,9 +99,9 @@ serialization raises its original unsupported-CUInt TypeError at depths
 Proposal 118 operation. Quantum/classical mixed-domain casts remain
 metadata-only, requiring explicit measurement or preparation for physical use.
 Proposal 116 is already approved and implemented. Proposals 124 and 126 were
-explicitly approved on 2026-11-27, but signed-zero fixed-point physical storage
-and symbolic quantum-field logical declarations still await implementation.
-Q-0321 stays open for those concrete gaps.
+explicitly approved on 2026-11-27 and now implement signed-zero fixed-point
+physical storage and symbolic quantum-field logical declarations. Neither
+permits unresolved physical execution or mixed-domain coherent conversion.
 
 Receipts `g2-cast-foreign-*` record complete factory transport, baseline failures,
 strict changed-file checks, concentrated/integration/dual-Cirq regressions,
@@ -150,3 +150,34 @@ Eight direct source files match the frozen CSV Git blobs. Unchanged-source
 transport warnings remain visible. Initial new-test construction mistakes were
 corrected without changing the production measurement or gate semantics.
 Receipts are `ftqc-reference-env/g2-classical-cast-*` outside the repository.
+
+
+## Complete Q-0321 disposition under the approved rule
+
+The remaining approved storage dependencies, 124 and 126, are now implemented.
+The full source class is owned: constructor/signature/shape checks and symbolic
+metadata by `layout.register_cast`, finite physical views by
+`layout.component_cast`, encode/decode callbacks by Simulation, unchanged SDK
+identity views by the interchange consumers, and source resource formulas by
+the existing resource owner. Primitive decomposition remains atomic as in the
+source. All original tests, tutorial assets, actual factory transports and known
+source failures retain the evidence recorded above.
+
+Q-0321 is accepted for complete faithful migration under the explicitly approved
+2026-11-27 rule. Retain the source's shaped-adjoint loss, mixed-adjoint opt-in
+loss, shaped-tensor failure, classical transport failure and unchecked symbolic
+width mismatch as source diagnostics. The native corrected adjoint retains its
+independent evidence. Proposal 118 explicitly preserves rejection of executable
+quantum/classical reinterprets: the original source warns those coherences are
+unphysical, while native metadata still preserves the opt-in declaration. No
+coherent physical conversion equivalence is claimed. Symbolic declarations do
+not claim physical execution; an actual binding needs admitted concrete sizes.
+
+
+The combined 124/126 acceptance batch passes 665 concentrated cases and 32
+local integration cases. Five changed Python files pass strict typing; Black,
+Ruff, scope, language/links, architecture, IR/public API, required-check mapping
+and whitespace checks pass. The moved concrete field validator is AST-identical
+to its published body. Three additional frozen field/OnEach source blobs are
+verified; earlier Cast/QROAM source evidence is retained. Receipts are
+`ftqc-reference-env/g2-storage-declarations-*` outside the repository.
