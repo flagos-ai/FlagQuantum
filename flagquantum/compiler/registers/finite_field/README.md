@@ -125,3 +125,14 @@ owner separate, and run `tests/unit/test_field_square_decomposition.py` or
 `Circuit.append(FieldOperation(...))` path, actual source operators, virtual
 output aliases, coherent spectators and inverse restoration. Their audits retain
 source defects and independently measured primitive/model/binding costs.
+
+
+For literal Karatsuba execution, use the separately named
+`karatsuba_decomposition_implementation` (arbitrary THRU h) and
+`karatsuba_decomposition_program` (RIGHT result) in `karatsuba_component.py`.
+They share the mathematical owner's schedule and polynomial dependencies while
+retaining the original physical linear-adjoint defect. Run
+`tests/unit/test_karatsuba_literal.py` for actual untouched-source operands,
+complex operators and every degree-five raw target with clean-padding checks.
+The literal output is not promised to be a numerical field product. Complete
+catalog adjoint-identity integration remains in the multiplication audit.

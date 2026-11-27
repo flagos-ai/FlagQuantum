@@ -655,3 +655,57 @@ tracked in proposed Proposal 126. Q-0519 retains that generic declaration gap,
 the source linear-adjoint/Karatsuba defects, generic measured inverse dispatch
 and full eight-bit coherent history enumeration. Existing mathematical native
 inverse evidence does not turn a defective original inverse into a pass.
+
+
+## Literal Karatsuba execution dependency — 2026-11-27
+
+`karatsuba_decomposition_implementation` now implements the actual frozen
+three-THRU-word physical circuit, including forward PLU at the source's ignored
+linear-adjoint call. `karatsuba_decomposition_program` supplies its RIGHT result
+allocation shell. Both reuse the same root schedule, recursive polynomial owner,
+constant emitter and monomial shift as the correct mathematical operation.
+The existing mathematical functions preserve exact inverse scaling and their
+accepted behavior. No new Core opcode or backend execution owner is introduced.
+
+The untouched source builder graph matches every emitted primitive and operand,
+returned alias and event-associated allocation through degrees2/3/4/5/8.
+The internal arbitrary h and public clean-result profiles are both checked.
+Full complex original tensors agree at degrees2/3, including entangled spectator
+and unused clean bit. The degree-five internal profile enumerates every f/g/h
+word with both spectator values using the independent source primitive
+permutation. Private odd-width padding is zero at every original free point,
+and the complete coherent vector plus exact captured-primitive inverse agree.
+The source circuit is not advertised as numerical field multiplication.
+
+| Degree / polynomial | Actual CX | Actual CCX | Source Clifford / Toffoli | Source total-T estimate |
+|---|---:|---:|---:|---:|
+| 2 / 0x7 | 9 | 3 | 9 / 3 | 12 |
+| 3 / 0xB | 26 | 7 | 26 / 7 | 28 |
+| 4 / 0x13 | 44 | 9 | 44 / 9 | 36 |
+| 5 / 0x25 | 83 | 17 | 83 / 17 | 68 |
+| 8 / 0x11B | 200 | 27 | 200 / 27 | 108 |
+
+There are no measurement or explicit T primitives in these profiles. Binding
+SWAPs and output aliases are separate. RIGHT result is logical data. Degree-five
+private padding uses one reused wire, with its two allocation/free intervals
+recorded in `g2-karatsuba-literal-resources-20261127.json`.
+
+Q-0519 remains open: catalog integration must retain distinct original declared
+constant/linear adjoint identities despite identical literal physical bodies;
+measured root-adjoint dispatch and full branch obligations still require their
+complete recorded disposition. Q-0516 also remains open. This batch implements
+the missing physical dependency without claiming the whole parent accepted.
+Existing original suites, callbacks, notebook and raw protocol evidence are
+reused. Verification receipts use `g2-karatsuba-literal-*`.
+
+
+A bounded remaining-input probe also confirms that the untouched source
+successfully decomposes zero constant multiplication, zero/rank-one linear
+matrices and negative shift counts. These are successful physical source paths,
+not exceptions that may be waived under the defect rule. The existing native
+mathematical linear/constant owners deliberately reject singular/zero maps;
+literal constructor integration must provide the actual reversible source
+recipe separately. The source negative-shift builder performs no iterations,
+while its scalar callback computes a mathematical negative power. This intake
+is recorded in `g2-field-product-remaining-probe-20261127.json`; it is not an
+implementation or acceptance claim. Q-0519 remains open for these concrete gaps.
