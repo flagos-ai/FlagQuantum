@@ -4,7 +4,12 @@ from collections import Counter
 from collections.abc import Mapping
 from typing import Any, SupportsInt
 
-import numpy as np
+from tests._reference_dependencies import unavailable_reference
+
+try:
+    import numpy as np
+except ModuleNotFoundError as _reference_import_error:
+    unavailable_reference(_reference_import_error)
 import pytest
 import sympy
 import torch
@@ -25,6 +30,7 @@ from flagquantum.simulation.classical_field_registers import (
 )
 from flagquantum.simulation.component_classical_state import ComponentClassicalState
 from flagquantum.simulation.finite_field_encoding import FiniteFieldEncoding
+from tests.unit.register_source_graph import source_line_qubit_index
 
 pytestmark = [pytest.mark.unit, pytest.mark.ftqc_reference]
 
@@ -35,9 +41,10 @@ def source_state(
     values: Mapping[str, object],
     fixed: object = None,
 ) -> tuple[Any, Any]:
-    from qualtran import QGF, Bloq
-    from qualtran import Register as SourceRegister
-    from qualtran import Signature as SourceSignature
+    from qualtran._infra.bloq import Bloq
+    from qualtran._infra.data_types import QGF
+    from qualtran._infra.registers import Register as SourceRegister
+    from qualtran._infra.registers import Signature as SourceSignature
     from qualtran.simulation.classical_sim import PhasedClassicalSimState
 
     register = SourceRegister(
@@ -68,7 +75,7 @@ def source_state(
 def test_field_binding_collection_types_and_scalar_identity(
     characteristic: int, degree: int, shape: tuple[int, ...]
 ) -> None:
-    from qualtran import LeftDangle, Soquet
+    from qualtran._infra.quantum_graph import LeftDangle, Soquet
     from qualtran.simulation.classical_sim import _get_in_vals
 
     field = FiniteFieldEncoding(characteristic, degree)
@@ -108,7 +115,7 @@ def test_field_binding_collection_types_and_scalar_identity(
     ],
 )
 def test_validation_and_collection_failure_boundaries_match_source(kind: str) -> None:
-    from qualtran import LeftDangle
+    from qualtran._infra.quantum_graph import LeftDangle
     from qualtran.simulation.classical_sim import _get_in_vals
 
     field = FiniteFieldEncoding(2, 3)
@@ -259,12 +266,16 @@ def field_add_function(dtype: RegisterType) -> FunctionRecord:
 
 @pytest.mark.parametrize("width", [1, 2, 3])
 def test_binary_field_graph_full_table_matrix_and_append(width: int) -> None:
-    import cirq
-    from qualtran import QGF
-    from qualtran.bloqs.basic_gates import CNOT
+    try:
+        import cirq
+    except ModuleNotFoundError as _reference_import_error:
+        unavailable_reference(_reference_import_error)
+    from qualtran._infra.data_types import QGF
+    from qualtran.bloqs.basic_gates.cnot import CNOT
     from qualtran.bloqs.gf_arithmetic.gf2_addition import GF2Addition
-    from qualtran.cirq_interop import BloqAsCirqGate
-    from qualtran.resource_counting import QECGatesCost, get_cost_value
+    from qualtran.cirq_interop._bloq_to_cirq import BloqAsCirqGate
+    from qualtran.resource_counting._bloq_counts import QECGatesCost
+    from qualtran.resource_counting._costing import get_cost_value
 
     from examples.algorithms.binary_field_arithmetic import FieldOperation
     from flagquantum.circuit import Circuit
@@ -329,7 +340,7 @@ def test_binary_field_graph_full_table_matrix_and_append(width: int) -> None:
     expected = []
     for op in circuit.all_operations():
         assert op.gate in {cirq.CNOT, BloqAsCirqGate(CNOT())}
-        expected.append(("cx", tuple(q.x for q in op.qubits)))
+        expected.append(("cx", tuple(source_line_qubit_index(q) for q in op.qubits)))
     assert [(g.name, g.wires) for g in bound.circuit.instructions] == expected
     assert Counter(g.name for g in bound.circuit.instructions) == {"cx": width}
     assert get_cost_value(source, QECGatesCost()).clifford == width
