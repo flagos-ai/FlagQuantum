@@ -4,20 +4,44 @@ The source-backed fake deliberately executes the unmodified builder. Passing
 these scenarios establishes requirements, not native graph implementation.
 """
 
+from __future__ import annotations
+
+from collections.abc import Iterable, Mapping
 from functools import cached_property
+from typing import TYPE_CHECKING, Any, Literal, Self, TypeAlias
 
 import attrs
-import numpy as np
+
+from tests._reference_dependencies import unavailable_reference
+
+try:
+    import numpy as np
+except ModuleNotFoundError as _reference_import_error:
+    unavailable_reference(_reference_import_error)
 import pytest
 
 from flagquantum.core.ir.program.registers import Register, RegisterSide, RegisterType
 from flagquantum.core.ir.program.signatures import Signature
+from flagquantum.core.value_math import SymbolicInt
 from tests.unit.test_register_bindings import SourceContract
+
+if TYPE_CHECKING:
+    from qualtran._infra.composite_bloq import SoquetT
+    from qualtran._infra.quantum_graph import Soquet
+    from qualtran._infra.registers import Signature as SourceSignature
+
+Identity: TypeAlias = tuple[str | int, str, tuple[int, ...]]
+CallForm: TypeAlias = Literal["dict", "tuple", "auto"]
 
 pytestmark = [pytest.mark.unit, pytest.mark.ftqc_reference]
 
 
-def port(name="word", width=3, shape=(), side=RegisterSide.THRU):
+def port(
+    name: str = "word",
+    width: SymbolicInt = 3,
+    shape: tuple[SymbolicInt, ...] = (),
+    side: RegisterSide = RegisterSide.THRU,
+) -> Register:
     return Register(name, RegisterType("uint", width), shape, side)
 
 
@@ -28,8 +52,8 @@ class SourceCalls:
     port and index, so sharing a producer cannot collapse shaped elements.
     """
 
-    def __init__(self, signature):
-        from qualtran import BloqBuilder, BloqError
+    def __init__(self, signature: Signature) -> None:
+        from qualtran._infra.composite_bloq import BloqBuilder, BloqError
 
         self.error_type = BloqError
         self.builder, self.inputs = BloqBuilder.from_signature(
@@ -37,82 +61,97 @@ class SourceCalls:
         )
 
     @staticmethod
-    def signature(signature):
-        from qualtran import Signature as SourceSignature
+    def signature(signature: Iterable[Register]) -> SourceSignature:
+        from qualtran._infra.registers import Signature as SourceSignature
 
         return SourceSignature(map(SourceContract.register, signature))
 
     @staticmethod
-    def identity(binding):
-        from qualtran import LeftDangle, RightDangle
+    def identity(binding: Soquet) -> Identity:
+        from qualtran._infra.quantum_graph import BloqInstance, LeftDangle, RightDangle
 
         owner = binding.binst
+        producer: str | int
         if owner == LeftDangle:
             producer = "entry"
         elif owner == RightDangle:
             producer = "return"
         else:
+            assert isinstance(owner, BloqInstance)
             producer = owner.i
         return producer, binding.reg.name, binding.idx
 
     @classmethod
-    def identities(cls, collection):
+    def identities(cls, collection: object) -> tuple[Identity, ...]:
         return tuple(cls.identity(value) for value in np.asarray(collection).flat)
 
     @property
-    def available(self):
+    def available(self) -> set[Identity]:
         return {self.identity(value) for value in self.builder._available}
 
     @property
-    def instances(self):
+    def instances(self) -> tuple[int, ...]:
         return tuple(sorted(instance.i for instance in self.builder._binsts))
 
     @property
-    def connections(self):
+    def connections(self) -> tuple[tuple[Identity, Identity], ...]:
         return tuple(
             (self.identity(connection.left), self.identity(connection.right))
             for connection in self.builder._cxns
         )
 
-    def call(self, name, signature, bindings, form="dict"):
-        from qualtran import Bloq
+    def call(
+        self,
+        name: str,
+        signature: Iterable[Register],
+        bindings: Mapping[str, object],
+        form: CallForm = "dict",
+    ) -> Any:
+        from qualtran._infra.bloq import Bloq
 
         @attrs.frozen
         class Leaf(Bloq):
             label: str
-            ports: tuple
+            ports: tuple[Register, ...]
 
             @cached_property
-            def signature(self):
+            def signature(self) -> SourceSignature:
                 return SourceCalls.signature(self.ports)
 
         leaf = Leaf(name, tuple(signature))
+        # These raw SDK entry points validate malformed inputs and choose arity.
         add = {
-            "dict": self.builder.add_d,
-            "tuple": self.builder.add_t,
-            "auto": self.builder.add,
+            "dict": getattr(self.builder, "add_d"),
+            "tuple": getattr(self.builder, "add_t"),
+            "auto": getattr(self.builder, "add"),
         }[form]
         return add(leaf, **bindings)
 
-    def finalize(self, bindings):
-        self.program = self.builder.finalize(**bindings)
+    def finalize(self, bindings: Mapping[str, object]) -> Self:
+        from qualtran._infra.composite_bloq import CompositeBloq
+
+        program = getattr(self.builder, "finalize")(**bindings)
+        assert isinstance(program, CompositeBloq)
+        self.program = program
         return self
 
-    def final_bindings(self):
+    def final_bindings(self) -> dict[str, SoquetT[np.object_]]:
         return self.program.final_soqs()
 
 
 @pytest.fixture(params=[SourceCalls], ids=["source-fake"])
-def calls(request):
+def calls(request: pytest.FixtureRequest) -> type[SourceCalls]:
     # The native builder replaces this factory, without changing scenarios.
-    return request.param
+    factory = request.param
+    assert isinstance(factory, type) and issubclass(factory, SourceCalls)
+    return factory
 
 
 @pytest.mark.parametrize("shape", [(), (2,), (2, 3), (0, 2)])
 @pytest.mark.parametrize("width", [0, 1, 3])
 def test_through_call_versions_every_index_and_preserves_port_order(
-    calls, shape, width
-):
+    calls: type[SourceCalls], shape: tuple[int, ...], width: int
+) -> None:
     signature = Signature([port("z", width, shape), port("a", 2)])
     builder = calls(signature)
     before = builder.available
@@ -139,7 +178,9 @@ def test_through_call_versions_every_index_and_preserves_port_order(
 
 @pytest.mark.parametrize("form", ["dict", "tuple", "auto"])
 @pytest.mark.parametrize("output_count", [0, 1, 2])
-def test_output_arity_and_left_only_consumption(calls, form, output_count):
+def test_output_arity_and_left_only_consumption(
+    calls: type[SourceCalls], form: CallForm, output_count: int
+) -> None:
     inputs = [port("input", side=RegisterSide.LEFT)]
     outputs = [port(f"out{i}", side=RegisterSide.RIGHT) for i in range(output_count)]
     builder = calls(Signature([*inputs, *outputs]))
@@ -161,7 +202,9 @@ def test_output_arity_and_left_only_consumption(calls, form, output_count):
     assert len(builder.connections) == 1 + output_count
 
 
-def test_opposite_sides_can_reuse_name_with_different_widths(calls):
+def test_opposite_sides_can_reuse_name_with_different_widths(
+    calls: type[SourceCalls],
+) -> None:
     signature = Signature(
         [
             port("word", 2, side=RegisterSide.LEFT),
@@ -179,13 +222,15 @@ def test_opposite_sides_can_reuse_name_with_different_widths(calls):
 
 
 @pytest.mark.parametrize("failure", ["missing", "extra", "dtype", "duplicate", "short"])
-def test_failed_call_keeps_instance_and_consumed_prefix(calls, failure):
+def test_failed_call_keeps_instance_and_consumed_prefix(
+    calls: type[SourceCalls], failure: str
+) -> None:
     signature = Signature([port("first"), port("second")])
     builder = calls(signature)
-    bindings = dict(builder.inputs)
+    bindings: dict[str, object] = dict(builder.inputs)
     callee = signature
     consumed = 1
-    exception = builder.error_type
+    exception: type[Exception] = builder.error_type
     if failure == "missing":
         bindings.pop("second")
     elif failure == "extra":
@@ -202,7 +247,8 @@ def test_failed_call_keeps_instance_and_consumed_prefix(calls, failure):
         exception = IndexError
     with pytest.raises(exception):
         builder.call("failing", callee, bindings)
-    assert builder.instances == (0,)
+    initial_instances = builder.instances
+    assert initial_instances == (0,)
     assert len(builder.connections) == consumed
     assert all(target[0] == 0 for _, target in builder.connections)
     assert builder.available == ({("entry", "second", ())} if consumed == 1 else set())
@@ -211,7 +257,9 @@ def test_failed_call_keeps_instance_and_consumed_prefix(calls, failure):
     assert builder.instances == (0, 1)
 
 
-def test_reusing_consumed_output_fails_before_adding_another_connection(calls):
+def test_reusing_consumed_output_fails_before_adding_another_connection(
+    calls: type[SourceCalls],
+) -> None:
     signature = Signature([port()])
     builder = calls(signature)
     first = builder.call("first", signature, builder.inputs)
@@ -227,7 +275,9 @@ def test_reusing_consumed_output_fails_before_adding_another_connection(calls):
 @pytest.mark.parametrize(
     "failure", ["missing", "extra", "dtype", "duplicate", "unused"]
 )
-def test_failed_return_preserves_prefix_and_rejects_unconsumed_values(calls, failure):
+def test_failed_return_preserves_prefix_and_rejects_unconsumed_values(
+    calls: type[SourceCalls], failure: str
+) -> None:
     signature = Signature([port("first"), port("second")])
     if failure == "dtype":
         signature = Signature(
@@ -260,7 +310,9 @@ def test_failed_return_preserves_prefix_and_rejects_unconsumed_values(calls, fai
     assert len(builder.connections) == consumed
 
 
-def test_explicit_empty_return_accepts_empty_or_consumed_lefts(calls):
+def test_explicit_empty_return_accepts_empty_or_consumed_lefts(
+    calls: type[SourceCalls],
+) -> None:
     for signature in [Signature([]), Signature([port(side=RegisterSide.LEFT)])]:
         builder = calls(signature)
         if builder.inputs:
@@ -270,7 +322,7 @@ def test_explicit_empty_return_accepts_empty_or_consumed_lefts(calls):
         assert graph.final_bindings() == {}
 
 
-def test_source_empty_shaped_right_has_no_dangle_connection():
+def test_source_empty_shaped_right_has_no_dangle_connection() -> None:
     calls = SourceCalls
     signature = Signature([port(shape=(0, 2))])
     builder = calls(signature)
@@ -283,7 +335,9 @@ def test_source_empty_shaped_right_has_no_dangle_connection():
     assert graph.final_bindings() == {}
 
 
-def test_source_classical_binding_is_also_single_consumption(calls):
+def test_source_classical_binding_is_also_single_consumption(
+    calls: type[SourceCalls],
+) -> None:
     classical = Register("bit", RegisterType("classical_bit", 0, 1))
     signature = Signature([classical])
     builder = calls(signature)
@@ -294,8 +348,10 @@ def test_source_classical_binding_is_also_single_consumption(calls):
 
 
 @pytest.mark.parametrize("widths", [(2, 3), (0, 2)])
-def test_actual_add_signature_consumes_both_ports_and_exposes_successors(calls, widths):
-    from qualtran import QUInt
+def test_actual_add_signature_consumes_both_ports_and_exposes_successors(
+    calls: type[SourceCalls], widths: tuple[int, int]
+) -> None:
+    from qualtran._infra.data_types import QUInt
     from qualtran.bloqs.arithmetic.addition import Add
 
     a_width, b_width = widths
@@ -314,9 +370,10 @@ def test_actual_add_signature_consumes_both_ports_and_exposes_successors(calls, 
     assert len(builder.connections) == 3 * len(list(signature.lefts()))
 
 
-def test_array_alias_rejected_at_second_row_major_use(calls):
+def test_array_alias_rejected_at_second_row_major_use(calls: type[SourceCalls]) -> None:
     signature = Signature([port(shape=(2, 2))])
     builder = calls(signature)
+    assert isinstance(builder.inputs["word"], np.ndarray)
     values = builder.inputs["word"].copy()
     values[1, 0] = values[0, 0]
     with pytest.raises(builder.error_type, match="not an available"):
