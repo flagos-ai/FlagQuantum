@@ -4,7 +4,6 @@
 
 """Retain source XOR-word calls around shared bounded unary iteration."""
 
-from math import prod
 from typing import cast
 
 import numpy as np
@@ -17,11 +16,14 @@ from ..bits.bitwise_component_control import controlled_bitwise_word_program
 from ..component_builder import BindingCollection, ComponentProgramBuilder
 from ..control.conjunction_program import and_component_program, conjunction_program
 from ..control.unary_component_calls import append_bounded_unary_calls
+from .qrom_data import qrom_break_early, qrom_load_words
+from .qrom_declaration import QromDeclaration
 from .qrom_table import QromTable
-from .source_qrom import _uniform
 
 
-def qrom_program(table: QromTable, *, reserve_workspace: bool = False) -> ProgramRecord:
+def qrom_program(
+    table: QromTable | QromDeclaration, *, reserve_workspace: bool = False
+) -> ProgramRecord:
     """XOR row-major data into dirty THRU targets with source predicate lifetimes.
 
     Selection words are MSB-first and target arrays retain row-major order.
@@ -32,33 +34,52 @@ def qrom_program(table: QromTable, *, reserve_workspace: bool = False) -> Progra
     """
     if type(reserve_workspace) is not bool:
         raise ValueError("QROM workspace reservation must be boolean")
-    if table.datasets is None:
+    if isinstance(table, QromTable):
+        if table.datasets is not None:
+            table._require_concrete_dimensions()
+        declaration = QromDeclaration(
+            tuple(table.shape + target for target in table.target_shapes),
+            (
+                (None,) * len(table.target_shapes)
+                if table.datasets is None
+                else table._data()
+            ),
+            table.selection_bitsizes,
+            table.target_bitsizes,
+            table.target_shapes,
+            table.num_controls,
+        )
+    else:
+        declaration = table
+    if not declaration.has_data():
         return ProgramRecord(
-            (FunctionRecord("main", (), registers=tuple(table.signature)),)
+            (FunctionRecord("main", (), registers=tuple(declaration.signature)),)
         )
-    table._require_concrete_dimensions()
-    data = table._data()
-    shape = cast(tuple[int, ...], table.shape)
-    widths = cast(tuple[int, ...], table.target_bitsizes)
-    constant = all(_uniform(values) for values in data)
-    if not constant and any(n == 1 for n in shape) and any(n > 1 for n in shape):
-        raise ValueError(
-            "Source QROM cannot index mixed singleton axes in a nonuniform lookup"
-        )
-    builder = ComponentProgramBuilder(table.signature)
+    data = declaration.data
+    shape = cast(tuple[int, ...], declaration.data_shape)
+    widths = cast(tuple[int, ...], declaration.target_bitsizes)
+
+    def folded(prefix: tuple[int, ...], start: int, stop: int) -> bool:
+        return qrom_break_early(data, prefix, start, stop)
+
+    selector_registers = tuple(
+        reg for reg in declaration.signature if reg.name.startswith("selection")
+    )
+    extents = cast(tuple[int, ...], declaration.selection_axes())
+    zero_selection = not sum(reg.bitsize for reg in selector_registers) or folded(
+        (), 0, extents[0]
+    )
+    builder = ComponentProgramBuilder(declaration.signature)
     target_values = {
         i: np.asarray(builder.inputs[f"target{i}_"]).copy()
         for i, width in enumerate(widths)
         if width
     }
     selectors: dict[int, tuple[RegisterBinding, ...]] = {}
-    selection_ports = iter(table._selection_layout())
-    names = {
-        axis: next(selection_ports)[0]
-        for axis, extent in enumerate(shape)
-        if extent > 1
-    }
-    count = cast(int, table.num_controls)
+    names = {axis: reg.name for axis, reg in enumerate(selector_registers)}
+    count = int(declaration.num_controls)
+    if count < 0:
+        raise ValueError("Physical QROM requires nonnegative control width")
     control_word = builder.inputs.get("control")
     controls: list[RegisterBinding] = []
     if count:
@@ -81,37 +102,37 @@ def qrom_program(table: QromTable, *, reserve_workspace: bool = False) -> Progra
         assert isinstance(target, RegisterBinding)
         predicate = target
 
-    def load(row: int, active: RegisterBinding | None) -> RegisterBinding | None:
-        for i, width in enumerate(widths):
+    def load(
+        row: tuple[int, ...], active: RegisterBinding | None
+    ) -> RegisterBinding | None:
+        for i, index, value in qrom_load_words(
+            data, cast(tuple[tuple[int, ...], ...], declaration.target_shapes), row
+        ):
+            width = widths[i]
             if not width:
-                continue
+                raise ValueError("Source QROM cannot bind a zero-width scalar load")
             words = target_values[i]
-            for index in np.ndindex(words.shape):
-                flat_index = (
-                    int(np.ravel_multi_index(index, words.shape)) if words.shape else 0
+            dtype = unsigned_register_type(width)
+            if active is None:
+                returned = builder.call_program(
+                    bitwise_word_program(dtype, "xor_constant", pattern=value),
+                    {"x": words[index]},
                 )
-                value = data[i][row * words.size + flat_index]
-                dtype = unsigned_register_type(width)
-                if active is None:
-                    returned = builder.call_program(
-                        bitwise_word_program(dtype, "xor_constant", pattern=value),
-                        {"x": words[index]},
-                    )
-                else:
-                    returned = builder.call_program(
-                        controlled_bitwise_word_program(
-                            dtype, "xor_constant", pattern=value
-                        ),
-                        {"ctrl": active, "x": words[index]},
-                    )
-                    successor = returned["ctrl"]
-                    assert isinstance(successor, RegisterBinding)
-                    active = successor
-                words[index] = returned["x"]
+            else:
+                returned = builder.call_program(
+                    controlled_bitwise_word_program(
+                        dtype, "xor_constant", pattern=value
+                    ),
+                    {"ctrl": active, "x": words[index]},
+                )
+                successor = returned["ctrl"]
+                assert isinstance(successor, RegisterBinding)
+                active = successor
+            words[index] = returned["x"]
         return active
 
     def visit(
-        axis: int, row: int, active: RegisterBinding | None
+        axis: int, row: tuple[int, ...], active: RegisterBinding | None
     ) -> RegisterBinding | None:
         if axis not in selectors:
             word = builder.inputs[names[axis]]
@@ -119,26 +140,12 @@ def qrom_program(table: QromTable, *, reserve_workspace: bool = False) -> Progra
             selectors[axis] = (
                 (word,) if word.register.bitsize == 1 else tuple(builder.split(word))
             )
-        stride = prod(shape[axis + 1 :])
-
-        def folded(start: int, stop: int) -> bool:
-            return all(
-                _uniform(
-                    values[
-                        (row + start * stride)
-                        * target_values[i].size : (row + stop * stride)
-                        * target_values[i].size
-                    ]
-                )
-                for i, values in enumerate(data)
-                if widths[i]
-            )
 
         def leaf(index: int, predicate: RegisterBinding) -> RegisterBinding:
-            selected = row + index * stride
+            selected = row + (index,)
             successor = (
                 visit(axis + 1, selected, predicate)
-                if axis + 1 < len(shape)
+                if axis + 1 < len(extents)
                 else load(selected, predicate)
             )
             assert isinstance(successor, RegisterBinding)
@@ -147,18 +154,18 @@ def qrom_program(table: QromTable, *, reserve_workspace: bool = False) -> Progra
         selectors[axis], active = append_bounded_unary_calls(
             builder,
             selectors[axis],
-            shape[axis],
+            extents[axis],
             leaf,
             control=active,
-            break_early=folded,
+            break_early=lambda start, stop: folded(row, start, stop),
             reserve_workspace=reserve_workspace,
         )
         return active
 
     predicate = (
-        load(0, predicate)
-        if constant or not any(table.selection_bitsizes)
-        else visit(0, 0, predicate)
+        load((0,) * len(shape), predicate)
+        if zero_selection
+        else visit(0, (), predicate)
     )
     if count > 1:
         assert predicate is not None

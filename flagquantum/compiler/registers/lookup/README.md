@@ -106,3 +106,16 @@ independent source Cirq operator and the source Bloq tensor refusal are recorded
 separately in the mean-estimation dependency audit. Run
 `tests/unit/test_mean_estimation_multiple_controls.py` for controlled dirty-column
 maps and work cleanup.
+
+`qrom_declaration.py` retains raw dtype/shape literals and deferred source
+metadata before physical layout validation. `qrom_data.py` owns the original
+raw equality and visited-cell conversion used by typed calls and declaration
+resource queries; no eager dense integer projection changes the traversal.
+`qrom_table.py` stays the validated dense layout/binding owner.
+`qrom_declaration_resources.py` quotes direct child models independently of
+emitted primitives. Source host-value execution belongs to Simulation. Start
+with `tests/unit/test_qrom_deferred_metadata.py` for actual library construction,
+normal append, primitive/feedback parity, complex branch/work proofs and separate
+model quotes. `tests/unit/test_qrom_source_classical_metadata.py` covers deferred
+control activation and host-value outputs. Known source failures are recorded
+in `docs/development/QROM_FILE_AUDIT.md`; scalar carriers are not added here.

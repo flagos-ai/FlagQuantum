@@ -5,26 +5,30 @@
 """Resolve serialized XOR lookup metadata through the existing QROM owner."""
 
 from collections.abc import Mapping
-from dataclasses import replace
 
 import numpy as np
 
-from ...core.ir.program import ProgramRecord
+from ...core.ir.program import FunctionRecord, ProgramRecord
 from ...core.ir.program.registers import Register
+from ...core.value_math import SymbolicInt
+from ...core.value_parameters import is_symbolic_value
 from ...errors import SerializationError
 from ..registers.lookup.qrom_component import qrom_program
-from ..registers.lookup.qrom_table import QromTable
+from ..registers.lookup.qrom_declaration import QromDeclaration
 from .legacy_component_resolution import ComponentFactory, ResolvedArgument
 from .legacy_modular_addition_factories import _integer
 from .legacy_word_factories import _rename_program
 
 
-def _dimensions(value: object) -> tuple[int, ...]:
+def _dimensions(value: object) -> tuple[SymbolicInt, ...]:
     array = np.asarray(value)
     if array.ndim != 1:
         raise SerializationError("QROM dimension metadata requires a vector")
     values = array.tolist()
-    if any(type(dimension) is not int for dimension in values):
+    if any(
+        not isinstance(dimension, int) and not is_symbolic_value(dimension)
+        for dimension in values
+    ):
         raise SerializationError("Serialized QROM dimensions require integers")
     return tuple(values)
 
@@ -33,7 +37,7 @@ def _qrom_factory(
     name: str,
     registers: tuple[Register, ...] | None,
     arguments: Mapping[str, ResolvedArgument],
-) -> ProgramRecord:
+) -> FunctionRecord | ProgramRecord:
     required = {"data_or_shape", "selection_bitsizes", "target_bitsizes"}
     if not required <= arguments.keys() or arguments.keys() - required - {
         "target_shapes",
@@ -45,13 +49,12 @@ def _qrom_factory(
         not isinstance(data, (np.ndarray, tuple, list))
         or isinstance(data, np.ndarray)
         and data.ndim == 0
-        or len(data) == 0
     ):
         raise SerializationError("Serialized QROM requires concrete datasets")
     widths = _dimensions(arguments["target_bitsizes"])
     selection = _dimensions(arguments["selection_bitsizes"])
     raw_shapes = arguments.get("target_shapes")
-    targets: tuple[tuple[int, ...], ...]
+    targets: tuple[tuple[SymbolicInt, ...], ...]
     if raw_shapes is None:
         targets = ((),) * len(widths)
     elif isinstance(raw_shapes, (np.ndarray, tuple, list)):
@@ -60,18 +63,38 @@ def _qrom_factory(
         raise SerializationError("QROM target shapes require nested vectors")
     if len(targets) != len(widths):
         raise SerializationError("QROM requires one target shape per dataset")
-    table = QromTable.from_data(
-        *data,
-        target_bitsizes=widths,
-        target_shapes=targets,
-        num_controls=_integer(
-            {"num_controls": arguments.get("num_controls", 0)}, "num_controls"
-        ),
+    arrays = tuple(np.asarray(row) for row in data)
+    raw_controls = arguments.get("num_controls", 0)
+    controls = (
+        raw_controls
+        if isinstance(raw_controls, bool)
+        else _integer({"num_controls": raw_controls}, "num_controls")
     )
-    table = replace(table, selection_bitsizes=selection)
-    if registers is not None and tuple(table.signature) != registers:
+    header = QromDeclaration(
+        tuple(row.shape for row in arrays),
+        (None,) * len(arrays),
+        selection,
+        widths,
+        targets,
+        controls,
+    )
+    ports = tuple(header.signature)
+    if registers is not None and ports != registers:
         raise SerializationError("Invalid QROM register signature")
-    return _rename_program(qrom_program(table), name)
+    try:
+        declaration = QromDeclaration.from_arrays(
+            *arrays,
+            selection_bitsizes=selection,
+            target_bitsizes=widths,
+            target_shapes=targets,
+            num_controls=controls,
+        )
+        program = qrom_program(declaration)
+    except (ValueError, TypeError, OverflowError, IndexError):
+        # The original library retains literal arrays even if its layout or
+        # per-load int conversion fails. Preserve ports, not an invented body.
+        return FunctionRecord(name, (), registers=ports)
+    return _rename_program(program, name)
 
 
 def qrom_factories() -> dict[str, ComponentFactory]:

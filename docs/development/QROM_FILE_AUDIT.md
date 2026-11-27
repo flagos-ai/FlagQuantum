@@ -7,7 +7,7 @@ at `bcb17bb25360ed68ce3bc084645db3e929799389`.
 | --- | --- |
 | Q-0479 tutorial | The native notebook preserves all four examples, their source datasets and widths, the signatures and the five-row direct call graph. Its executable example uses the append protocol with a nonzero XOR target. |
 | Q-0480 implementation | `source_qrom_ir` retains the source traversal. `source_qrom_calls` exposes immediate calls with literal controls and zero-selection constants. `qrom_wire_symbol` supplies the source register labels to the native score renderer. |
-| Q-0481 base | `QromTable` owns concrete data, unknown-data shapes, replacement, signature and binding. `lookup_classical_values` owns the per-address classical callback and respects the original control and XOR behavior. |
+| Q-0481 base | `QromDeclaration` owns deferred raw metadata and factory behavior; `QromTable` retains validated dense layout/binding. Simulation owns strict and literal source host-value evaluators. See the November 28 closure below. |
 | Q-0482 tests | The unchanged source suite passed 45 circuit, cost and metadata tests plus the notebook test in a separate kernel. The source reports three strict-type skips and three expected failures for its unenforced count checks. Native parity reuses the direct operand, feedback, branch, signature, classical and resource tests. |
 
 The direct call declaration shares the bounded count traversal with
@@ -30,7 +30,7 @@ chain. The executable tutorial checks the complete output vector
 and zero work on sampled histories. Existing gate and branch tests
 cover exhaustive small histories, nonzero inputs and feedback.
 
-## Open source boundaries
+## Historical boundaries before November 28
 
 - The Q-0480 implementation retains the locked emitter's failure on
   nonuniform mixed singleton axes and zero-width target words.
@@ -245,3 +245,109 @@ graph consumer, while the four constructor-metadata admission differences
 listed in the complete base audit remain. Native QromTable still validates those
 objects earlier, and native score layout still differs from Cirq ASCII layout.
 These boundaries require an explicit disposition before whole-file acceptance.
+
+
+## Complete deferred metadata and raw-data closure, November 28
+
+The remaining Q-0480/Q-0481 constructor paths now have explicit owners rather
+than weakening the validated `QromTable` layout. `qrom_declaration.py` preserves
+raw array dtype/precision and original shape in immutable pickle-free literals.
+It retains the original late common-prefix failure and empty-prefix sentinel,
+source post-init count checks, factory inference, replacement, zipped selector
+ports, omitted zero-width targets and declared static width. The array literal
+codec is shared with the existing wire adapter; its bytes and refusal contract
+are unchanged. Source objects stop at the Ecosystem boundary.
+
+`qrom_data.py` ports `_break_early` and visited-cell integer loading once.
+`qrom_component.py` uses those callbacks with the accepted shared unary tree,
+XorK, And and MultiAnd components. Raw values determine pruning, including
+ignored columns and non-reflexive cells. Integer conversion occurs only for
+visited declared target cells. This closes uint64 high-bit wrapping, fractional
+and string alias pruning, and underspecified target suffixes with unused NaNs.
+Exact symbolic-integer selectors and controls retain existing concrete storage
+projection. Empty target arrays still perform the source traversal even when
+there are no load words. `circuit.append(op)` and caller-owned THRU dirty targets
+remain the execution path; predicate work is computed and measurement-erased.
+
+`qrom_declaration_resources.py` independently ports the direct call protocol,
+excluding only Split/Join views and retaining zero-count edges. It uses the same
+raw callbacks and existing arithmetic/predicate/QEC query authorities. It can
+quote nonconstant negative load words and zero-width XorK declarations without
+pretending those are executable loads. Unknown-data formulae remain owned by
+`source_qrom_resource_formula`. Static source width is a declaration, including
+its scalar undercount or negative empty-component quote, not a physical peak.
+
+`simulation.classical_lookup.source_lookup_classical_values` owns the host-value
+callback separately from Compiler. It reads selectors only after control
+activation, preserves negative/Boolean/symbolic control behavior and inactive
+pass-through, and does not inspect irrelevant target-storage metadata. The old
+strict native evaluator and dense table validation retain their existing input
+contracts. No numerical execution or backend choice enters Compiler.
+
+The complete constructor and direct dependency regression reuses the original
+source tests, notebooks, graph handoffs, port glyphs, controlled loading and
+QROAM/SelectSwap evidence above. Fresh tests read actual source libraries at
+multiple depths, preserve wire bytes, compare callable operands and per-wire
+primitive dependencies/feedback, exercise append/JSON transport, and verify
+complete complex operators and small raw measurement histories with dirty
+outputs, an entangled spectator and zero work. The existing multi-control
+constant emitter already retained its source reduction; its implementation is
+reused and newly cross-checked, not reported as a new repair.
+
+Representative resource rows below separate emitted physical primitives from
+source logical QEC estimates. Reservation is the supplied reusable clean pool;
+live work peak is independently reconstructed from native allocation events.
+The source static quote excludes the spectator. The full 16-row receipt is
+`g2-qrom-deferred-resources-20261128.json` in the external evidence directory.
+
+| Profile / controls | Measured T-family / CX / measurements | Clean reservation / live peak | Source AND / Clifford / measurements / static quote |
+|---|---|---|---|
+| Fractional aliases / 0 | 0 / 0 / 0 | 0 / 0 | 0 / 2 / 0 / 3 |
+| Ignored NaN column / 0 | 4 / 10 / 1 | 1 / 1 | 1 / 7 / 1 / 5 |
+| Ignored NaN column / 1 | 8 / 17 / 2 | 2 / 2 | 2 / 7 / 2 / 7 |
+| Empty target array / 0 | 0 / 0 / 0 | 0 / 0 | 0 / 2 / 0 / 1 |
+| Constant table / 3 | 8 / 13 / 2 | 4 / 2 | 2 / 3 / 2 / 11 |
+
+### Retained source and representation limits
+
+- Overspecified target suffixes, inconsistent prefixes, scalar-first sentinel
+  layouts and negative physical control widths retain their source failure
+  stages. Their defined logical metadata and host-value paths are available.
+- NumPy 2.5.4 rejects the source's size-one array-to-int coercion for mixed
+  singleton axes. The original and literal native loader both refuse; no
+  blanket claim that every historical NumPy version failed is made.
+- A zero-width scalar target can have a defined XorK call graph and zero QEC
+  estimate while recursive source physical binding fails for the absent `x`
+  port. The literal constructor keeps its header and refuses physical binding.
+- Empty target arrays can have a valid direct Cirq primitive generator while
+  the original Composite bridge fails on zero array iteration dimensions.
+  Parameterized zero-selection roots likewise fail the source Composite model,
+  including exact SymPy integer metadata; those models are not fabricated.
+- Source attrs identity flattens arrays and can equate different shapes.
+  Non-reflexive arrays can lose their own root in upstream serialization/cache
+  lookup. Shape-distinct owned declarations stay distinct; direct source child
+  costs and root cache outcomes are labeled separately.
+- Raw object arrays cannot enter the original pickle-free wire codec. Native
+  logical unknown-data declarations and the existing live Ecosystem capture
+  remain separate protocols; no object pickle or foreign object enters IR.
+- Native drawing retains the source register glyphs and its own score layout.
+  Byte-identical Cirq ASCII spacing is not claimed. The empty source component
+  is a logical scalar with a source static quote of -1; this batch adds no
+  public zero-wire Circuit or unapproved scalar-carrier contract.
+
+Under the approved faithful-source closure rule these are explicit source,
+codec and presentation dispositions, not missing defined executable paths.
+Final batch verification and publication receipts determine parent acceptance;
+no checkbox is inferred solely from this audit text.
+
+Batch verification passed 617 concentrated cases, 186 independent Cirq 1.6
+cases and 84 local integration cases. Strict checking of all 11 changed Python
+files, Black, Ruff, architecture, IR, protected API, required-check consistency,
+Cirq conversion contract, Compiler/Simulation scope, language, links and
+whitespace passed. All 117 frozen source/dependency blobs remain unchanged.
+Sixteen actual optional/mandatory absence scenarios preserve the original
+missing dependency error; cold native compilation, append, JSON, classical
+values and resource queries succeed with Qualtran/Cirq/Kickmix blocked.
+The dependency audit retains 570 existing findings and zero affected consumers.
+The mandatory reference suite verifies Qualtran 0.7.0 and a real Kickmix 0.1
+Simulator before running; no native comparison silently skips.
