@@ -78,3 +78,36 @@ passes with the locked kernel environment outside that sandbox restriction.
 Strict typing covers all four changed Python files. Black, Ruff, Compiler scope,
 language, architecture, IR and API checks pass. Dependency output is exactly
 the existing 720 findings, with no additional finding from this batch.
+
+
+## Complete source acceptance (2026-11-28)
+
+The approved faithful-migration closure rule supersedes the historical open
+parent status for Q-0707. Complete source and direct fanout review covers all
+CSwapApprox properties, nested G/G-inverse segments, physical decomposition,
+classical permutation, drawing adapters, analytical categories, three factories
+and DocSpec. Existing typed and flat owners agree at comparable recursive calls,
+ordered operands and primitive dependencies. The exact generic Adjoint retains
+the reversed fanout sequence instead of substituting a forward equivalent.
+
+Existing complete small complex operators, absolute relative signs, eight-bit
+occupied-word/spectator action, source-free constructor, append and JSON evidence
+are reused. There is no private workspace or nonempty measurement history for
+the bare primitive. Extra controlled wrappers use their separately recorded
+predicate history and clean-work certificates. Unknown wrapper constructors do
+not acquire implicit recipes from this acceptance.
+
+The source generic-controlled ArbitraryClifford aggregate-cost failure remains
+an upstream boundary. Symbolic widths retain logical/resource declarations and
+require resolution for execution. A 64-bit call/primitive inventory establishes
+structure and counts, not exhaustive 129-wire numerical simulation. Native
+controlled CH/CCX/phase leaves remain unsynthesized resource categories.
+
+
+The complete three-file closure passes 335 concentrated source/primitive/
+complex-execution cases and 51 independent Cirq 1.6 constructor cases. All 54
+frozen source/dependency/asset blobs are unchanged. Algorithms scope, language,
+links, architecture, IR, protected API baseline and whitespace pass. Existing
+strict Python, 32 local integration and real Kickmix Simulator evidence from
+the accepted preceding batches is reused: no Python code changes here. Original
+source tests/notebook outcomes and separately recorded defects remain intact.
