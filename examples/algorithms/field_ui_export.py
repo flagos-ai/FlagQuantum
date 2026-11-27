@@ -434,8 +434,8 @@ def documentation_text(documentation: ComponentDocumentation[object]) -> str:
         "Concrete field and polynomial arithmetic retain complete stored decompositions. "
         "Other diagrams show atomic typed interfaces. Execution and resource "
         "estimates retain separate evidence. "
-        "Karatsuba's linear inverse retains the native exact graph and a dagger label. "
-        "Its frozen-source ignored-adjoint exception is recorded in FIELD_MULTIPLICATION_FILE_AUDIT.md. "
+        "Karatsuba retains the original literal graph and its declared inverse identity. "
+        "Correct mathematical inverse operations and frozen-source defects remain separate in FIELD_MULTIPLICATION_FILE_AUDIT.md. "
         "Large and symbolic instances allocate no execution wires.\n"
     )
 
