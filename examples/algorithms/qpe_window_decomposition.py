@@ -50,6 +50,7 @@ from flagquantum.drawer.register_score_data import (
     MusicalScoreData,
     RegisterWireSymbolSupplier,
     SymbolClass,
+    adjoint_wire_symbol,
     register_score_data,
 )
 from flagquantum.drawer.rotation_symbols import rotation_wire_symbol
@@ -84,7 +85,11 @@ def _title(text: str) -> tuple[SymbolClass, dict[str, str | int | bool]]:
 
 
 def window_symbols(
-    record: ProgramRecord, *, width: SymbolicInt, exponent: float = 0.468
+    record: ProgramRecord,
+    *,
+    width: SymbolicInt,
+    exponent: float = 0.468,
+    adjoint: bool = False,
 ) -> RegisterWireSymbolSupplier:
     """Project source glyphs from literal, definition-qualified constructors."""
     functions = {f.name: f for f in record.functions}
@@ -132,10 +137,14 @@ def window_symbols(
             )
         if step.name == "hadamard":
             return hadamard_wire_symbol(step, register, index)
-        if step.name == "interim_rz":
+        if step.name in {"interim_rz", "interim_inverse_rz"}:
             assert isinstance(width, int)
             return rotation_wire_symbol(
-                step, register, index, axis="z", parameter=-2 * pi / (2**width + 1)
+                step,
+                register,
+                index,
+                axis="z",
+                parameter=(1 if adjoint else -1) * 2 * pi / (2**width + 1),
             )
         if names == ("ctrl", "phase_grad"):
             if register is None:
@@ -157,13 +166,16 @@ def window_symbols(
                 for i in range(width):
                     angle = -2 * pi * 2**i / (2**width + 1)
                     if matches_component_definition(
-                        record, step.name, controlled_rz_program(angle)
+                        record,
+                        step.name,
+                        controlled_rz_program(angle, adjoint=adjoint),
                     ):
-                        return (
+                        symbol = (
                             _title(f"CRz({angle})")
                             if register is None
                             else partition_wire_symbol(step, register, index)
                         )
+                        return adjoint_wire_symbol(*symbol) if adjoint else symbol
                 raise ValueError("Unknown interim controlled rotation")
             count = len(body)
             if register is None:
@@ -196,9 +208,10 @@ def window_symbols(
                 if register is None
                 else ("TextBox", {"text": "QFTTextBook†"})
             )
-        return on_each_wire_symbol(
+        symbol = on_each_wire_symbol(
             step, register, index, width=width, child_symbol=hadamard_wire_symbol
         )
+        return adjoint_wire_symbol(*symbol) if adjoint else symbol
 
     return supply
 
@@ -234,11 +247,26 @@ def window_child(
     *,
     operation: str,
 ) -> tuple[str, ProgramRecord, RegisterWireSymbolSupplier] | None:
-    if operation not in {"RectangularWindowState", "LPRSInterimPrep", "TextbookQPE"}:
+    if operation not in {
+        "RectangularWindowState",
+        "LPRSInterimPrep",
+        "LPResourceState",
+        "TextbookQPE",
+    }:
         return None
     function = next(f for f in record.functions if f.name == entry)
     ports = function.registers or ()
     names = tuple(p.name for p in ports)
+    if names == ("m", "anc") and type(ports[0].bitsize) is int:
+        interim_width = ports[0].bitsize
+        for adjoint in (False, True):
+            template = luis_perina_interim_program(interim_width, adjoint=adjoint)
+            if matches_component_definition(record, entry, template):
+                return (
+                    "LPRSInterimPrep" + ("†" if adjoint else ""),
+                    template,
+                    window_symbols(template, width=interim_width, adjoint=adjoint),
+                )
     if names == ("qpe_reg",):
         template = rectangular_window_program(ports[0].bitsize)
         if matches_component_definition(record, entry, template):
@@ -275,9 +303,14 @@ def window_child(
     if names == ("ctrl", "q") and "unitary" not in parameters:
         for i in range(width):
             angle = -2 * pi * 2**i / (2**width + 1)
-            template = controlled_rz_program(angle)
-            if matches_component_definition(record, entry, template):
-                return "CRz", template, rotation_gate_symbols("CRz", {"angle": angle})
+            for adjoint in (False, True):
+                template = controlled_rz_program(angle, adjoint=adjoint)
+                if matches_component_definition(record, entry, template):
+                    return (
+                        "CRz" + ("†" if adjoint else ""),
+                        template,
+                        rotation_gate_symbols("CRz", {"angle": angle}),
+                    )
     if names == ("q",) and ports[0].shape_symbolic == (2,):
         for value in (0.468, *(-0.5 / 2**i for i in range(width))):
             template = controlled_z_power_program(value)

@@ -58,6 +58,19 @@ delegates to it. Fresh source scores are compared at widths 1, 3, 5 and 7.
 Symbolic LP retains its unresolved body boundary. Unqualified native private
 helpers are not misrepresented as exact source decompositions.
 
+The shared window dependency dispatcher also recognizes the actual LP context,
+its forward and exact-adjoint interim definitions, and each angle-specific CRz
+in both directions. Recognition compares complete definitions, not port names
+alone. The original generic adjoints retain their dagger-decorated word and
+control glyphs; they are not relabeled as a forward circuit at a negated angle.
+At widths 1, 3, 5 and 7, every interim and controlled-rotation child score matches
+the unchanged source geometry and symbols. The actual catalogue callback
+qualifies both interim directions. Reflection descendants and other private
+helpers remain explicitly native until their independent source qualification.
+These are presentation changes only: the Algorithms, Compiler, Core and
+Simulation trees, executable Programs, work ownership, primitive inventories
+and independent resource estimates are unchanged from `cab32760d`.
+
 Measured inventories and source estimates remain separate. Stored LP emits
 8/16/32 T or TDG primitives and 2/4/8 measurements at widths 1/3/7. Its independent
 source model reports 2/4/8 And calls and 12/24/48 rotations. All non-identity
