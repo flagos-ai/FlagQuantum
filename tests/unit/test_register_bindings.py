@@ -1,15 +1,58 @@
 """Replace pinned binding construction and traversal with native responsibilities."""
 
+from __future__ import annotations
+
 import re
+from collections.abc import Callable, Hashable, Iterable, Mapping
 from dataclasses import FrozenInstanceError
 from itertools import product
+from operator import is_
+from typing import TYPE_CHECKING, Protocol, TypeAlias, TypeVar
 
-import numpy as np
+from tests._reference_dependencies import unavailable_reference
+
+try:
+    import numpy as np
+except ModuleNotFoundError as _reference_import_error:
+    unavailable_reference(_reference_import_error)
 import pytest
 import sympy
 
 from flagquantum.core.ir.program.model import ValueRef
+from flagquantum.core.ir.program.register_bindings import RegisterBinding
 from flagquantum.core.ir.program.registers import Register, RegisterType
+from flagquantum.core.value_math import SymbolicInt
+
+if TYPE_CHECKING:
+    from qualtran._infra.bloq import Bloq
+    from qualtran._infra.data_types import QCDType
+    from qualtran._infra.quantum_graph import Soquet
+    from qualtran._infra.registers import Register as SourceRegister
+
+BindingT = TypeVar("BindingT", bound=Hashable)
+Index: TypeAlias = tuple[int, ...]
+BindingPort: TypeAlias = "Register | SourceRegister"
+
+
+class BindingContract(Protocol[BindingT]):
+    """One typed test interface exercised by both real binding implementations."""
+
+    @staticmethod
+    def binding(register: Register, index: int | Index = ()) -> BindingT: ...
+
+    @staticmethod
+    def index(binding: BindingT) -> Index: ...
+
+    @staticmethod
+    def name(binding: BindingT) -> str: ...
+
+    @staticmethod
+    def process(
+        registers: Iterable[Register],
+        bindings: Mapping[str, object],
+        visit: Callable[[BindingT, BindingPort, Index], None],
+    ) -> None: ...
+
 
 pytestmark = [pytest.mark.unit, pytest.mark.ftqc_reference]
 N = sympy.Symbol("n", integer=True, positive=True)
@@ -19,8 +62,8 @@ class SourceContract:
     """Test-only source-backed stand-in for the internal binding contract."""
 
     @staticmethod
-    def register(register):
-        from qualtran import (
+    def register(register: Register) -> SourceRegister:
+        from qualtran._infra.data_types import (
             BQUInt,
             CBit,
             QAny,
@@ -29,11 +72,12 @@ class SourceContract:
             QIntOnesComp,
             QMontgomeryUInt,
             QUInt,
-            Side,
         )
-        from qualtran import Register as SourceRegister
+        from qualtran._infra.registers import Register as SourceRegister
+        from qualtran._infra.registers import Side
 
         dtype = register.dtype
+        source_dtype: QCDType[int]
         if dtype.num_cbits:
             source_dtype = CBit()
         elif dtype.encoding == "bit":
@@ -55,49 +99,66 @@ class SourceContract:
             register.name,
             source_dtype,
             shape=register.shape_symbolic,
-            side=Side[register.side.name],
+            side=getattr(Side, "__getitem__")(register.side.name),
         )
 
     @classmethod
-    def binding(cls, register, index=()):
-        from qualtran import LeftDangle, Soquet
+    def binding(cls, register: Register, index: int | Index = ()) -> Soquet:
+        from qualtran._infra.quantum_graph import LeftDangle, Soquet
 
         return Soquet(LeftDangle, cls.register(register), index)
 
     @staticmethod
-    def index(binding):
+    def index(binding: Soquet) -> Index:
         return binding.idx
 
     @staticmethod
-    def name(binding):
+    def name(binding: Soquet) -> str:
         return binding.reg.name
 
     @classmethod
-    def process(cls, registers, bindings, visit):
-        from qualtran._infra.composite_bloq import _process_soquets
+    def process(
+        cls,
+        registers: Iterable[Register],
+        bindings: Mapping[str, object],
+        visit: Callable[[Soquet, BindingPort, Index], None],
+    ) -> None:
+        from qualtran._infra import composite_bloq
 
-        return _process_soquets(
-            map(cls.register, registers), bindings, "consumer", visit
-        )
+        # Negative cases deliberately send malformed values to the source validator.
+        process: Callable[
+            [
+                Iterable[SourceRegister],
+                Mapping[str, object],
+                str,
+                Callable[[Soquet, BindingPort, Index], None],
+            ],
+            None,
+        ] = getattr(composite_bloq, "_process_soquets")
+        return process(map(cls.register, registers), bindings, "consumer", visit)
 
 
 class NativeContract:
     @staticmethod
-    def binding(register, index=()):
+    def binding(register: Register, index: int | Index = ()) -> RegisterBinding:
         from flagquantum.core.ir.program.register_bindings import RegisterBinding
 
         return RegisterBinding(ValueRef("entry", 0, "qubit"), register, index)
 
     @staticmethod
-    def index(binding):
+    def index(binding: RegisterBinding) -> Index:
         return binding.index
 
     @staticmethod
-    def name(binding):
+    def name(binding: RegisterBinding) -> str:
         return binding.register.name
 
     @staticmethod
-    def process(registers, bindings, visit):
+    def process(
+        registers: Iterable[Register],
+        bindings: Mapping[str, object],
+        visit: Callable[[RegisterBinding, BindingPort, Index], None],
+    ) -> None:
         from flagquantum.compiler.registers.component_bindings import (
             process_register_bindings,
         )
@@ -106,13 +167,22 @@ class NativeContract:
 
 
 @pytest.fixture(params=[SourceContract, NativeContract], ids=["source", "native"])
-def backend(request):
-    return request.param
+def backend(
+    request: pytest.FixtureRequest,
+) -> type[SourceContract] | type[NativeContract]:
+    if request.param is SourceContract:
+        return SourceContract
+    assert request.param is NativeContract
+    return NativeContract
 
 
 @pytest.mark.parametrize("shape", [(), (2,), (2, 3), (0, 2), (N, 2)])
 @pytest.mark.parametrize("index", [(), 0, 1, -1, (0, 0), (-1, 1), (2, 0)])
-def test_index_conversion_and_validation(backend, shape, index):
+def test_index_conversion_and_validation(
+    backend: type[BindingContract[BindingT]],
+    shape: tuple[SymbolicInt, ...],
+    index: int | Index,
+) -> None:
     register = Register("word", RegisterType("uint", N), shape)
     try:
         expected = SourceContract.binding(register, index)
@@ -133,12 +203,14 @@ def test_index_conversion_and_validation(backend, shape, index):
 
 @pytest.mark.parametrize("shape", [(), (2,), (2, 3), (0, 2)])
 @pytest.mark.parametrize("width", [0, 1, 3, N])
-def test_ordered_scalar_array_and_zero_width_binding(backend, shape, width):
+def test_ordered_scalar_array_and_zero_width_binding(
+    backend: type[BindingContract[BindingT]], shape: tuple[int, ...], width: SymbolicInt
+) -> None:
     register = Register("words", RegisterType("uint", width), shape)
     values = np.empty(shape, dtype=object)
     for index in register.all_idxs():
         values[index] = backend.binding(register, index)
-    seen = []
+    seen: list[tuple[Index, str, Index]] = []
     result = backend.process(
         [register],
         {"words": values},
@@ -153,10 +225,14 @@ def test_ordered_scalar_array_and_zero_width_binding(backend, shape, width):
 @pytest.mark.parametrize(
     "case", ["missing", "extra", "short", "long", "ragged", "wrong"]
 )
-def test_failures_preserve_partial_callback_order(backend, case):
+def test_failures_preserve_partial_callback_order(
+    backend: type[BindingContract[BindingT]], case: str
+) -> None:
     register = Register("word", RegisterType("uint", 3), (2,))
     a, b = (backend.binding(register, (i,)) for i in range(2))
-    bindings = {"word": [a, b]}
+    bindings: dict[str, object] = {"word": [a, b]}
+    expected_seen: list[int]
+    error: type[Exception] | None
     expected_seen, error = [0, 1], None
     if case == "missing":
         bindings = {}
@@ -175,9 +251,9 @@ def test_failures_preserve_partial_callback_order(backend, case):
     else:
         bindings["word"] = [a, object()]
         expected_seen, error = [0], AssertionError
-    seen = []
+    seen: list[int] = []
 
-    def visit(value, port, index):
+    def visit(value: BindingT, port: BindingPort, index: Index) -> None:
         seen.append(index[0])
 
     if error is None:
@@ -193,8 +269,11 @@ def test_failures_preserve_partial_callback_order(backend, case):
 )
 @pytest.mark.parametrize("widths", [(1, 1), (3, 3), (2, 3)])
 def test_callback_precedes_loose_type_consistency(
-    backend, source_kind, target_kind, widths
-):
+    backend: type[BindingContract[BindingT]],
+    source_kind: str,
+    target_kind: str,
+    widths: tuple[int, int],
+) -> None:
     from qualtran._infra.data_types import check_dtypes_consistent
 
     origin = Register("origin", RegisterType(source_kind, widths[0]))
@@ -203,9 +282,9 @@ def test_callback_precedes_loose_type_consistency(
     expected = check_dtypes_consistent(
         SourceContract.register(origin).dtype, SourceContract.register(target).dtype
     )
-    seen = []
+    seen: list[tuple[BindingT, str, Index]] = []
 
-    def visit(value, port, index):
+    def visit(value: BindingT, port: BindingPort, index: Index) -> None:
         seen.append((value, port.name, index))
 
     if expected:
@@ -216,13 +295,15 @@ def test_callback_precedes_loose_type_consistency(
     assert seen == [(binding, "target", ())]
 
 
-def test_callback_failure_precedes_dtype_and_surplus_names(backend):
+def test_callback_failure_precedes_dtype_and_surplus_names(
+    backend: type[BindingContract[BindingT]],
+) -> None:
     origin = Register("origin", RegisterType("uint", 2))
     target = Register("target", RegisterType("uint", 3))
     binding = backend.binding(origin)
-    seen = []
+    seen: list[BindingT] = []
 
-    def visit(value, port, index):
+    def visit(value: BindingT, port: BindingPort, index: Index) -> None:
         seen.append(value)
         raise RuntimeError("callback failed")
 
@@ -232,10 +313,12 @@ def test_callback_failure_precedes_dtype_and_surplus_names(backend):
 
 
 @pytest.mark.parametrize("consumer", ["add", "xor_qrom"])
-def test_real_builder_initial_bindings_match_native_port_trace(backend, consumer):
-    from qualtran import BloqBuilder, QUInt
-    from qualtran._infra.composite_bloq import _process_soquets
-    from qualtran.bloqs.arithmetic import Add
+def test_real_builder_initial_bindings_match_native_port_trace(
+    backend: type[BindingContract[BindingT]], consumer: str
+) -> None:
+    from qualtran._infra.composite_bloq import BloqBuilder, _process_soquets
+    from qualtran._infra.data_types import QUInt
+    from qualtran.bloqs.arithmetic.addition import Add
     from qualtran.bloqs.data_loading.qrom import QROM
 
     operation = (
@@ -244,7 +327,7 @@ def test_real_builder_initial_bindings_match_native_port_trace(backend, consumer
         else QROM.build_from_data(np.array([1, 2, 0, 3]), target_bitsizes=(2,))
     )
     _, initial = BloqBuilder.from_signature(operation.signature)
-    expected = []
+    expected: list[tuple[str, str, Index]] = []
     _process_soquets(
         operation.signature.lefts(),
         initial,
@@ -256,7 +339,7 @@ def test_real_builder_initial_bindings_match_native_port_trace(backend, consumer
         for port in operation.signature.lefts()
     ]
     bindings = {port.name: backend.binding(port) for port in reversed(registers)}
-    actual = []
+    actual: list[tuple[str, str, Index]] = []
     backend.process(
         registers,
         bindings,
@@ -267,7 +350,7 @@ def test_real_builder_initial_bindings_match_native_port_trace(backend, consumer
     assert actual == expected
 
 
-def test_native_binding_preserves_ssa_identity_without_mutation():
+def test_native_binding_preserves_ssa_identity_without_mutation() -> None:
     from flagquantum.core.ir.program.register_bindings import RegisterBinding
 
     register = Register("word", RegisterType("uint", 3), (2,))
@@ -278,19 +361,21 @@ def test_native_binding_preserves_ssa_identity_without_mutation():
     assert binding.index == (0,)
     assert binding != RegisterBinding(ValueRef("entry", 8, "qubit"), register, 0)
     with pytest.raises(FrozenInstanceError):
-        binding.index = (1,)
+        setattr(binding, "index", (1,))
 
 
 @pytest.mark.parametrize(
     "case", ["empty", "scalar_array", "dtype_failure", "stale", "missing_after_empty"]
 )
-def test_binding_callback_can_enforce_single_consumption(backend, case):
+def test_binding_callback_can_enforce_single_consumption(
+    backend: type[BindingContract[BindingT]], case: str
+) -> None:
     register = Register("word", RegisterType("uint", 3))
     binding = backend.binding(register)
     available = {binding}
-    effects = []
+    effects: list[str] = []
 
-    def consume(value, port, index):
+    def consume(value: BindingT, port: BindingPort, index: Index) -> None:
         available.remove(value)
         effects.append(port.name)
 
@@ -322,32 +407,46 @@ def test_binding_callback_can_enforce_single_consumption(backend, case):
 
 
 @pytest.mark.parametrize("side", ["LEFT", "RIGHT", "THRU"])
-def test_direction_is_selected_by_caller_not_binding_traversal(backend, side):
+def test_direction_is_selected_by_caller_not_binding_traversal(
+    backend: type[BindingContract[BindingT]], side: str
+) -> None:
     from flagquantum.core.ir.program.registers import RegisterSide
     from flagquantum.core.ir.program.signatures import Signature
 
     register = Register("word", RegisterType("uint", 3), side=RegisterSide[side])
     signature = Signature([register])
     binding = backend.binding(register)
+    ports: Iterable[Register]
     for ports in (signature.lefts(), signature.rights()):
         ports = tuple(ports)
-        seen = []
+        seen: list[str] = []
+
+        def visit(
+            value: BindingT,
+            port: BindingPort,
+            index: Index,
+            seen: list[str] = seen,
+        ) -> None:
+            seen.append(port.name)
+
         backend.process(
             ports,
             {"word": binding} if ports else {},
-            lambda value, port, index, seen=seen: seen.append(port.name),
+            visit,
         )
         assert seen == [port.name for port in ports]
 
 
-def test_shared_type_policy_is_called_after_actual_callback(monkeypatch):
+def test_shared_type_policy_is_called_after_actual_callback(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
     from flagquantum.compiler.registers import component_bindings
 
     register = Register("word", RegisterType("uint", 3))
     binding = NativeContract.binding(register)
-    events = []
+    events: list[str | tuple[RegisterType, RegisterType]] = []
 
-    def reject(left, right):
+    def reject(left: RegisterType, right: RegisterType) -> bool:
         events.append((left, right))
         return False
 
@@ -362,15 +461,16 @@ def test_shared_type_policy_is_called_after_actual_callback(monkeypatch):
 @pytest.mark.parametrize("consumer", ["add", "xor_qrom"])
 @pytest.mark.parametrize("factory_created", [False, True], ids=["manual", "created"])
 def test_bindings_feed_append_with_exact_measured_channels_and_resources(
-    backend, consumer, factory_created
-):
+    backend: type[BindingContract[BindingT]], consumer: str, factory_created: bool
+) -> None:
     from collections import Counter
 
     import torch
-    from qualtran import QUInt
-    from qualtran.bloqs.arithmetic import Add
+    from qualtran._infra.data_types import QUInt
+    from qualtran.bloqs.arithmetic.addition import Add
     from qualtran.bloqs.data_loading.qrom import QROM
-    from qualtran.resource_counting import QECGatesCost, get_cost_value
+    from qualtran.resource_counting._bloq_counts import QECGatesCost
+    from qualtran.resource_counting._costing import get_cost_value
 
     from flagquantum.compiler.registers.arithmetic.addition import add_ir
     from flagquantum.compiler.registers.lookup.qrom_table import QromTable
@@ -379,6 +479,9 @@ def test_bindings_feed_append_with_exact_measured_channels_and_resources(
     from tests.unit.test_register_constant_addition import reference_arithmetic_gates
     from tests.unit.test_register_subtraction import assert_source
 
+    source: Bloq
+    groups: tuple[tuple[int, ...], ...]
+    work: tuple[int, ...]
     if consumer == "add":
         registers = Signature(
             [
@@ -394,21 +497,22 @@ def test_bindings_feed_append_with_exact_measured_channels_and_resources(
         source = QROM.build_from_data(np.array([1, 3, 0, 2]), target_bitsizes=(2,))
         groups, work = ((0, 1), (2, 3)), (4,)
 
+    bindings: dict[str, object]
     if factory_created:
         from tests.unit.test_register_binding_creation import (
             create_native,
             create_source,
         )
 
-        create = create_source if backend is SourceContract else create_native
+        create = create_source if is_(backend, SourceContract) else create_native
         bindings = {port.name: create(port) for port in registers.lefts()}
     else:
         bindings = {port.name: backend.binding(port) for port in registers.lefts()}
-    physical = {
+    physical: dict[object, tuple[int, ...]] = {
         bindings[port.name]: wires
         for port, wires in zip(registers.lefts(), groups, strict=True)
     }
-    ports = {}
+    ports: dict[str, tuple[int, ...]] = {}
     backend.process(
         registers.lefts(),
         dict(reversed(list(bindings.items()))),
@@ -441,14 +545,18 @@ def test_bindings_feed_append_with_exact_measured_channels_and_resources(
     expected = torch.zeros_like(state)
     for word in range(1 << data_width):
         amplitude = complex((word % 5) - 2, (word % 3) - 1)
-        state[word << len(work)] = amplitude
+        state[word << len(work)] = torch.as_tensor(
+            amplitude, dtype=state.dtype, device=state.device
+        )
         if consumer == "add":
             left, right = word >> 3, word & 7
             output = (left << 3) | ((left + right) & 7)
         else:
             address, target = word >> 2, word & 3
             output = (address << 2) | (target ^ [1, 3, 0, 2][address])
-        expected[output << len(work)] = amplitude
+        expected[output << len(work)] = torch.as_tensor(
+            amplitude, dtype=expected.dtype, device=expected.device
+        )
     expected /= state.norm()
     state /= state.norm()
     events = emitted["measure"]
