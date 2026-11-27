@@ -29,7 +29,7 @@ pytestmark = [pytest.mark.unit, pytest.mark.ftqc_reference]
 
 
 def original_dtype(kind: str) -> Any:
-    from qualtran import (
+    from qualtran._infra.data_types import (
         BQUInt,
         QAny,
         QBit,
@@ -50,6 +50,7 @@ def original_dtype(kind: str) -> Any:
         "signed_fixed_negative": QFxp(3, -2, signed=True),
         "empty_fixed": QFxp(0, 0),
         "empty_fixed_negative": QFxp(0, -2),
+        "signed_empty": QFxp(0, -2, signed=True),
         "ones_complement": QIntOnesComp(3),
         "bounded": BQUInt(3, 5),
         "montgomery": QMontgomeryUInt(3),
@@ -59,7 +60,9 @@ def original_dtype(kind: str) -> Any:
 
 def assert_source_binding(source: Any, program: ProgramRecord, reverse: bool) -> None:
     np = pytest.importorskip("numpy")
-    from qualtran.resource_counting import QECGatesCost, QubitCount, get_cost_value
+    from qualtran.resource_counting._bloq_counts import QECGatesCost
+    from qualtran.resource_counting._costing import get_cost_value
+    from qualtran.resource_counting._qubit_counts import QubitCount
 
     width = int(source.dtype.num_qubits)
     wires = tuple(reversed(range(width)))
@@ -118,6 +121,7 @@ def assert_source_binding(source: Any, program: ProgramRecord, reverse: bool) ->
         "signed_fixed_negative",
         "empty_fixed",
         "empty_fixed_negative",
+        "signed_empty",
         "ones_complement",
         "bounded",
         "montgomery",
@@ -129,9 +133,8 @@ def assert_source_binding(source: Any, program: ProgramRecord, reverse: bool) ->
 def test_actual_foreign_dtype_libraries_and_original_factory_use_native_rebindings(
     kind: str, reverse: bool, depth: int
 ) -> None:
-    from qualtran.bloqs.bookkeeping import Join, Split
-    from qualtran.bloqs.bookkeeping.join import _join
-    from qualtran.bloqs.bookkeeping.split import _split
+    from qualtran.bloqs.bookkeeping.join import Join, _join
+    from qualtran.bloqs.bookkeeping.split import Split, _split
     from qualtran.serialization.bloq import bloqs_from_proto, bloqs_to_proto
 
     source = (
@@ -166,17 +169,24 @@ def test_actual_foreign_dtype_libraries_and_original_factory_use_native_rebindin
     assert_source_binding(source, program, reverse)
 
 
-@pytest.mark.parametrize("fraction", (0, -2))
+@pytest.mark.parametrize(
+    "fraction,signed", ((0, False), (-2, False), (-1, True), (-2, True), (-7, True))
+)
 def test_empty_fixed_split_join_in_an_actual_foreign_phase_context(
     fraction: int,
+    signed: bool,
 ) -> None:
     import numpy as np
-    from qualtran import BloqBuilder, QBit, QFxp
-    from qualtran import Register as SourceRegister
-    from qualtran import Signature as SourceSignature
-    from qualtran.bloqs.basic_gates import Hadamard, TGate
-    from qualtran.bloqs.bookkeeping import Join, Split
-    from qualtran.resource_counting import QECGatesCost, get_cost_value
+    from qualtran._infra.composite_bloq import BloqBuilder
+    from qualtran._infra.data_types import QBit, QFxp
+    from qualtran._infra.registers import Register as SourceRegister
+    from qualtran._infra.registers import Signature as SourceSignature
+    from qualtran.bloqs.basic_gates.hadamard import Hadamard
+    from qualtran.bloqs.basic_gates.t_gate import TGate
+    from qualtran.bloqs.bookkeeping.join import Join
+    from qualtran.bloqs.bookkeeping.split import Split
+    from qualtran.resource_counting._bloq_counts import QECGatesCost
+    from qualtran.resource_counting._costing import get_cost_value
     from qualtran.serialization.bloq import bloqs_to_proto
 
     from flagquantum.compiler.formats.legacy_bookkeeping_factories import (
@@ -187,7 +197,7 @@ def test_empty_fixed_split_join_in_an_actual_foreign_phase_context(
     )
     from flagquantum.simulation.unitary import get_unitary
 
-    dtype = QFxp(0, fraction)
+    dtype = QFxp(0, fraction, signed=signed)
     builder, inputs = BloqBuilder.from_signature(
         SourceSignature((SourceRegister("reg", dtype), SourceRegister("s", QBit())))
     )
@@ -224,12 +234,13 @@ def test_empty_fixed_split_join_in_an_actual_foreign_phase_context(
 
 
 @pytest.mark.parametrize("reverse", (False, True))
-def test_signed_zero_fixed_storage_keeps_separate_pending_admission(
+def test_approved_signed_zero_fixed_storage_preserves_empty_alias(
     reverse: bool,
 ) -> None:
     import numpy as np
-    from qualtran import QFxp
-    from qualtran.bloqs.bookkeeping import Join, Split
+    from qualtran._infra.data_types import QFxp
+    from qualtran.bloqs.bookkeeping.join import Join
+    from qualtran.bloqs.bookkeeping.split import Split
 
     source = (Join if reverse else Split)(QFxp(0, -2, signed=True))
     signature = native_signature(source.signature)
@@ -239,13 +250,14 @@ def test_signed_zero_fixed_storage_keeps_separate_pending_admission(
         None, reg=np.empty((0, 1) if reverse else (0,), dtype=object)
     )
     assert operation is None and ports["reg"].size == 0
-    with pytest.raises(ValueError, match="unsupported executable register descriptor"):
-        bind_register_program(
-            ProgramRecord((function,)),
-            () if reverse else ((),),
-            borrowed=(0,),
-            entry="view",
-        )
+    bound = bind_register_program(
+        ProgramRecord((function,)),
+        () if reverse else ((),),
+        borrowed=(0,),
+        entry="view",
+    )
+    assert bound.outputs == (((),) if reverse else ())
+    assert bound.events == () and bound.circuit.instructions == ()
 
 
 @pytest.mark.parametrize("polynomial", (False, True))
@@ -253,8 +265,9 @@ def test_signed_zero_fixed_storage_keeps_separate_pending_admission(
 def test_binary_field_source_sdk_and_native_bodies_preserve_original_wire_refusal(
     polynomial: bool, reverse: bool
 ) -> None:
-    from qualtran import QGF, QGFPoly
-    from qualtran.bloqs.bookkeeping import Join, Split
+    from qualtran._infra.data_types import QGF, QGFPoly
+    from qualtran.bloqs.bookkeeping.join import Join
+    from qualtran.bloqs.bookkeeping.split import Split
     from qualtran.serialization.bloq import bloqs_to_proto
 
     from flagquantum.simulation.finite_field_encoding import FiniteFieldEncoding

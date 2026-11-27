@@ -57,7 +57,7 @@ def resolve_original(source: Any, depth: int) -> ProgramRecord:
                 isinstance(reg, Register) for reg in raw
             )
             parts = tuple(reg for reg in raw if isinstance(reg, Register))
-            assert sum(reg.total_qubits() for reg in parts) == arguments["n"]
+            assert sum(reg.total_bits() for reg in parts) == arguments["n"]
         else:
             assert set(arguments) == {"n1", "n2"}
             parts = tuple(reg for reg in registers if reg.name != "x")
@@ -82,7 +82,9 @@ def test_all_actual_factories_preserve_native_foreign_signature_and_sdk_disposit
 ) -> None:
     np = pytest.importorskip("numpy")
     from qualtran.bloqs.bookkeeping import partition
-    from qualtran.resource_counting import QECGatesCost, QubitCount, get_cost_value
+    from qualtran.resource_counting._bloq_counts import QECGatesCost
+    from qualtran.resource_counting._costing import get_cost_value
+    from qualtran.resource_counting._qubit_counts import QubitCount
 
     source = getattr(partition, example).make()
     program = resolve_original(source, depth)
@@ -122,7 +124,8 @@ def test_all_actual_factories_preserve_native_foreign_signature_and_sdk_disposit
 
 @pytest.mark.parametrize("reverse", (False, True))
 @pytest.mark.parametrize(
-    "profile", ("opaque", "signed", "signed_negative", "empty", "empty_negative")
+    "profile",
+    ("opaque", "signed", "signed_negative", "empty", "empty_negative", "signed_empty"),
 )
 @pytest.mark.parametrize("shape", ((2,), (1, 2), (0, 2)))
 def test_shaped_concrete_foreign_partition_and_inverse_match_every_complex_amplitude(
@@ -131,10 +134,12 @@ def test_shaped_concrete_foreign_partition_and_inverse_match_every_complex_ampli
     shape: tuple[int, ...],
 ) -> None:
     np = pytest.importorskip("numpy")
-    from qualtran import QAny, QFxp
-    from qualtran import Register as OriginalRegister
-    from qualtran.bloqs.bookkeeping import Partition
-    from qualtran.resource_counting import QECGatesCost, QubitCount, get_cost_value
+    from qualtran._infra.data_types import QAny, QFxp
+    from qualtran._infra.registers import Register as OriginalRegister
+    from qualtran.bloqs.bookkeeping.partition import Partition
+    from qualtran.resource_counting._bloq_counts import QECGatesCost
+    from qualtran.resource_counting._costing import get_cost_value
+    from qualtran.resource_counting._qubit_counts import QubitCount
 
     dtype = {
         "opaque": QAny(2),
@@ -142,6 +147,7 @@ def test_shaped_concrete_foreign_partition_and_inverse_match_every_complex_ampli
         "signed_negative": QFxp(2, -2, signed=True),
         "empty": QFxp(0, 0),
         "empty_negative": QFxp(0, -2),
+        "signed_empty": QFxp(0, -2, signed=True),
     }[profile]
     width = int(dtype.num_qubits)
     packed_width = prod(shape) * width + 2
