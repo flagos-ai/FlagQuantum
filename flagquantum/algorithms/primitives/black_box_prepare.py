@@ -10,6 +10,7 @@ from __future__ import annotations
 from collections.abc import Callable, Mapping
 from dataclasses import dataclass
 from functools import cached_property
+from math import prod
 
 from ...circuit import Circuit
 from ...compiler.registers.bits.bitwise import _validate_wires
@@ -17,6 +18,7 @@ from ...compiler.registers.layout.auto_partition import AutoPartition
 from ...compiler.registers.layout.partition import RegisterLayout
 from ...core.ir import CircuitIR, Instruction
 from ...core.ir.program.register_types import opaque_register_type
+from ...core.ir.program.register_verifier import executable_register_width
 from ...core.ir.program.registers import Register
 from ...core.ir.program.signatures import Signature
 from ...core.value_math import SymbolicInt, SymbolicReal, ssum
@@ -91,11 +93,12 @@ class PackedPrepareDeclaration:
 def _concrete_layout(registers: tuple[Register, ...]) -> RegisterLayout:
     layout: list[tuple[str, int]] = []
     for reg in registers:
-        width = reg.total_bits()
-        if not isinstance(width, int):
+        try:
+            width = executable_register_width(reg.dtype) * prod(reg.shape)
+        except ValueError as error:
             raise ValueError(
                 f"PREPARE binding requires a concrete width for {reg.name}"
-            )
+            ) from error
         layout.append((reg.name, width))
     return tuple(layout) if any(width for _, width in layout) else ()
 

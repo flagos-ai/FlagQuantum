@@ -140,3 +140,43 @@ run. Both changed test files pass Black and Ruff and their Algorithms scope.
 No production behavior changes in this batch: the previously accepted 169-file
 strict result, architecture/IR/API checks and 60 CPU/representation cases are
 reused from the immediately preceding scalar dependency batch.
+
+
+## Faithful full-file acceptance (2026-11-28)
+
+The approved faithful-migration closure rule supersedes the historical open
+status above. Q-0691 covers the complete locked source file and its direct
+AutoPartition/PrepareOracle dependencies. The original object-serialization
+failure remains an upstream defect, separately from native IR restoration.
+
+One executable path needed a production fix: a selection word with physical
+width `sympy.Integer(3)` passes the unchanged source SDK decomposition, although
+its tensor protocol rejects symbolic Partition. Native packed binding now uses
+the existing Core executable-width projection under approved Proposal 130,
+retaining the original dtype metadata. This is raw physical storage admission;
+it does not resolve a free width or interpret symbolic numeric metadata.
+Array dimensions still pass through the existing concrete-shape contract.
+
+`test_packed_literal_storage.py` checks Python and exact SymPy integer widths,
+concrete shaped words, selection/junk ordering, reversed physical wire maps,
+both directions and a coherent spectator through `circuit.append(op)`. The
+explicitly specified identity child is compared with the unchanged source SDK
+operator, including full complex output and IR restoration. Its measured
+primitive, measurement and private-work counts are all zero; this fixture is
+not a resource model for Hubbard PREPARE. Free widths and symbolic array
+extents remain rejected. Existing Hubbard full-history and resource evidence
+above remains applicable and is rerun in the batch regression.
+
+Unknown child semantics still require an explicit owned body and inverse.
+No child role or adjoint is inferred by name, and logical junk is not disposed
+of as private workspace. The zero-selection source early return is retained.
+
+
+Batch verification: 108 concentrated source/execution cases, 30 independent
+Cirq 1.6 cases and 32 local integration cases pass. The two Python files pass
+strict typing, Black and Ruff; Algorithms scope, architecture, IR, protected
+API baseline, required checks, language, links and whitespace pass. All 42
+frozen source/dependency blobs are unchanged. Fourteen actual dependency-absence
+cases distinguish optional skips from mandatory propagation of the original
+error. The dependency-policy scan still has 570 existing findings in 362 files;
+none belongs to the new test consumer. That workflow remains open.
