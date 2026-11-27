@@ -216,3 +216,44 @@ Full numerical source regression and wheel acceptance remain bound to migration
 commit `f05f9bafe`: all 1566 product blobs and 1262 product Python installation
 bytes are unchanged by either CI followup. This scheduling-only followup does
 not claim that the original 60-minute cancellation is itself a passing result.
+
+
+## Supply-chain dependency isolation followup
+
+Head `6d9644608` passed its first complete GPU Gate, but Main supply-chain job
+`140327048928` failed because pip-audit received two versions of `pip`.
+The original log records cached pip 25.0.1 outside the job environment, its
+explicit refusal to uninstall that external copy, and pip 26.3 installed into
+the job. The existing snapshot writer preserves distinct versions and removes
+only identical pins; it does not silently choose a version. The original raw
+failure log SHA-256 is `faac8b9bf889a9c823a3d89d98f73898f1f13f6cc321f191c9d3d14531cc77cc`.
+
+Enable the existing `inherit-installed-dependencies: "false"` input for the
+supply-chain job only. It creates the job's own virtual environment, then keeps
+the existing installer, project/security-tool installation, complete installed
+dependency snapshot, strict vulnerability audit, Bandit and SBOM checks. The
+ordinary compatible wheel-download cache remains available; the installed base
+stack is not inherited. No package version or vulnerability is filtered to
+obtain a passing audit. The audit flags and all timeouts remain unchanged.
+
+A controlled execution of the unchanged real isolation action reproduces pip
+25.0.1 and 26.3 metadata together when the old cache-inheritance path is enabled.
+With the actual new input it exposes one job-owned pip distribution, no cache
+probe and no cache hook invocation. The two job environments are removed only
+after recording the results. This proves the isolation boundary on this host;
+it does not replace the real Linux vulnerability audit. Existing cache-boundary
+replacement cases remain, and a new workflow regression binds the supply-chain
+job to fresh isolation while preserving strict audit behavior.
+
+All product, scientific workload, numerical assertion, scheduling weight,
+selection marker, native ABI and dependency-manifest blobs remain unchanged.
+The old failed audit is retained. This new source head still needs its own
+complete Main/GPU CI before the next migration is activated.
+
+
+The fresh-environment followup passes 161 related audit, isolation, coverage,
+sharding, capacity and watchdog tests, including the new policy case. Eleven
+whole-repository quality checks pass. The prior 6d isolated glued-trees job
+completed the unchanged full 20-qubit scientific case: one passed, with a
+263.41-second test call. Its original log is retained. The prior 6d head still
+fails supply-chain; that scientific pass does not qualify the whole head.

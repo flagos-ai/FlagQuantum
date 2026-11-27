@@ -36,3 +36,22 @@ def test_sbom_validator_fails_closed_and_accepts_minimum_valid_payload():
         )
         == ()
     )
+
+
+def test_supply_chain_audits_a_fresh_dependency_environment():
+    import yaml
+
+    workflow = yaml.safe_load((ROOT / ".github/workflows/ci.yml").read_text())
+    steps = workflow["jobs"]["supply-chain"]["steps"]
+    isolation = [
+        step
+        for step in steps
+        if step.get("uses") == "./.github/actions/isolated-python"
+    ]
+    assert len(isolation) == 1
+    assert isolation[0]["with"]["inherit-installed-dependencies"] == "false"
+    audit = next(
+        step for step in steps if step.get("name") == "Audit installed dependencies"
+    )
+    assert "pip-audit --strict --disable-pip --no-deps" in audit["run"]
+    assert "--ignore-vuln" not in audit["run"]
