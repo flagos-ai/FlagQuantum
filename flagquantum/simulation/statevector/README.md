@@ -61,3 +61,10 @@ assertions remain authoritative.
 Runtime supplies the state and explicit generator, then applies readout noise,
 frame corrections and feedback/evidence policy. The distinct original
 multinomial defaults and output shapes are preserved.
+
+## Weighted observable scalar
+
+`adjoint.py::_weighted_observable_expectation` owns the existing native attempt
+and Tensor fallback for an already-owned real diagonal. Cache admission,
+allocation, eviction and lifecycle stay in Runtime; the public native provider
+and its ABI are unchanged.

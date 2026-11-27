@@ -31,3 +31,9 @@ Run `tests/unit/test_measurements_marginal_reduction.py` and
 The two numerical calls preserve normalization before Runtime creates its
 generator. Request resolution, generator ownership and result metadata stay
 in Runtime.
+
+## Dense result moments
+
+`probabilities.py` also owns raw Statevector probabilities and ordered dense Z
+expectation values used by existing JAX result adapters. It does not reconstruct
+rank state, normalize the input or admit optional Runtime dependencies.

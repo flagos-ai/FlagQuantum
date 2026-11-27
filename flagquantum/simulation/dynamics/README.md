@@ -54,3 +54,10 @@ Run `tests/unit/test_lindblad_matrix_free_hamiltonian.py`,
 `tests/unit/test_lindblad_batching_and_gradients.py` and
 `tests/unit/test_lindblad_adjoint_gradient.py` when changing normalization.
 These scenarios preserve the independent dense, stencil and adjoint references.
+
+## Physical output contraction
+
+`ising_braid.py` and `rydberg_presence.py` own their respective final observable
+contractions, preserving the original Einstein index literals and real output.
+Runtime still owns operator device placement, plan/replay policy and output
+metadata. These numerical helpers do not construct circuits or choose resources.

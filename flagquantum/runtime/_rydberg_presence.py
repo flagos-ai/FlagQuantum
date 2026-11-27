@@ -311,11 +311,13 @@ def execute_presence_plan(plan: LindbladPlan) -> ExecutionResult:
     if index not in (0, 1) or weights[0, index] <= 0:
         raise ExecutionError("presence selected a zero-probability or invalid branch")
     trajectory = _continue_rydberg_presence(record, numeric, prefix, index, **settings)
+    from flagquantum.simulation.dynamics.rydberg_presence import (
+        _presence_output_expectation,
+    )
+
     records = []
     for i, (name, operator) in enumerate(request["observables"].items()):
-        value = torch.einsum(
-            "tij,ji->t", trajectory, operator.to(trajectory.device)
-        ).real
+        value = _presence_output_expectation(trajectory, operator.to(trajectory.device))
         records.append(
             MeasurementResult(
                 "expectation",

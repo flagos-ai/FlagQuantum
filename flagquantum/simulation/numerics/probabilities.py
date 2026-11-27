@@ -142,3 +142,30 @@ def _normalize_pauli_sampling_distribution(
     distribution = torch.clamp(distribution, min=0)
     distribution = distribution / distribution.sum(dim=-1, keepdim=True)
     return distribution
+
+
+def _statevector_readout_probabilities(state: torch.Tensor) -> torch.Tensor:
+    """Read raw basis probabilities without normalization or reconstruction."""
+
+    return torch.abs(state) ** 2
+
+
+def _statevector_readout_z_expectations(
+    state: torch.Tensor,
+    qubits: Sequence[int],
+    *,
+    n_qubits: int,
+    total_amplitudes: int,
+) -> torch.Tensor:
+    """Read the existing ordered dense-state Z moments from raw amplitudes."""
+
+    probabilities = torch.abs(state) ** 2
+    values = []
+    indices = torch.arange(total_amplitudes, device=state.device)
+    for target in qubits:
+        mask = 1 << (n_qubits - int(target) - 1)
+        signs = torch.where((indices & mask) == 0, 1.0, -1.0).to(
+            device=state.device, dtype=probabilities.real.dtype
+        )
+        values.append((probabilities * signs.reshape(1, -1)).sum(dim=-1))
+    return torch.stack(values, dim=-1)

@@ -484,10 +484,12 @@ def execute_ising_plan(plan: ExecutionPlan) -> ExecutionResult:
     else:
         state = evolve_ising_braid(record, device=device).unsqueeze(0)
     measurements = []
+    from flagquantum.simulation.dynamics.ising_braid import _ising_output_expectation
+
     values = []
     for index, request in enumerate(_read_outputs(payload)):
         assert isinstance(request.observable, torch.Tensor)
-        value = torch.einsum("bij,ji->b", state, request.observable.to(device)).real
+        value = _ising_output_expectation(state, request.observable.to(device))
         values.append(value)
         metadata = {
             "fq_output_index": index,

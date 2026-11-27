@@ -12,6 +12,7 @@ from flagquantum.simulation.statevector.diagonal_matrix_dispatch import (
 )
 
 from ...core.ir import Instruction
+from .. import native_cpu as _native_cpu
 from ..native_cpu import fused_observable_adjoint_seed, fused_rotation_adjoint_
 from .operations import _DIAGONAL_STATEVECTOR_GATES, _apply_matrix
 
@@ -265,3 +266,14 @@ def seed_adjoint(amplitudes: torch.Tensor, weights: torch.Tensor) -> torch.Tenso
 
     seed = fused_observable_adjoint_seed(amplitudes, weights)
     return seed if seed is not None else 2 * amplitudes * weights.reshape(1, -1)
+
+
+def _weighted_observable_expectation(
+    amplitudes: torch.Tensor, weights: torch.Tensor
+) -> torch.Tensor:
+    """Evaluate an already-owned diagonal with the existing native/eager route."""
+
+    value = _native_cpu.fused_observable_expectation(amplitudes, weights)
+    if value is None:
+        value = (amplitudes.abs().square() * weights.reshape(1, -1)).sum()
+    return value

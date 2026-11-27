@@ -9930,6 +9930,95 @@
       "extraction_scope": "Empirical retained noisy-MPS mixture sampling",
       "compatibility": "No new facade or private forwarding alias. Published result type/method identity, validation, annotations and historical pickle locator remain.",
       "remaining_imports": "Runtime retains request admission, explicit generator creation, readout noise/feedback/frame corrections and result assembly; numerical bodies call their Simulation owners directly."
+    },
+    {
+      "group": "runtime-observable-numerics",
+      "old": "flagquantum/runtime/executors/jax/statevector/records.py",
+      "new": "flagquantum/simulation/numerics/probabilities.py",
+      "symbols": [],
+      "partial": true,
+      "same_import_path": false,
+      "extracted_helpers": [
+        "_statevector_readout_probabilities",
+        "_statevector_readout_z_expectations"
+      ],
+      "extraction_scope": "Raw probabilities and ordered dense Z readout; public result/cache/validation remain",
+      "compatibility": "Existing public result methods, aliases, annotations and pickle locators remain. No new compatibility facade or internal function forwarding.",
+      "remaining_imports": "Runtime reads the defining Simulation owner; validation, state/cache lifecycle, operator device placement and evidence remain Runtime."
+    },
+    {
+      "group": "runtime-observable-numerics",
+      "old": "flagquantum/runtime/executors/jax/tensor_network/records.py",
+      "new": "flagquantum/simulation/numerics/probabilities.py",
+      "symbols": [],
+      "partial": true,
+      "same_import_path": false,
+      "extracted_helpers": [
+        "_statevector_readout_probabilities",
+        "_statevector_readout_z_expectations"
+      ],
+      "extraction_scope": "Same raw dense readout after TensorNetwork reconstruction; public result identity remains",
+      "compatibility": "Existing public result methods, aliases, annotations and pickle locators remain. No new compatibility facade or internal function forwarding.",
+      "remaining_imports": "Runtime reads the defining Simulation owner; validation, state/cache lifecycle, operator device placement and evidence remain Runtime."
+    },
+    {
+      "group": "runtime-observable-numerics",
+      "old": "flagquantum/runtime/_ising_plan.py",
+      "new": "flagquantum/simulation/dynamics/ising_braid.py",
+      "symbols": [],
+      "partial": true,
+      "same_import_path": false,
+      "extracted_helpers": [
+        "_ising_output_expectation"
+      ],
+      "extraction_scope": "Physical Ising output contraction only; admission/device/result policy remains",
+      "compatibility": "Existing public result methods, aliases, annotations and pickle locators remain. No new compatibility facade or internal function forwarding.",
+      "remaining_imports": "Runtime reads the defining Simulation owner; validation, state/cache lifecycle, operator device placement and evidence remain Runtime."
+    },
+    {
+      "group": "runtime-observable-numerics",
+      "old": "flagquantum/runtime/_rydberg_presence.py",
+      "new": "flagquantum/simulation/dynamics/rydberg_presence.py",
+      "symbols": [],
+      "partial": true,
+      "same_import_path": false,
+      "extracted_helpers": [
+        "_presence_output_expectation"
+      ],
+      "extraction_scope": "Physical presence trajectory output contraction only; replay/RNG/result policy remains",
+      "compatibility": "Existing public result methods, aliases, annotations and pickle locators remain. No new compatibility facade or internal function forwarding.",
+      "remaining_imports": "Runtime reads the defining Simulation owner; validation, state/cache lifecycle, operator device placement and evidence remain Runtime."
+    },
+    {
+      "group": "runtime-observable-numerics",
+      "old": "flagquantum/runtime/executors/statevector/reverse_adjoint.py",
+      "new": "flagquantum/simulation/statevector/adjoint.py",
+      "symbols": [],
+      "partial": true,
+      "same_import_path": false,
+      "extracted_helpers": [
+        "_weighted_observable_expectation"
+      ],
+      "extraction_scope": "Existing native/eager scalar evaluation; weight-cache admission/ownership remains Runtime",
+      "compatibility": "Existing public result methods, aliases, annotations and pickle locators remain. No new compatibility facade or internal function forwarding.",
+      "remaining_imports": "Runtime reads the defining Simulation owner; validation, state/cache lifecycle, operator device placement and evidence remain Runtime."
+    },
+    {
+      "group": "runtime-observable-numerics",
+      "old": "flagquantum/runtime/executors/statevector/reverse_adjoint.py",
+      "new": "flagquantum/simulation/native_cpu/adjoint.py",
+      "symbols": [],
+      "partial": true,
+      "same_import_path": false,
+      "retired_reexports": [
+        "fused_observable_expectation"
+      ],
+      "retired_private_members": [
+        "fused_observable_expectation"
+      ],
+      "compatibility": "Unused executor alias retired after its production invocation moved; actual public native function and all published exports/identities are unchanged.",
+      "remaining_imports": "Simulation invokes the existing public native provider through its module; no old Runtime alias or forwarding is retained.",
+      "native_public_api_preserved": "flagquantum.simulation.native_cpu.fused_observable_expectation"
     }
   ],
   "retired_namespace_parents": [

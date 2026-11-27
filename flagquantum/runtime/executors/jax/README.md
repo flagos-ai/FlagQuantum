@@ -64,3 +64,10 @@ Run the boundary checks with:
 ```bash
 pytest tests/unit/test_jax_simulation_boundary.py
 ```
+
+## Dense result readout
+
+Statevector and TensorNetwork result adapters retain optional Torch admission,
+qubit validation and reconstruction/cache. Raw probabilities and ordered Z
+values are computed by Simulation Numerics; public method and alias identities
+remain on the existing result types.

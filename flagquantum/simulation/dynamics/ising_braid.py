@@ -165,3 +165,11 @@ def evolve_ising_braid(
             "sampled Ising actions require a Runtime-selected outcome"
         )
     return _apply_ising_actions(_initial_density(context, device), operations)
+
+
+def _ising_output_expectation(
+    state: torch.Tensor, observable: torch.Tensor
+) -> torch.Tensor:
+    """Evaluate the existing physical output contraction without policy."""
+
+    return torch.einsum("bij,ji->b", state, observable).real
