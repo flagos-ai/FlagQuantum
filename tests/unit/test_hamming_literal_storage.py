@@ -1,7 +1,16 @@
 """Concrete symbolic Hamming SDK inputs keep unused logical junk ownership."""
 
 from collections import Counter
+from importlib import import_module
 from itertools import product
+
+from tests._reference_dependencies import unavailable_reference
+
+# Typed-register owners require NumPy before their modules can be collected.
+try:
+    import_module("numpy")
+except ModuleNotFoundError as _reference_import_error:
+    unavailable_reference(_reference_import_error)
 
 import pytest
 import sympy
@@ -27,10 +36,13 @@ pytestmark = [pytest.mark.unit, pytest.mark.ftqc_reference]
 
 @pytest.mark.parametrize("width", (1, 2, 3, 4, 5, 7, 8))
 def test_literal_sdk_operands_unused_outputs_and_models(width: int) -> None:
-    from qualtran._infra.bloq import DecomposeTypeError
-    from qualtran.bloqs.arithmetic.hamming_weight import HammingWeightCompute
-    from qualtran.resource_counting._bloq_counts import QECGatesCost
-    from qualtran.resource_counting._costing import get_cost_value
+    try:
+        from qualtran._infra.bloq import DecomposeTypeError
+        from qualtran.bloqs.arithmetic.hamming_weight import HammingWeightCompute
+        from qualtran.resource_counting._bloq_counts import QECGatesCost
+        from qualtran.resource_counting._costing import get_cost_value
+    except ModuleNotFoundError as _reference_import_error:
+        unavailable_reference(_reference_import_error)
 
     literal = sympy.Integer(width)
     source = HammingWeightCompute(literal)

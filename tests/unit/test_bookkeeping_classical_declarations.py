@@ -5,7 +5,12 @@ from __future__ import annotations
 from math import prod
 from typing import Any
 
-import numpy as np
+from tests._reference_dependencies import unavailable_reference
+
+try:
+    import numpy as np
+except ModuleNotFoundError as _reference_import_error:
+    unavailable_reference(_reference_import_error)
 import pytest
 import torch
 
@@ -37,7 +42,10 @@ pytestmark = [pytest.mark.unit, pytest.mark.ftqc_reference]
 
 def assert_signatures(native: tuple[Register, ...], source: Any) -> None:
     """Compare actual metadata directly; the source CUInt wire codec rejects it."""
-    from qualtran._infra.data_types import CUInt, QAny, QBit
+    try:
+        from qualtran._infra.data_types import CUInt, QAny, QBit
+    except ModuleNotFoundError as _reference_import_error:
+        unavailable_reference(_reference_import_error)
 
     assert len(native) == len(source)
     for actual, original in zip(native, source, strict=True):
@@ -63,11 +71,14 @@ def assert_signatures(native: tuple[Register, ...], source: Any) -> None:
 def test_partition_total_storage_width_and_raw_sdk_order(
     shape: tuple[int, ...], reverse: bool
 ) -> None:
-    from qualtran._infra.data_types import CUInt, QBit
-    from qualtran._infra.registers import Register as OriginalRegister
-    from qualtran.bloqs.bookkeeping.partition import Partition
-    from qualtran.resource_counting._bloq_counts import QECGatesCost
-    from qualtran.resource_counting._costing import get_cost_value
+    try:
+        from qualtran._infra.data_types import CUInt, QBit
+        from qualtran._infra.registers import Register as OriginalRegister
+        from qualtran.bloqs.bookkeeping.partition import Partition
+        from qualtran.resource_counting._bloq_counts import QECGatesCost
+        from qualtran.resource_counting._costing import get_cost_value
+    except ModuleNotFoundError as _reference_import_error:
+        unavailable_reference(_reference_import_error)
 
     parts = (
         Register("c", classical_unsigned_register_type(2), shape),
@@ -118,13 +129,16 @@ def test_partition_total_storage_width_and_raw_sdk_order(
 def test_auto_partition_retains_actual_classical_identity_call_graph(
     shape: tuple[int, ...], left_only: bool
 ) -> None:
-    import cirq
-    from qualtran._infra.composite_bloq import BloqBuilder
-    from qualtran._infra.data_types import CUInt, QAny
-    from qualtran._infra.registers import Register as OriginalRegister
-    from qualtran._infra.registers import Signature as OriginalSignature
-    from qualtran.bloqs.bookkeeping.auto_partition import AutoPartition as Original
-    from qualtran.bloqs.bookkeeping.auto_partition import Unused
+    try:
+        import cirq
+        from qualtran._infra.composite_bloq import BloqBuilder
+        from qualtran._infra.data_types import CUInt, QAny
+        from qualtran._infra.registers import Register as OriginalRegister
+        from qualtran._infra.registers import Signature as OriginalSignature
+        from qualtran.bloqs.bookkeeping.auto_partition import AutoPartition as Original
+        from qualtran.bloqs.bookkeeping.auto_partition import Unused
+    except ModuleNotFoundError as _reference_import_error:
+        unavailable_reference(_reference_import_error)
 
     parts = (Register("c", classical_unsigned_register_type(2), shape),)
     signature = Signature(parts)
@@ -229,15 +243,18 @@ def test_auto_partition_retains_actual_classical_identity_call_graph(
 def test_auto_partition_signed_empty_storage_full_phase_and_owned_outputs(
     fraction: int, shape: tuple[int, ...], left_only: bool
 ) -> None:
-    from qualtran._infra.composite_bloq import BloqBuilder
-    from qualtran._infra.data_types import QAny, QBit, QFxp
-    from qualtran._infra.registers import Register as OriginalRegister
-    from qualtran._infra.registers import Signature as OriginalSignature
-    from qualtran.bloqs.basic_gates.hadamard import Hadamard
-    from qualtran.bloqs.basic_gates.t_gate import TGate
-    from qualtran.bloqs.bookkeeping.auto_partition import AutoPartition as Original
-    from qualtran.resource_counting._bloq_counts import QECGatesCost
-    from qualtran.resource_counting._costing import get_cost_value
+    try:
+        from qualtran._infra.composite_bloq import BloqBuilder
+        from qualtran._infra.data_types import QAny, QBit, QFxp
+        from qualtran._infra.registers import Register as OriginalRegister
+        from qualtran._infra.registers import Signature as OriginalSignature
+        from qualtran.bloqs.basic_gates.hadamard import Hadamard
+        from qualtran.bloqs.basic_gates.t_gate import TGate
+        from qualtran.bloqs.bookkeeping.auto_partition import AutoPartition as Original
+        from qualtran.resource_counting._bloq_counts import QECGatesCost
+        from qualtran.resource_counting._costing import get_cost_value
+    except ModuleNotFoundError as _reference_import_error:
+        unavailable_reference(_reference_import_error)
 
     from examples.algorithms.binary_field_arithmetic import FieldOperation
     from flagquantum import Circuit

@@ -1,7 +1,16 @@
 """Kaliski source graphs retain symbols, source adjoints and every endpoint."""
 
 import sys
+from importlib import import_module
 from itertools import accumulate
+
+from tests._reference_dependencies import unavailable_reference
+
+# Typed-register owners require NumPy before their modules can be collected.
+try:
+    import_module("numpy")
+except ModuleNotFoundError as _reference_import_error:
+    unavailable_reference(_reference_import_error)
 
 import pytest
 import sympy
@@ -55,7 +64,10 @@ def test_actual_source_libraries_match_all_calls_arguments_and_edges(
     modulus: SymbolicInt,
     inverse: bool,
 ) -> None:
-    from qualtran.bloqs.mod_arithmetic import mod_division
+    try:
+        from qualtran.bloqs.mod_arithmetic import mod_division
+    except ModuleNotFoundError as _reference_import_error:
+        unavailable_reference(_reference_import_error)
 
     arguments = {"bitsize": width}
     if not kind.startswith("_KaliskiIterationStep"):

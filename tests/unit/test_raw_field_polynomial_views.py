@@ -1,6 +1,11 @@
 """Packed polynomial views preserve all raw encodings and complex spectators."""
 
-import numpy as np
+from tests._reference_dependencies import unavailable_reference
+
+try:
+    import numpy as np
+except ModuleNotFoundError as _reference_import_error:
+    unavailable_reference(_reference_import_error)
 import pytest
 import torch
 
@@ -26,12 +31,15 @@ pytestmark = [pytest.mark.unit, pytest.mark.ftqc_reference]
 def test_complete_raw_source_operator_aliases_and_typed_append(
     p: int, m: int, degree: int, reverse: bool
 ) -> None:
-    import cirq
-    from qualtran._infra.data_types import QGF, QGFPoly
-    from qualtran.bloqs.gf_poly_arithmetic.gf_poly_split_and_join import (
-        GFPolyJoin,
-        GFPolySplit,
-    )
+    try:
+        import cirq
+        from qualtran._infra.data_types import QGF, QGFPoly
+        from qualtran.bloqs.gf_poly_arithmetic.gf_poly_split_and_join import (
+            GFPolyJoin,
+            GFPolySplit,
+        )
+    except ModuleNotFoundError as _reference_import_error:
+        unavailable_reference(_reference_import_error)
 
     encoding = FiniteFieldPolynomialEncoding(degree, FiniteFieldEncoding(p, m))
     width = int(encoding.field.bitsize)

@@ -3,7 +3,12 @@
 from collections import Counter
 from typing import Any
 
-import numpy as np
+from tests._reference_dependencies import unavailable_reference
+
+try:
+    import numpy as np
+except ModuleNotFoundError as _reference_import_error:
+    unavailable_reference(_reference_import_error)
 import pytest
 import torch
 
@@ -40,10 +45,13 @@ FIELDS = ((2, 7), (3, 11), (5, 37), (9, 529))
 def test_complete_untouched_root_and_literal_dependencies(
     width: int, modulus: int
 ) -> None:
-    from qualtran.bloqs.gf_arithmetic.gf2_addition import GF2Addition
-    from qualtran.bloqs.gf_arithmetic.gf2_inverse import GF2Inverse
-    from qualtran.bloqs.gf_arithmetic.gf2_multiplication import GF2MulViaKaratsuba
-    from qualtran.bloqs.gf_arithmetic.gf2_square import GF2Square
+    try:
+        from qualtran.bloqs.gf_arithmetic.gf2_addition import GF2Addition
+        from qualtran.bloqs.gf_arithmetic.gf2_inverse import GF2Inverse
+        from qualtran.bloqs.gf_arithmetic.gf2_multiplication import GF2MulViaKaratsuba
+        from qualtran.bloqs.gf_arithmetic.gf2_square import GF2Square
+    except ModuleNotFoundError as _reference_import_error:
+        unavailable_reference(_reference_import_error)
 
     field_type = dtype(width, modulus)
     native = field_inverse_decomposition_program(field_type, modulus=modulus)
@@ -83,9 +91,12 @@ def test_complete_untouched_root_and_literal_dependencies(
 def test_every_original_primitive_alias_input_and_private_free(
     width: int, modulus: int
 ) -> None:
-    from qualtran.bloqs.gf_arithmetic.gf2_inverse import GF2Inverse
-    from qualtran.resource_counting._bloq_counts import QECGatesCost
-    from qualtran.resource_counting._costing import get_cost_value
+    try:
+        from qualtran.bloqs.gf_arithmetic.gf2_inverse import GF2Inverse
+        from qualtran.resource_counting._bloq_counts import QECGatesCost
+        from qualtran.resource_counting._costing import get_cost_value
+    except ModuleNotFoundError as _reference_import_error:
+        unavailable_reference(_reference_import_error)
 
     program = field_inverse_decomposition_program(
         dtype(width, modulus), modulus=modulus
@@ -190,7 +201,10 @@ def test_actual_dirty_root_release_refuses_execution(width: int, modulus: int) -
 def test_static_source_graph_diagnoses_dirty_free_without_resetting(
     width: int, modulus: int, bad_inputs: int
 ) -> None:
-    from qualtran.bloqs.gf_arithmetic.gf2_inverse import GF2Inverse
+    try:
+        from qualtran.bloqs.gf_arithmetic.gf2_inverse import GF2Inverse
+    except ModuleNotFoundError as _reference_import_error:
+        unavailable_reference(_reference_import_error)
 
     from examples.algorithms.register_field_inverse import FieldInverse
     from flagquantum.compiler.registers.finite_field.inverse_decomposition import (
@@ -305,7 +319,10 @@ def test_literal_append_uses_source_recipe_without_mathematical_owner(
 def test_full_source_domain_uses_actual_polynomial_proof_not_degree_refusal(
     width: int, modulus: int, clean: bool
 ) -> None:
-    from qualtran.bloqs.gf_arithmetic.gf2_inverse import GF2Inverse
+    try:
+        from qualtran.bloqs.gf_arithmetic.gf2_inverse import GF2Inverse
+    except ModuleNotFoundError as _reference_import_error:
+        unavailable_reference(_reference_import_error)
 
     from examples.algorithms.register_field_inverse import FieldInverse
 
@@ -351,7 +368,10 @@ def test_failed_analysis_provider_prevents_literal_append(
 
 
 def test_valid_degree_two_original_adjoint_and_native_reverse_agree() -> None:
-    from qualtran.bloqs.gf_arithmetic.gf2_inverse import GF2Inverse
+    try:
+        from qualtran.bloqs.gf_arithmetic.gf2_inverse import GF2Inverse
+    except ModuleNotFoundError as _reference_import_error:
+        unavailable_reference(_reference_import_error)
 
     from examples.algorithms.register_field_inverse import FieldInverse
 

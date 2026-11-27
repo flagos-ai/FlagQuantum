@@ -5,7 +5,12 @@ from dataclasses import replace
 from math import pi
 from typing import Any
 
-import numpy as np
+from tests._reference_dependencies import unavailable_reference
+
+try:
+    import numpy as np
+except ModuleNotFoundError as _reference_import_error:
+    unavailable_reference(_reference_import_error)
 import pytest
 import torch
 
@@ -38,16 +43,20 @@ _PHASING = "qualtran.bloqs.rotations.phasing_via_cost_function.PhasingViaCostFun
 
 def _source(mode: str, shape: tuple[int, ...], evaluation: Any = None) -> Any:
     import attrs
-    from qualtran._infra.data_types import QBit
-    from qualtran._infra.registers import Register as SourceRegister
-    from qualtran._infra.registers import Side
-    from qualtran.bloqs.basic_gates.identity import Identity
-    from qualtran.bloqs.basic_gates.rotation import ZPowGate
-    from qualtran.bloqs.basic_gates.x_basis import XGate
-    from qualtran.bloqs.rotations.phasing_via_cost_function import (
-        PhasingViaCostFunction,
-    )
-    from qualtran.bloqs.rotations.quantum_variable_rotation import QvrInterface
+
+    try:
+        from qualtran._infra.data_types import QBit
+        from qualtran._infra.registers import Register as SourceRegister
+        from qualtran._infra.registers import Side
+        from qualtran.bloqs.basic_gates.identity import Identity
+        from qualtran.bloqs.basic_gates.rotation import ZPowGate
+        from qualtran.bloqs.basic_gates.x_basis import XGate
+        from qualtran.bloqs.rotations.phasing_via_cost_function import (
+            PhasingViaCostFunction,
+        )
+        from qualtran.bloqs.rotations.quantum_variable_rotation import QvrInterface
+    except ModuleNotFoundError as _reference_import_error:
+        unavailable_reference(_reference_import_error)
 
     @attrs.frozen
     class NoCostPhase(QvrInterface):
@@ -136,7 +145,10 @@ def _source_gates(
     outputs: dict[str, tuple[int, ...]],
     private: tuple[int, ...] = (),
 ) -> tuple[Instruction, ...]:
-    import cirq
+    try:
+        import cirq
+    except ModuleNotFoundError as _reference_import_error:
+        unavailable_reference(_reference_import_error)
 
     signature = source.signature
     manager = cirq.SimpleQubitManager()
@@ -306,15 +318,19 @@ def test_duplicate_cost_names_still_refuse() -> None:
 
 def test_cost_free_phase_still_evaluates_and_cleans_unused_right_results() -> None:
     import attrs
-    from qualtran._infra.bloq import Bloq
-    from qualtran._infra.data_types import QBit
-    from qualtran._infra.registers import Register as SourceRegister
-    from qualtran._infra.registers import Side
-    from qualtran._infra.registers import Signature as SourceSignature
-    from qualtran.bloqs.basic_gates.cnot import CNOT
-    from qualtran.resource_counting._bloq_counts import QECGatesCost
-    from qualtran.resource_counting._costing import get_cost_value
-    from qualtran.resource_counting._qubit_counts import QubitCount
+
+    try:
+        from qualtran._infra.bloq import Bloq
+        from qualtran._infra.data_types import QBit
+        from qualtran._infra.registers import Register as SourceRegister
+        from qualtran._infra.registers import Side
+        from qualtran._infra.registers import Signature as SourceSignature
+        from qualtran.bloqs.basic_gates.cnot import CNOT
+        from qualtran.resource_counting._bloq_counts import QECGatesCost
+        from qualtran.resource_counting._costing import get_cost_value
+        from qualtran.resource_counting._qubit_counts import QubitCount
+    except ModuleNotFoundError as _reference_import_error:
+        unavailable_reference(_reference_import_error)
 
     @attrs.frozen
     class CopyEvaluation(Bloq):

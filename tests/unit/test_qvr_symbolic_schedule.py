@@ -1,8 +1,17 @@
 """Source-positive expression QVR schedules retain literal branch semantics."""
 
+from importlib import import_module
 from itertools import product
 from math import pi
 from typing import Any
+
+from tests._reference_dependencies import unavailable_reference
+
+# Typed-register owners require NumPy before their modules can be collected.
+try:
+    import_module("numpy")
+except ModuleNotFoundError as _reference_import_error:
+    unavailable_reference(_reference_import_error)
 
 import pytest
 import sympy
@@ -47,7 +56,10 @@ def _source_phase_contract(
     Cirq retains constant SymPy exponents as parameterized. The unmodified
     source graph and each original scalar exponent are still available.
     """
-    import cirq
+    try:
+        import cirq
+    except ModuleNotFoundError as _reference_import_error:
+        unavailable_reference(_reference_import_error)
 
     raw = cirq.Circuit(
         cirq.decompose(
@@ -80,10 +92,13 @@ def _source_phase_contract(
 def test_literal_source_calls_gates_complex_append_and_no_workspace(
     format_: tuple[int, int, bool], gamma: float | sympy.Expr, eps: float | sympy.Expr
 ) -> None:
-    from qualtran._infra.data_types import QFxp
-    from qualtran._infra.registers import Register as SourceRegister
-    from qualtran.bloqs.basic_gates.rotation import ZPowGate
-    from qualtran.bloqs.rotations.quantum_variable_rotation import QvrZPow
+    try:
+        from qualtran._infra.data_types import QFxp
+        from qualtran._infra.registers import Register as SourceRegister
+        from qualtran.bloqs.basic_gates.rotation import ZPowGate
+        from qualtran.bloqs.rotations.quantum_variable_rotation import QvrZPow
+    except ModuleNotFoundError as _reference_import_error:
+        unavailable_reference(_reference_import_error)
 
     width, fraction, signed = format_
     source = QvrZPow(
@@ -154,9 +169,12 @@ def test_literal_source_calls_gates_complex_append_and_no_workspace(
 
 
 def test_symbolic_coefficient_with_finite_source_indices_binds_exactly() -> None:
-    from qualtran._infra.data_types import QFxp
-    from qualtran._infra.registers import Register as SourceRegister
-    from qualtran.bloqs.rotations.quantum_variable_rotation import QvrZPow
+    try:
+        from qualtran._infra.data_types import QFxp
+        from qualtran._infra.registers import Register as SourceRegister
+        from qualtran.bloqs.rotations.quantum_variable_rotation import QvrZPow
+    except ModuleNotFoundError as _reference_import_error:
+        unavailable_reference(_reference_import_error)
 
     gamma = sympy.Symbol("gamma", positive=True)
     eps = sympy.pi * gamma / 8
@@ -195,9 +213,12 @@ def test_symbolic_coefficient_with_finite_source_indices_binds_exactly() -> None
 def test_raw_storage_approval_does_not_replace_source_symbolic_split_refusal(
     fraction: sympy.Expr,
 ) -> None:
-    from qualtran._infra.data_types import QFxp
-    from qualtran._infra.registers import Register as SourceRegister
-    from qualtran.bloqs.rotations.quantum_variable_rotation import QvrZPow
+    try:
+        from qualtran._infra.data_types import QFxp
+        from qualtran._infra.registers import Register as SourceRegister
+        from qualtran.bloqs.rotations.quantum_variable_rotation import QvrZPow
+    except ModuleNotFoundError as _reference_import_error:
+        unavailable_reference(_reference_import_error)
 
     source = QvrZPow(SourceRegister("energy", QFxp(3, fraction)), 0.375, 0.2)
     cost = Register("energy", fixed_point_register_type(3, fraction))
@@ -212,9 +233,12 @@ def test_raw_storage_approval_does_not_replace_source_symbolic_split_refusal(
 
 
 def test_original_unresolved_and_out_of_range_indices_are_not_invented() -> None:
-    from qualtran._infra.data_types import QFxp
-    from qualtran._infra.registers import Register as SourceRegister
-    from qualtran.bloqs.rotations.quantum_variable_rotation import QvrZPow
+    try:
+        from qualtran._infra.data_types import QFxp
+        from qualtran._infra.registers import Register as SourceRegister
+        from qualtran.bloqs.rotations.quantum_variable_rotation import QvrZPow
+    except ModuleNotFoundError as _reference_import_error:
+        unavailable_reference(_reference_import_error)
 
     for gamma in (sympy.Symbol("g"), sympy.Rational(1, 100000)):
         source = QvrZPow(SourceRegister("energy", QFxp(3, 2)), gamma, 0.2)
@@ -230,9 +254,12 @@ def test_original_unresolved_and_out_of_range_indices_are_not_invented() -> None
 def test_actual_lossless_rational_library_reaches_the_finite_body(
     format_: tuple[int, int, bool],
 ) -> None:
-    from qualtran._infra.data_types import QFxp
-    from qualtran._infra.registers import Register as SourceRegister
-    from qualtran.bloqs.rotations.quantum_variable_rotation import QvrZPow
+    try:
+        from qualtran._infra.data_types import QFxp
+        from qualtran._infra.registers import Register as SourceRegister
+        from qualtran.bloqs.rotations.quantum_variable_rotation import QvrZPow
+    except ModuleNotFoundError as _reference_import_error:
+        unavailable_reference(_reference_import_error)
 
     width, fraction, signed = format_
     source = QvrZPow(

@@ -1,6 +1,15 @@
 """Doubling and constant-product graphs preserve the literal source branches."""
 
+from importlib import import_module
 from typing import Literal
+
+from tests._reference_dependencies import unavailable_reference
+
+# Typed-register owners require NumPy before their modules can be collected.
+try:
+    import_module("numpy")
+except ModuleNotFoundError as _reference_import_error:
+    unavailable_reference(_reference_import_error)
 
 import pytest
 import sympy
@@ -31,8 +40,11 @@ def test_literal_constant_product_all_calls_and_positive_symbolic_reciprocal(
     constant: SymbolicInt,
     montgomery: bool,
 ) -> None:
-    from qualtran._infra.data_types import QMontgomeryUInt, QUInt
-    from qualtran.bloqs.mod_arithmetic.mod_multiplication import CModMulK
+    try:
+        from qualtran._infra.data_types import QMontgomeryUInt, QUInt
+        from qualtran.bloqs.mod_arithmetic.mod_multiplication import CModMulK
+    except ModuleNotFoundError as _reference_import_error:
+        unavailable_reference(_reference_import_error)
 
     dtype = (
         montgomery_register_type(width) if montgomery else unsigned_register_type(width)
@@ -65,8 +77,11 @@ def test_literal_constant_product_all_calls_and_positive_symbolic_reciprocal(
 def test_doubling_symbolic_modulus_keeps_the_exact_signed_correction_and_bit_order(
     width: int, montgomery: bool
 ) -> None:
-    from qualtran._infra.data_types import QMontgomeryUInt, QUInt
-    from qualtran.bloqs.mod_arithmetic.mod_multiplication import ModDbl
+    try:
+        from qualtran._infra.data_types import QMontgomeryUInt, QUInt
+        from qualtran.bloqs.mod_arithmetic.mod_multiplication import ModDbl
+    except ModuleNotFoundError as _reference_import_error:
+        unavailable_reference(_reference_import_error)
 
     dtype = (
         montgomery_register_type(width) if montgomery else unsigned_register_type(width)
