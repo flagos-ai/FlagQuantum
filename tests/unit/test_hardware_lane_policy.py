@@ -35,11 +35,16 @@ PREINSTALLED_A800_CPU_ROUTE = A800_CPU_ROUTE.replace(
     '"flagquantum-cpu"]', '"flagquantum-cpu","flagquantum-a800-cpu"]'
 )
 
+QUALIFIED_RUNTIME_CPU_ROUTE = A800_CPU_ROUTE.replace(
+    '\'["self-hosted","linux","x64","flagquantum-cpu"]\'',
+    'format(\'["self-hosted","linux","x64","flagquantum-cpu","{0}"]\', matrix.runner)',
+)
+
 PREWARM_CPU_LABELS = [
     "self-hosted",
     "linux",
     "x64",
-    "flagquantum-a800-cpu",
+    "flagquantum-cpu",
     "${{ matrix.host }}",
 ]
 PREWARM_CPU_GUARD = (
@@ -56,6 +61,14 @@ COVERAGE_CPU_ROUTE = (
     "${{ fromJSON(\n"
     "  (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository)\n"
     '  && \'["self-hosted","linux","x64","flagquantum-cpu"]\' || \'["ubuntu-latest"]\'\n'
+    ") }}"
+)
+
+HEAVY_COVERAGE_CPU_ROUTE = (
+    "${{ fromJSON(\n"
+    "  (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository)\n"
+    '  && (matrix.a800 && \'["self-hosted","linux","x64","flagquantum-cpu","flagquantum-a800-cpu"]\'\n'
+    '    || \'["self-hosted","linux","x64","flagquantum-cpu"]\') || \'["ubuntu-latest"]\'\n'
     ") }}"
 )
 
@@ -208,6 +221,8 @@ def _allows_untrusted_code(job: dict[str, object], reaching: frozenset[str]) -> 
             PREINSTALLED_A800_CPU_ROUTE,
             MC550_CPU_ROUTE,
             COVERAGE_CPU_ROUTE,
+            HEAVY_COVERAGE_CPU_ROUTE,
+            QUALIFIED_RUNTIME_CPU_ROUTE,
         )
     )
 
@@ -430,6 +445,8 @@ def test_trigger_parsing_reads_both_ways_a_workflow_can_spell_on(
         MC550_CPU_ROUTE,
         PREINSTALLED_A800_CPU_ROUTE,
         COVERAGE_CPU_ROUTE,
+        HEAVY_COVERAGE_CPU_ROUTE,
+        QUALIFIED_RUNTIME_CPU_ROUTE,
     ],
 )
 def test_cpu_route_rejects_missing_guards_and_other_untrusted_events(
@@ -456,11 +473,15 @@ def test_cpu_route_rejects_missing_guards_and_other_untrusted_events(
 def test_dedicated_cpu_lanes_keep_fork_code_on_hosted_runners() -> None:
     jobs = _jobs(WORKFLOWS / "ci.yml")
     for name in ("cpu-core", "cpu-core-3-12-tests", "cpu-runtime"):
-        assert jobs[name]["runs-on"] == PREINSTALLED_A800_CPU_ROUTE
+        assert jobs[name]["runs-on"] == (
+            QUALIFIED_RUNTIME_CPU_ROUTE
+            if name == "cpu-runtime"
+            else PREINSTALLED_A800_CPU_ROUTE
+        )
         assert _is_self_hosted(jobs[name])
         assert not _allows_untrusted_code(jobs[name], frozenset({"pull_request"}))
     coverage = jobs["coverage-shard"]
-    assert coverage["runs-on"] == COVERAGE_CPU_ROUTE
+    assert coverage["runs-on"] == HEAVY_COVERAGE_CPU_ROUTE
     assert _is_self_hosted(coverage)
     assert not _allows_untrusted_code(coverage, frozenset({"pull_request"}))
     triton = jobs["triton-optional"]
@@ -473,6 +494,16 @@ def test_cpu_image_qualification_rejects_forks_and_unprovisioned_hardware() -> N
     job = _jobs(WORKFLOWS / "prewarm-ci-cpu.yml")["prewarm"]
     assert job["runs-on"] == PREWARM_CPU_LABELS
     assert job["if"] == PREWARM_CPU_GUARD
+    document = yaml.safe_load((WORKFLOWS / "prewarm-ci-cpu.yml").read_text())
+    dispatch = document[True]["workflow_dispatch"]["inputs"]
+    assert dispatch["runner-labels"]["type"] == "string"
+    assert dispatch["runner-labels"]["default"] == '["a800-171","a800-172"]'
+    assert job["strategy"]["matrix"]["host"] == (
+        '${{ fromJSON(inputs.runner-labels || \'["a800-171","a800-172"]\') }}'
+    )
+    commands = "\n".join(step.get("run", "") for step in job["steps"])
+    assert "--pull never --network none" in commands
+    assert "docker pull" not in commands and "docker load" not in commands
     assert _is_self_hosted(job)
     assert not _allows_untrusted_code(job, frozenset({"pull_request"}))
     for event in ("workflow_run", "pull_request_target"):

@@ -72,3 +72,20 @@ Statevector and TensorNetwork result adapters retain optional Torch admission,
 qubit validation and reconstruction/cache. Raw probabilities and ordered Z
 values are computed by Simulation Numerics; public method and alias identities
 remain on the existing result types.
+
+## Representation conversion ownership
+
+`array_conversions.py` owns only the gate and parameter conversions actually
+shared by representations. Statevector shard records are reconstructed in
+`statevector/execution.py`; MPS split evidence is assembled in `mps/execution.py`;
+Torch tensor-network nodes cross the JAX boundary in `tensor_network/execution.py`.
+Tensor-network gradients reuse that conversion directly. These three helpers
+have no forwarding bindings in the shared conversion module.
+
+In-process statevector shard gate mathematics lives in
+`simulation/statevector/jax/kernels.py::jax_apply_gate_to_shard_arrays`. Runtime
+retains optional-engine readiness, matrix-shape admission, plans, immutable
+index references and result record assembly. The numerical owner receives arrays
+and index values, never Runtime records or plans. It performs no collective and
+does not establish multi-device or multi-node capacity. The existing communication
+count and nonproduction classifications remain authoritative.

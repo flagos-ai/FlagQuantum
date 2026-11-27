@@ -71,7 +71,7 @@ def test_self_hosted_cpu_capacity_groups_do_not_serialize_ready_work() -> None:
             assert selector in template, (workflow, name)
             matrix = job.get("strategy", {}).get("matrix", {})
             if matrix == "${{ fromJSON(needs.coverage-plan.outputs.matrix) }}":
-                matrix = {"include": [{"shard": i} for i in range(192)]}
+                matrix = {"include": [{"shard": i} for i in range(256)]}
             rows = matrix.get("include") or [
                 dict(zip(matrix, values, strict=True))
                 for values in product(*matrix.values())

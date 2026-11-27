@@ -14,7 +14,6 @@ from flagquantum.simulation.tensor_network.jax.models import JAXTensorNetworkNod
 
 from ....distributed.backend_policy import DistributedBackendPolicy
 from ..array_conversions import (
-    _jax_nodes_from_torch_nodes,
     _jax_parameter_array_from_input,
     _torch_parameters_for_static_build,
 )
@@ -34,7 +33,7 @@ from .contraction import (
     _jax_contract_tensor_slices_by_backend,
     _pauli_ops_from_term,
 )
-from .execution import _resolve_tn_compute_backend
+from .execution import _jax_nodes_from_torch_nodes, _resolve_tn_compute_backend
 from .planning import _tn_tasks
 from .records import (
     JAXSlicedTensorNetworkGradientResult,
