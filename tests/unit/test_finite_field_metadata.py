@@ -4,7 +4,12 @@ from dataclasses import replace
 from itertools import product
 from typing import Any
 
-import numpy as np
+from tests._reference_dependencies import unavailable_reference
+
+try:
+    import numpy as np
+except ModuleNotFoundError as _reference_import_error:
+    unavailable_reference(_reference_import_error)
 import pytest
 
 from flagquantum.core.ir.program.register_verifier import executable_register_width
@@ -34,7 +39,7 @@ def field_pair(
     p: int, degree: int, mode: str, classical: bool
 ) -> tuple[FiniteFieldEncoding, Any]:
     import galois
-    from qualtran import CGF, QGF
+    from qualtran._infra.data_types import CGF, QGF
 
     constructor = CGF if classical else QGF
     if mode == "default":
@@ -62,12 +67,16 @@ def test_complete_projection_field_class_domain_and_multiplication(
         elements[:, None] * elements[None, :],
         source.gf_type.elements[:, None] * source.gf_type.elements[None, :],
     )
-    if p == 2 and not classical:
+    # Proposal 125 admits raw quantum storage, including nonbinary fields.
+    # Numeric binary-field algorithms keep their narrower existing boundary.
+    if not classical:
         assert executable_register_width(dtype) == field.bitsize
-        assert resolve_binary_field_encoding(dtype).register_type() == dtype
     else:
         with pytest.raises(ValueError):
             executable_register_width(dtype)
+    if p == 2 and not classical:
+        assert resolve_binary_field_encoding(dtype).register_type() == dtype
+    else:
         with pytest.raises(ValueError):
             resolve_binary_field_encoding(dtype)
 
@@ -116,16 +125,10 @@ def test_all_small_binary_words_and_typed_output_errors(
 def test_original_dense_type_loss_and_nonpower_of_two_domain_failures(
     p: int, degree: int, mode: str, classical: bool, effect: bool
 ) -> None:
-    from qualtran import (
-        Bloq,
-        Side,
-    )
-    from qualtran import (
-        Register as SourceRegister,
-    )
-    from qualtran import (
-        Signature as SourceSignature,
-    )
+    from qualtran._infra.bloq import Bloq
+    from qualtran._infra.registers import Register as SourceRegister
+    from qualtran._infra.registers import Side
+    from qualtran._infra.registers import Signature as SourceSignature
     from qualtran.simulation.tensor._tensor_from_classical import (
         bloq_to_dense_via_classical_action,
     )
