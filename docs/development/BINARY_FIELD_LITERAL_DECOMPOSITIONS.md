@@ -17,11 +17,13 @@ as numerical nonbinary field addition. The existing mathematical binary adder
 continues to reject odd-characteristic fields. Source scalar field callbacks
 remain separately owned by Simulation.
 
-Simulation owns projecting numerical field declarations to canonical quantum
-IR metadata. At that existing projection boundary, nonsymbolic integral scalar
-parameters are represented by their exact Python integer values. The lazy
-encoding keeps the original scalar object; symbolic expressions remain exact.
-Classical projection is unchanged. Explicit malformed or boolean-valued Core
+Simulation owns explicit realization of numerical field declarations as quantum
+storage. The existing register_type projection remains fully literal, including
+scalar objects, symbolic expressions and classification order. A separate
+resolve_quantum_field_storage step converts concrete integral aliases to the
+existing Python-integer IR vocabulary and validates the resolved numerical field.
+The lazy encoding and original descriptor remain unchanged. Classical projection
+and classical storage realization are unchanged. Explicit malformed or boolean-valued Core
 field descriptors remain rejected by the unchanged Core validator; projection
 does not admit a new IR parameter kind, rounding or an unresolved dimension.
 
