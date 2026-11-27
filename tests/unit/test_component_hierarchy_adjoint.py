@@ -7,7 +7,12 @@ from dataclasses import replace
 from itertools import product
 from typing import Any
 
-import numpy as np
+from tests._reference_dependencies import unavailable_reference
+
+try:
+    import numpy as np
+except ModuleNotFoundError as _reference_import_error:
+    unavailable_reference(_reference_import_error)
 import pytest
 import torch
 
@@ -34,7 +39,8 @@ pytestmark = [pytest.mark.unit, pytest.mark.ftqc_reference]
 
 def source_adjoint(composite: Any) -> Any:
     """Wrap a real stored decomposition in the original default Adjoint protocol."""
-    from qualtran import Adjoint, Bloq
+    from qualtran._infra.adjoint import Adjoint
+    from qualtran._infra.bloq import Bloq
 
     def decompose(component: object) -> Any:
         return composite
@@ -112,7 +118,7 @@ def test_stored_hierarchies_match_source_shared_adjoints_and_complex_states(
 
 
 def wrapped_add(depth: int) -> tuple[ProgramRecord, Any]:
-    from qualtran import QUInt
+    from qualtran._infra.data_types import QUInt
     from qualtran.bloqs.arithmetic.addition import Add
 
     signature = Signature(
@@ -160,9 +166,11 @@ def wrapped_add(depth: int) -> tuple[ProgramRecord, Any]:
 def test_generated_add_adjoints_keep_exact_feedback_all_branches_and_work_zero(
     depth: int, expand: bool
 ) -> None:
-    from qualtran import QUInt
+    from qualtran._infra.data_types import QUInt
     from qualtran.bloqs.arithmetic.addition import Add
-    from qualtran.resource_counting import QECGatesCost, QubitCount, get_cost_value
+    from qualtran.resource_counting._bloq_counts import QECGatesCost
+    from qualtran.resource_counting._costing import get_cost_value
+    from qualtran.resource_counting._qubit_counts import QubitCount
 
     record, source = wrapped_add(depth)
     inverse = adjoint_component_hierarchy(record, {"add": "add_adjoint"})
@@ -284,7 +292,7 @@ def test_empty_identity_nested_body_has_a_real_empty_adjoint_definition() -> Non
 
 
 def test_raw_composite_wrapper_retains_original_source_decomposition_refusal() -> None:
-    from qualtran import Adjoint
+    from qualtran._infra.adjoint import Adjoint
 
     _, source = _hierarchy(2)
     with pytest.raises(ValueError, match="ill-defined"):
@@ -298,8 +306,9 @@ def test_raw_composite_wrapper_retains_original_source_decomposition_refusal() -
 def test_generated_directional_wrappers_use_actual_clean_or_borrowed_duals(
     allocate: bool, dirty: bool, width: int
 ) -> None:
-    from qualtran import QAny
-    from qualtran.bloqs.bookkeeping import Allocate, Free
+    from qualtran._infra.data_types import QAny
+    from qualtran.bloqs.bookkeeping.allocate import Allocate
+    from qualtran.bloqs.bookkeeping.free import Free
 
     from flagquantum.compiler.registers.layout.component_workspace import (
         allocate_word_function,
