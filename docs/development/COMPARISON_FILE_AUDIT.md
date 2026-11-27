@@ -274,3 +274,97 @@ passes 29. Strict typing of the complete audit test, Black, Ruff, Integration
 scope, language, links, architecture, IR and protected API checks pass.
 Receipts use `g2-comparison-source-closure-*20261125`. Existing original protocol
 deprecation warnings remain separate from acceptance failures.
+
+## Complete source responsibility and remaining-domain fixes, 2026-11-28
+
+All 115 frozen definitions and their executable statements were reread. The
+native constant/equality/tree/linear/controlled/half/sign/bitwise/control owners,
+Simulation callbacks, models, factories, diagrams and original tests above
+account for the full file. Proposal108 and the later approved storage proposals
+are implemented; the earlier pending-contract statements are historical.
+
+A fresh boundary intake found valid source transports that native factories
+rejected before preserving their logical declarations. Empty operands omitted
+by source build_from_dtypes leave serializable target/control signatures even
+though the original body still requests the missing words. Empty signed half
+comparison has a graph but fails its original SignExtend tensor path. Native
+constructors now preserve these bodyless declarations and their actual typed
+ports, and physical binding explicitly refuses missing bodies before allocation.
+Out-of-domain constant bit patterns likewise retain their serializable source
+metadata and failed-decomposition status. No invalid source graph becomes an
+identity or a newly claimed successful decomposition.
+
+Empty Montgomery half comparison is different: the unchanged source succeeds.
+The existing shared widened-difference owner now admits this unsigned encoding
+alongside its accepted empty QUInt case. All four relations and the private
+helper, in both directions, preserve complete source primitive operands and
+feedback. Full source tensors, coherent spectator round trips, private zero,
+ordinary append and IR JSON round trips pass. Forward difference/flag outputs
+remain caller-owned until explicit matching-image erasure; inverse binding
+requires the existing ownership transfer for those consumed LEFT wires.
+
+A negative-threshold LessThanConstant has another distinct source protocol:
+its Bloq decomposition raises a negative-classical-value error while Cirq's
+ArithmeticGate unitary is the identity. Empty-word arithmetic gates similarly
+have defined SDK matrices despite failed Bloq decomposition. The private SDK
+body owner now prefers every successful original decomposition and captures
+that existing arithmetic unitary only after the decomposition raises. Both root
+and nested operation-tree imports use that one owner. Captured matrix payloads
+are owned data; no SDK object enters Compiler or execution. Matrix capture is
+never reported as the failed source primitive recipe. Empty and negative
+constant gate-only QEC categories retain the source's quoted estimates without
+inventing a decomposition peak or equating the estimate to that SDK matrix.
+
+## Source naming, approved scalar contracts and reused evidence
+
+The eight-bit ordering test failed on published e8ffeb016 with both old production
+modules restored in an isolated process, in both directions. Its fixed temporary
+wire/record labels assumed an order for independent tree branches. Complete
+private-wire histories now require a unique bijection while every logical
+operand stays fixed. Measurement records are paired by their measured wires;
+conditions retain their values and full dependency. The final assertion still
+checks every primitive, every operand, every per-wire order and all feedback.
+No gate is removed, fused or resynthesized. Raw global interleaving/temporary
+names are not claimed equal. The existing complete small complex-state and
+all-history checks remain unchanged.
+
+The SDK regression also reproduced an obsolete negative test on the same
+published baseline. Proposal107 already admits sin, powers, reciprocal and
+generic symbolic eigen shifts. That test now verifies their complete bound
+operators at two values, retains the original parameterized source graph, and
+continues to reject complex and unknown gamma expressions. Numeric source gates
+are rebuilt with both eigen fields substituted because the SDK resolves only
+its exponent. This changes no expression contract. Optional SDK guards now use
+the existing mandatory-reference helper, preserving the original missing-module
+error in required mode. Proposal132's separate static-carrier interface remains
+pending and is not implemented by these changes.
+
+## Actual boundary primitives and independent models
+
+Ten directional rows in `g2-comparison-full-closure-resources-20261128.json`
+record actual empty Montgomery execution separately from source QEC/peak models.
+Strict variants emit three X and three CX; inclusive variants add one X. Every
+profile has zero T-family and measurement operations, peak three live wires,
+and zero private work at return. Forward retains two output wires and inverse
+consumes both. The independent source model reports respectively six or seven
+Cliffords and peak three. Complex spectator execution uses its separately
+accounted extra caller wire.
+
+The original signed overflow/callback disagreement, half-inverse exchanged
+aliases, source invalid-erasure channels, strict nominal dtype mismatches,
+GreaterThanConstant's absent body and deeper HasLength codec failures remain
+explicit source limitations. Unresolved physical dimensions continue to refuse.
+These are retained under the approved faithful-migration rule; the implemented
+source is not described as a universally correct mathematical comparison.
+The complete comparison source passes 687 concentrated cases, 228 independent
+Cirq 1.6 cases and 105 modern SDK/local integration cases. Strict typing of all
+seven changed Python files, Black, Ruff, architecture, IR, protected API, required
+checks, both team scopes, language, links and whitespace pass. All 114 frozen
+source/dependency blobs remain unchanged. Mandatory-reference absence probes
+pass 22 scenarios, preserving their original errors. The 570 existing guard
+findings have no affected consumer and no checker waiver. Receipts use
+`g2-comparison-full-closure-*20261128`.
+
+Q-0180 is accepted under the approved complete faithful-migration rule.
+Q-0181's already accepted full original test responsibility is reused. Publication
+is tracked separately in the integration ledger and verified batch receipt.

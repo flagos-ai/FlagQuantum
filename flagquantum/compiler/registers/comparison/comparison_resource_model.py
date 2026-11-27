@@ -106,8 +106,17 @@ def source_less_than_constant_qec_cost(
     """
     if not is_symbolic_value(width, threshold):
         assert isinstance(width, int) and isinstance(threshold, int)
-        gates = source_less_than_constant_cost(width, threshold).gates
-        return QECGateCost().plus(gates, 1)
+        if width > 0 and threshold >= 0:
+            gates = source_less_than_constant_cost(width, threshold).gates
+            return QECGateCost().plus(gates, 1)
+        if type(width) is not int or width < 0 or type(threshold) is not int:
+            raise ValueError(
+                "Comparison categories require nonnegative widths and integer thresholds"
+            )
+        if threshold >= 1 << width:
+            return QECGateCost(clifford=1)
+        # The source also quotes empty words and negative constants, despite
+        # their failed decomposition. This category query supplies no peak.
     set_bits = width if is_symbolic_value(threshold) else int(threshold).bit_count()
     return QECGateCost(
         and_bloq=width, measurement=width, clifford=3 * (width + set_bits) + 2

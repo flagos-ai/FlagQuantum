@@ -4,7 +4,7 @@
 # Constructors adapted from locked Qualtran v0.7.0 arithmetic/comparison.py.
 # https://github.com/quantumlib/Qualtran/blob/bcb17bb25360ed68ce3bc084645db3e929799389/qualtran/bloqs/arithmetic/comparison.py
 
-"""Resolve the complete comparison constructor family through owned components."""
+"""Resolve comparisons, retaining declarations when source empty operands vanish."""
 
 from collections.abc import Mapping
 from functools import partial
@@ -106,7 +106,10 @@ def _constant_factory(
     if (
         kind != "GreaterThanConstant"
         and isinstance(width, int)
+        and width != 0
         and isinstance(value, int)
+        and value >= 0
+        and (kind != "EqualsAConstant" or value < 1 << width)
     ):
         program = (
             less_than_constant_program(width, value)
@@ -139,7 +142,7 @@ def _ordering_factory(
         else Signature.build_from_dtypes(x=word, y=other, target=bit)
     )
     program = None
-    if isinstance(left, int) and isinstance(right, int):
+    if isinstance(left, int) and isinstance(right, int) and left != 0 and right != 0:
         program = (
             greater_than_program(left, right)
             if greater
@@ -162,7 +165,7 @@ def _linear_factory(
     )
     program = (
         linear_greater_program(width, signed=bool(arguments.get("signed", False)))
-        if isinstance(width, int)
+        if isinstance(width, int) and width != 0
         else None
     )
     return _finish(name, registers, signature, program)
@@ -191,7 +194,7 @@ def _typed_factory(
     program = None
     if kind == "Equals":
         signature = tuple(Signature.build_from_dtypes(x=dtype, y=dtype, target=bit))
-        if not dtype.is_symbolic():
+        if not dtype.is_symbolic() and dtype.num_qubits != 0:
             program = equality_program(dtype)
     elif kind == "controlled":
         cv = arguments.get("cv", 1)
@@ -202,7 +205,7 @@ def _typed_factory(
         signature = tuple(
             Signature.build_from_dtypes(ctrl=bit, a=dtype, b=dtype, target=bit)
         )
-        if not dtype.is_symbolic():
+        if not dtype.is_symbolic() and dtype.num_qubits != 0:
             program = controlled_greater_program(dtype, control_value=int(cv))
     else:
         adjoint = bool(arguments.get("uncompute", False))
@@ -213,7 +216,9 @@ def _typed_factory(
             Register("c", unsigned_register_type(dtype.num_qubits + 1), side=side),
             Register("target", bit, side=side),
         )
-        if not dtype.is_symbolic():
+        if not dtype.is_symbolic() and (
+            dtype.num_qubits != 0 or dtype.encoding in {"uint", "montgomery"}
+        ):
             program = (
                 half_greater_program(dtype, adjoint=adjoint)
                 if relation is None

@@ -20,7 +20,7 @@ from ..layout.component_cast import cast_word_function
 def comparison_width(dtype: RegisterType, *, allow_empty: bool = False) -> int:
     """Require the concrete integer encodings admitted by the source family."""
     width = executable_register_width(dtype)
-    if allow_empty and width == 0 and dtype.encoding == "uint":
+    if allow_empty and width == 0 and dtype.encoding in {"uint", "montgomery"}:
         return width
     if width < 1 or dtype.encoding not in {"uint", "signed", "montgomery"}:
         raise ValueError("Linear comparison requires a positive concrete integer dtype")
