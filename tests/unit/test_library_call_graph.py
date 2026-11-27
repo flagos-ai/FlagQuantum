@@ -1,5 +1,7 @@
 """Complete library-graph traversal against the locked source example corpus."""
 
+from __future__ import annotations
+
 import csv
 import hashlib
 import importlib.util
@@ -12,7 +14,13 @@ from functools import partial
 from typing import Any
 
 import pytest
-import sympy
+
+from tests._reference_dependencies import unavailable_reference
+
+try:
+    import sympy
+except ModuleNotFoundError as error:
+    unavailable_reference(error)
 
 from flagquantum.compiler._component_trace.call_graph import (
     SymbolAllocator,
@@ -125,15 +133,34 @@ def load_reference(name: str) -> types.ModuleType:
     )
     assert spec is not None and spec.loader is not None
     module = importlib.util.module_from_spec(spec)
-    spec.loader.exec_module(module)
+    try:
+        spec.loader.exec_module(module)
+    except ModuleNotFoundError as error:
+        unavailable_reference(error)
     return module
 
 
 def test_complete_original_library_graph(
     monkeypatch: pytest.MonkeyPatch, pytestconfig: pytest.Config
 ) -> None:
-    import networkx as nx
-    from qualtran._infra.bloq import DecomposeNotImplementedError, DecomposeTypeError
+    try:
+        import cirq
+        import networkx as nx
+        from qualtran._infra.bloq import (
+            DecomposeNotImplementedError,
+            DecomposeTypeError,
+        )
+        from qualtran.bloqs.basic_gates.rotation import XPowGate
+        from qualtran.bloqs.basic_gates.y_gate import CYGate
+        from qualtran.bloqs.multiplexers.selected_majorana_fermion import (
+            SelectedMajoranaFermion,
+        )
+        from qualtran.cirq_interop._cirq_to_bloq import (
+            CirqGateAsBloq,
+            cirq_gate_to_bloq,
+        )
+    except ModuleNotFoundError as error:
+        unavailable_reference(error)
 
     # Unmodified source modules declare this marker during library discovery.
     pytestconfig.addinivalue_line(
@@ -145,7 +172,10 @@ def test_complete_original_library_graph(
     monkeypatch.setitem(sys.modules, package.__name__, package)
     original = load_reference("all_call_graph")
     finder = load_reference("bloq_finder")
-    examples = finder.get_bloq_examples(REFERENCE / "qualtran" / "bloqs")
+    try:
+        examples = finder.get_bloq_examples(REFERENCE / "qualtran" / "bloqs")
+    except ModuleNotFoundError as error:
+        unavailable_reference(error)
     assert len(examples) == 393
     profiles: list[tuple[Any, Callable[[Any], bool]]] = []
     original_builder = original._build_call_graph
@@ -166,9 +196,38 @@ def test_complete_original_library_graph(
         types.SimpleNamespace(name=example.name, make=partial(identity, example.make()))
         for example in examples
     ]
-    expected = original.get_all_call_graph(replay)
-    assert len(expected) == 3693 and len(expected.edges) == 8550
+    try:
+        expected = original.get_all_call_graph(replay)
+    except ModuleNotFoundError as error:
+        unavailable_reference(error)
     generalize, keep = profiles[0]
+
+    # The source converter produces CYGate in Cirq 1.6 and wraps CYPowGate in
+    # Cirq 1.7. Only the latter survives child generalization. Preserve both
+    # complete source censuses and verify every edge causing the difference.
+    cy = cirq_gate_to_bloq(cirq.Y.controlled())
+    if generalize(cy) is None:
+        assert isinstance(cy, CYGate)
+        # Library roots survive generalization even when omitted as children.
+        assert cy in expected
+        assert expected.in_degree(cy) == expected.out_degree(cy) == 0
+        assert len(expected) == 3692 and len(expected.edges) == 8543
+    else:
+        assert isinstance(cy, CirqGateAsBloq)
+        assert type(cy.gate).__name__ == "CYPowGate"
+        assert len(expected) == 3693 and len(expected.edges) == 8550
+        incoming = list(expected.in_edges(cy, data=True))
+        assert len(incoming) == 6
+        assert all(
+            isinstance(parent, SelectedMajoranaFermion) for parent, _, _ in incoming
+        )
+        assert all(parent.target_gate == cirq.Y for parent, _, _ in incoming)
+        assert Counter(len(parent.control_regs) for parent, _, _ in incoming) == {
+            0: 3,
+            1: 3,
+        }
+        assert sorted(data["n"] for _, _, data in incoming) == [4, 4, 6, 6, 8, 8]
+        assert dict(expected[cy]) == {generalize(XPowGate(exponent=0.5)): {"n": 2}}
 
     def declare(node: Any, allocator: SymbolAllocator) -> Any:
         try:
