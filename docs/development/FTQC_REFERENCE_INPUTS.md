@@ -126,3 +126,23 @@ two new tool profiles neither introduces nor exempts these findings. The guard,
 its test, marker selections and refusal rules remain unchanged. This is an open
 G2 integration check, not a passing hosted-suite result or a grandfathered
 exception. Full Q-0009/Q-0011 and G2 acceptance require its actual resolution.
+
+## Missing-dependency contract for collected comparisons
+
+`tests/_reference_dependencies.py` is a test-only boundary for literal optional
+imports. A guarded import catches only `ModuleNotFoundError` and delegates the
+same error object to `unavailable_reference`. Ordinary optional collection
+explicitly reports the unavailable dependency as a module skip. When
+`FLAGQUANTUM_REQUIRE_FTQC_DEPENDENCIES` is set to any value other than `0`, the
+original error and cause are raised. An unset value is equivalent to `0`.
+Unrecognized settings therefore cannot silently enable optional behavior.
+Other import errors, numerical errors and source failures are not caught.
+
+The shared FTQC input action sets mandatory mode for both reference CI and CPU
+nightly. New absence guards must use this boundary, retain their original
+imports/types/math and prove that available SDKs execute unchanged. No marker
+selection, source bytes or dependency checker rule is relaxed. Real subprocess
+checks cover both presence/absence modes: a required missing SDK fails collection,
+while a present SDK runs the comparison in both modes without skips. Migration
+of the 759 actual guard findings remains required; this contract alone does not
+close that check or certify unrelated historical skips.
