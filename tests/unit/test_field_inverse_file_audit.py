@@ -113,7 +113,7 @@ def test_actual_inverse_factory_protocols_and_native_root(symbolic: bool) -> Non
     from examples.algorithms import field_ui_export as native
     from examples.algorithms.field_power_decomposition import field_power_program
     from flagquantum.compiler.registers.finite_field.inverse_decomposition import (
-        field_inverse_decomposition_graph,
+        field_inverse_decomposition_program,
     )
     from flagquantum.core.ir.program import verify_program_record
     from flagquantum.core.ir.program.physical_codec import native_program_to_dict
@@ -147,7 +147,7 @@ def test_actual_inverse_factory_protocols_and_native_root(symbolic: bool) -> Non
     else:
         polynomial = original.qgf.irreducible_poly
         assert polynomial is not None
-        assert record == field_inverse_decomposition_graph(
+        assert record == field_inverse_decomposition_program(
             signature[0].dtype, modulus=int(polynomial)
         )
         assert record is not None and verify_program_record(record) == ()

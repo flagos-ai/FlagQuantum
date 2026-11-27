@@ -21,13 +21,14 @@ from flagquantum.compiler.registers.register_binding import (
 )
 from flagquantum.core.ir import CircuitIR
 from flagquantum.core.ir.program.registers import RegisterType
+from flagquantum.simulation._clean_releases import require_zero_releases
 
 
 @dataclass(frozen=True)
 class FieldInverse:
     """Bind a mathematical or literal recipe, retaining result/junk aliases.
 
-    The explicit literal profile preserves original defects and rejects unproved
+    The explicit literal profile preserves original defects and verifies actual
     clean releases; the default computes the correct mathematical inverse.
     """
 
@@ -45,12 +46,20 @@ class FieldInverse:
             if self.literal
             else field_inverse_program
         )(self.dtype, modulus=self.modulus)
-        return bind_register_program(
+        bound = bind_register_program(
             program,
             (self.source,),
             clean=self.workspace,
             allow_workspace_outputs=True,
         )
+        if self.literal:
+            points = []
+            for event in bound.events:
+                if event.kind == "free" and not event.dirty:
+                    assert event.instruction_offset is not None
+                    points.append((event.instruction_offset, event.wires))
+            require_zero_releases(bound.circuit, self.source, tuple(points))
+        return bound
 
     def append_to(self, circuit: fq.Circuit) -> fq.Circuit:
         bound = self.bind()

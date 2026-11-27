@@ -172,13 +172,18 @@ def test_every_original_primitive_alias_input_and_private_free(
 
 
 @pytest.mark.parametrize("width,modulus", ((4, 19), (6, 67), (8, 283), (8, 285)))
-def test_unproved_root_release_refuses_without_claiming_clean_work(
-    width: int, modulus: int
-) -> None:
-    with pytest.raises(
-        ValueError, match="root temporary release has no clean-work proof"
-    ):
-        field_inverse_decomposition_program(dtype(width, modulus), modulus=modulus)
+def test_actual_dirty_root_release_refuses_execution(width: int, modulus: int) -> None:
+    from examples.algorithms.register_field_inverse import FieldInverse
+
+    operation = FieldInverse(
+        dtype(width, modulus),
+        tuple(range(width)),
+        tuple(range(width, width * 12)),
+        modulus,
+        literal=True,
+    )
+    with pytest.raises(ValueError, match="Nonzero clean release"):
+        operation.bind()
 
 
 @pytest.mark.parametrize("width,modulus,bad_inputs", ((4, 19, 12), (8, 283, 250)))
@@ -189,11 +194,11 @@ def test_static_source_graph_diagnoses_dirty_free_without_resetting(
 
     from examples.algorithms.register_field_inverse import FieldInverse
     from flagquantum.compiler.registers.finite_field.inverse_decomposition import (
-        field_inverse_decomposition_graph,
+        field_inverse_decomposition_program,
     )
 
     field_type = dtype(width, modulus)
-    graph = field_inverse_decomposition_graph(field_type, modulus=modulus)
+    graph = field_inverse_decomposition_program(field_type, modulus=modulus)
     bound = bind_register_program(
         graph,
         (tuple(range(width)),),
@@ -233,7 +238,7 @@ def test_static_source_graph_diagnoses_dirty_free_without_resetting(
         modulus,
         literal=True,
     )
-    with pytest.raises(ValueError, match="root temporary release"):
+    with pytest.raises(ValueError, match="Nonzero clean release"):
         Circuit(width).append(operation)
 
 
@@ -273,3 +278,103 @@ def test_literal_append_uses_source_recipe_without_mathematical_owner(
     actual = Circuit(count + 1, inputs=state, dtype=torch.complex128).append(operation)
     torch.testing.assert_close(actual.state(), expected, atol=2e-12, rtol=0)
     assert bound.circuit.instructions != ()
+
+
+@pytest.mark.parametrize(
+    "width,modulus,clean",
+    (
+        (1, 3, True),
+        (2, 7, True),
+        (3, 11, True),
+        (4, 19, False),
+        (5, 37, True),
+        (6, 91, False),
+        (7, 131, False),
+        (8, 285, False),
+        (9, 529, True),
+        (10, 1135, False),
+        (11, 2053, False),
+        (12, 4331, False),
+        (13, 8219, False),
+        (14, 16553, False),
+        (15, 32821, False),
+        (16, 65581, False),
+        (17, 131081, True),
+    ),
+)
+def test_full_source_domain_uses_actual_polynomial_proof_not_degree_refusal(
+    width: int, modulus: int, clean: bool
+) -> None:
+    from qualtran.bloqs.gf_arithmetic.gf2_inverse import GF2Inverse
+
+    from examples.algorithms.register_field_inverse import FieldInverse
+
+    program = field_inverse_decomposition_program(
+        dtype(width, modulus), modulus=modulus
+    )
+    source = tuple(range(width))
+    pool = tuple(range(width, width * 12))
+    diagnostic = bind_register_program(
+        program, (source,), clean=pool, allow_workspace_outputs=True
+    )
+    gates, outputs = product_source_stream(
+        GF2Inverse(_source_type(width, modulus)), diagnostic, {"x": source}
+    )
+    assert gates == diagnostic.circuit.instructions
+    assert tuple(w for word in diagnostic.outputs for w in word) == tuple(
+        w for name in ("x", "result", "junk") for w in outputs.get(name, ())
+    )
+    operation = FieldInverse(dtype(width, modulus), source, pool, modulus, literal=True)
+    if clean:
+        assert operation.bind() == diagnostic
+    else:
+        with pytest.raises(ValueError, match="exact Boolean polynomial is not zero"):
+            operation.bind()
+
+
+def test_failed_analysis_provider_prevents_literal_append(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    from examples.algorithms import register_field_inverse as example
+
+    def unavailable(*args: object, **kwargs: object) -> None:
+        raise NotImplementedError("Replacement analysis cannot prove this release")
+
+    monkeypatch.setattr(example, "require_zero_releases", unavailable)
+    operation = example.FieldInverse(
+        dtype(3, 11), (0, 1, 2), tuple(range(3, 9)), 11, literal=True
+    )
+    circuit = Circuit(9)
+    with pytest.raises(NotImplementedError, match="Replacement analysis"):
+        circuit.append(operation)
+    assert circuit.to_ir().instructions == ()
+
+
+def test_valid_degree_two_original_adjoint_and_native_reverse_agree() -> None:
+    from qualtran.bloqs.gf_arithmetic.gf2_inverse import GF2Inverse
+
+    from examples.algorithms.register_field_inverse import FieldInverse
+
+    original = GF2Inverse(_source_type(2, 7))
+    forward = torch.as_tensor(
+        original.decompose_bloq().flatten().tensor_contract(), dtype=torch.complex128
+    ).reshape(16, 4)
+    reverse = torch.as_tensor(
+        original.adjoint().decompose_bloq().flatten().tensor_contract(),
+        dtype=torch.complex128,
+    ).reshape(4, 16)
+    torch.testing.assert_close(
+        reverse @ forward, torch.eye(4, dtype=torch.complex128), atol=1e-12, rtol=0
+    )
+    operation = FieldInverse(dtype(2, 7), (0, 1), (2, 3), 7, literal=True)
+    weights = torch.randn(
+        4, 2, dtype=torch.complex128, generator=torch.Generator().manual_seed(5164)
+    )
+    weights /= weights.norm()
+    state = torch.zeros(32, dtype=torch.complex128)
+    state.reshape(4, 8)[:, :2] = weights
+    circuit = Circuit(5, inputs=state, dtype=torch.complex128).append(operation)
+    inverse = Circuit(5).append(operation).adjoint().to_ir()
+    torch.testing.assert_close(
+        circuit.compose(inverse).state().flatten(), state, atol=1e-12, rtol=0
+    )

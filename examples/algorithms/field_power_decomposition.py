@@ -17,7 +17,7 @@ from flagquantum.compiler.registers.finite_field.addition_component import (
     field_addition_program,
 )
 from flagquantum.compiler.registers.finite_field.inverse_decomposition import (
-    field_inverse_decomposition_graph,
+    field_inverse_decomposition_program,
 )
 from flagquantum.compiler.registers.finite_field.karatsuba_component import (
     karatsuba_decomposition_program,
@@ -59,7 +59,7 @@ def field_power_program(
     dtype = resolve_quantum_field_storage(dtype)
     modulus = int(resolve_finite_field_encoding(dtype).gf_type.irreducible_poly)
     if operation == "GF2Inverse":
-        return field_inverse_decomposition_graph(dtype, modulus=modulus)
+        return field_inverse_decomposition_program(dtype, modulus=modulus)
     count, adjoint = parameters["k"], parameters["uncompute"]
     if not isinstance(count, SupportsIndex) or type(adjoint) is not bool:
         return None
@@ -78,7 +78,7 @@ def _inverse_square_roles(
     root = record.functions[0]
     if tuple(r.name for r in root.registers or ()) != ("x", "result", "junk"):
         return {}
-    template = field_inverse_decomposition_graph(dtype, modulus=modulus)
+    template = field_inverse_decomposition_program(dtype, modulus=modulus)
     if not matches_component_definition(record, root.name, template):
         return {}
     top = (width - 1).bit_length() - 1

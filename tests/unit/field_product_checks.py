@@ -47,8 +47,10 @@ def bind_product(program: ProgramRecord) -> tuple[BoundRegisterProgram, SourcePo
 def product_source_stream(
     source: Any, bound: BoundRegisterProgram, ports: SourcePorts
 ) -> SourceResult:
-    from qualtran.bloqs.basic_gates import CNOT, Toffoli
-    from qualtran.bloqs.bookkeeping import Allocate, Free
+    from qualtran.bloqs.basic_gates.cnot import CNOT
+    from qualtran.bloqs.basic_gates.toffoli import Toffoli
+    from qualtran.bloqs.bookkeeping.allocate import Allocate
+    from qualtran.bloqs.bookkeeping.free import Free
 
     cursor = 0
     used: set[int] = set()
@@ -68,6 +70,15 @@ def product_source_stream(
             used.add(event.position)
             return (), {"reg": event.wires}
         if isinstance(bloq, Free):
+            event = next(
+                e
+                for e in bound.events
+                if e.kind == "free"
+                and e.instruction_offset == cursor
+                and e.position not in used
+            )
+            used.add(event.position)
+            assert event.wires == inputs["reg"]
             return (), {}
         if isinstance(bloq, (CNOT, Toffoli)):
             wires = inputs["ctrl"] + inputs["target"]

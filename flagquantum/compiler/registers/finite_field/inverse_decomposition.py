@@ -1,6 +1,6 @@
 # Copyright 2024 Google LLC
 # SPDX-License-Identifier: Apache-2.0
-# Ported from Qualtran v0.7.0 GF2Inverse's degree-one branch.
+# Literal dependencies adapted from Qualtran v0.7.0 GF2Inverse.
 # bcb17bb25360ed68ce3bc084645db3e929799389, gf2_inverse.py.
 
 """Literal inverse dependencies with explicit source clean-release boundaries."""
@@ -43,36 +43,12 @@ def field_inverse_degree_one_program(dtype: RegisterType) -> ProgramRecord:
 def field_inverse_decomposition_program(
     dtype: RegisterType, *, modulus: int
 ) -> ProgramRecord:
-    """Build validated literal source profiles, not the mathematical inverse.
+    """Retain the entire static original inverse graph and its preconditions.
 
-    MSB-first x is THRU; result and retained logical junk are RIGHT. Recursive
-    padding is private clean work. The square and product dependencies retain
-    every original declared direction, including the ignored linear adjoint.
-
-    Profiles with a root temporary release require a separate clean-release
-    proof: the original four/eight-bit paths release nonzero work. They are
-    refused here rather than weakening clean-free semantics. This restriction
-    is not a claim that every other unvalidated degree is a source defect.
-    """
-    if dict(dtype.parameters).get("degree") == 1:
-        return field_inverse_degree_one_program(dtype)
-    width = field_word_width(dtype, modulus)
-    if (width - 1).bit_count() > 1:
-        raise ValueError(
-            "Literal inverse root temporary release has no clean-work proof; "
-            "the original degree-four/eight paths release nonzero work"
-        )
-    return field_inverse_decomposition_graph(dtype, modulus=modulus)
-
-
-def field_inverse_decomposition_graph(
-    dtype: RegisterType, *, modulus: int
-) -> ProgramRecord:
-    """Retain the entire static original graph, including unproved clean frees.
-
-    This is a presentation/source-audit artifact, not execution admission.
-    Use field_inverse_decomposition_program for the guarded literal execution
-    profile or field_inverse_program for the correct mathematical operation.
+    All words are MSB-first; x is THRU and result/junk are RIGHT. This includes
+    original invalid clean releases, not permission to execute them. The append
+    consumer verifies actual bound releases with Simulation's exact Boolean
+    analysis; mathematical field_inverse_program remains independent.
     """
     if dict(dtype.parameters).get("degree") == 1:
         return field_inverse_degree_one_program(dtype)
