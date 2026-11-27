@@ -175,3 +175,37 @@ fixture restored all sys.modules and caused duplicate PyTorch registration; the
 final fixture only masks the three SDK entries. No production workaround,
 source modification, additional dependency or source-defect waiver is used.
 Q-0617 stays open for the retained original physical/serialization boundaries.
+
+## Complete-source closure review
+
+Q-0617 is eligible for complete-file acceptance under the explicitly approved
+[faithful-migration rule](G2_FAITHFUL_MIGRATION_CLOSURE_PROPOSAL.md). The complete
+three classes, two factories, DocSpec, properties, concrete scope decomposition,
+index/RHS resource declarations and specialized/generic control invocation
+protocols already have native owners. The typed control-root delivery above
+closed the former invocation gap. This review reuses that implementation and
+its actual source operand/feedback/ownership evidence.
+
+Fresh domain intake checks zero, one, two and three unique scopes. An empty
+instance without explicit max_rhs fails the same default max() operation in
+both implementations. With an explicit bound, an empty lookup has no valid
+index-width signature. A singleton has a valid declared signature but its
+original root passes a selection argument to a QROM that omits that port; both
+source and native typed roots reject that call. Neither failure is relabeled
+as an executable lookup. Two- and three-scope original and native typed roots
+both construct successfully. The existing three-scope and complete original
+example retain measured lookup, all valid addresses, absolute complex phase,
+applicable complete histories, transferred RIGHT outputs and zero private work.
+
+No original positive controlled scope body exists: generic control rejects
+non-THRU output ports. Index and RHS have no positive physical decomposition,
+and RHS omits a phase-gradient port required by its child. Exact control routing
+and declarations remain available; finite binding refuses missing bodies.
+Original count-versus-decomposition and instance-codec failures stay recorded,
+not repaired or hidden by an identity leaf. These are source follow-ups under
+faithful closure, not missing native physical bodies to invent.
+
+Keep the physical 27/86-instruction loader inventories above distinct from
+QEC categories, symbolic estimates and declaration-only index/RHS/control
+models. Existing flat and typed native consumers preserve circuit.append(op),
+explicit caller outputs and unchanged execution-provider replacement.
