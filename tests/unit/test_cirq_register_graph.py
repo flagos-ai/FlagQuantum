@@ -42,7 +42,9 @@ def test_actual_graph_import_preserves_stream_branches_and_work_origin(
     kind: str,
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
-    from qualtran.resource_counting import QECGatesCost, QubitCount, get_cost_value
+    from qualtran.resource_counting._bloq_counts import QECGatesCost
+    from qualtran.resource_counting._costing import get_cost_value
+    from qualtran.resource_counting._qubit_counts import QubitCount
 
     factory = {
         "borrowed": borrowing_source,
@@ -149,7 +151,9 @@ def test_actual_graph_import_preserves_stream_branches_and_work_origin(
 
 
 def test_graph_import_stored_identity_and_invalid_external_objects() -> None:
-    from qualtran import BloqBuilder, QUInt, Register, Signature
+    from qualtran._infra.composite_bloq import BloqBuilder
+    from qualtran._infra.data_types import QUInt
+    from qualtran._infra.registers import Register, Signature
 
     source_builder, inputs = BloqBuilder.from_signature(
         Signature((Register("word", QUInt(3)),))
@@ -188,7 +192,9 @@ def test_original_three_axis_consumers_retain_all_graph_primitives(
 
 
 def _assert_graph_stream(original: Any, clean_count: int) -> None:
-    from qualtran.resource_counting import QECGatesCost, QubitCount, get_cost_value
+    from qualtran.resource_counting._bloq_counts import QECGatesCost
+    from qualtran.resource_counting._costing import get_cost_value
+    from qualtran.resource_counting._qubit_counts import QubitCount
 
     inputs = []
     ports = {}
@@ -236,12 +242,12 @@ def _assert_graph_stream(original: Any, clean_count: int) -> None:
         assert get_cost_value(direction, QubitCount()) == peak
 
 
-def test_different_live_leaves_with_identical_serialized_metadata_are_rejected() -> (
-    None
-):
-    from qualtran import Bloq, BloqBuilder, Signature
+def test_live_leaf_without_a_physical_protocol_is_rejected() -> None:
+    from qualtran._infra.bloq import Bloq
+    from qualtran._infra.composite_bloq import BloqBuilder
+    from qualtran._infra.registers import Signature
 
-    class UnserializedPhase(Bloq):  # type: ignore[misc]
+    class UnserializedPhase(Bloq):
         def __init__(self, angle: float) -> None:
             self.angle = angle
 
@@ -253,5 +259,41 @@ def test_different_live_leaves_with_identical_serialized_metadata_are_rejected()
     word = builder.add(UnserializedPhase(0.2), q=inputs["q"])
     word = builder.add(UnserializedPhase(0.7), q=word)
     graph = builder.finalize(q=word)
-    with pytest.raises(ValueError, match="share one serialized declaration"):
+    with pytest.raises(ValueError, match="unsupported_operation"):
         import_register_graph(graph)
+
+
+def test_distinct_live_phases_do_not_require_unique_constructor_wires() -> None:
+    import cirq
+    from qualtran._infra.bloq import Bloq
+    from qualtran._infra.composite_bloq import BloqBuilder
+    from qualtran._infra.registers import Signature
+
+    class LivePhase(Bloq):
+        def __init__(self, angle: float) -> None:
+            self.angle = angle
+
+        @property
+        def signature(self) -> Any:
+            return Signature.build(q=1)
+
+        def as_cirq_op(self, qubit_manager: Any, **quregs: Any) -> Any:
+            return cirq.rz(self.angle).on(quregs["q"][0]), quregs
+
+    builder, inputs = BloqBuilder.from_signature(Signature.build(q=1))
+    word = builder.add(LivePhase(0.2), q=inputs["q"])
+    word = builder.add(LivePhase(0.7), q=word)
+    bound = bind_register_program(
+        import_register_graph(builder.finalize(q=word)), ((0,),)
+    )
+    assert [g.params["theta"] for g in bound.circuit.instructions] == pytest.approx(
+        [0.2, 0.7], abs=1e-15, rel=0
+    )
+    state = torch.tensor([0.6, 0.8j], dtype=torch.complex128)
+    expected = torch.as_tensor(cirq.unitary(cirq.rz(0.9)), dtype=state.dtype) @ state
+    torch.testing.assert_close(
+        forced_branch(state, bound.circuit.instructions, ()),
+        expected,
+        atol=2e-15,
+        rtol=0,
+    )

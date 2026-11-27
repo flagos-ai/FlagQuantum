@@ -168,12 +168,16 @@ eight-class capture, physical rebinding, serialization and append workflow.
 ## Live typed component graphs
 
 `cirq._register_graph.import_register_graph` converts a live typed source graph
-at the optional SDK boundary. Source serialization feeds the existing owned
-library resolver. Declared Allocate/Free and Split/Join map to the existing
+at the optional SDK boundary. Actual source occurrences and connections feed
+the existing owned graph builder; only nominal signatures use the register
+codec. Declared Allocate/Free and Split/Join map to the existing
 Compiler definitions, preserving clean versus borrowed origin and typed word
 ports. Other leaves use the existing Cirq conversion. No source constructor is
-loaded from a serialized name, and distinct live components with indistinguishable
-serialized declarations are refused.
+loaded from a serialized name. Distinct live leaves retain their own physical
+callbacks even when their constructor declarations serialize identically.
+Montgomery moduli omitted by the source codec are retained from live metadata.
+Original constructor-serialization failures remain observable independently;
+they do not prevent importing a valid live graph.
 
 Use this graph path when the source declares borrowed lifetimes. The flat
 `CircuitRegisterEmitter` still describes clean workspace. Native Program

@@ -30,8 +30,10 @@ def test_complete_live_graph_all_complex_measurement_branches(
     source: Any, controls: int, gate_name: str, monkeypatch: pytest.MonkeyPatch
 ) -> None:
     import cirq
-    from qualtran import BQUInt, QAny, Register
-    from qualtran.resource_counting import QECGatesCost, get_cost_value
+    from qualtran._infra.data_types import BQUInt, QAny
+    from qualtran._infra.registers import Register
+    from qualtran.resource_counting._bloq_counts import QECGatesCost
+    from qualtran.resource_counting._costing import get_cost_value
 
     gate = {
         "T": cirq.T,
@@ -118,7 +120,8 @@ def test_opaque_unitary_uses_owned_capture_without_source_json(source: Any) -> N
     import cirq
     import numpy as np
     from numpy.typing import NDArray
-    from qualtran import BQUInt, Register
+    from qualtran._infra.data_types import BQUInt
+    from qualtran._infra.registers import Register
 
     class OpaqueUnitary(cirq.Gate):
         def _num_qubits_(self) -> int:
@@ -137,8 +140,10 @@ def test_opaque_unitary_uses_owned_capture_without_source_json(source: Any) -> N
 
     gate = OpaqueUnitary()
     original = source(Register("selection", BQUInt(1, 2)), target_gate=gate)
-    with pytest.raises(ValueError, match="does not define _json_namespace_"):
-        import_register_graph(original)
+    live_programs = tuple(
+        import_register_graph(original.adjoint() if adjoint else original)
+        for adjoint in (False, True)
+    )
     native, emitter = _capture(original)
     work, bits = emitter.requirements()
     assert (work, bits) == (2, 1)
@@ -166,6 +171,9 @@ def test_opaque_unitary_uses_owned_capture_without_source_json(source: Any) -> N
         state[:: 1 << work] = values
         expected = torch.zeros_like(state)
         expected[:: 1 << work] = (matrix.mH if adjoint else matrix) @ values
+        bound = bind_register_program(
+            live_programs[int(adjoint)], ((0,), (1,), (2, 3)), clean=(4, 5)
+        )
         for outcome in (0, 1):
             torch.testing.assert_close(
                 forced_branch(state, snapshot.instructions, (outcome,)),
@@ -173,14 +181,21 @@ def test_opaque_unitary_uses_owned_capture_without_source_json(source: Any) -> N
                 atol=3e-12,
                 rtol=0,
             )
+            torch.testing.assert_close(
+                forced_branch(state, bound.circuit.instructions, (outcome,)),
+                expected / 2**0.5,
+                atol=3e-12,
+                rtol=0,
+            )
 
 
 @pytest.mark.parametrize("gate_name", ("T", "Rx", "random_matrix"))
-def test_three_control_word_retains_source_serialization_boundary(
+def test_three_control_word_live_capture_bypasses_source_serialization_failure(
     source: Any, gate_name: str
 ) -> None:
     import cirq
-    from qualtran import BQUInt, QAny, Register
+    from qualtran._infra.data_types import BQUInt, QAny
+    from qualtran._infra.registers import Register
     from qualtran.serialization.bloq import bloqs_to_proto
 
     gate = {
@@ -199,8 +214,10 @@ def test_three_control_word_retains_source_serialization_boundary(
         bloqs_to_proto(
             original.decompose_bloq().flatten(), max_depth=1, pred=lambda _: False
         )
-    with pytest.raises(ValueError, match="Cannot serialize.*numpy.uint8"):
-        import_register_graph(original)
+    live_programs = tuple(
+        import_register_graph(original.adjoint() if adjoint else original)
+        for adjoint in (False, True)
+    )
     # The actual adjoint owns a different graph and serializes successfully.
     assert bloqs_to_proto(
         original.adjoint().decompose_bloq().flatten(), max_depth=1, pred=lambda _: False
@@ -229,15 +246,21 @@ def test_three_control_word_retains_source_serialization_boundary(
         )
         assert ir.instructions == emitter.snapshots[int(adjoint)].instructions
         ir = CircuitIR.from_json(ir.to_json())
-        events = sum(g.name == "measure" for g in ir.instructions)
         state = torch.zeros(1 << (6 + work), dtype=torch.complex128)
         state[:: 1 << work] = values
         expected = torch.zeros_like(state)
         expected[:: 1 << work] = (matrix.mH if adjoint else matrix) @ values
-        for history in product((0, 1), repeat=events):
-            torch.testing.assert_close(
-                forced_branch(state, ir.instructions, history),
-                expected / 2 ** (events / 2),
-                atol=1e-11,
-                rtol=0,
-            )
+        bound = bind_register_program(
+            live_programs[int(adjoint)],
+            ((0, 1, 2), (3,), (4, 5)),
+            clean=tuple(range(6, 6 + work)),
+        )
+        for stream in (ir.instructions, bound.circuit.instructions):
+            stream_events = sum(g.name == "measure" for g in stream)
+            for history in product((0, 1), repeat=stream_events):
+                torch.testing.assert_close(
+                    forced_branch(state, stream, history),
+                    expected / 2 ** (stream_events / 2),
+                    atol=1e-11,
+                    rtol=0,
+                )
