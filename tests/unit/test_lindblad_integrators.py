@@ -7,6 +7,7 @@ import pytest
 import torch
 
 import flagquantum as fq
+from flagquantum.runtime import evolution
 from flagquantum.runtime.evolution import LindbladPlan
 from flagquantum.runtime.evolution import _plan as plan_module
 from flagquantum.simulation import (
@@ -596,7 +597,7 @@ def test_the_step_size_is_the_substep_of_every_scheme() -> None:
 
 def test_a_stored_plan_from_an_earlier_version_is_refused_by_version() -> None:
     times = torch.linspace(0.0, 1.0, 5, dtype=torch.float64)
-    planned = fq.lindblad.plan(
+    planned = evolution.plan(
         torch.eye(2, dtype=torch.complex128),
         EXCITED,
         times,
@@ -623,7 +624,7 @@ def test_a_stored_plan_from_an_earlier_version_is_refused_by_version() -> None:
 
 def test_a_boolean_sealed_tolerance_is_refused() -> None:
     times = torch.linspace(0.0, 1.0, 5, dtype=torch.float64)
-    planned = fq.lindblad.plan(
+    planned = evolution.plan(
         torch.eye(2, dtype=torch.complex128),
         EXCITED,
         times,
@@ -648,7 +649,7 @@ def test_a_boolean_sealed_tolerance_is_refused() -> None:
 
 def test_the_plan_round_trips_the_integration_method() -> None:
     times = torch.linspace(0.0, 1.0, 5, dtype=torch.float64)
-    planned = fq.lindblad.plan(
+    planned = evolution.plan(
         torch.eye(2, dtype=torch.complex128),
         EXCITED,
         times,
@@ -677,10 +678,10 @@ def test_the_plan_round_trips_the_integration_method() -> None:
 def test_the_plan_identity_separates_the_integration_methods() -> None:
     times = torch.linspace(0.0, 1.0, 5, dtype=torch.float64)
 
-    explicit = fq.lindblad.plan(
+    explicit = evolution.plan(
         torch.eye(2, dtype=torch.complex128), EXCITED, times, method="runge-kutta"
     )
-    implicit = fq.lindblad.plan(
+    implicit = evolution.plan(
         torch.eye(2, dtype=torch.complex128), EXCITED, times, method="crank-nicolson"
     )
 
@@ -691,7 +692,7 @@ def test_the_plan_identity_separates_the_integration_methods() -> None:
 
 def test_running_a_plan_reports_the_planned_integration_method() -> None:
     times = torch.linspace(0.0, 1.0, 5, dtype=torch.float64)
-    planned = fq.lindblad.plan(
+    planned = evolution.plan(
         torch.eye(2, dtype=torch.complex128),
         EXCITED,
         times,
@@ -699,7 +700,7 @@ def test_running_a_plan_reports_the_planned_integration_method() -> None:
         method="crank-nicolson",
     )
 
-    result = fq.lindblad.run(planned)
+    result = evolution.run(planned)
 
     assert result.method == "crank-nicolson"
     assert result.order == 2
@@ -719,17 +720,17 @@ def test_a_sealed_plan_is_closed_to_semantic_overrides(
     override: dict[str, Any],
 ) -> None:
     times = torch.linspace(0.0, 1.0, 5, dtype=torch.float64)
-    planned = fq.lindblad.plan(
+    planned = evolution.plan(
         torch.eye(2, dtype=torch.complex128), EXCITED, times, method="crank-nicolson"
     )
 
     with pytest.raises(TypeError, match="closed to"):
-        fq.lindblad.run(planned, **override)
+        evolution.run(planned, **override)
 
 
 def test_a_tampered_integration_method_is_refused_on_decode() -> None:
     times = torch.linspace(0.0, 1.0, 5, dtype=torch.float64)
-    planned = fq.lindblad.plan(
+    planned = evolution.plan(
         torch.eye(2, dtype=torch.complex128), EXCITED, times, method="crank-nicolson"
     )
     payload = planned.to_dict()
@@ -749,7 +750,7 @@ def test_a_tampered_integration_method_is_refused_on_decode() -> None:
 
 def test_a_tampered_integration_order_is_refused_on_decode() -> None:
     times = torch.linspace(0.0, 1.0, 5, dtype=torch.float64)
-    planned = fq.lindblad.plan(
+    planned = evolution.plan(
         torch.eye(2, dtype=torch.complex128), EXCITED, times, method="crank-nicolson"
     )
     payload = planned.to_dict()
@@ -767,7 +768,7 @@ def test_a_tampered_integration_order_is_refused_on_decode() -> None:
 
 def test_a_tampered_solve_tolerance_is_refused_on_decode() -> None:
     times = torch.linspace(0.0, 1.0, 5, dtype=torch.float64)
-    planned = fq.lindblad.plan(
+    planned = evolution.plan(
         torch.eye(2, dtype=torch.complex128),
         EXCITED,
         times,

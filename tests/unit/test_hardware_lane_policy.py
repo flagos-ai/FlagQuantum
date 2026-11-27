@@ -14,6 +14,8 @@ Other self-hosted hardware remains available only through its existing triggers.
 from __future__ import annotations
 
 import ast
+import json
+import re
 import subprocess
 from pathlib import Path
 
@@ -29,17 +31,24 @@ WORKFLOWS = ROOT / ".github" / "workflows"
 # The A100 validation host is independent and must not wait for the A800 pair.
 ACCELERATOR_GROUP = "flagquantum-accelerator"
 
+ONE_GPU_ROUTE = '${{ fromJSON((inputs.qng_ablation || inputs.precision_frontier) && \'["self-hosted","linux","gpu","flagquantum-local","a800-171"]\' || \'["self-hosted","linux","gpu","flagquantum-local","a800-172"]\') }}'
+
 A800_CPU_ROUTE = '${{ fromJSON((github.event_name != \'pull_request\' || github.event.pull_request.head.repo.full_name == github.repository) && \'["self-hosted","linux","x64","flagquantum-cpu"]\' || \'["ubuntu-latest"]\') }}'
 
 PREINSTALLED_A800_CPU_ROUTE = A800_CPU_ROUTE.replace(
     '"flagquantum-cpu"]', '"flagquantum-cpu","flagquantum-a800-cpu"]'
 )
 
+QUALIFIED_RUNTIME_CPU_ROUTE = A800_CPU_ROUTE.replace(
+    '\'["self-hosted","linux","x64","flagquantum-cpu"]\'',
+    'format(\'["self-hosted","linux","x64","flagquantum-cpu","{0}"]\', matrix.runner)',
+)
+
 PREWARM_CPU_LABELS = [
     "self-hosted",
     "linux",
     "x64",
-    "flagquantum-a800-cpu",
+    "flagquantum-cpu",
     "${{ matrix.host }}",
 ]
 PREWARM_CPU_GUARD = (
@@ -58,6 +67,8 @@ COVERAGE_CPU_ROUTE = (
     '  && \'["self-hosted","linux","x64","flagquantum-cpu"]\' || \'["ubuntu-latest"]\'\n'
     ") }}"
 )
+
+HEAVY_COVERAGE_CPU_ROUTE = '${{ fromJSON(\n  (github.event_name != \'pull_request\' || github.event.pull_request.head.repo.full_name == github.repository)\n  && (matrix.runner && format(\'["self-hosted","linux","x64","flagquantum-cpu","{0}"]\', matrix.runner)\n    || matrix.a800 && \'["self-hosted","linux","x64","flagquantum-cpu","flagquantum-a800-cpu"]\'\n    || \'["self-hosted","linux","x64","flagquantum-cpu"]\') || \'["ubuntu-latest"]\'\n) }}'
 
 TRUSTED_CPU_ROUTE = (
     "${{ (github.event_name != 'pull_request' || "
@@ -155,6 +166,12 @@ def _jobs(path: Path) -> dict[str, dict[str, object]]:
 
 def _runs_on(job: dict[str, object]) -> tuple[str, ...]:
     value = job.get("runs-on")
+    if isinstance(value, str) and value == ONE_GPU_ROUTE:
+        # Inspect both concrete hosts; an expression must not hide a GPU lane.
+        alternatives = re.findall(r"'(\[[^']+\])'", value)
+        return tuple(
+            sorted({label for row in alternatives for label in json.loads(row)})
+        )
     if isinstance(value, str):
         return (value,)
     assert isinstance(value, list), f"unexpected runs-on: {value!r}"
@@ -208,6 +225,8 @@ def _allows_untrusted_code(job: dict[str, object], reaching: frozenset[str]) -> 
             PREINSTALLED_A800_CPU_ROUTE,
             MC550_CPU_ROUTE,
             COVERAGE_CPU_ROUTE,
+            HEAVY_COVERAGE_CPU_ROUTE,
+            QUALIFIED_RUNTIME_CPU_ROUTE,
         )
     )
 
@@ -430,6 +449,8 @@ def test_trigger_parsing_reads_both_ways_a_workflow_can_spell_on(
         MC550_CPU_ROUTE,
         PREINSTALLED_A800_CPU_ROUTE,
         COVERAGE_CPU_ROUTE,
+        HEAVY_COVERAGE_CPU_ROUTE,
+        QUALIFIED_RUNTIME_CPU_ROUTE,
     ],
 )
 def test_cpu_route_rejects_missing_guards_and_other_untrusted_events(
@@ -456,11 +477,15 @@ def test_cpu_route_rejects_missing_guards_and_other_untrusted_events(
 def test_dedicated_cpu_lanes_keep_fork_code_on_hosted_runners() -> None:
     jobs = _jobs(WORKFLOWS / "ci.yml")
     for name in ("cpu-core", "cpu-core-3-12-tests", "cpu-runtime"):
-        assert jobs[name]["runs-on"] == PREINSTALLED_A800_CPU_ROUTE
+        assert jobs[name]["runs-on"] == (
+            QUALIFIED_RUNTIME_CPU_ROUTE
+            if name == "cpu-runtime"
+            else PREINSTALLED_A800_CPU_ROUTE
+        )
         assert _is_self_hosted(jobs[name])
         assert not _allows_untrusted_code(jobs[name], frozenset({"pull_request"}))
     coverage = jobs["coverage-shard"]
-    assert coverage["runs-on"] == COVERAGE_CPU_ROUTE
+    assert coverage["runs-on"] == HEAVY_COVERAGE_CPU_ROUTE
     assert _is_self_hosted(coverage)
     assert not _allows_untrusted_code(coverage, frozenset({"pull_request"}))
     triton = jobs["triton-optional"]
@@ -473,6 +498,16 @@ def test_cpu_image_qualification_rejects_forks_and_unprovisioned_hardware() -> N
     job = _jobs(WORKFLOWS / "prewarm-ci-cpu.yml")["prewarm"]
     assert job["runs-on"] == PREWARM_CPU_LABELS
     assert job["if"] == PREWARM_CPU_GUARD
+    document = yaml.safe_load((WORKFLOWS / "prewarm-ci-cpu.yml").read_text())
+    dispatch = document[True]["workflow_dispatch"]["inputs"]
+    assert dispatch["runner-labels"]["type"] == "string"
+    assert dispatch["runner-labels"]["default"] == '["a800-171","a800-172"]'
+    assert job["strategy"]["matrix"]["host"] == (
+        '${{ fromJSON(inputs.runner-labels || \'["a800-171","a800-172"]\') }}'
+    )
+    commands = "\n".join(step.get("run", "") for step in job["steps"])
+    assert "--pull never --network none" in commands
+    assert "docker pull" not in commands and "docker load" not in commands
     assert _is_self_hosted(job)
     assert not _allows_untrusted_code(job, frozenset({"pull_request"}))
     for event in ("workflow_run", "pull_request_target"):
@@ -576,6 +611,14 @@ def test_one_gpu_gate_selects_idle_devices_or_refuses_contention(
 
 def test_one_gpu_gate_inherits_selection_and_preserves_frozen_campaigns() -> None:
     job = _jobs(WORKFLOWS / "local-gpu.yml")["one-gpu-local"]
+    assert job["runs-on"] == ONE_GPU_ROUTE
+    assert job["concurrency"] == {"group": ACCELERATOR_GROUP, "queue": "max"}
+    assert (
+        _jobs(WORKFLOWS / "local-gpu.yml")["two-gpu-distributed-required"][
+            "concurrency"
+        ]
+        == job["concurrency"]
+    )
     steps = {step.get("name"): step for step in job["steps"]}
     selector = steps["Select one idle physical GPU"]
     behavior = steps["One-GPU local behavior"]

@@ -21,7 +21,9 @@ import os
 import subprocess
 import sys
 import time
+from collections.abc import Generator
 from pathlib import Path
+from typing import Any
 
 import pytest
 
@@ -29,6 +31,7 @@ ROOT = Path(__file__).resolve().parents[2]
 DURATION_HINTS = ROOT / "contracts" / "pytest-duration-hints.json"
 EXPECTED_HINT_SCHEMA = "flagquantum_pytest_duration_hints_v1"
 USAGE_START: pytest.StashKey[tuple[float, float]] = pytest.StashKey()
+PHASE_DURATIONS: pytest.StashKey[dict[str, dict[str, float]]] = pytest.StashKey()
 
 
 def shard_for(nodeid: str, count: int) -> int:
@@ -93,12 +96,14 @@ def pytest_addoption(parser: pytest.Parser) -> None:
     group = parser.getgroup("flagquantum-sharding")
     group.addoption("--fq-shard-count", type=int, default=1)
     group.addoption("--fq-shard-index", type=int, default=0)
+    group.addoption("--fq-write-selected-tests", type=Path)
     group.addoption("--fq-write-coverage-plan", type=Path)
     group.addoption("--fq-coverage-plan-count", type=int, default=16)
 
 
 def pytest_configure(config: pytest.Config) -> None:
     config.stash[USAGE_START] = (time.monotonic(), _cpu_seconds())
+    config.stash[PHASE_DURATIONS] = {}
     count = int(config.getoption("--fq-shard-count"))
     index = int(config.getoption("--fq-shard-index"))
     if count < 1:
@@ -123,21 +128,66 @@ def pytest_collection_modifyitems(
             directory,
             int(config.getoption("--fq-coverage-plan-count")),
         )
+    collected = tuple(item.nodeid for item in items)
     count = int(config.getoption("--fq-shard-count"))
-    if count == 1:
-        return
-    index = int(config.getoption("--fq-shard-index"))
-    default_seconds, durations = load_duration_hints()
-    assignments = balanced_assignments(
-        tuple(item.nodeid for item in items),
-        count,
-        default_seconds=default_seconds,
-        durations=durations,
-    )
-    selected = [item for item in items if assignments[item.nodeid] == index]
-    deselected = [item for item in items if assignments[item.nodeid] != index]
-    items[:] = selected
-    config.hook.pytest_deselected(items=deselected)
+    if count > 1:
+        index = int(config.getoption("--fq-shard-index"))
+        default_seconds, durations = load_duration_hints()
+        assignments = balanced_assignments(
+            collected,
+            count,
+            default_seconds=default_seconds,
+            durations=durations,
+        )
+        selected = [item for item in items if assignments[item.nodeid] == index]
+        deselected = [item for item in items if assignments[item.nodeid] != index]
+        items[:] = selected
+        config.hook.pytest_deselected(items=deselected)
+    if directory := config.getoption("--fq-write-selected-tests"):
+        if not config.option.collectonly or hasattr(config, "workerinput"):
+            raise pytest.UsageError("Selection planning requires serial --collect-only")
+        if items:
+            _write_selected_tests(
+                directory,
+                tuple(item.nodeid for item in items),
+                collected=collected,
+                count=count,
+                index=int(config.getoption("--fq-shard-index")),
+            )
+
+
+def _write_selected_tests(
+    directory: Path,
+    nodeids: tuple[str, ...],
+    *,
+    collected: tuple[str, ...],
+    count: int,
+    index: int,
+) -> None:
+    """Bind the original marker/shard selection before starting test workers."""
+    from tools.ci.ci_coverage_plan import EXCLUSIVE_TEST_SECONDS
+
+    if not nodeids or len(nodeids) != len(set(nodeids)):
+        raise ValueError("Selected tests must be nonempty and unique")
+    directory.mkdir(parents=True, exist_ok=False)
+    raw = ("\n".join(nodeids) + "\n").encode()
+    (directory / "nodes.txt").write_bytes(raw)
+    default, durations = load_duration_hints()
+    payload = {
+        "schema": "flagquantum_pytest_selection_v1",
+        "source_sha": os.environ.get("GITHUB_SHA"),
+        "tests": len(nodeids),
+        "collected_tests": len(collected),
+        "collected_sha256": hashlib.sha256(
+            ("\n".join(sorted(collected)) + "\n").encode()
+        ).hexdigest(),
+        "shard_count": count,
+        "shard_index": index,
+        "sha256": hashlib.sha256(raw).hexdigest(),
+        "exclusive": len(nodeids) == 1
+        and durations.get(nodeids[0], default) >= EXCLUSIVE_TEST_SECONDS,
+    }
+    (directory / "selection.json").write_text(json.dumps(payload, indent=2) + "\n")
 
 
 def _cpu_seconds() -> float:
@@ -150,9 +200,23 @@ def _cpu_seconds() -> float:
     return own.ru_utime + own.ru_stime + children.ru_utime + children.ru_stime
 
 
+@pytest.hookimpl(hookwrapper=True)
+def pytest_runtest_makereport(item: pytest.Item) -> Generator[None, Any, None]:
+    """Retain each completed phase without changing its report or outcome."""
+    outcome = yield
+    report = outcome.get_result()
+    item.config.stash[PHASE_DURATIONS].setdefault(item.nodeid, {})[
+        report.when
+    ] = report.duration
+
+
 @pytest.hookimpl(optionalhook=True)
 def pytest_testnodedown(node: object, error: object) -> None:
-    """Retain an available local worker exit status without changing its outcome."""
+    """Merge worker timings and retain available termination evidence."""
+    config = getattr(node, "config", None)
+    if isinstance(config, pytest.Config):
+        output = getattr(node, "workeroutput", {})
+        config.stash[PHASE_DURATIONS].update(output.get("fq_phase_durations", {}))
     if error is None:
         return
     gateway = getattr(node, "gateway", None)
@@ -170,8 +234,11 @@ def pytest_testnodedown(node: object, error: object) -> None:
 
 
 def pytest_sessionfinish(session: pytest.Session, exitstatus: int) -> None:
-    """Record consumed process CPU against the assigned CI quota, including workers."""
+    """Retain completed phase timings and CPU use without changing outcomes."""
     if hasattr(session.config, "workerinput"):
+        session.config.workeroutput["fq_phase_durations"] = session.config.stash[
+            PHASE_DURATIONS
+        ]
         return
     report_directory = os.environ.get("FQ_CI_REPORT_DIR")
     if not report_directory:
@@ -199,4 +266,17 @@ def pytest_sessionfinish(session: pytest.Session, exitstatus: int) -> None:
         "exit_status": int(exitstatus),
     }
     (directory / "test-usage.json").write_text(json.dumps(payload, indent=2) + "\n")
+    durations = session.config.stash[PHASE_DURATIONS]
+    timing = {
+        "schema": "flagquantum_pytest_durations_v1",
+        "source_sha": os.environ.get("GITHUB_SHA"),
+        "run_id": os.environ.get("GITHUB_RUN_ID"),
+        "run_attempt": os.environ.get("GITHUB_RUN_ATTEMPT"),
+        "selected_nodes": session.testscollected,
+        "recorded_nodes": len(durations),
+        "complete": len(durations) == session.testscollected,
+        "exit_status": int(exitstatus),
+        "tests": dict(sorted(durations.items())),
+    }
+    (directory / "test-durations.json").write_text(json.dumps(timing, indent=2) + "\n")
     print("CI quota usage: " + json.dumps(payload), flush=True)

@@ -24,7 +24,13 @@ a forwarding module at the old path.
 For local execution, start with `kernel.py`. For MPS circuit lowering and the
 nearest-neighbor CX fast-path decision, start with `mps/lowering.py`. The latter
 may recognize and lower circuit structure, but delegates tensor initialization,
-updates, contraction, and observable evaluation to Simulation.
+updates, contraction, and observable evaluation to Simulation. Same-wire gate
+composition and local operator batches are implemented in
+`simulation/numerics/jax.py`. Rank-owned batched zero sites are created in
+`simulation/mps/jax/batched.py`; Runtime retains rank assignment and device
+placement. Optional JAX admission still occurs before an empty circuit or rank
+assignment returns. Run `tests/unit/test_jax_mps_preparation_ownership.py` with
+JAX installed for defining-owner replacements, precision and gradient checks.
 
 For MPS differentiation, local parameter VJPs, boundary-gate adjoints, and
 QR/SVD pullbacks live in `flagquantum/simulation/mps/jax/pullbacks.py`.
@@ -72,3 +78,20 @@ Statevector and TensorNetwork result adapters retain optional Torch admission,
 qubit validation and reconstruction/cache. Raw probabilities and ordered Z
 values are computed by Simulation Numerics; public method and alias identities
 remain on the existing result types.
+
+## Representation conversion ownership
+
+`array_conversions.py` owns only the gate and parameter conversions actually
+shared by representations. Statevector shard records are reconstructed in
+`statevector/execution.py`; MPS split evidence is assembled in `mps/execution.py`;
+Torch tensor-network nodes cross the JAX boundary in `tensor_network/execution.py`.
+Tensor-network gradients reuse that conversion directly. These three helpers
+have no forwarding bindings in the shared conversion module.
+
+In-process statevector shard gate mathematics lives in
+`simulation/statevector/jax/kernels.py::jax_apply_gate_to_shard_arrays`. Runtime
+retains optional-engine readiness, matrix-shape admission, plans, immutable
+index references and result record assembly. The numerical owner receives arrays
+and index values, never Runtime records or plans. It performs no collective and
+does not establish multi-device or multi-node capacity. The existing communication
+count and nonproduction classifications remain authoritative.

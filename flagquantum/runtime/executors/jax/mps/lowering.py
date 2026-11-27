@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import os
 from collections.abc import Callable
+from importlib import import_module
 from typing import Any
 
 TorchCircuitBuilder = Callable[..., Any]
@@ -30,6 +31,7 @@ from flagquantum.simulation.mps.jax.kernels import (  # noqa: E402
 from flagquantum.simulation.mps.jax.kernels import (  # noqa: E402
     jax_mps_project_open_boundaries as _jax_mps_project_open_boundaries,
 )
+from flagquantum.simulation.numerics import jax as _jax_numerics  # noqa: E402
 from flagquantum.simulation.numerics.jax import (  # noqa: E402
     _jax_cx,
     _jax_instruction_matrix,
@@ -46,7 +48,7 @@ def _jax_mps_from_circuit(
     cutoff: float = 0.0,
     matmul_precision: str | None = "highest",
 ) -> Any:
-    import jax.numpy as jnp
+    import_module("jax.numpy")
 
     del parameters
     structured = _jax_mps_from_nearest_cx_layers(
@@ -87,7 +89,9 @@ def _jax_mps_from_circuit(
             pending_one_qubit[wire] = (
                 matrix
                 if pending is None
-                else jnp.matmul(matrix, pending, precision=matmul_precision)
+                else _jax_numerics._jax_compose_gate_matrices(
+                    matrix, pending, matmul_precision
+                )
             )
         elif len(wires) == 2:
             flush_all_one_qubit()
@@ -150,7 +154,7 @@ def _parse_nearest_cx_layers(
     n_wires: int,
     matmul_precision: str | None,
 ) -> tuple[list[Any], Any] | None:
-    import jax.numpy as jnp
+    import_module("jax.numpy")
 
     instructions = list(circuit.to_ir())
     if not instructions:
@@ -168,7 +172,9 @@ def _parse_nearest_cx_layers(
             if wire < 0 or wire >= int(n_wires):
                 return None
             matrix = _jax_instruction_matrix(instruction)
-            local[wire] = jnp.matmul(matrix, local[wire], precision=matmul_precision)
+            local[wire] = _jax_numerics._jax_compose_gate_matrices(
+                matrix, local[wire], matmul_precision
+            )
             saw_local = True
             index += 1
         if not saw_local:
@@ -185,5 +191,5 @@ def _parse_nearest_cx_layers(
             ):
                 return None
             index += 1
-        layers.append(jnp.stack(local))
+        layers.append(_jax_numerics._jax_stack_gate_matrices(local))
     return layers, _jax_cx()

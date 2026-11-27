@@ -6,10 +6,10 @@ from collections.abc import Callable, Sequence
 from typing import Any
 
 from flagquantum.core.ir import ensure_circuit_ir
+from flagquantum.simulation.statevector.jax import kernels as _statevector_numerics
 
 from ....distributed.backend_policy import DistributedBackendPolicy
 from ..array_conversions import (
-    _apply_gate_to_jax_shards,
     _gate_matrix_as_jax,
     _jax_parameter_array_from_input,
     _parameterized_gate_matrix_as_jax,
@@ -408,4 +408,44 @@ def jax_sharded_statevector_parameter_value_and_grad(
         backward_execution=str(production_preflight["execution"]),
         production_device_summary=production_preflight["device_summary"],
         production_blockers=tuple(production_preflight["blockers"]),
+    )
+
+
+def _apply_gate_to_jax_shards(
+    shards: Sequence[JAXStatevectorShardState],
+    matrix: Any,
+    qubits: Sequence[int],
+    *,
+    plan: Any,
+    diagonal: bool,
+) -> tuple[JAXStatevectorShardState, ...]:
+    _require_jax()
+    shards = tuple(shards)
+    if not shards:
+        return ()
+    qubits = tuple(int(qubit) for qubit in qubits)
+    width = len(qubits)
+    gate_dim = 2**width
+    if tuple(matrix.shape[-2:]) != (gate_dim, gate_dim):
+        raise ValueError(
+            f"Gate on {width} qubits requires matrix shape {(gate_dim, gate_dim)}."
+        )
+    amplitudes = _statevector_numerics.jax_apply_gate_to_shard_arrays(
+        tuple(shard.amplitudes for shard in shards),
+        tuple(shard.global_indices for shard in shards),
+        tuple(shard.global_indices_tuple for shard in shards),
+        matrix,
+        qubits,
+        n_qubits=plan.n_qubits,
+        diagonal=diagonal,
+    )
+    return tuple(
+        JAXStatevectorShardState(
+            rank=shard.rank,
+            shard=shard.shard,
+            amplitudes=amplitudes[index],
+            global_indices=shard.global_indices,
+            global_indices_tuple=shard.global_indices_tuple,
+        )
+        for index, shard in enumerate(shards)
     )
