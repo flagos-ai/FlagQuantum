@@ -92,3 +92,42 @@ architecture, multilevel IR and protected API checks pass. The original notebook
 test separately passes with twenty deselections and five upstream marker warnings.
 The slow suite timeout is recorded as incomplete evidence. No repeated slow run
 is used to inflate its disposition.
+
+
+## Complete original test-file acceptance and remaining root (2026-11-28)
+
+Q-0659 is accepted after closing the two previously unverified slow source
+responsibilities. Each original slow node was executed unchanged in the same
+Cirq 1.6 profile: three sites / epsilon 0.5 passes in 103.65 seconds, four sites /
+epsilon 0.5 passes in 133.73 seconds, and the three-site adjoint tensor comparison
+passes in 1.78 seconds. Both simulation tests loop over every Hamiltonian
+eigenstate with the original assertions. These are actual complete test nodes,
+not sampled replacements, renamed tests or assertions transplanted to a faster
+implementation. The original 180-second whole-run timeout remains historical
+incomplete evidence; it is superseded only for these exact newly passed nodes.
+
+The unchanged non-slow factory/autotest, controlled-adjoint count, diagram and
+notebook receipts above are reused, retaining source skips/xfails and SDK
+profiles. Native migrated responsibilities continue to use existing complete
+small operators, exact inverse, actual four-site physical context capture,
+full complex joint states, applicable history certificates, clean private work,
+source-free append and separately reported resource models. Actual source slow
+simulation is not relabeled a dense native all-environment operator proof.
+
+The current native concentrated batch passes 186 cases and the independent
+Cirq 1.6 context/Ising batch passes 57. All 88 frozen source/dependency/asset blobs
+are unchanged. No Python implementation, public contract or source test changes.
+Strict production, 32 local integration and actual Kickmix Simulator evidence
+from accepted predecessor batches is reused. Owner scope, language, links,
+architecture, IR, protected API baseline and whitespace remain required checks.
+
+Q-0658 remains open. Its generic two-child composition, exact inverse and
+explicit context entry are implemented, but the complete native dependency
+contexts for the original large THC and sparse chemistry examples are still
+pending. Their metadata/producer diagnostics and source atomic/invalid-cleanup
+boundaries are recorded in the constructor audit; descriptor admission alone
+is not executable child-body proof. The next batch must address the complete
+chemistry source owners and their actual contexts before claiming this root
+closed. Retained signal junk remains live, and lossy source-ABI binding is
+refused. Neither slow-test completion nor the small replacement fixture closes
+that separate implementation obligation.
