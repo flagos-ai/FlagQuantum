@@ -25,7 +25,7 @@ from flagquantum.runtime.evolution import _plan as plan_module
 from flagquantum.runtime.evolution import plan as plan_lindblad_evolution
 from flagquantum.runtime.evolution import run as run_lindblad_evolution
 from flagquantum.simulation import amplitude_damping, evolve_density_matrix
-from flagquantum.simulation.dynamics import lindblad as lindblad_module
+from flagquantum.simulation.dynamics import problem as lindblad_problem
 from flagquantum.simulation.dynamics.generator import (
     DEFAULT_DENSE_GENERATOR_BYTES,
     Liouvillian,
@@ -108,7 +108,7 @@ def _generator_and_state() -> tuple[Liouvillian, torch.Tensor, torch.Tensor]:
 
 
 def _pauli_sum_complex64() -> PauliSum:
-    representation = lindblad_module._normalize_hamiltonian(
+    representation = lindblad_problem._normalize_hamiltonian(
         fq.Z(0),
         n_wires=1,
         dim=2,
@@ -123,7 +123,7 @@ def _pauli_sum_complex64() -> PauliSum:
 def _pauli_sum(observable: object) -> PauliSum:
     """Normalize a Pauli-sum Hamiltonian the way the planner does."""
 
-    representation = lindblad_module._normalize_hamiltonian(
+    representation = lindblad_problem._normalize_hamiltonian(
         observable,
         n_wires=_WIRES,
         dim=_DIMENSION,

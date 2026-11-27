@@ -8,6 +8,9 @@ from typing import TYPE_CHECKING
 import torch
 
 from flagquantum.core.operators.schema import canonical_opcode
+from flagquantum.simulation.statevector.diagonal_matrix_dispatch import (
+    _apply_diagonal_matrix,
+)
 
 from ...core.ir import Instruction
 from ..gate_matrix import gate_matrix as _gate_matrix
@@ -21,7 +24,6 @@ from .controlled_phase import (
 from .cz_graph import _apply_cz_graph_cpu, _cz_graph_signs_cpu
 from .operations import (
     _apply_cx_sequence_gather,
-    _apply_diagonal_matrix,
     _apply_fixed_permutation,
     _apply_matrix,
     _apply_single_qubit_fixed,

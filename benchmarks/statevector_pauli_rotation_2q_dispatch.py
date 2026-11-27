@@ -137,10 +137,10 @@ def _apply_product_reference(
 ) -> torch.Tensor:
     """Apply the existing dense-matrix route from the same angle inputs."""
 
-    from flagquantum.simulation.statevector.operations import (
+    from flagquantum.simulation.statevector.diagonal_matrix_dispatch import (
         _apply_diagonal_matrix,
-        _apply_matrix_layout,
     )
+    from flagquantum.simulation.statevector.operations import _apply_matrix_layout
 
     cosine = torch.cos(angles / 2)
     sine = torch.sin(angles / 2)

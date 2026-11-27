@@ -15,7 +15,7 @@ from flagquantum.errors import CapabilityError
 from flagquantum.qec.execution.context import MeasurementMap
 from flagquantum.qec.execution.measurement_conversion import compile_m2d_converter
 from flagquantum.simulation.stabilizer import _record_conversion
-from flagquantum.simulation.stabilizer.engine import _annotated_stim_source
+from flagquantum.simulation.stabilizer._circuit_text import _annotated_stim_source
 
 pytestmark = pytest.mark.integration
 

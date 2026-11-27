@@ -7,14 +7,13 @@ from collections.abc import Sequence
 import torch
 
 from flagquantum.core.operators.schema import canonical_opcode
+from flagquantum.simulation.statevector.diagonal_matrix_dispatch import (
+    _apply_diagonal_matrix,
+)
 
 from ...core.ir import Instruction
 from ..native_cpu import fused_observable_adjoint_seed, fused_rotation_adjoint_
-from .operations import (
-    _DIAGONAL_STATEVECTOR_GATES,
-    _apply_diagonal_matrix,
-    _apply_matrix,
-)
+from .operations import _DIAGONAL_STATEVECTOR_GATES, _apply_matrix
 
 
 def analytic_rotation_derivative(

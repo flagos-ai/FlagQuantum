@@ -124,10 +124,10 @@ def collect_run(args: argparse.Namespace) -> dict[str, object]:
     from flagquantum.simulation.kernels.triton.statevector_pauli_rotation import (
         apply_complex64_local_pauli_rotation_2q,
     )
-    from flagquantum.simulation.statevector.operations import (
+    from flagquantum.simulation.statevector.diagonal_matrix_dispatch import (
         _apply_diagonal_matrix,
-        _apply_matrix_layout,
     )
+    from flagquantum.simulation.statevector.operations import _apply_matrix_layout
 
     if not torch.cuda.is_available():
         raise RuntimeError("CUDA is required for SV-011 benchmark evidence")

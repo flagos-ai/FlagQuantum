@@ -112,11 +112,9 @@ def collect_run(args: argparse.Namespace) -> dict[str, object]:
     """Execute one host/compiler lane of the fixed public dispatch matrix."""
 
     from flagquantum.simulation.statevector.diagonal_matrix_dispatch import (
-        _diagonal_matrix_kernel_enabled,
-    )
-    from flagquantum.simulation.statevector.operations import (
         _apply_diagonal_matrix,
         _apply_diagonal_matrix_reference,
+        _diagonal_matrix_kernel_enabled,
     )
 
     if not torch.cuda.is_available():

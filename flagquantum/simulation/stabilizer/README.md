@@ -462,3 +462,11 @@ complete detector and observable shape. Marker-free builds use the Stim SDK.
 The FlagQuantum memory-circuit text exporter still uses the SDK.
 Start with `tests/team/simulation/test_stim_annotated_engine.py` for exact-model
 and original-circuit checks.
+
+## Annotated circuit text
+
+`_circuit_text.py` owns annotated Stim text/source conversion. Consumers import
+that module directly; `engine.py` keeps its public engine and validation work.
+Run `tests/team/simulation/test_stim_annotated_engine.py`,
+`test_stim_memory_export.py` and `test_terminal_readout_conversion_conformance.py`
+for the existing embedded/reference replacement workflows.

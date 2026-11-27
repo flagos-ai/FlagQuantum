@@ -9,12 +9,12 @@ import torch
 
 import flagquantum.simulation.statevector.diagonal_matrix_dispatch as dispatch
 from flagquantum.simulation.statevector.diagonal_matrix_dispatch import (
+    _apply_diagonal_matrix,
     _diagonal_matrix_dispatch_enabled,
     _diagonal_matrix_kernel_match,
     _diagonal_matrix_shape_supported,
     _require_diagonal_matrix_kernel,
 )
-from flagquantum.simulation.statevector.operations import _apply_diagonal_matrix
 
 pytestmark = pytest.mark.unit
 

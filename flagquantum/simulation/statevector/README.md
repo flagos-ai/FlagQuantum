@@ -44,3 +44,13 @@ controllers. Forward/reverse local block composition shares the numerical tensor
 product in `simulation/gate_matrix.py`; admissibility and scratch evidence stay
 with their Runtime sweeps. Start with `tests/test_dynamic_circuit.py` and
 `tests/test_dynamic_conformance.py` for the trajectory path.
+
+## Internal helper ownership
+
+Import readout from `measurement_ops.py`, dense/diagonal actions from their
+CPU or dispatch modules, and compiled step records from `program.py`.
+`local.py` and `operations.py` retain execution/compilation and their actual
+dependencies; they do not re-export unused helpers for consumers.
+Run the sample-request, single-wire, diagonal-catalog and operations-numerics
+scenarios when updating these imports. Existing algorithm and dispatch
+assertions remain authoritative.

@@ -15,6 +15,8 @@ from typing import Any
 
 import torch
 
+from flagquantum.simulation.stabilizer._circuit_text import _annotated_stim_source
+
 from ...core.classical_control import is_classical_control_instruction
 from ...core.ir import CircuitIR, Instruction
 from ...errors import CapabilityError
@@ -29,7 +31,6 @@ from ._measurement_file_validation import (
 )
 from .engine import (
     CLIFFORD_GATE_NAMES,
-    _annotated_stim_source,
     _parse_stim_experiment,
     _validate_stim_reference,
 )
