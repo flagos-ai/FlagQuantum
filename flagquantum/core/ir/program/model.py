@@ -111,7 +111,7 @@ class Operation:
         literal: The compile constant, present only on `CONSTANT_OPCODE`.
         condition_clauses: Disjunction of conjunctions over boolean SSA values.
         callee: Same-module function name, present only for a finite call.
-        register_type: Destination descriptor for a join or allocation.
+        register_type: Destination descriptor for a join, allocation or classical cast.
         workspace_dirty: Explicit borrowing flag for allocation or release.
         matrix: Immutable complex rows owned by an explicit unitary leaf.
         kraus: Immutable channel matrices for a materialized channel leaf.

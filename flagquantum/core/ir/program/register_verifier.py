@@ -329,6 +329,7 @@ def verify_register_block(
             "parity_register",
             "read_classical_register",
             "write_classical_register",
+            "cast_classical_register",
             "discard_classical_register",
         }
         or op.register_type is not None
@@ -391,6 +392,25 @@ def verify_register_block(
                         "classical discard requires an owned CBit register",
                     )
                 )
+        elif operation.opcode == "cast_classical_register":
+            signatures[position] = OpcodeSignature(
+                operation.opcode,
+                operand_kinds=("register",),
+                result_kinds=("register",),
+            )
+            source = types.get(operation.operands[0]) if operation.operands else None
+            target = operation.register_type
+            try:
+                if source is None or target is None:
+                    raise ValueError("classical cast requires source and target types")
+                if logical_classical_register_width(
+                    source
+                ) != logical_classical_register_width(target):
+                    raise ValueError("classical cast must preserve raw bit width")
+            except ValueError as exc:
+                diagnostics.append(_diagnostic("program.register_type", str(exc)))
+            else:
+                types.update((value, target) for value in operation.results)
         elif operation.opcode in {
             "read_classical_register",
             "write_classical_register",
@@ -510,6 +530,7 @@ def verify_register_block(
             "parity_register",
             "read_classical_register",
             "write_classical_register",
+            "cast_classical_register",
             "discard_classical_register",
         }:
             if (
@@ -529,13 +550,14 @@ def verify_register_block(
                     )
                 )
         if (
-            operation.opcode not in {"join_register", "allocate_register"}
+            operation.opcode
+            not in {"join_register", "allocate_register", "cast_classical_register"}
             and operation.register_type is not None
         ):
             diagnostics.append(
                 _diagnostic(
                     "program.register_structure",
-                    "only join/allocation can state a register type",
+                    "only join/allocation/classical cast can state a register type",
                 )
             )
     returned = block.return_values or ()
