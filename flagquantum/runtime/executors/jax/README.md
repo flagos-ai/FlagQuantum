@@ -24,7 +24,13 @@ a forwarding module at the old path.
 For local execution, start with `kernel.py`. For MPS circuit lowering and the
 nearest-neighbor CX fast-path decision, start with `mps/lowering.py`. The latter
 may recognize and lower circuit structure, but delegates tensor initialization,
-updates, contraction, and observable evaluation to Simulation.
+updates, contraction, and observable evaluation to Simulation. Same-wire gate
+composition and local operator batches are implemented in
+`simulation/numerics/jax.py`. Rank-owned batched zero sites are created in
+`simulation/mps/jax/batched.py`; Runtime retains rank assignment and device
+placement. Optional JAX admission still occurs before an empty circuit or rank
+assignment returns. Run `tests/unit/test_jax_mps_preparation_ownership.py` with
+JAX installed for defining-owner replacements, precision and gradient checks.
 
 For MPS differentiation, local parameter VJPs, boundary-gate adjoints, and
 QR/SVD pullbacks live in `flagquantum/simulation/mps/jax/pullbacks.py`.

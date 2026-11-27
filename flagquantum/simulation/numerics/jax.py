@@ -81,6 +81,21 @@ def jax_evaluate_declared_batch(circuit: Any, evaluate: Callable[[], Any]) -> An
     return jax.vmap(entry)(jnp.arange(size))
 
 
+def _jax_compose_gate_matrices(
+    matrix: Any, previous: Any, matmul_precision: str | None
+) -> Any:
+    """Compose successive gates in their action order, preserving JAX precision."""
+    import jax.numpy as jnp
+
+    return jnp.matmul(matrix, previous, precision=matmul_precision)
+
+
+def _jax_stack_gate_matrices(matrices: list[Any]) -> Any:
+    import jax.numpy as jnp
+
+    return jnp.stack(matrices)
+
+
 def _jax_apply_matrix(
     state: Any,
     matrix: Any,
