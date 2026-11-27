@@ -88,6 +88,14 @@ print(json.dumps(result))
         ("test_generalized_qsp_shaped_unitary", "cirq", None),
         ("test_generalized_qsp_stored_unitary", "cirq", None),
         ("test_hamiltonian_gqsp", "numpy", None),
+        ("test_complex_phase_oracle", "cirq", None),
+        ("test_hamming_phasing_file", "numpy", None),
+        ("test_sparse_chemistry_prepare", "numpy", None),
+        (
+            "test_sparse_rotation_preparation",
+            "numpy",
+            ("test_original_sparse_state_grid", (None, 4)),
+        ),
         (
             "test_hamiltonian_gqsp_component_library",
             "cirq",
