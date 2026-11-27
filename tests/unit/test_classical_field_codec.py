@@ -3,7 +3,12 @@
 from itertools import product
 from typing import Any
 
-import numpy as np
+from tests._reference_dependencies import unavailable_reference
+
+try:
+    import numpy as np
+except ModuleNotFoundError as _reference_import_error:
+    unavailable_reference(_reference_import_error)
 import pytest
 import torch
 
@@ -17,6 +22,7 @@ from flagquantum.simulation.finite_field_encoding import FiniteFieldEncoding
 from flagquantum.simulation.tensor_network.classical_action_tensor import (
     classical_action_tensor,
 )
+from tests.unit.register_source_graph import source_line_qubit_index
 
 pytestmark = [pytest.mark.unit, pytest.mark.ftqc_reference]
 CASES = [
@@ -31,7 +37,7 @@ CASES = [
 
 def field_pair(width: int, mode: str) -> tuple[FiniteFieldEncoding, Any]:
     import galois
-    from qualtran import QGF
+    from qualtran._infra.data_types import QGF
 
     if mode == "default":
         return FiniteFieldEncoding(2, width), QGF(2, width)
@@ -80,9 +86,9 @@ def test_all_field_words_types_polynomial_identity_and_array_errors(
 def test_original_default_field_tensor_identity_failure_is_preserved(
     width: int, mode: str
 ) -> None:
-    from qualtran import Bloq
-    from qualtran import Register as SourceRegister
-    from qualtran import Signature as SourceSignature
+    from qualtran._infra.bloq import Bloq
+    from qualtran._infra.registers import Register as SourceRegister
+    from qualtran._infra.registers import Signature as SourceSignature
     from qualtran.simulation.tensor._tensor_from_classical import (
         bloq_to_dense_via_classical_action,
     )
@@ -113,9 +119,10 @@ def test_original_default_field_tensor_identity_failure_is_preserved(
 def test_field_input_only_effect_uses_default_decoder_successfully(
     width: int, mode: str
 ) -> None:
-    from qualtran import Bloq, Side
-    from qualtran import Register as SourceRegister
-    from qualtran import Signature as SourceSignature
+    from qualtran._infra.bloq import Bloq
+    from qualtran._infra.registers import Register as SourceRegister
+    from qualtran._infra.registers import Side
+    from qualtran._infra.registers import Signature as SourceSignature
     from qualtran.simulation.tensor._tensor_from_classical import (
         bloq_to_dense_via_classical_action,
     )
@@ -146,11 +153,15 @@ def test_typed_field_codecs_full_add_matrix_exact_gates_and_complex_append(
 ) -> None:
     from collections import Counter
 
-    import cirq
-    from qualtran.bloqs.basic_gates import CNOT
+    try:
+        import cirq
+    except ModuleNotFoundError as _reference_import_error:
+        unavailable_reference(_reference_import_error)
+    from qualtran.bloqs.basic_gates.cnot import CNOT
     from qualtran.bloqs.gf_arithmetic.gf2_addition import GF2Addition
-    from qualtran.cirq_interop import BloqAsCirqGate
-    from qualtran.resource_counting import QECGatesCost, get_cost_value
+    from qualtran.cirq_interop._bloq_to_cirq import BloqAsCirqGate
+    from qualtran.resource_counting._bloq_counts import QECGatesCost
+    from qualtran.resource_counting._costing import get_cost_value
 
     from examples.algorithms.binary_field_arithmetic import FieldOperation
     from flagquantum.circuit import Circuit
@@ -191,7 +202,7 @@ def test_typed_field_codecs_full_add_matrix_exact_gates_and_complex_append(
     expected = []
     for op in circuit.all_operations():
         assert op.gate in {cirq.CNOT, BloqAsCirqGate(CNOT())}
-        expected.append(("cx", tuple(q.x for q in op.qubits)))
+        expected.append(("cx", tuple(source_line_qubit_index(q) for q in op.qubits)))
     assert [(g.name, g.wires) for g in bound.circuit.instructions] == expected
     assert Counter(g.name for g in bound.circuit.instructions) == {"cx": width}
     assert get_cost_value(source, QECGatesCost()).clifford == width
