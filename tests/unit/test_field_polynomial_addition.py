@@ -1,5 +1,12 @@
 """Verify the pinned polynomial XOR stream, resources, and coherent action."""
 
+from tests._reference_dependencies import unavailable_reference
+
+try:
+    import numpy as numpy
+except ModuleNotFoundError as _reference_import_error:
+    unavailable_reference(_reference_import_error)
+
 import pytest
 import torch
 
@@ -12,6 +19,7 @@ from flagquantum.compiler.registers.finite_field.field_polynomial_addition impor
 from flagquantum.compiler.registers.finite_field.field_polynomial_layout import (
     FieldPolynomialLayout,
 )
+from tests.unit.register_source_graph import source_line_qubit_index
 
 pytestmark = pytest.mark.unit
 
@@ -22,13 +30,21 @@ def test_polynomial_add_gate_stream_and_source_resources(
     degree: int, width: int
 ) -> None:
     pytest.importorskip("qualtran")
-    import cirq
-    import numpy as np
-    from qualtran import QGF, QGFPoly
-    from qualtran.bloqs.basic_gates import CNOT
+    try:
+        import cirq
+    except ModuleNotFoundError as _reference_import_error:
+        unavailable_reference(_reference_import_error)
+    try:
+        import numpy as np
+    except ModuleNotFoundError as _reference_import_error:
+        unavailable_reference(_reference_import_error)
+    from qualtran._infra.data_types import QGF, QGFPoly
+    from qualtran.bloqs.basic_gates.cnot import CNOT
     from qualtran.bloqs.gf_poly_arithmetic.gf2_poly_add import GF2PolyAdd
-    from qualtran.cirq_interop import BloqAsCirqGate
-    from qualtran.resource_counting import QECGatesCost, QubitCount, get_cost_value
+    from qualtran.cirq_interop._bloq_to_cirq import BloqAsCirqGate
+    from qualtran.resource_counting._bloq_counts import QECGatesCost
+    from qualtran.resource_counting._costing import get_cost_value
+    from qualtran.resource_counting._qubit_counts import QubitCount
 
     layout = FieldPolynomialLayout(degree, width)
     n = layout.logical_width
@@ -43,13 +59,14 @@ def test_polynomial_add_gate_stream_and_source_resources(
             g_x=np.array([cirq.LineQubit(wire) for wire in right]),
         )
     )
-    assert [q.x for q in outputs["f_x"]] == list(left)
-    assert [q.x for q in outputs["g_x"]] == list(right)
+    assert [source_line_qubit_index(q) for q in outputs["f_x"]] == list(left)
+    assert [source_line_qubit_index(q) for q in outputs["g_x"]] == list(right)
     reference = tuple(lowered.all_operations())
     assert all(op.gate in {cirq.CNOT, BloqAsCirqGate(CNOT())} for op in reference)
     actual = gf2_polynomial_add_ir(left, right, layout)
     assert [(gate.name, gate.wires) for gate in actual] == [
-        ("cx", tuple(q.x for q in gate.qubits)) for gate in reference
+        ("cx", tuple(source_line_qubit_index(q) for q in gate.qubits))
+        for gate in reference
     ]
     resources = source_gf2_polynomial_add_resource_formula(degree, width)
     gates = get_cost_value(source, QECGatesCost())
@@ -63,9 +80,11 @@ def test_polynomial_add_gate_stream_and_source_resources(
 def test_symbolic_polynomial_add_cost_matches_locked_formula() -> None:
     pytest.importorskip("qualtran")
     import sympy
-    from qualtran import QGF, QGFPoly
+    from qualtran._infra.data_types import QGF, QGFPoly
     from qualtran.bloqs.gf_poly_arithmetic.gf2_poly_add import GF2PolyAdd
-    from qualtran.resource_counting import QECGatesCost, QubitCount, get_cost_value
+    from qualtran.resource_counting._bloq_counts import QECGatesCost
+    from qualtran.resource_counting._costing import get_cost_value
+    from qualtran.resource_counting._qubit_counts import QubitCount
 
     degree, width = sympy.symbols("n m", positive=True, integer=True)
     source = GF2PolyAdd(QGFPoly(degree, QGF(2, width)))
