@@ -74,4 +74,5 @@ runtime execution are outside this proposal.
    original one-Clifford, two-qubit model. This static atom has no measurement
    branches; measured predicate evidence remains with its existing owner.
 
-Before approval, preserve the current rejection and leave Q-0271/Q-0272 open.
+The user approved this exact scope on 2026-11-27. Contract and implementation
+commits remain separate; review Q-0271/Q-0272 after complete local acceptance.
