@@ -3,10 +3,10 @@
 G2-FILE-FIELD-SQUARE audits Q-0521, Q-0522 and Q-0523 against Qualtran v0.7.0
 commit `bcb17bb25360ed68ce3bc084645db3e929799389`. All three selected assets and
 the direct `gf2_multiplication.py`/`gf_utils.py` dependencies match their frozen
-Git blobs. The entire notebook Q-0521 closes. Implementation Q-0522 remains open
-for the source matrix/adjoint, bookkeeping and generic admission boundaries.
-Original test Q-0523 closes after the actual-factory protocol mapping below;
-this does not claim full unchanged-source mathematical gate equivalence.
+Git blobs. The entire notebook Q-0521 and original test Q-0523 are accepted.
+Implementation Q-0522 is accepted after the literal square constructor closure
+below (2026-11-27). Earlier remaining-boundary sections describe historical
+state. Exact source behavior and corrected mathematical behavior remain distinct.
 
 ## Ownership, interfaces and work
 
@@ -333,3 +333,56 @@ IR and protected API checks pass. Production owners are unchanged, so the
 accepted 145 local integration cases and unchanged 720 dependency baseline from
 the preceding production batch are explicitly reused. Primitive counts remain
 separate from the source resource model. All batch jobs are terminal.
+
+
+## Complete literal square constructor closure — 2026-11-27
+
+Q-0522 closes after implementing the actual source matrix-power schedule and
+ignored physical inverse flag, rather than substituting corrected Frobenius.
+`field_square_decomposition_matrix` retains every original M/R update, including
+zero/negative counts and non-power-of-two defects. `field_square_decomposition_program`
+composes the shared word/linear adapter without changing that matrix or physical
+direction. Existing `field_frobenius_program` retains correct mathematical powers
+and exact adjoints. The shared adapter is a static Compiler transform; no SDK or
+numerical runtime enters Compiler.
+
+The actual catalog selects the literal owner, retaining Split / linear / Join
+calls and returned wire aliases. Source square and linear declared dagger labels
+are qualified against the complete literal body; a corrected mathematical body
+cannot acquire the source label under a mismatched context. Concrete scalar
+aliases use the explicit storage realization described in the addition audit,
+while the default metadata projection and classical semantics remain unchanged.
+
+Six fields, including two degree-four polynomials and degree eight, are compared
+against untouched source matrices, builder-order operands, exported per-wire
+order, free output aliases and independent source models. Counts -3/0/1/2/3/4/5/7/8
+and both source direction flags are covered. Complete original complex operators
+and coherent spectators are compared through degree eight for -3/0/1/3/5 in both
+directions. Clean unused wires stay zero. Captured primitives' native exact
+inverse restores the input; the defective source flag is not claimed to do so.
+No measurements occur. Optional SDK imports and the former mathematical physical
+emitter are blocked in the replacement execution check.
+
+| Literal case, either source flag | Measured CX | Independent source Clifford | Shape-only bound | Explicit binding SWAP |
+|---|---:|---:|---:|---:|
+| degree3, polynomial0xB, k0 or k1 | 1 | 1 | 6 | 1 |
+| degree3, polynomial0xB, k3 | 2 | 2 | 6 | 0 |
+| degree4, polynomial0x13, k0 or k1 | 2 | 2 | 12 | 1 |
+| degree4, polynomial0x13, k3 | 5 | 5 | 12 | 0 |
+| degree8, polynomial0x11B, k0 or k1 | 12 | 12 | 56 | 3 |
+| degree8, polynomial0x11B, k3 | 21 | 21 | 56 | 4 |
+
+Logical widths are three/four/eight; work, measurements and T counts are zero.
+Binding SWAPs are outside the source's free-permutation PLU primitive/model
+account. The shape-only m(m-1) formula is an estimate, not an executed gate count.
+Original bookkeeping-count omissions, QGF codec refusals and numerical-callback /
+literal-builder differences remain recorded defects under the approved rule.
+Source successful physical paths are now implemented. Standalone generic linear
+responsibilities outside this complete square consumer remain with Q-0519.
+
+The shared batch verification is recorded in the addition audit: 1457 focused,
+32 local integration, 222 secondary-Cirq cases, strict typing on eleven files,
+and all mandatory static checks pass. The three unchanged original addition /
+square suites report 26 passes, nine skips and nine xfails. Frozen source blobs
+and real Kickmix Simulator are verified. Existing notebook, full factory protocol
+and numerical-callback evidence is reused. Receipts use `g2-field-literal-*`.

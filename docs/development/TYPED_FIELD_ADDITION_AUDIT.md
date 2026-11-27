@@ -24,7 +24,7 @@ The focused regression covers this adapter, the previous whole-file
 addition audit, the finite-field package surface, and the Program builder.
 All 94 tests passed.
 
-## Remaining file boundaries
+## Historical file boundaries
 
 Q-0510 and Q-0513 use native resolved field descriptors at this entry.
 The source foreign QGF constructors remain documented in
@@ -34,3 +34,14 @@ expected failures. The source declared gate counts omit Split and Join.
 The native physical Program codec rejects the logical graph and the bound
 CircuitIR codec accepts its executable result. The four inventory rows
 remain open for these documented boundaries.
+
+
+## Current acceptance — 2026-11-27
+
+Q-0510/Q-0513 and their original test parents are accepted after the complete
+literal constructor closure in [the whole-file audit](FIELD_ADDITION_FILE_AUDIT.md).
+The historical boundary text above is superseded by that disposition. The raw
+odd-characteristic degree-prefix circuit, exact scalar alias construction and
+source declaration/cache/codec failures are individually mapped there. Numerical
+nonbinary addition is not inferred from the raw circuit. Ordinary append,
+coherent amplitudes and zero work use the same existing execution entry.

@@ -21,7 +21,7 @@ Simulation owns explicit realization of numerical field declarations as quantum
 storage. The existing register_type projection remains fully literal, including
 scalar objects, symbolic expressions and classification order. A separate
 resolve_quantum_field_storage step converts concrete integral aliases to the
-existing Python-integer IR vocabulary and validates the resolved numerical field.
+existing Python-integer IR vocabulary and applies the existing Core storage checks.
 The lazy encoding and original descriptor remain unchanged. Classical projection
 and classical storage realization are unchanged. Explicit malformed or boolean-valued Core
 field descriptors remain rejected by the unchanged Core validator; projection

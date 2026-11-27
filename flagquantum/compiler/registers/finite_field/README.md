@@ -107,3 +107,21 @@ Run `tests/unit/test_field_physical_binding.py` for exact original marked stream
 normal append and exhaustive small complex measurement branches. See
 `docs/development/BINARY_FIELD_BINDING_AUDIT.md` for the complete definition map,
 source allocation translation and separate physical/model accounting.
+
+
+The literal source profile has a separate owner from mathematical field powers:
+`square_component.py` preserves the frozen square schedule and ignored physical
+inverse flag; `field_frobenius_program` retains correct powers and exact inverse.
+Both reuse `linear_component.field_linear_program` for MSB word / coefficient-array
+views. `addition_component.field_addition_decomposition_program` preserves the
+actual source degree-prefix graph on admitted raw field storage; the mathematical
+binary adder retains its binary-only contract. These transforms allocate no work
+and own no backend execution. Simulation's explicit `resolve_quantum_field_storage`
+realizes exact scalar aliases without changing the literal metadata projection.
+
+To work on the source profile, change its small component, keep the mathematical
+owner separate, and run `tests/unit/test_field_square_decomposition.py` or
+`tests/unit/test_field_addition_literal.py`. They show the shortest normal
+`Circuit.append(FieldOperation(...))` path, actual source operators, virtual
+output aliases, coherent spectators and inverse restoration. Their audits retain
+source defects and independently measured primitive/model/binding costs.

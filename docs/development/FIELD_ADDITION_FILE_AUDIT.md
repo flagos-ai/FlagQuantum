@@ -3,11 +3,11 @@
 G2-FILE-FIELD-ADD audits Q-0509 through Q-0514 and the direct converter dependency
 Q-0524 against Qualtran v0.7.0 commit
 `bcb17bb25360ed68ce3bc084645db3e929799389`. All seven original assets match their
-frozen Git blobs. Q-0509, Q-0512 and Q-0524 close. Implementation parents Q-0510
-and Q-0513 remain open for the source bookkeeping/count and generic admission
-boundaries listed below. Test parents Q-0511 and Q-0514 close after the complete
-actual factory/protocol mapping at the end of this audit. Existing source
-failures remain reproducible.
+frozen Git blobs. Q-0509, Q-0512, Q-0524 and the original test parents are
+accepted. Implementation parents Q-0510 and Q-0513 are accepted after the
+complete literal-constructor dependency closure below (2026-11-27). Earlier
+remaining-boundary sections are historical; original failures remain explicit
+under the approved faithful-migration rule.
 
 ## Ownership, interfaces and work
 
@@ -295,3 +295,53 @@ Combined totals are derived from the preceding published export plus eight
 exact new field children. They are 3833 JSON files, 3832 diagrams, 234 docs,
 3479 contextual children, 75 decomposed roots, 278 atomic interfaces and
 345 qualified decomposable descendants. Q-0120 remains open for broader groups.
+
+
+## Complete literal constructor and dependency closure — 2026-11-27
+
+Q-0510 and Q-0513 close after implementing the previously missing successful
+source paths. `field_addition_decomposition_program` preserves the actual
+Split/CX/Join builder, including the degree-prefix behavior on odd-characteristic
+raw quantum storage. The existing binary mathematical adder still rejects those
+fields. No nonbinary numerical quantum arithmetic is claimed. Original scalar
+callbacks remain owned by Simulation and return the original field sum; the
+quantum prefix circuit can disagree (GF(3), inputs 1 and 1). Full original
+operators, every raw encoding, permuted ports, coherent spectator, clean unused
+wire and self-inverse restoration agree with the literal native circuit.
+
+`field_addition_catalog_program` now selects that literal owner. Constant
+addition accepts exact indexable scalar aliases, including bool, NumPy integers
+and scalar field values, without rounding; symbolic constants retain the source
+refusal and symbolic width bound. Original field-scalar constants are unhashable
+in the source cost cache; the direct original declaration is independently
+queried and matches the physical X count. This source cache failure is retained.
+
+Simulation `resolve_quantum_field_storage` explicitly converts concrete integral
+aliases to existing integer storage metadata. The existing lazy `register_type`
+projection retains original scalar objects, symbolic expressions and evaluation
+order. Neither Core validation nor classical storage is broadened. The original
+converter identity/deprecation warning/complete factory and notebook evidence is
+reused; a parallel foreign attrs API is not introduced.
+
+| Concrete case | Measured primitive CX | Independent source Clifford | Logical wires | Work / measurement |
+|---|---:|---:|---:|---:|
+| GF(8) register addition | 3 | 3 | 6 | 0 / 0 |
+| GF(3) raw degree-prefix circuit | 1 | 1 | 4 | 0 / 0 |
+| GF(9) raw degree-prefix circuit | 2 | 2 | 8 | 0 / 0 |
+| GF(5) raw degree-prefix circuit | 1 | 1 | 6 | 0 / 0 |
+
+These profiles have one coherent branch; there is no measured branch to omit.
+Bookkeeping-count omissions, QGF serialization refusals and source callback /
+raw circuit disagreement are recorded source defects, not corrected-source
+claims. No valid-source path is waived as a defect. Full source constants,
+callbacks, models, notebooks and protocols above remain part of acceptance.
+
+The joint batch passes 1457 concentrated and 32 local integration cases, strict
+mypy on all eleven changed Python files, formatting, architecture, IR and
+required-check mapping. Cirq 1.6.1 passes 222 direct-consumer cases. All three
+unchanged source test files, including slow parameters, report 26 passes, nine
+original skips and nine original xfails. Eleven source/test/notebook/dependency
+blobs are verified; Qualtran 0.7.0 and Kickmix 0.1 Simulator are checked.
+Receipts: `g2-field-literal-{checks,source,resources}-20261127.json` and the
+secondary/original logs in the external reference evidence directory.
+Q-0519 and Q-0516 remain open for their complete multiplication/inverse closure.
