@@ -12,6 +12,7 @@ from ...core.classical_dataflow import ClassicalXor
 from ...core.ir import CircuitIR, Instruction
 from ...core.ir.program import Operation, ProgramRecord, ValueRef, verify_program_record
 from ...core.ir.program.register_verifier import (
+    executable_classical_register_width,
     executable_register_width,
 )
 from ...core.parameters import Parameter, ParameterExpression
@@ -334,6 +335,14 @@ class _PhysicalBinding:
             else:
                 slot = self.bits[before]
                 self.bits.update((value, slot) for value in operation.results)
+        elif opcode == "cast_classical_register":
+            assert operation.register_type is not None
+            executable_classical_register_width(operation.register_type)
+            before, after = operation.operands[0], operation.results[0]
+            if before in self.words:
+                self.words[after] = self.words[before]
+            else:
+                self.bits[after] = self.bits[before]
         elif opcode == "write_classical_register":
             self._write_classical_register(operation)
         elif opcode in {"bool_zero", "bool_one", "bool_xor", "parity_register"}:

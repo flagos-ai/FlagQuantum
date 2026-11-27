@@ -121,7 +121,8 @@ def _is_register_view(
     else:
         operations = (operation,)
     return all(
-        item.opcode in {"split_register", "join_register"} for item in operations
+        item.opcode in {"split_register", "join_register", "cast_classical_register"}
+        for item in operations
     )
 
 
@@ -161,7 +162,11 @@ def _result_widths(
     functions: Mapping[str, FunctionRecord],
     logical_graph: bool,
 ) -> dict[ValueRef, SymbolicInt]:
-    if operation.opcode in {"join_register", "allocate_register"}:
+    if operation.opcode in {
+        "join_register",
+        "allocate_register",
+        "cast_classical_register",
+    }:
         assert operation.register_type is not None
         return {
             value: _connection_width(operation.register_type, logical_graph)

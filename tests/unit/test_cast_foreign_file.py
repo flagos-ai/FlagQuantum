@@ -2,6 +2,7 @@
 
 from collections.abc import Mapping
 from math import prod
+from typing import Any
 
 import pytest
 import torch
@@ -30,10 +31,11 @@ def test_actual_factory_and_shaped_library_resolve_existing_executable_view(
     depth: int, example: bool
 ) -> None:
     np = pytest.importorskip("numpy")
-    from qualtran import QAny, QFxp
-    from qualtran.bloqs.bookkeeping import Cast
-    from qualtran.bloqs.bookkeeping.cast import _cast
-    from qualtran.resource_counting import QECGatesCost, QubitCount, get_cost_value
+    from qualtran._infra.data_types import QAny, QFxp
+    from qualtran.bloqs.bookkeeping.cast import Cast, _cast
+    from qualtran.resource_counting._bloq_counts import QECGatesCost
+    from qualtran.resource_counting._costing import get_cost_value
+    from qualtran.resource_counting._qubit_counts import QubitCount
     from qualtran.serialization.bloq import bloqs_from_proto, bloqs_to_proto
 
     source = _cast.make() if example else Cast(QAny(4), QFxp(4, 2), shape=(2,))
@@ -97,9 +99,11 @@ def test_actual_factory_and_shaped_library_resolve_existing_executable_view(
         torch.testing.assert_close(circuit.state().flatten(), state, rtol=0, atol=0)
 
 
-def test_classical_word_source_view_remains_an_explicit_native_gap() -> None:
-    from qualtran import CInt, CUInt
-    from qualtran.bloqs.bookkeeping import Cast
+def test_classical_word_source_view_binds_with_original_transport_failure_retained() -> (
+    None
+):
+    from qualtran._infra.data_types import CInt, CUInt
+    from qualtran.bloqs.bookkeeping.cast import Cast
     from qualtran.serialization.bloq import bloqs_to_proto
 
     from flagquantum.core.ir.program.register_types import (
@@ -111,14 +115,93 @@ def test_classical_word_source_view_remains_an_explicit_native_gap() -> None:
     assert [source.on_classical_vals(reg=i)["reg"] for i in range(16)] == list(
         range(8)
     ) + list(range(-8, 0))
-    value = object()
+    value: Any = object()
     assert source.as_cirq_op(None, reg=value) == (None, {"reg": value})
     for depth in (0, 1, 2):
         with pytest.raises(TypeError, match="CUInt.*is not recognized"):
             bloqs_to_proto(source, max_depth=depth)
-    with pytest.raises(ValueError, match="unsupported executable register descriptor"):
-        cast_word_function(
-            "classical_view",
-            classical_unsigned_register_type(4),
-            classical_signed_register_type(4),
+    program = cast_word_function(
+        "main", classical_unsigned_register_type(4), classical_signed_register_type(4)
+    )
+    from flagquantum.core.ir.program import ProgramRecord
+
+    for raw in range(16):
+        bound = bind_register_program(
+            ProgramRecord((program,)), ((),), classical_inputs=(raw,), borrowed=(0,)
         )
+        assert bound.classical_outputs == ((0, 1, 2, 3),)
+        assert len(bound.circuit.instructions) == 4  # Initial word, no cast gate.
+        assert bound.events == ()
+
+
+@pytest.mark.parametrize("reverse", (False, True))
+def test_classical_source_callbacks_keep_slots_and_zero_model_cost(
+    reverse: bool,
+) -> None:
+    from qualtran._infra.data_types import (
+        CFxp,
+        CInt,
+        CIntOnesComp,
+        CMontgomeryUInt,
+        CUInt,
+    )
+    from qualtran.bloqs.bookkeeping.cast import Cast
+    from qualtran.resource_counting._bloq_counts import QECGatesCost
+    from qualtran.resource_counting._costing import get_cost_value
+    from qualtran.resource_counting._qubit_counts import QubitCount
+
+    from flagquantum.core.ir.program import ProgramRecord
+    from flagquantum.core.ir.program.register_types import (
+        classical_fixed_point_register_type,
+        classical_montgomery_register_type,
+        classical_ones_complement_register_type,
+        classical_signed_register_type,
+        classical_unsigned_register_type,
+    )
+
+    pairs: tuple[tuple[Any, RegisterType], ...] = (
+        (CInt(3), classical_signed_register_type(3)),
+        (CIntOnesComp(3), classical_ones_complement_register_type(3)),
+        (CMontgomeryUInt(3, 5), classical_montgomery_register_type(3, 5)),
+        (CFxp(3, 1), classical_fixed_point_register_type(3, 1)),
+        (CFxp(3, 1, signed=True), classical_fixed_point_register_type(3, 1, True)),
+    )
+    for foreign, dtype in pairs:
+        inp, out = (foreign, CUInt(3)) if reverse else (CUInt(3), foreign)
+        left, right = (
+            (dtype, classical_unsigned_register_type(3))
+            if reverse
+            else (classical_unsigned_register_type(3), dtype)
+        )
+        source = Cast(inp, out, shape=(2,))
+        native = cast_word_function("main", left, right, (2,))
+        slots: Any = object()
+        assert source.as_cirq_op(None, reg=slots) == (None, {"reg": slots})
+        assert get_cost_value(source, QECGatesCost()).asdict() == {}
+        assert get_cost_value(source, QubitCount()) == 0
+        for raw in range(8):
+            bits = [(raw >> i) & 1 for i in (2, 1, 0)]
+            value = inp.from_bits(bits)
+            result = source.on_classical_vals(reg=value)["reg"]
+            assert result == out.from_bits(inp.to_bits(value))
+            # Ones-complement negative zero can canonicalize numerically;
+            # the physical hook and native cast still preserve every raw slot.
+            stored = raw if left.encoding != "signed" or raw < 4 else raw - 8
+            if reverse and left.encoding == "ones_complement":
+                stored = -(7 ^ raw) if raw & 4 else raw
+            if (
+                reverse
+                and left.encoding == "fixed_point"
+                and dict(left.parameters)["signed"]
+                and raw >= 4
+            ):
+                stored = raw - 8
+            bound = bind_register_program(
+                ProgramRecord((native,)),
+                ((), ()),
+                classical_inputs=(stored, stored),
+                borrowed=(0,),
+            )
+            assert bound.classical_outputs == ((0, 1, 2), (3, 4, 5))
+            assert len(bound.circuit.instructions) == 6
+            assert bound.events == ()

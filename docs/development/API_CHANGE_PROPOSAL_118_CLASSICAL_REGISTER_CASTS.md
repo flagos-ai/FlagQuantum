@@ -94,3 +94,12 @@ ledger. Proposal 116's signed positive-width and unsigned empty storage is
 already approved and implemented. The additional signed-zero profile in
 Proposal 124 and symbolic quantum-field declarations in Proposal 126 retain
 their independent approval boundaries.
+
+## Implementation record
+
+The approved contract is `contracts/classical-register-cast-contract.toml`.
+Core derives the target nominal type and enforces one linear consumption.
+Compiler construction, scheduling, feedback wrapping, binding and gate-only
+lowering recognize the operation. Physical binding forwards existing classical
+slots and emits no cast instruction. See `test_classical_register_casts.py` and
+the updated whole-file Cast audit for acceptance evidence.

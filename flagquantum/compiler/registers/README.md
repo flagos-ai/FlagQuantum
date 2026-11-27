@@ -257,6 +257,17 @@ bool snapshot of the immutable slot without emitting an instruction. Run
 zero-input parity, both feedback polarities, complex measurement branches and
 actual trajectory/batched execution through unchanged `circuit.append(op)`.
 
+`layout.component_cast.cast_word_function` also reinterprets equal-width
+classical words using the approved `cast_classical_register` structural operation.
+It consumes one owned element and returns the target descriptor over the same
+MSB-first slots, without instructions, allocation or numerical conversion.
+Shaped elements follow row-major order. Existing snapshots remain immutable;
+subsequent writes retain the existing immutable-slot write semantics. Symbolic
+logical widths must agree, and physical binding still requires concrete admitted
+storage. Mixed quantum/classical execution remains refused. Run
+`pytest tests/unit/test_classical_register_casts.py` for the measured append,
+feedback, reverse-view and workspace path (Proposal 118).
+
 `discard_word_function(name)` wraps `discard_classical_register` with one CBit
 LEFT port. Core enforces one consumption. Binding deletes the owned handle,
 emits no instruction, and retains earlier bool snapshots of the immutable slot.

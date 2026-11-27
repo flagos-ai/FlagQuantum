@@ -62,6 +62,7 @@ def lower_register_program(record: ProgramRecord, entry: str = "main") -> Progra
             "measure_register",
             "parity_register",
             "read_classical_register",
+            "cast_classical_register",
             "write_classical_register",
             "discard_classical_register",
         }

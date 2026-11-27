@@ -174,6 +174,7 @@ def _feedback_component_function(
         "allocate_register",
         "free_register",
         "read_classical_register",
+        "cast_classical_register",
         "bool_zero",
         "bool_one",
         "bool_xor",

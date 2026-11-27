@@ -7,7 +7,7 @@ are Apache-2.0, copyright Google LLC.
 | Item | Source file | Frozen Git blob | Disposition |
 | --- | --- | --- | --- |
 | Q-0320 | `cast.ipynb` | `9895dcc29482ecf980c50d16af4776f309e4202c` | Closed by the complete native tutorial. |
-| Q-0321 | `cast.py` | `9fd7bee565a88e97a4aa1b1c7945c5c6529d4381` | Actual source factory foreign resolution and direct SDK views verified. Classical word views and full executable dtype admission remain open. |
+| Q-0321 | `cast.py` | `9fd7bee565a88e97a4aa1b1c7945c5c6529d4381` | Actual source factory foreign resolution and direct SDK views verified. Classical word views are implemented under approved Proposal 118; signed-zero storage and symbolic quantum-field declarations remain pending implementation under approved Proposals 124/126. |
 | Q-0322 | `cast_test.py` | `c018d2af7aa811b11ff75753927ef19a1da85ecb` | Closed for the runnable original scenarios and notebook. |
 
 Compiler Cast retains the original bit pattern. Bind the left and right
@@ -57,8 +57,9 @@ reordered outputs of two MeasureZ calls. Through append it emits exactly
 the two measurements. All four histories match the frozen instrument
 on complete complex amplitudes and return the clean work bit to zero.
 The source model separately counts the two measurements and zero T.
-Mixed-domain declarations remain metadata. Full executable dtype admission
-and classical word views remain open. Actual source factory transport and
+Mixed-domain declarations remain metadata. Classical views are now implemented
+as recorded below; the remaining approved storage gaps are tracked separately.
+Actual source factory transport and
 SDK consumers are detailed below.
 
 
@@ -94,14 +95,58 @@ remain separately recorded above.
 The unmodified source CUInt(4) to CInt(4) view reinterprets all sixteen raw
 words correctly and its SDK hook returns the same storage object. Source
 serialization raises its original unsupported-CUInt TypeError at depths
-0, 1 and 2. Native owned classical word casts are a separate missing capability;
-existing `cast_word_function` rejects their descriptors. Proposal 118 records
-an explicit protected contract for slot-preserving classical reinterprets and
-requires approval before implementation. Quantum/classical mixed-domain casts
-remain declaration-only. Full signed/empty fixed-point physical storage remains
-under pending Proposal 116. Q-0321 therefore stays open.
+0, 1 and 2. Native owned classical word casts now retain ordered slots through the approved
+Proposal 118 operation. Quantum/classical mixed-domain casts remain
+metadata-only, requiring explicit measurement or preparation for physical use.
+Proposal 116 is already approved and implemented. Proposals 124 and 126 were
+explicitly approved on 2026-11-27, but signed-zero fixed-point physical storage
+and symbolic quantum-field logical declarations still await implementation.
+Q-0321 stays open for those concrete gaps.
 
 Receipts `g2-cast-foreign-*` record complete factory transport, baseline failures,
 strict changed-file checks, concentrated/integration/dual-Cirq regressions,
 frozen source hashes and unchanged execution owners. No source patch or
 physical admission change is part of this batch.
+
+
+## Approved classical slot reinterpretation (Proposal 118)
+
+The structural `cast_classical_register` opcode consumes a classical element
+and returns its canonical target type over identical MSB-first slots. The same
+`cast_word_function` builds shaped row-major views. Core checks equal logical
+width and linear ownership; binding checks concrete classical storage. Existing
+call expansion retains the target descriptor. Feedback wrappers keep casts
+unconditional, scheduling treats them as views, and gate-only lowering refuses
+to bypass required classical binding. Runtime and numerical owners are unchanged.
+
+The new scenario suite covers every admitted classical descriptor family,
+including nonbinary fields, packed polynomials, zero-width elements, shaped and
+empty arrays, and raw unused encodings. It verifies reverse composition through
+the existing exact-adjoint provider, symbolic logical width equality and
+physical refusal, malformed metadata, both controlled-write polarities and
+immutable snapshots. A real measurement/cast/read-feedback/uncast append path
+preserves both complete complex branches with a phased spectator and returns
+private work to zero. No phase-insensitive state comparison substitutes for
+amplitude equality.
+
+Original CUInt/CInt callbacks retain all sixteen values and the original
+transport failure at depths 0/1/2. Available source signed, ones-complement,
+Montgomery and fixed-point callbacks in both directions retain same-object SDK
+views and zero source QEC/quantum-width models. The source numerical
+ones-complement negative-zero canonicalization remains separate from physical
+slot identity. Native raw-bit tests preserve unused encodings independently.
+
+Measured cast primitives, measurements and workspace are all zero. External
+classical initialization emits one XOR assignment per bit and is not counted as
+a cast gate. The composed measured fixture separately emits one measurement,
+one T and one guarded Z. Source modeled Cast QEC cost and peak quantum width
+are separately zero. No cross-hardware or performance equivalence is claimed.
+
+
+The published acceptance bundle records 426 focused passes and 32 local
+integration passes, strict typing across nine changed Python files, Black,
+Ruff, language, links, scope, architecture, IR/public API and whitespace checks.
+Eight direct source files match the frozen CSV Git blobs. Unchanged-source
+transport warnings remain visible. Initial new-test construction mistakes were
+corrected without changing the production measurement or gate semantics.
+Receipts are `ftqc-reference-env/g2-classical-cast-*` outside the repository.
