@@ -104,3 +104,46 @@ The final integrated batch passed 848 tests with three warnings. Strict mypy
 passed all six changed Python files across the dependency and root checks.
 Black, Ruff, Algorithms scope, architecture, multi-level IR and protected API
 checks passed. The earlier dependency-only run passed 618 tests.
+
+## Complete-source closure review
+
+Q-0608 is eligible for complete-file acceptance under the explicitly approved
+[faithful-migration rule](G2_FAITHFUL_MIGRATION_CLOSURE_PROPOSAL.md). The three
+classes, two factories, default methods, all signatures/properties, identity
+signal preparation, DocSpec and every defined root/wrapper call have native
+owners. This review supersedes the historical demand for a new physical oracle
+or a corrected packed-array contract as a prerequisite for literal migration.
+
+The defined entry and Hamiltonian one-child roots retain their exact typed
+composition. The actual source column wrapper passes a packed scalar into a
+shaped query and raises IndexError; native composition now reaches the same
+failure after its already-approved bounded storage admission. Neither path is
+silently repacked. Its correction is an independent follow-up. Source query
+leaves lacking bodies are retained as declarations, including controlled roots;
+there is no claimed full physical block encoding.
+
+Fresh matrix/block intake covers 24 actual domain/control combinations. Every
+mutually supported resource query matches all seven categories. Keep the
+representation-dependent original boundary: with the concrete example instance,
+Python ell=2 fails a child symmetric-difference assertion, while SymPy Integer(2)
+skips that original concrete assertion and returns a formal model; native
+pricing reproduces both. Ell zero fails the system-width constraint. A plain
+positive symbolic ell with the concrete instance fails the original bounded
+port comparison (`2**(4*ell) < 6`). The native algebraic resource sum can be
+evaluated beyond that source-constructor boundary; this is explicitly a formula
+extrapolation, not literal source construction/execution parity. The original
+fully symbolic example remains separately verified.
+
+The fresh unchanged original matrix/block suites report 14 passes, 8 original
+skips, 4 original KXorInstance serialization xfails and 2 notebook deselections.
+Previously accepted whole notebooks are reused at unchanged blobs. The current
+149-case native dependency regression and 32-case independent Cirq 1.6.1 direct
+selection cover these roots, original eight-call control inventory, exact
+adjoint pricing and loading/control dependencies. The 32-case local integration
+and mandatory architecture/IR/API checks pass at the unchanged implementations.
+
+No original defect is corrected or counted as successful full circuit execution.
+The 112/13312/28268 Toffoli/CSwap/And inventory above is analytical, not measured
+primitive output. The controlled 13345 CSwap value is also a source model. Any
+future full-block primitive count, complex operator, measurement certificate or
+private-zero proof needs actual admitted query bodies and its own evidence.
