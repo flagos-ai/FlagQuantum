@@ -136,3 +136,55 @@ and SDK-free tutorial remain covered. The original resource-only declaration
 is independent of the literal execution path: even a power-of-two target needs
 no physical controlled-H workspace, while its source model can retain a larger
 logical peak. No checkbox is added or parent closed for that distinction.
+
+
+## Complete faithful source-file closure — 2026-11-28
+
+Q-0695 is accepted under the approved G2 faithful-migration rule after the complete
+member map and direct dependency ownership above were reviewed. No uniform
+emitter changes in this batch. Existing original state/cost grids, three example
+factories, documentation specification, notebook, actual source bindings and
+scoped exact inverses are reused. Ordered comparison, phase, Hadamard and zero
+predicate calls retain their private ownership and measured feedback.
+
+Fresh boundary intake confirms that a SymPy Integer count fails original graph,
+direct recipe and tensor paths; its k/l/logL assertions require Python integers.
+The original singleton fails missing-target lookup through its actual declared
+ports. Manually supplying an omitted target is not advertised as successful
+whole-operation binding. Literal SymPy control zero/one reaches the original
+Cirq not-iterable TypeError. Existing native conversion to concrete binary
+controls is a separately admitted path and does not count as successful literal
+source comparison. Symbolic control lengths remain declarations/models until
+explicitly resolved. Original omitted control terms, small symbolic peak-query
+failures and title/SDK boundaries remain explicit source limits.
+
+Five-state stored programs emit 32 T-family/64 CX/eight measurements without
+controls, 36/70/nine for one positive control and 52/94/thirteen for mixed
+two-controls. Five private bits are touched/live; caller pools reserve twelve.
+Source models respectively declare eight/nine/thirteen And, 57/67/75 Clifford,
+two/eight/eight rotations, eight/nine/thirteen measurements and peaks eight,
+nine and ten. Controlled H remains an unsynthesized operation. Earlier flat
+Cirq-default mixed-control inventories (49 T-family, 130 CX, ten measurements
+and local matrix leaves) belong to a different accepted lowering policy.
+Same-policy source child/operand/feedback comparisons are reused; these policies
+are not claimed to have identical global primitive inventories or fully
+synthesized T counts. No performance or resource improvement is claimed.
+
+Complete complex operator and all-history certificates, noncontiguous bindings,
+spectators, private cleanup, source-free append, exact inverse, copying and IR
+roundtrips remain in the existing acceptance suite. Source flaws and unavailable
+recipes are retained rather than patched or replaced in the reference. Generic
+SDK/workflow/transport parents and pending Proposal 131 remain open.
+
+Final batch acceptance passes 463 concentrated cases, 32 relevant local
+integration cases, 59 independent Cirq 1.6.1 constructor/nominal cases and the
+final 12-case independent symbolic/nominal grid. Three Python files pass strict
+typing, Black and Ruff. Compiler scope, architecture, multi-level IR, required
+checks, public API baseline, English, links and whitespace pass. Thirty-eight
+complete frozen source/asset/dependency blobs and actual Qualtran 0.7.0/Kickmix
+0.1 Simulator are verified. Nine fresh inventory rows retain reserved capacity,
+touched/live private work and independent source models separately. Ten actual
+optional/required reference-absence scenarios preserve skip versus original
+exception behavior. Global dependency findings remain 570 in 362 files, with
+none in the added consumer; workflow parents remain open. No source patch,
+checker waiver, selection exclusion, CI wait, G3 work or merge occurred.
