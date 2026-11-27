@@ -13,7 +13,12 @@ from importlib.metadata import version
 from pathlib import Path
 from typing import Any
 
-import numpy as np
+from tests._reference_dependencies import unavailable_reference
+
+try:
+    import numpy as np
+except ModuleNotFoundError as _reference_import_error:
+    unavailable_reference(_reference_import_error)
 import pytest
 import torch
 
@@ -37,6 +42,7 @@ from flagquantum.simulation.finite_field_addition import binary_field_encoding
 from flagquantum.simulation.finite_field_polynomial_encoding import (
     FiniteFieldPolynomialEncoding,
 )
+from tests.unit.register_source_graph import source_line_qubit_index
 from tools.ftqc_source_inputs import FTQC_SOURCE_INVENTORY
 
 pytestmark = [pytest.mark.unit, pytest.mark.ftqc_reference]
@@ -50,7 +56,7 @@ def complete_locked_assets() -> None:
     kickmix = import_module("kickmix")
 
     assert version("qualtran") == "0.7.0"
-    assert kickmix.__version__ == "0.1" and hasattr(kickmix, "Simulator")
+    assert getattr(kickmix, "__version__") == "0.1" and hasattr(kickmix, "Simulator")
     with (FTQC_SOURCE_INVENTORY).open(encoding="utf-8-sig") as handle:
         rows = [
             row
@@ -91,7 +97,10 @@ def test_frozen_polynomial_package_exports_each_definition() -> None:
 def test_package_register_addition_preserves_source_operands(
     degree: int, width: int
 ) -> None:
-    import cirq
+    try:
+        import cirq
+    except ModuleNotFoundError as _reference_import_error:
+        unavailable_reference(_reference_import_error)
     from qualtran._infra.data_types import QGF, QGFPoly
     from qualtran.bloqs.gf_poly_arithmetic.gf2_poly_add import GF2PolyAdd
 
@@ -114,11 +123,18 @@ def test_package_register_addition_preserves_source_operands(
     assert [
         (gate.name, gate.wires) for gate in gf2_polynomial_add_ir(f_x, g_x, layout)
     ] == [
-        ("cx", tuple(q.x for q in op.qubits if isinstance(q, cirq.LineQubit)))
+        (
+            "cx",
+            tuple(
+                source_line_qubit_index(q)
+                for q in op.qubits
+                if isinstance(q, cirq.LineQubit)
+            ),
+        )
         for op in operations
     ]
-    assert tuple(q.x for q in outputs["f_x"]) == f_x
-    assert tuple(q.x for q in outputs["g_x"]) == g_x
+    assert tuple(source_line_qubit_index(q) for q in outputs["f_x"]) == f_x
+    assert tuple(source_line_qubit_index(q) for q in outputs["g_x"]) == g_x
 
 
 def test_complete_original_test_inventory() -> None:
