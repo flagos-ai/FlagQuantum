@@ -1,5 +1,12 @@
 # Hamming constructor and exact inverse context
 
+The 2026-11-28 complete-file review in
+[the Hamming audit](HAMMING_WEIGHT_FILE_AUDIT.md#current-complete-file-disposition-2026-11-28)
+supersedes this document's historical declaration-only decision for concrete
+SymPy integer widths. Their defined direct SDK path now preserves excess
+logical junk through the existing compression tree and scoped exact inverse.
+Nonliteral symbolic widths and the original lossy wire remain unchanged.
+
 The complete locked source is `arithmetic/hamming_weight.py` from Qualtran
 v0.7.0, commit `bcb17bb25360ed68ce3bc084645db3e929799389`. Existing file audits
 assign its full signature, widths, compression, decomposition and model to

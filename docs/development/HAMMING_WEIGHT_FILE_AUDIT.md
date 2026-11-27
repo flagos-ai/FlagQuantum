@@ -1,5 +1,71 @@
 # Hamming whole-file audit
 
+## Current complete-file disposition (2026-11-28)
+
+The historical open decisions below predate the explicitly approved
+[faithful-migration closure rule](G2_FAITHFUL_MIGRATION_CLOSURE_PROPOSAL.md).
+The complete file now has one additional defined SDK path: concrete SymPy
+integer widths. `source_hamming_weight_program` owns that path alongside the
+existing compression tree; the constructor and scoped exact-adjoint factories
+reuse it. No Core contract, external SDK dependency or public entry is added.
+
+Unlike Python integers, `Integer(n)` declares `n-1` junk bits. The actual SDK
+generator uses only `n-popcount(n)` of them, leaving the trailing
+`popcount(n)-1` bits untouched. These are explicit zero logical outputs, not
+private work or discarded ports. The inverse consumes them with zero-bit
+deallocation and measurement-erases only the used And targets. The input and
+all words remain MSB first; caller ownership lasts until inverse consumption.
+
+The original direct SDK generator succeeds at literal widths 1, 2, 3, 4, 5,
+7 and 8. Native primitive operands, each wire's complete ordering, untouched
+junk, output roles and actual instructions compare against those unmodified
+generators. The source generic Bloq decomposition refuses those same inputs as
+parameterized. That refusal is retained independently. Source serialization
+still converts `Integer(5)` to Python `5` and loses the junk-width distinction;
+the importer continues rejecting that inconsistent encoded signature. Direct
+constructor metadata retains the distinction and now executes. Nonliteral
+symbolic widths remain declarations rather than invented finite programs.
+
+Widths one through four validate the actual scoped forward/inverse factories,
+ordinary `circuit.append(op)`, complete complex states entangled with a
+spectator, every raw measurement history and all logical work returning to
+zero. Historical source-call, symbolic-model, drawing, compression/And,
+width-cache and concrete constructor certificates are reused. Their ownership
+and dependency boundaries do not change.
+
+Resource inventories remain separate. At literal width three the source model
+counts two And (eight T-equivalents), while actual forward emission uses one
+And (four T/TDG instructions). The extra junk bit is untouched and its inverse
+needs no measurement. This source lower-bound-model discrepancy is preserved,
+not optimized away or presented as equal primitive counts. Python-integer
+programs retain their previous bodies and resource semantics.
+
+Q-0198 is eligible for complete-file acceptance after this implementation's
+local checks and publication. Its one-bit empty-junk generic/SDK adjoint,
+symbolic-literal generic decomposition, width-query and lossy-wire failures
+remain explicit source limitations owned by the generic representation and
+transport follow-ups. They are not claims of successful upstream execution.
+Q-0199's accepted original test coverage remains unchanged. No other parent
+or Hamming-phase file is closed by this disposition.
+
+Local batch validation: 768 concentrated Hamming/count/phase/catalog cases and
+32 integration cases pass. After test-import typing repairs, 201 affected
+primary cases pass; the independent Cirq 1.6.1 lane passes 206 cases including
+all five unchanged original Hamming tests. Five changed Python files pass
+strict mypy, Black and Ruff. Compiler scope, architecture, IR, required-check
+mapping, language, Markdown links, public API baseline and whitespace checks
+pass. Five complete source/dependency blobs match the immutable inventory;
+Qualtran 0.7.0 and Kickmix 0.1 Simulator are verified. Evidence is retained as
+`g2-hamming-literal-closure-*20261128` in the reference workspace.
+
+The concentrated run exposed a pre-existing count-model replacement fixture
+that omitted the owner's existing `legacy_shims` argument. The fixture now
+checks that argument explicitly and uses the actual typed source owners. Its
+original test and both production model owners were byte-identical to the
+published baseline before repair. The first catalog attempt also lacked the
+original notebook marker; rerunning through the existing reference wrapper
+registered it. Neither failure was excluded or converted into an expected pass.
+
 Batch G2-FILE-HAMMING audits Q-0198 and Q-0199 from Qualtran v0.7.0 commit
 `bcb17bb25360ed68ce3bc084645db3e929799389`. It adds the missing complete original
 test mapping and reuses accepted implementation evidence. Q-0199 is accepted as
