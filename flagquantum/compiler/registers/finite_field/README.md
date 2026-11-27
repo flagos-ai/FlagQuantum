@@ -186,18 +186,18 @@ reuses the common exact phase checker to certify all256 eight-bit histories on
 all65536 input pairs, including common Kraus amplitude and clean physical clearing.
 The same test retains the defective original product/erase channel as a failure.
 
-`inverse_component.py` keeps one Itoh–Tsujii root schedule with two explicit
-child profiles. `field_inverse_program` uses correct mathematical children;
-`inverse_decomposition.field_inverse_decomposition_program` uses untouched-source
-literal square/product recipes. Both retain RIGHT logical junk. The literal
-execution refuses root temporary releases without a clean-work proof; the
-original four/eight-bit release violations are documented in the inverse audit.
-Run `tests/unit/test_field_inverse_literal.py` for complete source primitive,
-complex-amplitude, alias and private-padding checks. Literal catalog dispatch
-is still a separate open part of the complete inverse source acceptance.
+`inverse_component.py` owns one Itoh–Tsujii root schedule with explicit child
+profiles. `field_inverse_program` uses mathematically correct square/product
+children; `inverse_decomposition.field_inverse_decomposition_program` preserves
+the complete literal source graph and its declared directions. Logical junk is
+a RIGHT output, never claimed as cleared private work.
 
-The field-power catalog now uses `field_inverse_decomposition_graph` for full
-original static graphs. This supersedes the literal catalog dispatch gap above.
-Static graphs can contain original invalid clean releases; they are evidence and
-drawing artifacts. The executable example `FieldInverse(..., literal=True)`
-uses the guarded constructor. Its default still uses the mathematical profile.
+The field-power catalog draws the literal graph even when it contains an
+original invalid clean release. The example `FieldInverse(..., literal=True)`
+binds that graph, then asks Simulation's `_clean_releases` owner to prove every
+actual clean free before ordinary append. Its default remains the mathematical
+profile. Compiler does not execute the proof kernel or choose a backend. There
+is no degree whitelist or corrected-source substitute. Run
+`tests/unit/test_field_inverse_literal.py` and
+`tests/unit/test_clean_release_analysis.py`; the complete inverse audit separates
+source defects, exact complex/source evidence, proof costs and resource models.

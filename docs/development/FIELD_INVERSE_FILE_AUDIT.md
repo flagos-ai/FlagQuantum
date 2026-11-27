@@ -460,3 +460,74 @@ available for every concrete binary degree, but a static graph is not a proof
 that its clean-release preconditions hold. Existing complete original tests,
 models, callbacks, symbolic declarations and notebooks remain reusable. No
 reference patch, generic clean-free waiver or parent acceptance is introduced.
+
+## Complete source disposition with exact release analysis — 2026-11-27
+
+This section supersedes the conservative degree-based refusal and the separate
+static-graph helper described in the preceding historical batches. One literal
+owner, `field_inverse_decomposition_program`, now retains the complete original
+schedule at every concrete binary degree. The redundant graph wrapper is removed.
+The existing mathematical `field_inverse_program` still supplies exact children.
+No source graph, scalar callback or resource annotation is modified.
+
+The append example binds the literal Program, then calls Simulation's shared
+exact zero-release analysis on the actual CircuitIR and every clean free point.
+The analysis consumes only Core types; Compiler neither imports Simulation nor
+executes a numerical kernel. Its Boolean multilinear polynomials implement
+XOR cancellation and idempotent Boolean multiplication, with a backward slice
+from release points. A zero polynomial proves every input and entangled complex
+superposition, rather than sampling a subset. A nonzero polynomial proves a
+violating input exists and prevents composition. The same owner validates the
+literal product's recursive padding. Provider replacement and unsupported-phase,
+feedback, malformed-layout and expansion-budget cases fail before append.
+See [the integration boundary](FIELD_CLEAN_RELEASE_ANALYSIS.md).
+
+An independent untouched-source observer exhausts every input at degrees 1–16,
+checking actual CNOT/Toffoli streams, frees and dirty reuse without resetting.
+Native static streams, returned aliases and each exact free operand/offset match
+the source at degrees 1–17. The symbolic proof agrees with the independent
+truth-table result at 1–16 and proves every private release at degree 17.
+
+| Source default degree | Complete all-input free result |
+|---|---|
+| 1, 2, 3, 5, 9 | All source frees zero (including no-free cases) |
+| 4, 6, 7, 8, 10, 11, 12, 13, 14, 15, 16 | Nonzero root temporary release and later dirty reuse |
+| 17 | Exact Boolean proof of all private frees; no exponential truth table needed |
+
+The default eight-bit source polynomial is 0x11D: 253/256 inputs violate its
+root release. The separately retained 0x11B witness is 250/256. Neither result
+is generalized to all polynomials or dimensions: execution admission evaluates
+the actual circuit, with no degree whitelist. For example, degree 17 now follows
+the same constructor and proof path as degree 5. Valid raw nonbinary degree-one
+source circuits retain their separate prefix-addition evidence; original higher
+nonbinary child failures remain refused rather than numerical field inversion.
+
+All definitions in the complete source now have owners and evidence:
+
+| Source responsibility | Current owner and evidence |
+|---|---|
+| Constructor/converter, signature, cached properties and degree-one omission | Existing Simulation field metadata, neutral typed signature/catalog and whole original factory protocols; source deprecation aliases are not new native public classes. |
+| `_bits`, multiplier and `build_composite_bloq` | One shared root schedule, literal square/product children, complete recursive catalog identity/drawings and actual gate/alias/free-point comparisons. |
+| `build_call_graph` and `my_static_costs` | Independent `inverse_model` and neutral signature width; complete degrees 1–16 and both original symbolic assumptions already verified. |
+| `on_classical_vals` | Existing Simulation scalar inverse/junk callback, including zero and empty-array behavior; complete original numeric/slow tests and previous field sweeps reused. |
+| Both factories, documentation specification and complete notebook | Existing whole-file inventory, actual raw protocols, frozen notebook execution and native ordinary append; only the concrete example belongs to the original DocSpec. |
+| Inherited original transport/decomposition failures | Original QGF codec failures, symbolic physical refusal, generic measured SDK arity failure and invalid clean frees are retained, not reported as successful native source executions. |
+
+The original whole suite (27 passes, three source skips, two source xfails),
+notebook execution, scalar callbacks and symbolic models are unchanged evidence.
+The actual native default mathematical inverse keeps its prior full complex,
+retained-junk, zero-work and exact-reversal acceptance. Literal source execution
+retains its own exact complex tensor checks at small degrees and phase-free
+all-input/permutation checks at larger degrees. There are no measurement
+branches in this forward source file. Source arithmetic defects are follow-up
+issues under the explicitly approved faithful-migration rule; no correct inverse
+claim is inferred from literal source parity or equal gate counts.
+
+Analysis is explicitly bounded at 4096 relevant Boolean variables, 100000 live
+monomials and five million symbolic monomial products. Unsupported gates or
+exhaustion raise without admission. These internal verification cost limits are
+separate performance boundaries; they do not discard source code, change the
+input dtype, introduce a physical fallback or certify unproved zero work.
+Measured primitive counts, source QEC estimates and static signature widths
+remain separate resource accounts. No ReadTheDocs work, protected schema change,
+CI wait, G3 work or merge is included.
