@@ -8,6 +8,7 @@
 from ....core.ir import CircuitIR, Instruction
 from ....core.ir.program import ProgramRecord
 from ....core.ir.program.register_bindings import RegisterBinding
+from ....core.ir.program.register_verifier import executable_register_width
 from ....core.ir.program.registers import RegisterType
 from ....core.ir.program.signatures import Signature
 from ..component_builder import ComponentProgramBuilder
@@ -31,13 +32,36 @@ def field_addition_program(
     if dtype.encoding != "finite_field":
         raise ValueError("Field addition requires a binary field descriptor")
     width = binary_field_word_width(dtype)
+    return _field_addition_program(dtype, width, constant, adjoint)
+
+
+def field_addition_decomposition_program(dtype: RegisterType) -> ProgramRecord:
+    """Retain the frozen degree-prefix XOR, including nonbinary counterexamples.
+
+    This is the actual source gate recipe, not numerical nonbinary addition.
+    The untouched source uses degree controls even when the raw word is wider;
+    its scalar value callback can therefore disagree with this unitary.
+    """
+    if dtype.encoding != "finite_field":
+        raise ValueError("Field addition decomposition requires a field descriptor")
+    width = executable_register_width(dtype)
+    degree = dict(dtype.parameters)["degree"]
+    if type(degree) is not int or not 0 < degree <= width:
+        raise ValueError("Field addition decomposition requires a concrete degree")
+    return _field_addition_program(dtype, degree, None, False)
+
+
+def _field_addition_program(
+    dtype: RegisterType, prefix: int, constant: int | None, adjoint: bool
+) -> ProgramRecord:
+    width = executable_register_width(dtype)
     if constant is None:
         signature = Signature.build_from_dtypes(x=dtype, y=dtype)
         bit_ports = tuple(Signature.build(ctrl=1, target=1))
         leaf = bit_gate_function(
             "field_cx", bit_ports, CircuitIR(2, (Instruction("cx", (0, 1)),))
         )
-        gates = gf2_add_ir(tuple(range(width)), tuple(range(width, 2 * width)))
+        gates = gf2_add_ir(tuple(range(prefix)), tuple(range(width, width + prefix)))
     else:
         signature = Signature.build_from_dtypes(x=dtype)
         bit_ports = tuple(Signature.build(q=1))

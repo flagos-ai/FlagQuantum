@@ -7,6 +7,9 @@
 
 from __future__ import annotations
 
+from operator import index
+from typing import SupportsIndex
+
 from ....core.value_parameters import is_symbolic_value
 from ..._component_trace.resource_generalization import CliffordCall
 from ..._component_trace.symbolic_math import SymbolicInt
@@ -24,11 +27,14 @@ def field_add_constant_calls(
     """Retain zero-count X edges and the source's symbolic width upper bound."""
     count = width
     if not is_symbolic_value(width, constant):
-        if type(width) is not int or width < 1:
+        if not isinstance(width, SupportsIndex) or index(width) < 1:
             raise ValueError("Field addition requires a positive integer width")
-        if type(constant) is not int or not 0 <= constant < 1 << width:
+        if not isinstance(constant, SupportsIndex):
             raise ValueError("Field constant must fit the declared width")
-        count = constant.bit_count()
+        value = index(constant)
+        if not 0 <= value < 1 << index(width):
+            raise ValueError("Field constant must fit the declared width")
+        count = value.bit_count()
     return {CliffordCall("x", 1): count}
 
 
