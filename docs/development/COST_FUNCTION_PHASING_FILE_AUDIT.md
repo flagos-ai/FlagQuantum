@@ -256,3 +256,20 @@ scope, architecture, multilevel IR, protected API and whitespace checks pass.
 All thirteen frozen source/test/notebook/dependency blobs remain unchanged.
 Qualtran 0.7.0 and Kickmix 0.1 Simulator are verified. No source parent is
 closed by catalog-only evidence. The recorded source defects remain open.
+
+
+## Reference collection guard reconciliation — 2026-11-28
+
+Eight recent consumer tests now guard their optional reference imports. The
+mandatory reference mode propagates the original missing-dependency exception;
+optional collection explicitly skips unavailable reference consumers. NumPy
+readiness is checked before transitive symbolic and native imports. No numerical
+body, source gate, assertion, marker, feedback or existing import identity changes.
+The scientific AST and import-identity comparison covers all eight files.
+
+All 201 affected mandatory-reference cases pass. Eighty-six actual module,
+import-guard and consumer absence scenarios pass in optional and mandatory modes.
+Fresh dependency scans decrease from 578 findings in 367 files to 570 in 362;
+none remain in these eight consumers. The remaining global 570 findings keep
+Q-0009 and Q-0011 open. No checker, exclusion, source reference or selection rule
+was changed. Receipts use `g2-cost-phase-reference-guard-*20261128`.
