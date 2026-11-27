@@ -1,5 +1,12 @@
 """Check typed GF2 graph, ordered bindings and executable serialization."""
 
+from tests._reference_dependencies import unavailable_reference
+
+try:
+    import numpy as numpy
+except ModuleNotFoundError as _reference_import_error:
+    unavailable_reference(_reference_import_error)
+
 import json
 from importlib.metadata import version
 
@@ -17,6 +24,7 @@ from flagquantum.core.ir.program.physical_codec import native_program_to_dict
 from flagquantum.core.ir.program.register_types import unsigned_register_type
 from flagquantum.errors import SerializationError
 from flagquantum.simulation.finite_field_addition import binary_field_encoding
+from tests.unit.register_source_graph import source_line_qubit_index
 from tests.unit.test_register_subtraction import assert_source
 
 pytestmark = [pytest.mark.unit, pytest.mark.ftqc_reference]
@@ -28,10 +36,18 @@ def test_typed_field_addition_matches_order_and_executes_roundtrip(
     width: int, kind: str
 ) -> None:
     assert version("qualtran") == "0.7.0"
-    import cirq
-    import numpy as np
-    from qualtran.bloqs.gf_arithmetic import GF2Addition, GF2AddK
-    from qualtran.resource_counting import QECGatesCost, get_cost_value
+    try:
+        import cirq
+    except ModuleNotFoundError as _reference_import_error:
+        unavailable_reference(_reference_import_error)
+    try:
+        import numpy as np
+    except ModuleNotFoundError as _reference_import_error:
+        unavailable_reference(_reference_import_error)
+    from qualtran.bloqs.gf_arithmetic.gf2_add_k import GF2AddK
+    from qualtran.bloqs.gf_arithmetic.gf2_addition import GF2Addition
+    from qualtran.resource_counting._bloq_counts import QECGatesCost
+    from qualtran.resource_counting._costing import get_cost_value
 
     constant = (
         None if kind == "register" else 0 if kind == "zero" else (1 << (width - 1)) | 1
@@ -73,16 +89,20 @@ def test_typed_field_addition_matches_order_and_executes_roundtrip(
     ports = (x, y) if constant is None else (x,)
     bound = bind_register_program(record, ports)
     cirq_ops, _ = original.to_cirq_circuit_and_quregs(
+        qubit_manager=None,
         **{
             name: np.array([cirq.LineQubit(i) for i in wires])
             for name, wires in zip(names, ports, strict=True)
-        }
+        },
     )
-    gate_names = {cirq.X: "x", cirq.CNOT: "cx"}
+    gate_names: dict[cirq.Gate | None, str] = {cirq.X: "x", cirq.CNOT: "cx"}
     assert_source(
         bound.circuit.instructions,
         tuple(
-            Instruction(gate_names[op.gate], tuple(qubit.x for qubit in op.qubits))
+            Instruction(
+                gate_names[op.gate],
+                tuple(source_line_qubit_index(qubit) for qubit in op.qubits),
+            )
             for op in cirq_ops.all_operations()
         ),
     )
