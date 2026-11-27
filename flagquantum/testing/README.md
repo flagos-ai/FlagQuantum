@@ -1,6 +1,6 @@
 # Testing
 
-This package contains reusable correctness, conformance, watchdog, and evidence
+This package contains reusable correctness, conformance, and evidence
 validation helpers. It lets repository tests and extension authors apply the
 same acceptance rules without copying them into each test suite.
 
@@ -10,7 +10,7 @@ Testing owns:
 
 - deterministic certification cases and reproducible failure artifacts;
 - versioned tolerance policies;
-- watchdog progress records and stall diagnosis;
+- historical public watchdog imports, whose implementation belongs to Runtime;
 - validation of MPS numerical, capacity, stability, communication, scaling,
   and portability evidence.
 
@@ -59,3 +59,13 @@ test. Keep numerical reference calculations in Simulation and execution or
 evidence production in Runtime/Benchmarking. Changes to public exports or an
 accepted evidence schema require the repository's API and contract review
 process.
+
+
+Production training imports the watchdog directly from
+`flagquantum.runtime.observability.watchdog`. The three existing published types
+and their historical class/method pickle locators remain available through
+`flagquantum.testing.watchdog` and this namespace. That module is an explicit
+public serialization facade; it defines no watchdog implementation and has no
+private fallback. Runtime and Integration own this compatibility scope. Removal
+requires an approved versioned public-payload migration and release-policy
+window; there is no automatic 0.5.0 deletion.

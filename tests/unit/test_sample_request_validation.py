@@ -126,7 +126,9 @@ def test_mps_sample_rejects_an_unsupported_format_before_sampling(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     state = _mps_state()
-    monkeypatch.setattr(state, "_sample_indices", _refuse_sampling())
+    monkeypatch.setattr(
+        "flagquantum.simulation.mps.sampling.sample_mps_indices", _refuse_sampling()
+    )
     with pytest.raises(ValueError, match=MESSAGE):
         state.sample(4, format="hex")  # type: ignore[attr-defined]
 

@@ -21,9 +21,12 @@ import torch.distributed as dist
 
 from flagquantum.compute.local import get_platform_runtime, resolve_platform_device
 from flagquantum.compute.local._memory import _peak_allocated_memory
+from flagquantum.runtime.observability.watchdog import (
+    PhaseAwareWatchdog,
+    ProgressSnapshot,
+)
 
 from ....core.ir import ensure_circuit_ir
-from ....testing.watchdog import PhaseAwareWatchdog, ProgressSnapshot
 from ...distributed.context import resolve_local_world_size, resolve_node_count
 from .gradient_reduction import OWNER_SHARDED_REDUCE_SCATTER, REPLICATED_ALL_REDUCE
 from .reverse import (

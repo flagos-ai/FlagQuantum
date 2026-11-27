@@ -11,26 +11,6 @@ from __future__ import annotations
 from collections.abc import Mapping
 from typing import Any
 
-try:
-    from .vocabulary import (
-        CLAIM_EVIDENCE_TYPES,
-        INCOMPLETE_DISTRIBUTION_SEMANTICS,
-        RELEASE_CLAIM_EVIDENCE_TYPES,
-        REPLICATED_DISTRIBUTION_SEMANTICS,
-        SCALABLE_DISTRIBUTION_SEMANTICS,
-        SINGLE_DEVICE_DISTRIBUTION_SEMANTICS,
-    )
-except ImportError:  # legacy benchmark file-loader path
-    from flagquantum.runtime.audit.vocabulary import (
-        CLAIM_EVIDENCE_TYPES,
-        INCOMPLETE_DISTRIBUTION_SEMANTICS,
-        RELEASE_CLAIM_EVIDENCE_TYPES,
-        REPLICATED_DISTRIBUTION_SEMANTICS,
-        SCALABLE_DISTRIBUTION_SEMANTICS,
-        SINGLE_DEVICE_DISTRIBUTION_SEMANTICS,
-    )
-
-
 from .engine import (
     _ownership_sharded,
     _payload_blockers,
@@ -54,6 +34,14 @@ from .validation_helpers import (
     _rank_memory_reported,
     _semantics,
     _training_step_count,
+)
+from .vocabulary import (
+    CLAIM_EVIDENCE_TYPES,
+    INCOMPLETE_DISTRIBUTION_SEMANTICS,
+    RELEASE_CLAIM_EVIDENCE_TYPES,
+    REPLICATED_DISTRIBUTION_SEMANTICS,
+    SCALABLE_DISTRIBUTION_SEMANTICS,
+    SINGLE_DEVICE_DISTRIBUTION_SEMANTICS,
 )
 
 

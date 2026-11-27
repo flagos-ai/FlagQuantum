@@ -13,11 +13,13 @@ import flagquantum.simulation.mps as fqmps
 import flagquantum.simulation.tensor_network as fqtn
 from flagquantum.compiler.operator_lowering import DEFAULT_LOWERING_REGISTRY
 from flagquantum.core import OPERATOR_SCHEMAS, CircuitIR
+from flagquantum.runtime.observability.watchdog import (
+    PhaseAwareWatchdog,
+    ProgressSnapshot,
+)
 from flagquantum.simulation import matrices
 from flagquantum.testing import (
     FailureArtifact,
-    PhaseAwareWatchdog,
-    ProgressSnapshot,
     TolerancePolicy,
     certification_matrix,
     execute_certification_case,

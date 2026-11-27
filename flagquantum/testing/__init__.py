@@ -1,5 +1,11 @@
 """Correctness certification foundations for repository and extension tests."""
 
+from flagquantum.runtime.observability.watchdog import (
+    PhaseAwareWatchdog,
+    ProgressSnapshot,
+    StallDiagnosis,
+)
+
 from .correctness import (
     CERTIFICATION_VERSION,
     CertificationCase,
@@ -37,7 +43,6 @@ from .mps_stability_certification import (
     require_mps_stability,
 )
 from .remote import InMemoryRemoteTarget
-from .watchdog import PhaseAwareWatchdog, ProgressSnapshot, StallDiagnosis
 
 __all__ = (
     "CERTIFICATION_VERSION",

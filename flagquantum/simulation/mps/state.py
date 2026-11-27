@@ -712,20 +712,12 @@ class MPSState(MPSPlanningMixin):
         if type(shots) is not int or shots <= 0:
             raise ValueError("sample shots must be a positive integer")
         if format == "index":
-            return self._sample_indices(shots, generator=generator)
+            from .sampling import sample_mps_indices
+
+            return sample_mps_indices(self, shots, generator=generator)
         from .sampling import sample_mps_bits
 
         return sample_mps_bits(self, shots, generator=generator)
-
-    def _sample_indices(
-        self,
-        shots: int,
-        *,
-        generator: torch.Generator | None = None,
-    ) -> torch.Tensor:
-        from .sampling import sample_mps_indices
-
-        return sample_mps_indices(self, shots, generator=generator)
 
     def _qubit_probabilities(self, qubit: int) -> torch.Tensor:
         from .wire_probability_dispatch import _mps_wire_probabilities

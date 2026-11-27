@@ -10161,6 +10161,47 @@
         "_as_ir"
       ],
       "retirement": "private callers use the existing authoritative binding directly; no replacement wrapper or public compatibility added"
+    },
+    {
+      "group": "lazy-private-forwarder-retirement",
+      "old": "flagquantum/runtime/audit/engine.py",
+      "new": "flagquantum/runtime/audit/release_policy.py",
+      "symbols": [],
+      "partial": true,
+      "source_kind": "retired exact-argument private lazy wrappers; original policy implementations unchanged",
+      "retired_private_members": [
+        "_claim_evidence_type",
+        "_release_capacity_evidence_errors",
+        "_release_training_evidence_errors"
+      ],
+      "retirement": "Direct conditional lazy references preserve cycle boundaries; unbounded module attribute forwarding restricted to existing declared public exports"
+    },
+    {
+      "group": "lazy-private-forwarder-retirement",
+      "old": "flagquantum/simulation/mps/state.py",
+      "new": "flagquantum/simulation/mps/sampling.py",
+      "symbols": [],
+      "partial": true,
+      "source_kind": "retired private bound-method wrapper; sampling math unchanged",
+      "retired_private_members": [
+        "MPSState._sample_indices"
+      ],
+      "retirement": "Public sample keeps validation and lazy import in original index branch; existing invalid-request test patches numerical owner directly"
+    },
+    {
+      "group": "runtime-watchdog-owner",
+      "old": "flagquantum/testing/watchdog.py",
+      "new": "flagquantum/runtime/observability/watchdog.py",
+      "symbols": [
+        "ProgressSnapshot",
+        "StallDiagnosis",
+        "PhaseAwareWatchdog"
+      ],
+      "compatibility": "existing public type and method pickle locators only",
+      "source_kind": "original complete phase-watchdog classes; logic and fields unchanged",
+      "public_identity": "flagquantum.testing.watchdog; original21-object pickle includes3classes,3instances,oneboundmethod and14class-owned functions",
+      "owner": "Runtime + Integration",
+      "removal_condition": "Approved versioned public-payload migration and release-policy compatibility window; no automatic 0.5.0 deletion"
     }
   ],
   "retired_namespace_parents": [

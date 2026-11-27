@@ -1,0 +1,15 @@
+{
+  "scope": "Original pre-move installed public watchdog payload; immutable backward-reading fixture, not a performance certificate",
+  "source_product_wheel_sha256": "9dc6e4f9ce24c479d61b94d42d8b3569e2466d51481ce623337e877d716fcda6",
+  "original_watchdog_git_blob": "a23e3db50f01d24efdffc775d4654c4d76946583",
+  "producer_python": "3.12.14",
+  "pickle_protocol": 5,
+  "objects": 21,
+  "class_locators": [
+    "flagquantum.testing.watchdog.ProgressSnapshot",
+    "flagquantum.testing.watchdog.StallDiagnosis",
+    "flagquantum.testing.watchdog.PhaseAwareWatchdog"
+  ],
+  "class_owned_functions": 14,
+  "payload_sha256": "6710083a60095a2e93e65c2cf1f789f2d99602ff1e82149714a407d0b3a48361"
+}
