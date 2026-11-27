@@ -458,3 +458,63 @@ resource shares and other heavy A800 routes are unchanged. No service, runner
 label, image or quota is modified. The placement must be accepted through the
 new head's actual scientific result, resource report and entire job duration;
 a cache qualification or scheduling replay alone cannot certify performance.
+
+
+## Follow-up after qualified PR #1346: fermion encoding assembly
+
+PR #1346 head `77f4e2d3b1e9a7851991f9ed58ff3e1b29685301` passed
+432 checks with four unchanged conditional skips, on the first attempt of all
+three workflows. All 384 raw CPU reports are retained. Runtime128 accounts for
+14,260 original nodes and coverage256 for 38,518 selected nodes once. Their
+whole-job maxima are 539 and 747 seconds respectively, with five scientific
+singletons still above 600 seconds. Maxwell takes 691 seconds after waiting
+999 seconds from plan readiness. Green CI is not ten-minute acceptance.
+
+The original PBE job's 300-second stack is inside fermion encoding's repeated
+full Pauli-sum canonicalization. The follow-up replaces only that accumulated
+sum rebuild, inside the existing Algorithms encoder, with updates to the
+factors touched by each original image. Ladder mapping, per-image addition
+order, leading complex zero, finite rejection, exact-zero removal, final
+canonical ordering, public signature and result type remain unchanged. There
+is no new dependency, export, package, native ABI, compatibility layer or Rust.
+
+Before activation, a temporary definition preserved all 59 original complete
+encoder outcomes and six overflow/cancellation outcomes from the independently
+installed prerequisite. The nine additional contract/Fock-reference cases pass
+on the unchanged original implementation. The representative local 16-mode,
+1,024-source-term diagnostic takes 3.03 seconds originally and 0.088 seconds
+with the proposed fold; this is not a full chemistry or Linux performance claim.
+Formal source, installed-candidate, full original independent PBE workflows and
+exact published-head CI acceptance remain required. No original scientific
+input, optimizer budget, marker, oracle or timeout is changed.
+
+The original complete 17-qubit, 2,383-operation Maxwell walk also retains
+identical complete output bytes across fifteen local executions using one,
+two, four, eight and twelve threads. Local differences are small and do not
+qualify a Linux thread-policy change. The isolated counter fixture is likewise
+insufficient to attribute the full Maxwell runtime to statistics. Retain the
+original scientific workflow while investigating its actual Linux cost.
+
+The actual candidate now passes all 65 original outcomes, including exact
+coefficient bytes and overflow/refusal results, from both source and its own
+new native installation. The full actual-source default selection passes
+21,896 tests with 852 conditional skips in 488 seconds including startup.
+All 22,739 earlier cases remain and all nine additional cases pass. One
+previously passing historical Git-revision lookup is skipped by its existing
+60-second environment guard; neither that test nor its bound was changed, and
+its raw reason is retained. The complete fermion unit suite passes 568/1,
+and all seventeen native integration/training modules pass 164 tests. The
+installed suite has exactly the same 733 outcomes, 732 passed and one missing
+optional HDF5 dependency, with all 523 loaded product modules verified from
+its own installation. Both native extensions load there, and all 1,265 product
+Python files match source, wheel and installation. The golden native energy
+example still reports 1.300000 for all three encodings.
+
+Candidate wheel SHA-256:
+`c6db9050d0939e0a0294ba6baf2444351bf6c575123b6b1d70fd9efc49327dd7`.
+All eleven quality gates and the applicable fixed hooks pass. This local
+qualification does not establish the four full original PBE timings or the new
+published-head CI; those remain mandatory. The latest #1084 increment through
+`d4802f79b864b3ae25c3e03efc66f6c06ab6dfb8` has sixteen SHA-verified
+paths and no candidate overlap; both relocation ledgers retain the same
+seventeen unfiltered changed-incoming diagnoses. Integrated G0 remains open.
