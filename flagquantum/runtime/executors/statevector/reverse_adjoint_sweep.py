@@ -11,6 +11,7 @@ import torch
 import torch.distributed as dist
 
 from flagquantum.compute.local import get_platform_runtime
+from flagquantum.runtime.distributed import placement as _placement
 from flagquantum.runtime.executors.statevector.reverse_adjoint_kernels import (
     _apply_matrix_gate,
     _apply_one_gate,
@@ -42,7 +43,6 @@ from ....simulation.statevector.operations import (
     _apply_matrix,
     _instruction_matrix,
 )
-from ...distributed.context import resolve_local_world_size
 from .checkpointing import StatevectorCheckpointPolicy
 from .cx_segment_dispatch import _triton_local_cx_segment_tensor_decision
 from .forward import StatevectorExchangeWorkspace
@@ -258,7 +258,7 @@ class _ReversibleAdjointSweep:
             value.detach().to(self.device) for value in self.saved_parameters
         )
         self.bound = _bind_saved_parameters(self.ir, self.slots, self.base_parameters)
-        self.local_world_size = resolve_local_world_size(
+        self.local_world_size = _placement.resolve_local_world_size(
             self.world_size, subgroup=self.process_group is not None
         )
         self.plan = plan_distributed_statevector(

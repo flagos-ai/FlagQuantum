@@ -9,6 +9,8 @@ from typing import Any
 import torch
 import torch.distributed as dist
 
+from flagquantum.runtime.distributed import placement as _placement
+
 from ....core.ir import ensure_circuit_ir
 from ....simulation.mps.models import MPSConfig
 from ....simulation.mps.rank_local import (
@@ -19,7 +21,6 @@ from ....simulation.mps.rank_local import (
     tensor_nbytes,
 )
 from ....simulation.mps.state import MPSState
-from ...distributed.context import resolve_local_world_size
 from .canonicalization import canonicalize_rank_owned_mps
 from .compiled_layers import (
     _PreparedMPSOutput,
@@ -89,7 +90,7 @@ def execute_torch_distributed_mps_forward(
     world_size = dist.get_world_size()
     rank = dist.get_rank()
     backend = str(dist.get_backend())
-    local_world_size = resolve_local_world_size(world_size)
+    local_world_size = _placement.resolve_local_world_size(world_size)
     resolved_device = torch.device(device or "cpu")
     resolved_dtype = dtype or getattr(torch, ir.dtype)
     bsz = int(ir.metadata.get("batch_size", 1))

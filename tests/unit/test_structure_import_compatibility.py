@@ -291,6 +291,17 @@ def test_public_pickle_locators_do_not_forward_internal_helpers() -> None:
     assert not hasattr(audit_engine, "_release_training_evidence_errors")
     assert not hasattr(MPSState, "_sample_indices")
 
+    from flagquantum.runtime.distributed import context
+    from flagquantum.runtime.executors.jax import common as jax_common
+    from flagquantum.runtime.executors.statevector import planning
+
+    assert not hasattr(context, "_resolve_local_world_size")
+    assert not hasattr(context, "_node_count")
+    assert not hasattr(context, "resolve_local_world_size")
+    assert not hasattr(context, "resolve_node_count")
+    assert not hasattr(jax_common, "node_count")
+    assert not hasattr(planning, "_node_count")
+
 
 _PUBLIC_ANNOTATION_CASES = json.loads(
     (
@@ -347,3 +358,23 @@ def test_runtime_watchdog_reads_original_public_payload() -> None:
     diagnosis = values[6](ProgressSnapshot(10.0, "input", "read", 1, 100))
     assert type(diagnosis) is StallDiagnosis
     assert diagnosis == StallDiagnosis("stalled_input", "input", "read", "none", 0, 0)
+
+
+def test_runtime_placement_counts_keep_optional_engines_cold() -> None:
+    source = (
+        "import sys; "
+        "from flagquantum.runtime.distributed import placement; "
+        "assert placement.resolve_local_world_size(4) == 2; "
+        "assert placement.resolve_local_world_size(4, subgroup=True) == 4; "
+        "assert placement.resolve_node_count(4, 2) == 2; "
+        "assert 'torch' not in sys.modules; "
+        "assert 'jax' not in sys.modules; "
+        "assert 'flagquantum.compiler' not in sys.modules; "
+        "assert 'flagquantum.runtime.planner' not in sys.modules"
+    )
+    subprocess.run(
+        [sys.executable, "-c", source],
+        env=dict(os.environ, LOCAL_WORLD_SIZE="2", NPROC_PER_NODE="8"),
+        check=True,
+        timeout=30,
+    )

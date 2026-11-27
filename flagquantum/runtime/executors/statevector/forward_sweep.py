@@ -12,6 +12,7 @@ import torch
 import torch.distributed as dist
 
 from flagquantum.compute.local import resolve_platform_device
+from flagquantum.runtime.distributed import placement as _placement
 from flagquantum.runtime.executors.statevector.forward import (
     StatevectorExchangeWorkspace,
     TorchDistributedStatevectorResult,
@@ -49,7 +50,6 @@ from ....simulation.statevector.operations import (
     _cx_sequence_permutation_index,
     _instruction_matrix,
 )
-from ...distributed.context import resolve_local_world_size
 from ...distributed.flagos_runtime import current_flagos_device
 from ...distributed.identity import build_distributed_identity
 from .cx_segment_dispatch import _triton_local_cx_segment_tensor_decision
@@ -123,7 +123,7 @@ class _ShardedForwardSweep:
                 stacklevel=2,
             )
         if local_world_size is None:
-            local_world_size = resolve_local_world_size(
+            local_world_size = _placement.resolve_local_world_size(
                 self.world_size, subgroup=self.process_group is not None
             )
         # Resolved before the layout, not after: which qubit carries the rank bit

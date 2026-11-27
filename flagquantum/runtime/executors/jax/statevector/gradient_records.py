@@ -6,11 +6,11 @@ from collections.abc import Mapping
 from dataclasses import dataclass, replace
 from typing import Any
 
+from flagquantum.runtime.distributed import placement as _placement
 from flagquantum.simulation.statevector.jax.kernels import jax_initial_statevector_shard
 
 from .....core.ir import CircuitIR
 from ....distributed.backend_policy import DistributedBackendPolicy
-from ..common import node_count as _node_count
 from ..planning_core import JAXDistributedQuantumPlan
 from ..release_policy import (
     attach_statevector_claimability as _attach_statevector_claimability,
@@ -407,7 +407,7 @@ def _statevector_plan(
         n_qubits=ir.n_wires,
         world_size=world_size,
         local_world_size=local_world_size,
-        node_count=_node_count(world_size, local_world_size),
+        node_count=_placement.resolve_node_count(world_size, local_world_size),
         backend_policy=policy,
         rank_ownership=rank_ownership,
         communication_tiers={

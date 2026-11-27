@@ -11,13 +11,13 @@ import torch
 import torch.distributed as dist
 
 from flagquantum.compute.local import get_platform_runtime
+from flagquantum.runtime.distributed import placement as _placement
 
 from ....simulation.tensor_network.models import (
     TensorNetworkContractionPlan,
     TensorNetworkExpectationPlan,
     TensorNetworkSlicingPlan,
 )
-from ...distributed.context import resolve_local_world_size
 from .distributed_optimizer import (
     GRADIENT_REDUCTION_MODES,
     _packed_owner_layout,
@@ -142,11 +142,11 @@ def execute_distributed_sliced_tn_explicit_reverse(
     # different placement than the one this process group runs on would place
     # slices on hosts that do not exist. Fail closed instead of reporting a
     # topology the collective never used.
-    if tasks.local_world_size != resolve_local_world_size(world_size):
+    if tasks.local_world_size != _placement.resolve_local_world_size(world_size):
         raise RuntimeError(
             "TN slice task plan local world size does not match the process "
             f"group placement: plan={tasks.local_world_size} "
-            f"placement={resolve_local_world_size(world_size)}"
+            f"placement={_placement.resolve_local_world_size(world_size)}"
         )
     if (
         tasks.slicing_labels != slicing.sliced_labels

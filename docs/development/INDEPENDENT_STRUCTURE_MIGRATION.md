@@ -289,3 +289,13 @@ The [lazy forwarding record](migration/lazy-private-forwarder-retirement.md)
 tracks four private wrappers, complete direct callers, the finite existing
 public export boundary, Runtime-owned production watchdog, and individually
 proven public serialized callbacks and watchdog payloads.
+
+
+## Shared Runtime placement counts
+
+The [placement ownership record](migration/runtime-placement-count-ownership.md)
+consolidates the shared node-count formula and torchrun local-size resolution
+at their backend-neutral Runtime owner. All current executor callers import
+that owner directly; private wrappers and duplicate formulas are removed.
+Existing subgroup, environment precedence, communication policy, schemas and
+public class identities retain their semantics.

@@ -6,9 +6,10 @@ from collections.abc import Sequence
 from itertools import product
 from typing import Any
 
+from flagquantum.runtime.distributed import placement as _placement
+
 from .....core.ir import CircuitIR
 from ....distributed.backend_policy import DistributedBackendPolicy
-from ..common import node_count as _node_count
 from ..planning_core import JAXDistributedQuantumPlan
 
 
@@ -85,7 +86,7 @@ def _tensor_network_plan(
         n_qubits=ir.n_wires,
         world_size=world_size,
         local_world_size=local_world_size,
-        node_count=_node_count(world_size, local_world_size),
+        node_count=_placement.resolve_node_count(world_size, local_world_size),
         backend_policy=policy,
         rank_ownership=rank_ownership,
         communication_tiers={
@@ -93,7 +94,8 @@ def _tensor_network_plan(
             "collective": "psum",
             "reduction_tensor_bytes": output_bytes,
             "inter_node_collective_possible": bool(
-                _node_count(world_size, local_world_size) > 1 and world_size > 1
+                _placement.resolve_node_count(world_size, local_world_size) > 1
+                and world_size > 1
             ),
             "note": "Exact physical bytes depend on XLA collective lowering.",
         },

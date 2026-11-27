@@ -7,7 +7,8 @@ from collections.abc import Sequence
 from dataclasses import asdict, dataclass
 from typing import Any
 
-from ...distributed.context import resolve_node_count
+from flagquantum.runtime.distributed import placement as _placement
+
 from .records import MPSReverseTapeRecord
 
 
@@ -230,7 +231,9 @@ class ShardedMPSTrainingResult:
             "rank": self.rank,
             "world_size": self.world_size,
             "local_world_size": self.local_world_size,
-            "node_count": resolve_node_count(self.world_size, self.local_world_size),
+            "node_count": _placement.resolve_node_count(
+                self.world_size, self.local_world_size
+            ),
             "optimizer": self.optimizer,
             "completed_steps": self.completed_steps,
             "start_step": self.start_step,

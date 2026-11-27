@@ -12,7 +12,8 @@ from typing import Any
 import torch
 import torch.distributed as dist
 
-from ...distributed.context import resolve_node_count
+from flagquantum.runtime.distributed import placement as _placement
+
 from .canonicalization import MPSCanonicalizationMetrics
 from .errors import MPSReverseContractError
 from .metadata_transport import _collective_device
@@ -279,7 +280,9 @@ class TorchDistributedMPSGradientResult:
             "executor": "pytorch_explicit_rank_owned_mps_reverse_v1",
             "world_size": self.world_size,
             "local_world_size": self.local_world_size,
-            "node_count": resolve_node_count(self.world_size, self.local_world_size),
+            "node_count": _placement.resolve_node_count(
+                self.world_size, self.local_world_size
+            ),
             "rank": self.rank,
             "distribution_semantics": "sharded_across_ranks",
             "mps_backward_execution": self._backward_status,
@@ -397,7 +400,7 @@ class TorchDistributedMPSForwardResult:
             ),
             "world_size": world_size,
             "local_world_size": local_world_size,
-            "node_count": resolve_node_count(world_size, local_world_size),
+            "node_count": _placement.resolve_node_count(world_size, local_world_size),
             "rank": self.shard_state.rank,
             "rank_placement": {
                 "rank": self.shard_state.rank,

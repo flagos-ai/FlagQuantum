@@ -32,9 +32,10 @@ from typing import Any
 import torch
 import torch.distributed as dist
 
+from flagquantum.runtime.distributed import placement as _placement
+
 from ....simulation.mps.rank_local import tensor_nbytes as _tensor_nbytes
 from ....simulation.mps.state import MPSState
-from ...distributed.context import resolve_node_count
 from .errors import MPSFullMaterializationError
 from .metadata_transport import all_gather_json
 from .records import TorchDistributedMPSForwardResult
@@ -292,7 +293,9 @@ def export_distributed_mps(
         total_gather_bytes=world_size * gather_bytes_per_rank,
         peak_resident_bytes_per_rank=full_state_bytes + local_site_bytes,
         local_world_size=int(result.local_world_size),
-        node_count=resolve_node_count(world_size, int(result.local_world_size)),
+        node_count=_placement.resolve_node_count(
+            world_size, int(result.local_world_size)
+        ),
     )
 
 
