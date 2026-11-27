@@ -150,7 +150,7 @@ RULE_READERS: dict[str, tuple[str, ...]] = {
     "logical_registers": (
         "test_logical_register_calls_keep_fixed_point_metadata",
         "test_approved_signed_fixed_storage_authorizes_physical_lowering",
-        "test_logical_symbolic_fraction_still_refuses_physical_lowering",
+        "test_approved_known_size_symbolic_fraction_retains_raw_physical_storage",
     ),
     "register_workspace": (
         "test_register_workspace_keeps_zero_width_ownership",

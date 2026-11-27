@@ -44,7 +44,9 @@ _SPEC.loader.exec_module(_GATE)
 
 
 def _contract() -> dict[str, Any]:
-    return json.loads(CONTRACT.read_text(encoding="utf-8"))
+    value = json.loads(CONTRACT.read_text(encoding="utf-8"))
+    assert isinstance(value, dict)
+    return value
 
 
 def _static_circuit() -> CircuitIR:
@@ -101,7 +103,7 @@ def _codes(conversion: level_boundary.LevelConversion) -> set[str]:
 # --------------------------------------------------------------------------
 
 
-def test_static_circuit_round_trips_exactly():
+def test_static_circuit_round_trips_exactly() -> None:
     circuit = _static_circuit()
     conversion = level_boundary.round_trip(circuit)
     assert conversion.state == level_boundary.SUPPORTED_EXACT
@@ -110,7 +112,7 @@ def test_static_circuit_round_trips_exactly():
     assert conversion.canonical_payload == circuit.to_dict()
 
 
-def test_the_round_trip_carries_every_payload_section():
+def test_the_round_trip_carries_every_payload_section() -> None:
     payload = level_boundary.round_trip(_static_circuit()).canonical_payload
     assert payload is not None
     for section in (
@@ -124,15 +126,16 @@ def test_the_round_trip_carries_every_payload_section():
         assert section in payload, section
 
 
-def test_a_restored_circuit_is_equal_to_the_one_that_entered():
+def test_a_restored_circuit_is_equal_to_the_one_that_entered() -> None:
     circuit = _static_circuit()
     program = level_boundary.circuit_to_program(circuit)
     restored = level_boundary.program_to_circuit(program.record)
     assert restored.state == level_boundary.SUPPORTED_EXACT
+    assert restored.canonical_payload is not None
     assert CircuitIR.from_dict(restored.canonical_payload) == circuit
 
 
-def test_dynamic_circuit_lowers_and_round_trips_exactly():
+def test_dynamic_circuit_lowers_and_round_trips_exactly() -> None:
     circuit = _dynamic_circuit()
     conversion = level_boundary.circuit_to_program(circuit)
 
@@ -164,7 +167,7 @@ def test_dynamic_circuit_lowers_and_round_trips_exactly():
     assert restored.canonical_payload == circuit.to_dict()
 
 
-def test_remeasuring_a_classical_slot_rebinds_subsequent_conditions():
+def test_remeasuring_a_classical_slot_rebinds_subsequent_conditions() -> None:
     circuit = DynamicCircuit(3)
     circuit.measure(0, classical_bit=0)
     circuit.measure(1, classical_bit=0)
@@ -181,7 +184,7 @@ def test_remeasuring_a_classical_slot_rebinds_subsequent_conditions():
     assert condition.value != measurements[0].results[1]
 
 
-def test_a_live_but_incorrect_dynamic_condition_fails_exact_round_trip():
+def test_a_live_but_incorrect_dynamic_condition_fails_exact_round_trip() -> None:
     conversion = level_boundary.circuit_to_program(_dynamic_circuit())
     assert conversion.record is not None
     record = conversion.record
@@ -214,7 +217,7 @@ def test_a_live_but_incorrect_dynamic_condition_fails_exact_round_trip():
 # --------------------------------------------------------------------------
 
 
-def test_unsupported_dynamic_marker_is_refused():
+def test_unsupported_dynamic_marker_is_refused() -> None:
     circuit = CircuitIR(
         n_wires=1,
         instructions=(Instruction("h", (0,), metadata={"is_dynamic": True}),),
@@ -225,7 +228,7 @@ def test_unsupported_dynamic_marker_is_refused():
     assert conversion.canonical_payload is None
 
 
-def test_malformed_conditional_instruction_is_refused():
+def test_malformed_conditional_instruction_is_refused() -> None:
     circuit = CircuitIR(
         n_wires=2,
         instructions=(Instruction("x", (1,), metadata={"conditions": ((0, 1),)}),),
@@ -235,14 +238,15 @@ def test_malformed_conditional_instruction_is_refused():
     assert _codes(conversion) == {"level.conditional_instruction"}
 
 
-def test_a_non_circuit_input_is_invalid():
+def test_a_non_circuit_input_is_invalid() -> None:
     conversion = level_boundary.classify_public_circuit(("h", 0))
     assert conversion.state == level_boundary.INVALID_INPUT
     assert _codes(conversion) == {"level.not_circuit_ir"}
 
 
-def test_tampered_payload_is_refused():
+def test_tampered_payload_is_refused() -> None:
     program = level_boundary.circuit_to_program(_static_circuit())
+    assert program.record is not None
     payload = dict(program.record.canonical_payload or {})
     payload["instructions"] = "not a sequence of instructions"
     tampered = dataclasses.replace(program.record, canonical_payload=payload)
@@ -251,16 +255,17 @@ def test_tampered_payload_is_refused():
     assert _codes(conversion) == {"level.payload_invalid"}
 
 
-def test_a_record_without_a_recorded_payload_is_refused():
+def test_a_record_without_a_recorded_payload_is_refused() -> None:
     conversion = level_boundary.program_to_circuit(_record_with())
     assert conversion.state == level_boundary.UNSUPPORTED_WITH_DIAGNOSTICS
     assert _codes(conversion) == {"level.no_canonical_payload"}
 
 
-def test_a_payload_that_is_not_canonical_is_refused():
+def test_a_payload_that_is_not_canonical_is_refused() -> None:
     """A payload that decodes but re-encodes differently is not an exact round trip."""
 
     program = level_boundary.circuit_to_program(_static_circuit())
+    assert program.record is not None
     payload = dict(program.record.canonical_payload or {})
     del payload["shape"]
     kept = level_boundary.ProgramRecord(
@@ -274,7 +279,7 @@ def test_a_payload_that_is_not_canonical_is_refused():
     )
 
 
-def test_an_illegal_control_flow_graph_is_invalid_input():
+def test_an_illegal_control_flow_graph_is_invalid_input() -> None:
     cases = {
         "program.entry_missing": _record_with(
             functions=(
@@ -336,11 +341,11 @@ def test_an_illegal_control_flow_graph_is_invalid_input():
         assert code in _codes(conversion), (code, _codes(conversion))
 
 
-def test_a_well_formed_record_is_accepted():
+def test_a_well_formed_record_is_accepted() -> None:
     assert level_boundary.verify_program_record(_record_with()) == ()
 
 
-def test_a_graph_that_does_not_re_derive_its_payload_is_refused():
+def test_a_graph_that_does_not_re_derive_its_payload_is_refused() -> None:
     """A payload is an attestation, not a source.
 
     Dropping the last operation from the graph leaves the recorded payload intact,
@@ -350,6 +355,7 @@ def test_a_graph_that_does_not_re_derive_its_payload_is_refused():
     """
 
     program = level_boundary.circuit_to_program(_static_circuit())
+    assert program.record is not None
     record = program.record
     entry = record.functions[0].blocks[0]
     edited = dataclasses.replace(
@@ -366,7 +372,7 @@ def test_a_graph_that_does_not_re_derive_its_payload_is_refused():
     assert _codes(conversion) == {"level.round_trip_mismatch"}
 
 
-def test_an_operation_that_does_not_type_is_invalid_input():
+def test_an_operation_that_does_not_type_is_invalid_input() -> None:
     """Every operation-level refusal names the code the contract declares for it."""
 
     qubit = level_boundary.ValueRef("entry", 0, "qubit")
@@ -465,7 +471,7 @@ def test_an_operation_that_does_not_type_is_invalid_input():
     }
 
 
-def test_the_contract_fake_types_dynamic_def_use():
+def test_the_contract_fake_types_dynamic_def_use() -> None:
     q0 = level_boundary.ValueRef("entry", 0, "qubit")
     q1 = level_boundary.ValueRef("entry", 1, "qubit")
     measured = level_boundary.ValueRef("entry", 2, "bool")
@@ -500,7 +506,7 @@ def test_the_contract_fake_types_dynamic_def_use():
     assert reset.result_kinds == ("qubit",)
 
 
-def test_dynamic_condition_contract_rejects_invalid_def_use():
+def test_dynamic_condition_contract_rejects_invalid_def_use() -> None:
     q0 = level_boundary.ValueRef("entry", 0, "qubit")
     q1 = level_boundary.ValueRef("entry", 1, "qubit")
     boolean = level_boundary.ValueRef("entry", 2, "bool")
@@ -557,7 +563,7 @@ def test_dynamic_condition_contract_rejects_invalid_def_use():
 # --------------------------------------------------------------------------
 
 
-def test_value_identity_is_scope_and_index():
+def test_value_identity_is_scope_and_index() -> None:
     unnamed = level_boundary.BlockRecord(
         "entry", (level_boundary.ValueRef("", 0),), terminator="return"
     )
@@ -577,7 +583,7 @@ def test_value_identity_is_scope_and_index():
         }
 
 
-def test_linear_value_has_exactly_one_consumer():
+def test_linear_value_has_exactly_one_consumer() -> None:
     qubit = level_boundary.ValueRef("entry", 0, "qubit")
     duplicated = level_boundary.BlockRecord(
         "entry",
@@ -601,7 +607,7 @@ def test_linear_value_has_exactly_one_consumer():
     }
 
 
-def test_linear_value_must_be_forwarded_by_a_branch():
+def test_linear_value_must_be_forwarded_by_a_branch() -> None:
     qubit = level_boundary.ValueRef("entry", 0, "qubit")
     dropped = level_boundary.BlockRecord(
         "entry",
@@ -621,11 +627,11 @@ def test_linear_value_must_be_forwarded_by_a_branch():
     }
 
 
-def test_a_returning_block_consumes_its_linear_argument():
+def test_a_returning_block_consumes_its_linear_argument() -> None:
     assert level_boundary.verify_program_record(_record_with()) == ()
 
 
-def test_non_linear_values_may_have_many_consumers():
+def test_non_linear_values_may_have_many_consumers() -> None:
     scalar = level_boundary.ValueRef("entry", 0, "scalar")
     block = level_boundary.BlockRecord(
         "entry",
@@ -643,7 +649,7 @@ def test_non_linear_values_may_have_many_consumers():
     assert level_boundary.verify_program_record(record) == ()
 
 
-def test_join_requires_matching_argument_kinds():
+def test_join_requires_matching_argument_kinds() -> None:
     qubit = level_boundary.ValueRef("entry", 0, "qubit")
     scalar = level_boundary.ValueRef("entry", 1, "scalar")
     boolean = level_boundary.ValueRef("entry", 1, "bool")
@@ -680,7 +686,7 @@ def test_join_requires_matching_argument_kinds():
 # --------------------------------------------------------------------------
 
 
-def test_every_refusal_names_a_declared_code():
+def test_every_refusal_names_a_declared_code() -> None:
     refusals = [
         level_boundary.classify_public_circuit(None),
         level_boundary.classify_public_circuit(
@@ -705,7 +711,7 @@ def test_every_refusal_names_a_declared_code():
     assert refused >= len(refusals)
 
 
-def test_a_supported_result_carries_no_diagnostic_and_a_refusal_carries_one():
+def test_a_supported_result_carries_no_diagnostic_and_a_refusal_carries_one() -> None:
     with pytest.raises(level_boundary.LevelContractError):
         level_boundary.LevelConversion(
             state=level_boundary.SUPPORTED_EXACT,
@@ -719,7 +725,7 @@ def test_a_supported_result_carries_no_diagnostic_and_a_refusal_carries_one():
         )
 
 
-def test_no_best_effort_state_exists():
+def test_no_best_effort_state_exists() -> None:
     assert "best_effort" not in level_boundary.SUPPORT_STATES
     with pytest.raises(level_boundary.LevelContractError):
         level_boundary.LevelConversion(
@@ -727,7 +733,7 @@ def test_no_best_effort_state_exists():
         )
 
 
-def test_lower_to_level_realizes_only_declared_exits():
+def test_lower_to_level_realizes_only_declared_exits() -> None:
     contract = json.loads(CONTRACT.read_text(encoding="utf-8"))
     assert tuple(contract["realized_exits"]) == level_boundary.REALIZED_EXITS
     assert tuple(contract["declared_but_unimplemented_exits"]) == tuple(
@@ -748,7 +754,7 @@ def test_lower_to_level_realizes_only_declared_exits():
 # --------------------------------------------------------------------------
 
 
-def test_the_boundary_is_not_a_root_export():
+def test_the_boundary_is_not_a_root_export() -> None:
     names = (
         "ProgramRecord",
         "LevelConversion",
@@ -770,11 +776,11 @@ def test_the_boundary_is_not_a_root_export():
 # --------------------------------------------------------------------------
 
 
-def test_the_boundary_gate_accepts_the_checked_in_contract():
+def test_the_boundary_gate_accepts_the_checked_in_contract() -> None:
     assert _GATE.contract_errors(_contract()) == ()
 
 
-def test_the_boundary_gate_runs_in_ci_and_before_push():
+def test_the_boundary_gate_runs_in_ci_and_before_push() -> None:
     """A gate that no workflow invokes is a script, not a gate."""
 
     workflow = (ROOT / ".github/workflows/ci.yml").read_text(encoding="utf-8")
@@ -783,7 +789,7 @@ def test_the_boundary_gate_runs_in_ci_and_before_push():
     assert '"tools/check_multi_level_ir_contract.py"' in pre_push
 
 
-def test_finite_calls_use_explicit_returns():
+def test_finite_calls_use_explicit_returns() -> None:
     q0 = level_boundary.ValueRef("entry", 0, "qubit")
     q1 = level_boundary.ValueRef("entry", 1, "qubit")
     leaf = level_boundary.FunctionRecord(
@@ -817,7 +823,7 @@ def test_finite_calls_use_explicit_returns():
     assert "value.linear_unconsumed" in codes
 
 
-def test_finite_calls_reject_unreachable_cycles():
+def test_finite_calls_reject_unreachable_cycles() -> None:
     main = level_boundary.FunctionRecord(
         "main", (level_boundary.BlockRecord("entry", return_values=()),)
     )
@@ -840,7 +846,7 @@ def test_finite_calls_reject_unreachable_cycles():
     assert "program.call_structure" in codes
 
 
-def test_register_rebindings_preserve_zero_width_ownership():
+def test_register_rebindings_preserve_zero_width_ownership() -> None:
     from dataclasses import replace
 
     from tests.unit.test_program_registers import word_function
@@ -861,7 +867,7 @@ def test_register_rebindings_preserve_zero_width_ownership():
     assert "value.linear_unconsumed" in codes
 
 
-def test_register_rebindings_reject_declared_width_tampering():
+def test_register_rebindings_reject_declared_width_tampering() -> None:
     from dataclasses import replace
 
     from flagquantum.core.ir.program.registers import RegisterType
@@ -883,10 +889,35 @@ def test_register_rebindings_reject_declared_width_tampering():
     assert "program.register_type" in codes
 
 
-def test_register_workspace_keeps_zero_width_ownership():
-    from tests.unit.test_program_workspace import workspace_function
+def _workspace_identity_function(width: int) -> level_boundary.FunctionRecord:
+    from flagquantum.core.ir.program.registers import RegisterType
 
-    function = workspace_function(0)
+    word = level_boundary.ValueRef("entry", 0, "register")
+    return level_boundary.FunctionRecord(
+        "main",
+        (
+            level_boundary.BlockRecord(
+                "entry",
+                operations=(
+                    level_boundary.Operation(
+                        "allocate_register",
+                        results=(word,),
+                        register_type=RegisterType("uint", width),
+                        workspace_dirty=False,
+                    ),
+                    level_boundary.Operation(
+                        "free_register", operands=(word,), workspace_dirty=False
+                    ),
+                ),
+                return_values=(),
+            ),
+        ),
+        registers=(),
+    )
+
+
+def test_register_workspace_keeps_zero_width_ownership() -> None:
+    function = _workspace_identity_function(0)
     assert (
         level_boundary.verify_program_record(level_boundary.ProgramRecord((function,)))
         == ()
@@ -904,10 +935,8 @@ def test_register_workspace_keeps_zero_width_ownership():
     assert "value.linear_unconsumed" in codes
 
 
-def test_register_workspace_requires_explicit_dirty_flags():
-    from tests.unit.test_program_workspace import workspace_function
-
-    function = workspace_function(1)
+def test_register_workspace_requires_explicit_dirty_flags() -> None:
+    function = _workspace_identity_function(1)
     block = function.blocks[0]
     changed = dataclasses.replace(block.operations[0], workspace_dirty=None)
     invalid = dataclasses.replace(
@@ -925,7 +954,7 @@ def test_register_workspace_requires_explicit_dirty_flags():
     assert "program.register_structure" in codes
 
 
-def _fixed_point_identity_program():
+def _fixed_point_identity_program() -> level_boundary.ProgramRecord:
     from flagquantum.core.ir.program.register_types import fixed_point_register_type
     from flagquantum.core.ir.program.registers import Register
 
@@ -939,9 +968,10 @@ def _fixed_point_identity_program():
     return level_boundary.ProgramRecord((function,))
 
 
-def test_logical_register_calls_keep_fixed_point_metadata():
+def test_logical_register_calls_keep_fixed_point_metadata() -> None:
     record = _fixed_point_identity_program()
     assert level_boundary.verify_program_record(record) == ()
+    assert record.functions[0].registers is not None
     assert record.functions[0].registers[0].dtype.parameters == (
         ("fractional_width", 6),
         ("signed", True),
@@ -960,7 +990,7 @@ def test_approved_signed_fixed_storage_authorizes_physical_lowering() -> None:
     assert bound.circuit.instructions == () and bound.events == ()
 
 
-def test_logical_symbolic_fraction_still_refuses_physical_lowering() -> None:
+def test_approved_known_size_symbolic_fraction_retains_raw_physical_storage() -> None:
     from flagquantum.compiler.registers.register_binding import bind_register_program
     from flagquantum.compiler.registers.register_programs import lower_register_program
     from flagquantum.core.ir.program.register_types import fixed_point_register_type
@@ -981,7 +1011,11 @@ def test_logical_symbolic_fraction_still_refuses_physical_lowering() -> None:
     )
     record = dataclasses.replace(record, functions=(function,))
     assert level_boundary.verify_program_record(record) == ()
-    with pytest.raises(ValueError, match="unsupported executable"):
-        lower_register_program(record)
-    with pytest.raises(ValueError, match="unsupported executable"):
-        bind_register_program(record, (tuple(range(8)),))
+    # Proposal 130 admits the known eight-bit storage, preserving its metadata.
+    lowered = lower_register_program(record)
+    assert level_boundary.verify_program_record(lowered) == ()
+    bound = bind_register_program(record, (tuple(range(8)),))
+    assert bound.outputs == (tuple(range(8)),)
+    assert bound.circuit.instructions == () and bound.events == ()
+    assert record.functions[0].registers is not None
+    assert record.functions[0].registers[0].dtype is dtype
