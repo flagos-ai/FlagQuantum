@@ -3,7 +3,12 @@
 from collections.abc import Mapping
 from itertools import product
 
-import numpy as np
+from tests._reference_dependencies import unavailable_reference
+
+try:
+    import numpy as np
+except ModuleNotFoundError as _reference_import_error:
+    unavailable_reference(_reference_import_error)
 import pytest
 import torch
 
@@ -51,13 +56,13 @@ def test_selected_add_graph_native_callbacks_leaf_axes_and_replacement(
 ) -> None:
     from qualtran._infra.data_types import QUInt
     from qualtran.bloqs.arithmetic.addition import Add
-    from qualtran.simulation.tensor._tensor_from_classical import (
-        my_tensors_from_classical_action,
-    )
 
     from flagquantum.compiler.registers.component_graph import iter_component_calls
     from flagquantum.compiler.registers.component_tensor_expansion import (
         expand_components_for_tensor,
+    )
+    from tests.unit.classical_source_callbacks import (
+        source_classical_action_tensors as my_tensors_from_classical_action,
     )
     from tests.unit.test_component_hierarchy_adjoint import wrapped_add
     from tests.unit.test_register_tensor_binding import source_bindings
@@ -93,7 +98,7 @@ def test_selected_add_graph_native_callbacks_leaf_axes_and_replacement(
     nodes, inc, out = component_tensor_nodes(selected, order, supply, like)
     assert len(leaves) == 2 and all(node.tensor.dtype == dtype for node in nodes)
     leaf = Add(QUInt(2), QUInt(3))
-    labels: dict[tuple[str, int], int] = {}
+    labels: dict[tuple[object, int], int] = {}
     src_inc, native_inc = source_bindings(leaf.signature.lefts(), "in", labels)
     src_out, native_out = source_bindings(leaf.signature.rights(), "out", labels)
     original = my_tensors_from_classical_action(leaf, src_inc, src_out)[0]
@@ -209,14 +214,16 @@ def test_directional_bit_leaf_matches_original_supplier(side: RegisterSide) -> N
     from qualtran._infra.registers import Register as SourceRegister
     from qualtran._infra.registers import Side
     from qualtran._infra.registers import Signature as SourceSignature
-    from qualtran.simulation.tensor._tensor_from_classical import (
-        my_tensors_from_classical_action,
-    )
 
+    from tests.unit.classical_source_callbacks import (
+        source_classical_action_tensors as my_tensors_from_classical_action,
+    )
     from tests.unit.test_register_tensor_binding import source_bindings
 
     sig = Signature([Register("q", quantum_bit_type(), side=side)])
-    source_sig = SourceSignature([SourceRegister("q", QBit(), side=Side[side.name])])
+    side_name = side.name
+    assert side_name is not None
+    source_sig = SourceSignature([SourceRegister("q", QBit(), side=Side[side_name])])
 
     def action(**values: object) -> tuple[object, ...]:
         return () if side == RegisterSide.LEFT else (1,)
@@ -225,7 +232,7 @@ def test_directional_bit_leaf_matches_original_supplier(side: RegisterSide) -> N
         signature = source_sig
         call_classically = staticmethod(action)
 
-    labels: dict[tuple[str, int], int] = {}
+    labels: dict[tuple[object, int], int] = {}
     src_in, inc = source_bindings(source_sig.lefts(), "in", labels)
     src_out, out = source_bindings(source_sig.rights(), "out", labels)
     original = my_tensors_from_classical_action(Source(), src_in, src_out)[0]
