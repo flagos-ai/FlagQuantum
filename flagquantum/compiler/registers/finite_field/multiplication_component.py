@@ -15,8 +15,11 @@ from ._polynomial_component_calls import (
     product_bit_functions,
     product_ccx,
 )
-from .field_word import field_word_width
-from .monomial_component import monomial_multiplication_program
+from .field_word import field_word_width, raw_field_word_width
+from .monomial_component import (
+    monomial_decomposition_program,
+    monomial_multiplication_program,
+)
 
 
 def field_multiplication_program(
@@ -35,6 +38,50 @@ def field_multiplication_program(
     width = field_word_width(dtype, modulus)
     if type(plus_equal_prod) is not bool or type(adjoint) is not bool:
         raise ValueError("Field product mode and direction require booleans")
+    return _field_multiplication_program(
+        dtype,
+        width,
+        monomial_multiplication_program(dtype, width, modulus=modulus),
+        monomial_multiplication_program(dtype, -width, modulus=modulus),
+        plus_equal_prod=plus_equal_prod,
+        adjoint=adjoint,
+    )
+
+
+def field_multiplication_decomposition_program(
+    dtype: RegisterType,
+    *,
+    modulus: int,
+    plus_equal_prod: bool = False,
+    adjoint: bool = False,
+) -> ProgramRecord:
+    """Preserve the actual quadratic circuit on admitted raw field words.
+
+    Word width controls the Toffoli triangles, while field degree controls the
+    literal shift child. This physical profile need not be numerical multiplication.
+    """
+    width = raw_field_word_width(dtype)
+    if type(plus_equal_prod) is not bool or type(adjoint) is not bool:
+        raise ValueError("Field product mode and direction require booleans")
+    return _field_multiplication_program(
+        dtype,
+        width,
+        monomial_decomposition_program(dtype, width, modulus=modulus),
+        monomial_decomposition_program(dtype, width, modulus=modulus, adjoint=True),
+        plus_equal_prod=plus_equal_prod,
+        adjoint=adjoint,
+    )
+
+
+def _field_multiplication_program(
+    dtype: RegisterType,
+    width: int,
+    right_shift: ProgramRecord,
+    left_shift: ProgramRecord,
+    *,
+    plus_equal_prod: bool,
+    adjoint: bool,
+) -> ProgramRecord:
     side = (
         RegisterSide.THRU
         if plus_equal_prod
@@ -61,7 +108,7 @@ def field_multiplication_program(
     xs, ys = builder.split(x)[::-1], builder.split(y)[::-1]
     if plus_equal_prod and not adjoint:
         result = builder.call_program(
-            monomial_multiplication_program(dtype, -width, modulus=modulus),
+            left_shift,
             {"f": result},
         )["f"]
         assert isinstance(result, RegisterBinding)
@@ -79,9 +126,7 @@ def field_multiplication_program(
         )
     bits = field_word_call(
         builder,
-        monomial_multiplication_program(
-            dtype, -width if adjoint else width, modulus=modulus
-        ),
+        left_shift if adjoint else right_shift,
         "f",
         bits,
         dtype,
@@ -93,7 +138,7 @@ def field_multiplication_program(
     if plus_equal_prod and adjoint:
         bits = field_word_call(
             builder,
-            monomial_multiplication_program(dtype, width, modulus=modulus),
+            right_shift,
             "f",
             bits,
             dtype,
