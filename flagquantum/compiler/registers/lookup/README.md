@@ -119,3 +119,13 @@ normal append, primitive/feedback parity, complex branch/work proofs and separat
 model quotes. `tests/unit/test_qrom_source_classical_metadata.py` covers deferred
 control activation and host-value outputs. Known source failures are recorded
 in `docs/development/QROM_FILE_AUDIT.md`; scalar carriers are not added here.
+
+`select_swap_declaration.py` owns source block geometry, padding and batched
+integer assignment, including source-valid extra singleton bank axes. It reuses
+`QromDeclaration` and the shared partition/load/route/copy stages; strict clean
+lookup tables retain their own invariants. Direct calls and model quotes use
+shared callee identities from `select_swap_callees.py`. Start with
+`tests/unit/test_select_swap_deferred_metadata.py` for real stored constructors,
+exact forward/adjoint primitives and complex dirty-bank restoration. See
+`docs/development/SELECT_SWAP_QROM_FILE_AUDIT.md` for source refusals and the
+independent primitive, allocation and logical-model accounts.

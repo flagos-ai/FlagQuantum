@@ -14,6 +14,7 @@ from ..component_builder import BindingCollection, ComponentProgramBuilder
 from ..layout.component_partition import partition_component_program
 from .qrom_component import qrom_program
 from .qrom_table import QromTable
+from .select_swap_declaration import SelectSwapDeclaration
 from .source_qroam_clean import QroamCleanTable
 from .swap_with_zero_component import swap_with_zero_program
 
@@ -25,7 +26,7 @@ PartitionRegisters = dict[int, tuple[Register, ...]]
 def partition_lookup_selection(
     builder: ComponentProgramBuilder,
     signature: Signature,
-    table: QroamCleanTable,
+    table: QroamCleanTable | SelectSwapDeclaration,
     widths: tuple[int, ...],
 ) -> tuple[PartitionRegisters, SelectionBindings, SelectionBindings]:
     high_widths = table._high_widths(widths)
@@ -65,7 +66,7 @@ def partition_lookup_selection(
 
 def load_lookup_banks(
     builder: ComponentProgramBuilder,
-    table: QroamCleanTable,
+    table: QroamCleanTable | SelectSwapDeclaration,
     target_widths: tuple[int, ...],
     selection_widths: tuple[int, ...],
     num_controls: int,
@@ -75,13 +76,17 @@ def load_lookup_banks(
     *,
     reserve_workspace: bool = True,
 ) -> BindingCollection | None:
-    batched = QromTable(
-        table.batch_shape,
-        table._high_widths(selection_widths),
-        target_widths,
-        (table.block_shape,) * len(target_widths),
-        num_controls,
-        table.batched_data,
+    batched = (
+        table.qrom
+        if isinstance(table, SelectSwapDeclaration)
+        else QromTable(
+            table.batch_shape,
+            table._high_widths(selection_widths),
+            target_widths,
+            (table.block_shape,) * len(target_widths),
+            num_controls,
+            table.batched_data,
+        )
     )
     inputs: dict[str, object] = {f"target{i}_": values for i, values in banks.items()}
     if num_controls:
@@ -102,7 +107,7 @@ def load_lookup_banks(
 
 def route_lookup_banks(
     builder: ComponentProgramBuilder,
-    table: QroamCleanTable,
+    table: QroamCleanTable | SelectSwapDeclaration,
     target_widths: tuple[int, ...],
     low: SelectionBindings,
     banks: BankBindings,
@@ -130,7 +135,7 @@ def route_lookup_banks(
 def unpartition_lookup_selection(
     builder: ComponentProgramBuilder,
     signature: Signature,
-    table: QroamCleanTable,
+    table: QroamCleanTable | SelectSwapDeclaration,
     parts: PartitionRegisters,
     high: SelectionBindings,
     low: SelectionBindings,

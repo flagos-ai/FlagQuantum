@@ -6,7 +6,7 @@ v0.7.0 inventory at `bcb17bb25360ed68ce3bc084645db3e929799389`.
 | Inventory | Native evidence |
 | --- | --- |
 | Q-0483 tutorial | `register_select_swap_qrom.ipynb` covers the two concrete and four symbolic source examples, four independent formula queries, the default and explicit-block call graphs, and both bank policies through `circuit.append(op)`. |
-| Q-0484 implementation | The emitter retains the source bank restoration order. The distinct immediate calls and batched QROM data are exposed independently of the aggregate QEC model. See the open boundaries below. |
+| Q-0484 implementation | The emitter retains the source bank restoration order. The distinct immediate calls and batched QROM data are exposed independently of the aggregate QEC model. Current complete-source closure and retained source limits appear in the November 28 section. |
 | Q-0485 tests | The full original test file reported 27 passes and two expected failures for the original unenforced count checks. Native checks reuse the source gate and channel tests, and additionally compare immediate graph children and their parameters. |
 
 ## Immediate calls and execution
@@ -40,7 +40,7 @@ for the clean mode, and 16 explicit T and two AND for the borrowed
 mode. Both models declare two measurements and a seven-qubit peak.
 The Clifford model counts are 51 and 94 respectively.
 
-## Remaining Q-0484 boundaries
+## Historical boundaries before November 28
 
 The source can declare mixed or fully blocked call graphs, while its
 executable graph loses a required low or high selector in these cases.
@@ -105,3 +105,111 @@ The batch passed 136 concentrated tests, 29 integration tests, strict typing,
 Black, Ruff, Ecosystem scope, architecture, IR and public API checks. The
 Cirq 1.6.1 lane passed 24 live-graph and partition cases with native Kickmix
 present. No source files were modified.
+
+
+## Complete source and direct dependency closure, November 28
+
+The remaining source-success constructor gap is now implemented. The source
+accepts trailing zero block axes when all block exponents are zero. Those axes
+remain part of the bank and QROM target shapes even though the source zips them
+against fewer data/selection axes. Rejecting the layout early was a native gap.
+`SelectSwapDeclaration` now preserves it without weakening `QroamCleanTable`.
+
+| Complete source responsibility | Authoritative native owner |
+|---|---|
+| `find_optimal_log_block_size`, helper and default blocks | Existing optimal-block and symbolic helpers; `SelectSwapDeclaration` consumes their source objective, including clean-factor-two/dirty-factor-one behavior |
+| Base construction, scalar-target check and symbolic state | Composition of the accepted immutable `QromDeclaration` with source block metadata and bank policy |
+| `with_data`, `with_log_block_sizes` | Existing base replacement checks, original zipped block bounds and retained block selection; snapshots do not mutate caller data |
+| Block sizes, batch shape, high widths and padding | Source zipped arithmetic and fresh `padded_arrays`, preserving original dtype and deferred failures |
+| `batched_data_shape`, `batched_data` | Source-shaped integer batch assignment, including original float truncation and broadcast failures |
+| `qrom_bloq` | Shared `QromDeclaration.from_shape/with_data`; source-symbolic metadata retains an unknown-data child |
+| `swap_with_zero_bloqs`, immediate calls | Shared immutable route/copy identities and `SelectSwapDeclaration.calls`; the existing dense-table call query delegates to this authority |
+| QEC and static width | Shared arithmetic, QROM and approximate-swap query owners; modern and legacy profiles remain separate from emitted primitives |
+| Allocate, partition/unpartition, load, route, copy and both composite builders | Existing shared blocked lookup stages and `select_swap_qrom_program`, now consuming either a strict clean table or source metadata |
+| Actual constructors and adjoints | Shared pickle-free metadata reader and `select_swap_factories`; original inverse allocation/free flags remain unchanged |
+| Wire symbols, diagram hook and documentation factories | Existing native glyph/score owner and all six original examples; Cirq spacing remains a separate presentation |
+
+No source code is rewritten. Stored constructor libraries at depths 0, 1 and 2
+are resolved without executing SDK constructors. The new native declaration
+retains the actual QROM bank shape, instead of discarding extra singleton axes
+to make a strict dense table fit. The same Program binder and append protocol
+remain in use. Generic QROAM consumers still use their existing strict tables.
+
+Fresh forward and adjoint checks cover one and three trailing zero axes, zero
+and one control, both bank policies, actual source primitive operands and
+latest-measurement feedback. Comparable enclosing calls and the unreserved
+logical QROM recipe are compared separately: the reserved physical QROM frame
+has extra zero-cost storage views. Physical primitives are compared again after
+binding that frame. Complete complex branch vectors include arbitrary dirty
+destinations, a bank-correlated spectator, restored borrowed data and zero
+clean work. Every small raw measurement history is enumerated. Larger existing
+routing and multidataset certificates are reused rather than relabeled as new
+execution work.
+
+### Independent resource accounts
+
+The following `[0,1,2,3]`, two-bit-target fixtures use logs `(0,0)`. The source
+static quote excludes the external spectator. The full 12-row receipt
+`g2-select-swap-closure-resources-20261128.json` also records both directions,
+allocation/free flags, and the scalar-width counterexample.
+
+| Forward policy / controls | Measured T-family / CX / measurements | Peak clean / borrowed allocation | Source AND / Clifford / measurements / static quote |
+|---|---|---|---|
+| Clean / 0 | 16 / 38 / 4 | 3 / 0 | 4 / 22 / 4 / 7 |
+| Borrowed / 0 | 16 / 40 / 4 | 1 / 2 | 4 / 24 / 4 / 7 |
+| Clean / 1 | 24 / 52 / 6 | 4 / 0 | 6 / 22 / 6 / 9 |
+| Borrowed / 1 | 24 / 54 / 6 | 2 / 2 | 6 / 24 / 6 / 9 |
+
+The inverse of a dirty forward graph allocates a clean bank because the source
+forward Free uses its default flag. Tests retain that lifetime distinction;
+an inverse is not certified with arbitrary caller-supplied dirty initial banks.
+Forward borrowed banks return their original coherent data, not zero.
+
+### Explicit source limits and separate native behavior
+
+- A nonzero leading block followed by extra zero axes, such as `(1,0)` on a
+  one-dimensional table, fails the original integer batch broadcast. Both
+  protocols retain that failure. It is distinct from the implemented all-zero
+  extra-axis case.
+- An extra nonzero axis can have defined direct models but a missing low
+  selector in its executable graph. Fully blocked layouts and mixed axes also
+  retain the previously reproduced missing-selector/type failures. The live
+  graph importer propagates original errors; a stored native constructor can
+  preserve its header and fail body binding before allocation.
+- Stored literal compilation checks source selector retention and exponent
+  bounds before bank allocation, including oversized exponents. Existing strict
+  table programs remain a separate native path; they do not certify a failed
+  literal source graph.
+- Boolean target widths can have defined word-count models while original
+  integer XOR loading fails. The model quotes CNOT multiplicities, and physical
+  loading retains the refusal; Boolean selectors/controls remain separate.
+- Negative control widths can have source graph/model declarations but cannot
+  become a valid physical port. Scalar-data padding, truncated block lists and
+  zero-width array targets retain their original failed physical paths.
+  The QROM dependency now preserves the array-target cost failure as well as
+  its separate successful zero-width scalar call/model protocol.
+- The source one-row uncontrolled model undercounts physical width: a two-bit
+  target with its two-bit bank needs four physical bits, while the original
+  static quote is three. The empty source component has logical calls and a
+  static quote of -1. These quotes are preserved, not used to allocate work.
+  This batch adds no public zero-wire Circuit or scalar-carrier contract.
+- Source generic control still has no decomposition for non-through controlled
+  And/And-adjoint leaves. Original nominal join mismatches, source base array
+  identity/cache defects, and unsupported object/shape wire encodings remain
+  recorded in their owning dependency audits. No alternative native result is
+  presented as a literal source decomposition.
+- Native glyphs retain source labels with native score spacing. Default block
+  choice follows the implemented source objective; this is not an independent
+  proof of the prose or paper optimum. No performance or cross-platform claim
+  is made.
+
+The complete batch passed 687 concentrated and 256 independent Cirq 1.6 cases.
+The unchanged original file passed 27 cases with its two expected failures.
+The local integration lane also passed 84 cases. Strict checking of all ten
+changed Python files, Black, Ruff, architecture,
+IR, protected API, required checks, Cirq contract, Compiler scope, English,
+links and whitespace passed. Ten actual optional/mandatory absence scenarios
+preserve the original import error, and native compile/append/JSON/model work
+with Qualtran/Cirq/Kickmix blocked. All 119 frozen source/dependency blobs are
+unchanged. The existing 570 dependency findings have zero affected consumers.
+Final publication and ledger receipts determine whole-parent acceptance.

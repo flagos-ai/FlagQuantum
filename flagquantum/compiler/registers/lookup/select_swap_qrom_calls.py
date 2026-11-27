@@ -6,31 +6,13 @@
 """Direct calls of a blocked XOR lookup before QEC cost aggregation."""
 
 from collections import Counter
-from dataclasses import dataclass, replace
-from typing import cast
 
 from ..._component_trace.symbolic_math import SymbolicInt
+from .qrom_declaration import QromDeclaration
 from .qrom_table import QromTable
-from .source_qroam_clean import pack_blocked_datasets
-from .symbolic_qroam_resource_model import _forward_logs, blocked_qrom_layout
-
-
-@dataclass(frozen=True)
-class SelectSwapRouteCall:
-    """The original route parameters and the direction of the exchange."""
-
-    width: SymbolicInt
-    selectors: tuple[SymbolicInt, ...]
-    banks: tuple[SymbolicInt, ...]
-    adjoint: bool
-
-
-@dataclass(frozen=True)
-class SelectSwapXorCall:
-    """XOR the routed word into a matching destination word."""
-
-    width: SymbolicInt
-
+from .select_swap_callees import SelectSwapRouteCall as SelectSwapRouteCall
+from .select_swap_callees import SelectSwapXorCall as SelectSwapXorCall
+from .select_swap_declaration import SelectSwapDeclaration
 
 SelectSwapCall = QromTable | SelectSwapRouteCall | SelectSwapXorCall
 
@@ -46,46 +28,22 @@ def select_swap_qrom_calls(
         raise ValueError("Select-swap dirty mode must be boolean")
     if any(table.target_shapes):
         raise ValueError("Select-swap requires scalar targets")
-    logs = (
-        _forward_logs(table.shape, table.target_bitsizes, dirty)
-        if log_block_sizes is None
-        else log_block_sizes
-    )
-    blocks, high, batches = blocked_qrom_layout(
-        table.shape, logs, table.selection_bitsizes
-    )
-    qrom = QromTable.from_shape(
-        batches,
+    base = QromDeclaration(
+        tuple(table.shape + target for target in table.target_shapes),
+        (
+            (None,) * len(table.target_shapes)
+            if table.datasets is None
+            else table.datasets
+        ),
+        table.selection_bitsizes,
         table.target_bitsizes,
-        target_shapes=(blocks,) * len(table.target_bitsizes),
-        selection_bitsizes=high,
-        num_controls=table.num_controls,
+        table.target_shapes,
+        table.num_controls,
     )
-    if table.datasets is not None and all(
-        type(n) is int
-        for n in (
-            *table.shape,
-            *logs,
-            *table.target_bitsizes,
-            *table.selection_bitsizes,
-            table.num_controls,
-        )
-    ):
-        data = pack_blocked_datasets(
-            cast(tuple[int, ...], table.shape),
-            cast(tuple[int, ...], blocks),
-            cast(tuple[int, ...], batches),
-            table.datasets,
-        )
-        qrom = replace(qrom, datasets=data)
-
-    copies = 2 if dirty else 1
-    calls: Counter[SelectSwapCall] = Counter({qrom: 2})
-    has_routes = any(not isinstance(log, int) or log > 0 for log in logs)
-    for width in table.target_bitsizes:
-        if not isinstance(width, int) or width:
-            calls[SelectSwapXorCall(width)] += copies
-        if has_routes:
-            calls[SelectSwapRouteCall(width, logs, blocks, False)] += copies
-            calls[SelectSwapRouteCall(width, logs, blocks, True)] += copies
+    declaration = SelectSwapDeclaration(base, log_block_sizes, dirty)
+    calls: Counter[SelectSwapCall] = Counter()
+    for child, count in declaration.calls().items():
+        calls[
+            child.materialize() if isinstance(child, QromDeclaration) else child
+        ] += count
     return dict(calls)

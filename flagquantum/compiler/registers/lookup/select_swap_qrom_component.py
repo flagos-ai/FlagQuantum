@@ -20,11 +20,12 @@ from .blocked_lookup_component import (
     unpartition_lookup_selection,
 )
 from .qrom_table import QromTable
+from .select_swap_declaration import SelectSwapDeclaration
 from .source_qroam_clean import QroamCleanTable
 
 
 def select_swap_qrom_program(
-    table: QroamCleanTable,
+    table: QroamCleanTable | SelectSwapDeclaration,
     target_widths: tuple[int, ...],
     *,
     selection_widths: tuple[int, ...] | None = None,
@@ -41,7 +42,12 @@ def select_swap_qrom_program(
     """
     if type(dirty) is not bool or type(adjoint) is not bool:
         raise ValueError("Select-swap bank and direction flags must be boolean")
-    if len(target_widths) != len(table.datasets) or any(
+    dataset_count = (
+        len(table.lookup.literals)
+        if isinstance(table, SelectSwapDeclaration)
+        else len(table.datasets)
+    )
+    if len(target_widths) != dataset_count or any(
         type(n) is not int or n < 0 for n in target_widths
     ):
         raise ValueError("Select-swap requires one nonnegative width per dataset")
@@ -50,17 +56,21 @@ def select_swap_qrom_program(
         if selection_widths is not None
         else tuple((n - 1).bit_length() for n in table.shape)
     )
-    layout = QromTable(
-        table.shape,
-        widths,
-        target_widths,
-        ((),) * len(target_widths),
-        num_controls,
-        table.datasets,
-    )
-    layout._require_concrete_dimensions()
+    if isinstance(table, SelectSwapDeclaration):
+        table.require_physical_layout()
+        signature = table.signature
+    else:
+        layout = QromTable(
+            table.shape,
+            widths,
+            target_widths,
+            ((),) * len(target_widths),
+            num_controls,
+            table.datasets,
+        )
+        layout._require_concrete_dimensions()
+        signature = layout.signature
     table._high_widths(widths)
-    signature = layout.signature
     builder = ComponentProgramBuilder(signature)
     banks: BankBindings = {}
     targets = {}
