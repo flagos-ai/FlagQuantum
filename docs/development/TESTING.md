@@ -1201,12 +1201,13 @@ core or Runtime routing, qualify the exact existing CPU runner registrations:
 ```bash
 gh workflow run prewarm-ci-cpu.yml --ref <verified-branch> \
   -f export-bundle=false \
-  -f 'runner-labels=["fq-mc550-111-cpu01-validation"]'
+  -f 'runner-labels=["fq-bw1100-10-cpu02-validation"]'
 ```
 
 Use the unique CPU labels from the current runner inventory and omit offline
-registrations. Qualification is bounded to sixteen simultaneous probes. A host-wide success does not certify another user or daemon's
-cache; qualify each registration that will receive the new profile. The probe
+registrations. Qualification is bounded to sixteen simultaneous probes. MC550
+host labels select a representative slot; they do not identify a specific
+registration. A host-wide success does not certify another user or daemon's cache; qualify each registration that will receive the new profile. The probe
 retains the same four locked images, digest checks, dependency and CPU-only
 checks, core optional-framework absence, `--pull never` and `--network none`.
 It does not install, import or download images, change quotas, restart services
