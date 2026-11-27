@@ -18,11 +18,13 @@ from ...compiler.formats.legacy_component_library import (
     ComponentDeclaration,
     ComponentLibrary,
     ComponentLibraryEntry,
+    ComponentOccurrence,
     deserialize_component_library,
     serialize_component_library,
 )
 from ...compiler.formats.legacy_component_resolution import (
     ResolvedArgument,
+    _resolve_component_program,
     resolve_component_program,
 )
 from ...compiler.registers.component_graph import _namespace_helpers
@@ -55,8 +57,11 @@ def _leaf_program(
     source: Any, name: str, registers: tuple[Register, ...]
 ) -> FunctionRecord | ProgramRecord:
     from qualtran._infra.gate_with_registers import get_named_qubits
-    from qualtran.bloqs.bookkeeping import Allocate, Free, Join, Split
+    from qualtran.bloqs.bookkeeping.allocate import Allocate
+    from qualtran.bloqs.bookkeeping.free import Free
+    from qualtran.bloqs.bookkeeping.join import Join
     from qualtran.bloqs.bookkeeping.partition import _PartitionBase
+    from qualtran.bloqs.bookkeeping.split import Split
 
     if isinstance(source, (Allocate, Free)):
         dtype = registers[0].dtype
@@ -108,8 +113,11 @@ def import_register_graph(source: object) -> ProgramRecord:
     Missing source decompositions and unsupported leaves retain their errors.
     The returned Program owns all data and retains no foreign object.
     """
-    from qualtran import Bloq, CompositeBloq, QMontgomeryUInt
-    from qualtran.bloqs.bookkeeping import Join, Split
+    from qualtran._infra.bloq import Bloq
+    from qualtran._infra.composite_bloq import CompositeBloq
+    from qualtran._infra.data_types import QMontgomeryUInt
+    from qualtran.bloqs.bookkeeping.join import Join
+    from qualtran.bloqs.bookkeeping.split import Split
     from qualtran.serialization.bloq import (
         _assign_bloq_an_id,
         _search_for_subbloqs,
@@ -202,11 +210,17 @@ def import_register_graph(source: object) -> ProgramRecord:
             )
         return _leaf_program(matches[0], name, registers)
 
-    return resolve_component_program(
-        library,
-        0,
-        {
-            source_name: partial(factory, source_name=source_name)
-            for source_name in leaves
-        },
-    )
+    factories = {
+        source_name: partial(factory, source_name=source_name) for source_name in leaves
+    }
+    if any(not tuple(instance.bloq.signature) for instance in graph.bloq_instances):
+        # Protobuf connections omit zero-port occurrences. Keep actual live
+        # identities and traversal order instead of reconstructing them from costs.
+        execution_order = tuple(
+            ComponentOccurrence(instance.i, source_ids[instance.bloq][0])
+            for instance, _, _ in graph.iter_bloqsoqs()
+        )
+        return _resolve_component_program(
+            library, 0, factories, execution_orders={0: execution_order}
+        )
+    return resolve_component_program(library, 0, factories)
