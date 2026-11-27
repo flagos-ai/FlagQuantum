@@ -11,6 +11,13 @@ from typing import Any
 import pytest
 import torch
 
+from tests._reference_dependencies import unavailable_reference
+
+try:
+    import cirq as cirq
+except ModuleNotFoundError as _reference_import_error:
+    unavailable_reference(_reference_import_error)
+
 from examples.algorithms.binary_field_arithmetic import FieldOperation
 from flagquantum import Circuit
 from flagquantum.compiler.formats.legacy_component_resolution import (
@@ -101,7 +108,10 @@ def _context(source: Any) -> tuple[ProgramRecord, HamiltonianGQSPContext]:
 def _bound_check(
     source: Any, program: ProgramRecord, monkeypatch: pytest.MonkeyPatch
 ) -> Counter[str]:
-    import cirq
+    try:
+        import cirq
+    except ModuleNotFoundError as _reference_import_error:
+        unavailable_reference(_reference_import_error)
 
     assert verify_program_record(program) == ()
     program = _rename_program(program, "main")
@@ -273,7 +283,10 @@ def test_constructor_context_replacement_and_fail_closed(
 def test_native_numerical_injection_matches_actual_source(
     time: float, precision: float, monkeypatch: pytest.MonkeyPatch
 ) -> None:
-    import numpy as np
+    try:
+        import numpy as np
+    except ModuleNotFoundError as _reference_import_error:
+        unavailable_reference(_reference_import_error)
 
     from flagquantum.algorithms.primitives.black_box_prepare import BlackBoxPrepare
     from flagquantum.algorithms.primitives.hamiltonian_gqsp import HamiltonianGQSP
@@ -339,7 +352,10 @@ def test_native_numerical_injection_matches_actual_source(
 def test_junk_free_source_matrix_context_and_original_codec_boundary(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
-    import numpy as np
+    try:
+        import numpy as np
+    except ModuleNotFoundError as _reference_import_error:
+        unavailable_reference(_reference_import_error)
     from qualtran.bloqs.for_testing.random_select_and_prepare import (
         random_qubitization_walk_operator,
     )
