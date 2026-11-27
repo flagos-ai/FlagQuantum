@@ -6,11 +6,12 @@
 """Pair typed source calls with constructor metadata at the Compiler boundary."""
 
 from collections.abc import Mapping
+from dataclasses import replace
 
 import numpy as np
 from numpy.typing import NDArray
 
-from ...core.ir.program import FunctionRecord
+from ...core.ir.program import FunctionRecord, ProgramRecord
 from ...core.ir.program.register_bindings import RegisterBinding
 from ...core.ir.program.register_types import (
     opaque_register_type,
@@ -101,6 +102,16 @@ class _ModularGraph:
             child = self.declare(wrapper, ports, args)
         return self.builder.call_dict(child, inputs)
 
+    def declare_adjoint(self, child: str) -> str:
+        """Declare the source generic wrapper, without inferring a gate body."""
+        declaration = self.declarations[child]
+        assert declaration.registers is not None
+        return self.declare(
+            "qualtran._infra.adjoint.Adjoint",
+            tuple(Signature(declaration.registers).adjoint()),
+            {"subbloq": ComponentReference(tuple(self.declarations).index(child))},
+        )
+
     def split(self, word: BindingCollection) -> NDArray[np.object_]:
         assert isinstance(word, RegisterBinding)
         dtype = word.register.dtype
@@ -123,8 +134,9 @@ class _ModularGraph:
             "reg"
         ]
 
-    def allocate(self) -> BindingCollection:
-        dtype = opaque_register_type(1)
+    def allocate(self, dtype: RegisterType | None = None) -> BindingCollection:
+        if dtype is None:
+            dtype = opaque_register_type(1)
         return self.call(
             _BOOK + "allocate.Allocate",
             (Register("reg", dtype, side=RegisterSide.RIGHT),),
@@ -133,17 +145,67 @@ class _ModularGraph:
         )["reg"]
 
     def free(self, bit: BindingCollection) -> None:
+        assert isinstance(bit, RegisterBinding)
+        dtype = bit.register.dtype
         self.call(
             _BOOK + "free.Free",
-            (Register("reg", _BIT, side=RegisterSide.LEFT),),
+            (Register("reg", dtype, side=RegisterSide.LEFT),),
             {"reg": bit},
-            {"dtype": _BIT, "dirty": False},
+            {"dtype": dtype, "dirty": False},
         )
 
     def x(self, bit: BindingCollection) -> BindingCollection:
         return self.call(_BASIC + "x_basis.XGate", (Register("q", _BIT),), {"q": bit})[
             "q"
         ]
+
+    def inline(
+        self,
+        record: ProgramRecord,
+        declarations: Mapping[str, ComponentDeclaration],
+        bindings: Mapping[str, object],
+    ) -> dict[str, BindingCollection]:
+        """Reuse typed inlining while rebasing its owned constructor references."""
+        names: dict[str, str] = {}
+        identifiers: dict[int, int] = {}
+        for index, (name, declaration) in enumerate(declarations.items()):
+            if name == "main":
+                continue
+            arguments = {
+                argument.name: (
+                    ComponentReference(identifiers[argument.value.identifier])
+                    if isinstance(argument.value, ComponentReference)
+                    else argument.value
+                )
+                for argument in declaration.arguments
+            }
+            assert declaration.registers is not None
+            identifiers[index] = len(self.declarations)
+            names[name] = self.declare(
+                declaration.name, declaration.registers, arguments
+            )
+        functions = tuple(
+            replace(
+                function,
+                name=names.get(function.name, function.name),
+                blocks=tuple(
+                    replace(
+                        block,
+                        operations=tuple(
+                            (
+                                replace(operation, callee=names[operation.callee])
+                                if operation.callee is not None
+                                else operation
+                            )
+                            for operation in block.operations
+                        ),
+                    )
+                    for block in function.blocks
+                ),
+            )
+            for function in record.functions
+        )
+        return self.builder.inline_calls(replace(record, functions=functions), bindings)
 
     def finish(self, outputs: Mapping[str, object]) -> ComponentLibrary:
         record = self.builder.finalize(outputs)
