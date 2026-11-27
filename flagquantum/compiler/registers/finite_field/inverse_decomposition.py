@@ -62,6 +62,21 @@ def field_inverse_decomposition_program(
             "Literal inverse root temporary release has no clean-work proof; "
             "the original degree-four/eight paths release nonzero work"
         )
+    return field_inverse_decomposition_graph(dtype, modulus=modulus)
+
+
+def field_inverse_decomposition_graph(
+    dtype: RegisterType, *, modulus: int
+) -> ProgramRecord:
+    """Retain the entire static original graph, including unproved clean frees.
+
+    This is a presentation/source-audit artifact, not execution admission.
+    Use field_inverse_decomposition_program for the guarded literal execution
+    profile or field_inverse_program for the correct mathematical operation.
+    """
+    if dict(dtype.parameters).get("degree") == 1:
+        return field_inverse_degree_one_program(dtype)
+    width = field_word_width(dtype, modulus)
     return _field_inverse_schedule(
         dtype,
         width,
