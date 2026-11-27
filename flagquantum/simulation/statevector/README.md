@@ -68,3 +68,49 @@ multinomial defaults and output shapes are preserved.
 and Tensor fallback for an already-owned real diagonal. Cache admission,
 allocation, eviction and lifecycle stay in Runtime; the public native provider
 and its ABI are unchanged.
+
+## JAX in-process shard updates
+
+`jax/kernels.py::jax_apply_gate_to_shard_arrays` applies an already-admitted
+diagonal or dense gate to a complete in-process collection of shard arrays.
+It owns basis grouping, diagonal factors, matrix multiplication, functional
+updates and the existing missing-amplitude refusal. It neither creates Runtime
+shard records nor chooses devices, ranks, transport or claimability. Runtime
+validates the gate shape and reconstructs records with the original index and
+shard metadata references. This development calculation is not a collective.
+
+Start with `tests/unit/test_jax_shard_gate_numerical_ownership.py` for dense
+forward/gradient parity, missing coverage, metadata preservation and replacement
+of the numerical implementation without modifying the Runtime consumer.
+
+
+## Fixed CPU Toffoli
+
+`reversible_cpu.py` owns the exact control-selected target permutation for a
+fixed Toffoli. `operations.py` dispatches fixed CPU gates and `local.py` tracks
+whether the state buffer belongs to the executor. Only owned, nondifferentiable
+states reuse storage; caller inputs and gradient graphs are preserved. An
+explicit matrix retains its matrix path and GPU execution retains catalog
+admission. Run `python -m pytest tests/unit/test_statevector_reversible_cpu.py -q`
+for all four-wire placements, basis states, strided/conjugate gradients and the
+public circuit chain. `fq.Circuit(3).x(0).x(1).ccx(0,1,2).state()` has its only
+nonzero amplitude at index seven. The original Maxwell workflow is exercised
+without changing any phase row, wire, operation or numerical assertion.
+
+
+## Dense and diagonal matrix selection
+
+Apply one already-built gate matrix with the kernel that fits it.
+
+``_apply_matrix`` lays the state out, permutes the gate's qubits to the front
+and permutes back, which a single-qubit gate does not need.
+``_apply_diagonal_matrix`` keeps the layout but replaces the batched matmul
+with an elementwise multiply, which only a diagonal matrix may take.
+
+``uses_diagonal_kernel`` says the matrix is known to be diagonal, so the
+diagonal kernel is available here. It is not a preference: where the
+elementwise single-qubit kernel applies as well, that kernel wins, because it
+drops the layout permutation the diagonal kernel still pays for, and it
+agrees with both of them to under an ulp on every shape measured. It is not
+bitwise equal to either, which is why the switch licensing it is off by
+default.
