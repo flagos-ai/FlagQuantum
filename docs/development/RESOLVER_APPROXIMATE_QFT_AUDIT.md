@@ -59,3 +59,35 @@ eleven qubits. Per-call source operand equality is verified independently
 of those aggregate cost estimates. At width three and precision one, actual
 execution has three H and one SWAP on four wires, while the source model
 retains negative four Toffoli and five qubits.
+
+## Faithful whole-file disposition, November 28
+
+Q-0637 is eligible for migration acceptance under the approved
+[G2 closure rule](G2_FAITHFUL_MIGRATION_CLOSURE_PROPOSAL.md). Published
+`88903acab` supplies the previously missing successful small-gradient stored
+compositions; `d3ec41d32` supplies the complete catalog dependency group. The
+current factory and component retain both paths. No algorithm change or new
+test-only implementation is needed for this disposition.
+
+The negative small-precision cost remains a reproduced upstream model defect,
+owned by the approximate-QFT resource model. Keep the original inputs, negative
+estimates and actual inventories above as a separate model-correction follow-up.
+Negative physical gate counts and primitive equivalence to the atomic
+AddIntoPhaseGrad leaf are not claimed. Its source arithmetic action and model
+remain distinct from the native measured implementation.
+
+Fresh batch verification reuses full joint-operator, all-history, spectator,
+exact-recovery and workspace certificates in test_qft_source_acceptance.py and
+test_fourier_decomposition.py, plus complete file and constructor suites. This
+disposition does not close separate QPE or THC consumer responsibilities.
+
+Final verification for this disposition: 336 concentrated cases, 217 independent
+Cirq 1.6 cases and 248 local integration cases pass. The three unchanged original
+test files report 61 passes and four original expected failures. Six unchanged
+Compiler owners pass strict typing, format and lint checks. Architecture, IR,
+public API, required checks, Cirq contract, scope, English, links and whitespace
+checks pass. The existing 570 dependency findings remain; none belongs to the
+changed audit paths. Eight source/test blobs are verified by the mandatory
+source-acceptance fixture, which also verifies Qualtran 0.7.0 and the real
+Kickmix 0.1 Simulator. No source file, implementation or test was changed by
+this acceptance batch. Receipts use prefix g2-fourier-source-closure.
