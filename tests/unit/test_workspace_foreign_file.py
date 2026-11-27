@@ -31,6 +31,7 @@ from flagquantum.core.ir.program import (
 )
 from flagquantum.core.ir.program.registers import Register, RegisterType
 from flagquantum.core.ir.program.signatures import Signature
+from tests._reference_dependencies import unavailable_reference
 from tests.unit.register_source_workspace import SourceWorkspace
 from tests.unit.test_subtraction_foreign_file import native_signature
 
@@ -107,7 +108,7 @@ def test_actual_symbolic_factories_complete_wire_and_native_declaration(
 def test_concrete_foreign_lifetimes_roundtrip_supported_wire_dtypes(
     kind: str, dirty: bool
 ) -> None:
-    from qualtran import (
+    from qualtran._infra.data_types import (
         BQUInt,
         QAny,
         QBit,
@@ -117,8 +118,11 @@ def test_concrete_foreign_lifetimes_roundtrip_supported_wire_dtypes(
         QMontgomeryUInt,
         QUInt,
     )
-    from qualtran.bloqs.bookkeeping import Allocate, Free
-    from qualtran.resource_counting import QECGatesCost, QubitCount, get_cost_value
+    from qualtran.bloqs.bookkeeping.allocate import Allocate
+    from qualtran.bloqs.bookkeeping.free import Free
+    from qualtran.resource_counting._bloq_counts import QECGatesCost
+    from qualtran.resource_counting._costing import get_cost_value
+    from qualtran.resource_counting._qubit_counts import QubitCount
 
     dtype = {
         "bit": QBit(),
@@ -171,7 +175,10 @@ def test_concrete_foreign_lifetimes_roundtrip_supported_wire_dtypes(
             (event.kind, event.wires, event.dirty) for event in bound.events
         ]
     else:
-        import cirq
+        try:
+            import cirq
+        except ModuleNotFoundError as _reference_import_error:
+            unavailable_reference(_reference_import_error)
 
         # An empty qfree carries no qubits from which a tracking pool could
         # recover its dirty flag. Use the actual SDK manager for this profile.
@@ -207,8 +214,9 @@ def test_concrete_foreign_lifetimes_roundtrip_supported_wire_dtypes(
 def test_original_foreign_wire_refuses_field_descriptors(
     kind: str, polynomial: bool
 ) -> None:
-    from qualtran import QGF, QGFPoly
-    from qualtran.bloqs.bookkeeping import Allocate, Free
+    from qualtran._infra.data_types import QGF, QGFPoly
+    from qualtran.bloqs.bookkeeping.allocate import Allocate
+    from qualtran.bloqs.bookkeeping.free import Free
     from qualtran.serialization.bloq import bloqs_to_proto
 
     dtype = QGFPoly(1, QGF(2, 2)) if polynomial else QGF(2, 2)

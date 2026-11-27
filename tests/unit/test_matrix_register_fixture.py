@@ -1,6 +1,11 @@
 """Compare seeded Haar matrices, source tensor indices and append state."""
 
-import numpy as np
+from tests._reference_dependencies import unavailable_reference
+
+try:
+    import numpy as np
+except ModuleNotFoundError as _reference_import_error:
+    unavailable_reference(_reference_import_error)
 import pytest
 import torch
 
@@ -13,9 +18,13 @@ pytestmark = [pytest.mark.unit, pytest.mark.ftqc_reference]
 @pytest.mark.parametrize("width", [1, 2, 3])
 def test_matrix_seeded_draws_adjoint_and_native_append(width: int) -> None:
     pytest.importorskip("qualtran")
-    from cirq import unitary
+    try:
+        from cirq import unitary
+    except ModuleNotFoundError as _reference_import_error:
+        unavailable_reference(_reference_import_error)
     from qualtran.bloqs.for_testing.matrix_gate import MatrixGate
-    from qualtran.resource_counting import QubitCount, get_cost_value
+    from qualtran.resource_counting._costing import get_cost_value
+    from qualtran.resource_counting._qubit_counts import QubitCount
 
     source_rng, native_rng = np.random.RandomState(42), np.random.RandomState(42)
     size = 1 << width
@@ -36,7 +45,8 @@ def test_matrix_seeded_draws_adjoint_and_native_append(width: int) -> None:
         np.testing.assert_array_equal(fixture.adjoint().unitary(), unitary(source**-1))
         assert fixture.adjoint().adjoint() == fixture
         assert get_cost_value(source, QubitCount()) == width
-        (raw,) = source.my_tensors({"q": "in"}, {"q": "out"})
+        # Keep the source's runtime string labels; its annotation lists Connections.
+        (raw,) = getattr(source, "my_tensors")({"q": "in"}, {"q": "out"})
         assert raw.inds == tuple(
             (label, i) for label in ("out", "in") for i in range(width)
         )
@@ -88,14 +98,18 @@ def test_matrix_validation_and_integer_seed() -> None:
 
 def test_empty_signature_scalar_action_on_coherent_ambient_circuit() -> None:
     pytest.importorskip("qualtran")
-    from qualtran import DecomposeNotImplementedError
+    from qualtran._infra.bloq import DecomposeNotImplementedError
     from qualtran.bloqs.for_testing.matrix_gate import MatrixGate
-    from qualtran.resource_counting import QECGatesCost, QubitCount, get_cost_value
+    from qualtran.resource_counting._bloq_counts import QECGatesCost
+    from qualtran.resource_counting._costing import get_cost_value
+    from qualtran.resource_counting._qubit_counts import QubitCount
 
     coefficient = np.exp(0.51j)
     source = MatrixGate(0, ((coefficient,),))
     fixture = MatrixRegisterFixture(0, ((coefficient,),))
-    assert tuple(fixture.signature) == tuple(source.signature) == ()
+    native_signature = tuple(fixture.signature)
+    source_signature: tuple[object, ...] = tuple(source.signature)
+    assert native_signature == source_signature == ()
     assert get_cost_value(source, QubitCount()) == 0
     assert fixture.tensor().shape == ()
     with pytest.raises(DecomposeNotImplementedError):

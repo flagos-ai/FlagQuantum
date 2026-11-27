@@ -23,6 +23,7 @@ from flagquantum.drawer.register_score_data import (
 )
 from flagquantum.drawer.register_score_html import export_register_score_html
 from flagquantum.drawer.register_score_mpl import draw_register_score
+from tests._reference_dependencies import unavailable_reference
 from tests.unit.classical_vector_fixtures import (
     KINDS,
     evaluate,
@@ -68,7 +69,7 @@ def assert_source_geometry(
 @pytest.mark.parametrize("kind", ["xgate", "cnot", "toffoli"])
 def test_atomic_shapes_and_through_lanes_match_original(kind: str) -> None:
     _, source, emitted = example(kind)
-    from qualtran.drawing import get_musical_score_data
+    from qualtran.drawing.musical_score import get_musical_score_data
 
     from tests.unit.test_classical_action_tensor import signature_from_source
 
@@ -88,7 +89,7 @@ def test_atomic_shapes_and_through_lanes_match_original(kind: str) -> None:
 def test_original_notebook_closed_graphs_match_all_port_labels_and_geometry(
     monkeypatch: pytest.MonkeyPatch, kind: str
 ) -> None:
-    from qualtran.drawing import get_musical_score_data
+    from qualtran.drawing.musical_score import get_musical_score_data
     from qualtran.simulation.xcheck_classical_quimb import flank_with_classical_vectors
 
     record, source, _ = example(kind)
@@ -109,9 +110,9 @@ def test_original_notebook_closed_graphs_match_all_port_labels_and_geometry(
 def test_expanded_add_array_rebindings_work_allocation_and_release_match_original(
     width: int,
 ) -> None:
-    from qualtran import QUInt
-    from qualtran.bloqs.arithmetic import Add
-    from qualtran.drawing import get_musical_score_data
+    from qualtran._infra.data_types import QUInt
+    from qualtran.bloqs.arithmetic.addition import Add
+    from qualtran.drawing.musical_score import get_musical_score_data
 
     record = addition_component_program(width)
     score = component_register_score(record, style=style)
@@ -163,11 +164,20 @@ def test_style_and_wire_symbol_failures_propagate_without_changing_record() -> N
 def test_renderers_use_core_projection_without_quantum_or_tensor_execution(
     tmp_path: Path,
 ) -> None:
-    import matplotlib
+    try:
+        import matplotlib
+    except ModuleNotFoundError as _reference_import_error:
+        unavailable_reference(_reference_import_error)
 
     matplotlib.use("Agg")
-    from matplotlib import pyplot as plt
-    from matplotlib.collections import LineCollection
+    try:
+        from matplotlib import pyplot as plt
+    except ModuleNotFoundError as _reference_import_error:
+        unavailable_reference(_reference_import_error)
+    try:
+        from matplotlib.collections import LineCollection
+    except ModuleNotFoundError as _reference_import_error:
+        unavailable_reference(_reference_import_error)
 
     record = addition_component_program(5)
     score = component_register_score(record, style=style)

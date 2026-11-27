@@ -6,7 +6,17 @@ from collections.abc import Iterable
 from math import pi
 from typing import Any, Literal
 
-import numpy as np
+from tests._reference_dependencies import unavailable_reference
+
+try:
+    from cirq.ops.qubit_manager import QubitManager
+except ModuleNotFoundError as _reference_import_error:
+    unavailable_reference(_reference_import_error)
+
+try:
+    import numpy as np
+except ModuleNotFoundError as _reference_import_error:
+    unavailable_reference(_reference_import_error)
 
 from flagquantum.core.ir import Instruction
 from tests.unit.register_source_graph import (
@@ -21,7 +31,7 @@ from tests.unit.test_register_constant_addition import reference_arithmetic_gate
 LifetimeEvent = tuple[Literal["allocate", "free"], tuple[int, ...], bool]
 
 
-class SourceWorkspace:
+class SourceWorkspace(QubitManager):
     """Supply Cirq qubits to actual source qalloc/qborrow/qfree callbacks."""
 
     def __init__(self, clean: tuple[int, ...], borrowed: tuple[int, ...]) -> None:
@@ -30,7 +40,10 @@ class SourceWorkspace:
         self.events: list[LifetimeEvent] = []
 
     def _allocate(self, n: int, dim: int, dirty: bool) -> list[Any]:
-        import cirq
+        try:
+            import cirq
+        except ModuleNotFoundError as _reference_import_error:
+            unavailable_reference(_reference_import_error)
 
         assert dim == 2 and n <= len(self.available[dirty])
         wires = tuple(self.available[dirty].pop() for _ in range(n))
@@ -67,18 +80,19 @@ def source_workspace_gates(
     No native instruction, lifetime event or measurement ID enters this oracle.
     Repeated measurements of one physical wire receive separate event slots.
     """
-    import cirq
-    from qualtran.bloqs.basic_gates import (
-        CNOT,
-        CHadamard,
-        Hadamard,
-        Toffoli,
-        XGate,
-        ZPowGate,
-    )
+    try:
+        import cirq
+    except ModuleNotFoundError as _reference_import_error:
+        unavailable_reference(_reference_import_error)
+    from qualtran.bloqs.basic_gates.cnot import CNOT
+    from qualtran.bloqs.basic_gates.hadamard import CHadamard, Hadamard
+    from qualtran.bloqs.basic_gates.rotation import ZPowGate
     from qualtran.bloqs.basic_gates.swap import TwoBitSwap
-    from qualtran.bloqs.bookkeeping import Allocate, Free
-    from qualtran.bloqs.mcmt import And
+    from qualtran.bloqs.basic_gates.toffoli import Toffoli
+    from qualtran.bloqs.basic_gates.x_basis import XGate
+    from qualtran.bloqs.bookkeeping.allocate import Allocate
+    from qualtran.bloqs.bookkeeping.free import Free
+    from qualtran.bloqs.mcmt.and_bloq import And
 
     pool = SourceWorkspace(clean, borrowed)
     slot = 0

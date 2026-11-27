@@ -5,7 +5,12 @@ from collections import Counter
 from itertools import product
 from typing import Any
 
-import numpy as np
+from tests._reference_dependencies import unavailable_reference
+
+try:
+    import numpy as np
+except ModuleNotFoundError as _reference_import_error:
+    unavailable_reference(_reference_import_error)
 import pytest
 import torch
 
@@ -91,7 +96,10 @@ def context(
         from qualtran.bloqs.multiplexers.select_base import SelectOracle
 
         def encode(self: Any, context: Any, q: Any, ctrl: Any) -> Any:
-            import cirq
+            try:
+                import cirq
+            except ModuleNotFoundError as _reference_import_error:
+                unavailable_reference(_reference_import_error)
 
             yield cirq.CNOT(q[0], ctrl[0])
 
@@ -160,7 +168,10 @@ def context(
 def test_actual_source_control_calls_full_complex_operator_all_histories_and_clean_work(
     kind: str, precision: int, monkeypatch: pytest.MonkeyPatch
 ) -> None:
-    import cirq
+    try:
+        import cirq
+    except ModuleNotFoundError as _reference_import_error:
+        unavailable_reference(_reference_import_error)
 
     source, pair, pattern = context(precision, kind)
     reference = torch.as_tensor(
@@ -238,7 +249,10 @@ def test_actual_source_control_calls_full_complex_operator_all_histories_and_cle
 def test_positive_arctan_lookup_all_dirty_columns_matches_original_cirq_unitary(
     source_width: int, precision: int
 ) -> None:
-    import cirq
+    try:
+        import cirq
+    except ModuleNotFoundError as _reference_import_error:
+        unavailable_reference(_reference_import_error)
     from qualtran.bloqs.arithmetic.trigonometric.arctan import ArcTan
 
     graph = arctan_lookup_program(source_width, precision, controlled=True)
@@ -257,7 +271,10 @@ def test_positive_arctan_lookup_all_dirty_columns_matches_original_cirq_unitary(
 
 @pytest.mark.parametrize("precision", (1, 3))
 def test_positive_mean_two_stage_calls_and_exact_integer_powers(precision: int) -> None:
-    import cirq
+    try:
+        import cirq
+    except ModuleNotFoundError as _reference_import_error:
+        unavailable_reference(_reference_import_error)
 
     from flagquantum.compiler.registers.component_builder import ComponentProgramBuilder
     from flagquantum.core.ir.program.signatures import Signature

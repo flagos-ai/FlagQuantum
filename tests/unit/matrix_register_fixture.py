@@ -9,9 +9,18 @@
 from collections.abc import Sequence
 from dataclasses import dataclass
 
-import numpy as np
+from tests._reference_dependencies import unavailable_reference
+
+try:
+    import numpy as np
+except ModuleNotFoundError as _reference_import_error:
+    unavailable_reference(_reference_import_error)
 import torch
-from numpy.typing import NDArray
+
+try:
+    from numpy.typing import NDArray
+except ModuleNotFoundError as _reference_import_error:
+    unavailable_reference(_reference_import_error)
 
 from flagquantum import Circuit
 from flagquantum.core.ir.program.signatures import Signature

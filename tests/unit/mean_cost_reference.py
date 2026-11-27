@@ -2,16 +2,23 @@
 
 from typing import Any
 
+from tests._reference_dependencies import unavailable_reference
+
 
 def source_encoder(forward_peak: int, inverse_peak: int) -> Any:
     from functools import cached_property
 
     import attrs
-    import cirq
-    from qualtran import BQUInt, QAny
-    from qualtran import Register as SourceRegister
+
+    try:
+        import cirq
+    except ModuleNotFoundError as _reference_import_error:
+        unavailable_reference(_reference_import_error)
+    from qualtran._infra.data_types import BQUInt, QAny
+    from qualtran._infra.registers import Register as SourceRegister
     from qualtran.bloqs.multiplexers.select_base import SelectOracle
-    from qualtran.resource_counting import GateCounts, QECGatesCost, QubitCount
+    from qualtran.resource_counting._bloq_counts import GateCounts, QECGatesCost
+    from qualtran.resource_counting._qubit_counts import QubitCount
 
     def control_registers(self: Any) -> tuple[Any, ...]:
         return ()

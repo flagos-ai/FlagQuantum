@@ -7,7 +7,12 @@ from itertools import product
 from types import SimpleNamespace
 from typing import Any
 
-import numpy as np
+from tests._reference_dependencies import unavailable_reference
+
+try:
+    import numpy as np
+except ModuleNotFoundError as _reference_import_error:
+    unavailable_reference(_reference_import_error)
 import pytest
 import torch
 
@@ -92,7 +97,10 @@ def input_words(record: ProgramRecord) -> tuple[tuple[int, ...], ...]:
 
 @pytest.mark.parametrize("kind", KINDS)
 def test_exact_gates_complex_entangled_input_all_branches_and_work(kind: str) -> None:
-    import cirq
+    try:
+        import cirq
+    except ModuleNotFoundError as _reference_import_error:
+        unavailable_reference(_reference_import_error)
 
     record, source, emitted = example(kind)
     words = input_words(record)
@@ -179,7 +187,9 @@ def test_exact_gates_complex_entangled_input_all_branches_and_work(kind: str) ->
 def test_original_closed_inputs_append_and_separate_resource_accounts(
     kind: str, monkeypatch: pytest.MonkeyPatch
 ) -> None:
-    from qualtran.resource_counting import QECGatesCost, QubitCount, get_cost_value
+    from qualtran.resource_counting._bloq_counts import QECGatesCost
+    from qualtran.resource_counting._costing import get_cost_value
+    from qualtran.resource_counting._qubit_counts import QubitCount
     from qualtran.simulation.xcheck_classical_quimb import flank_with_classical_vectors
 
     from examples.algorithms.binary_field_arithmetic import FieldOperation

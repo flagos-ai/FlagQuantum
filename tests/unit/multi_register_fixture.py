@@ -5,7 +5,12 @@
 
 """Shaped and typed register fixtures using the native Program builder."""
 
-import numpy as np
+from tests._reference_dependencies import unavailable_reference
+
+try:
+    import numpy as np
+except ModuleNotFoundError as _reference_import_error:
+    unavailable_reference(_reference_import_error)
 
 from flagquantum.compiler.registers.component_builder import ComponentProgramBuilder
 from flagquantum.compiler.registers.component_gate_function import bit_gate_function
@@ -49,7 +54,9 @@ def multi_register_fixture() -> ProgramRecord:
     assert isinstance(pairs, np.ndarray) and isinstance(zz, RegisterBinding)
     outputs = np.empty((2, 2), dtype=object)
     for index in np.ndindex(pairs.shape):
-        ctrl, target = builder.split(pairs[index])
+        pair_word = pairs[index]
+        assert isinstance(pair_word, RegisterBinding)
+        ctrl, target = builder.split(pair_word)
         changed = builder.call_dict("two_bit", {"ctrl": ctrl, "target": target})
         outputs[index] = builder.join((changed["ctrl"], changed["target"]), pair)
     return builder.finalize(

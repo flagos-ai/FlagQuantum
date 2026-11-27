@@ -8,7 +8,12 @@ from dataclasses import replace
 from functools import cache
 from typing import Any
 
-import numpy as np
+from tests._reference_dependencies import unavailable_reference
+
+try:
+    import numpy as np
+except ModuleNotFoundError as _reference_import_error:
+    unavailable_reference(_reference_import_error)
 
 from flagquantum.compiler.registers.arithmetic.addition import add_ir
 from flagquantum.compiler.registers.component_builder import ComponentProgramBuilder
@@ -30,10 +35,14 @@ KINDS = ("xgate", "cnot", "toffoli", "add")
 
 @cache
 def example(kind: str) -> tuple[ProgramRecord, Any, CircuitIR]:
-    from qualtran import QUInt
-    from qualtran.bloqs.arithmetic import Add
-    from qualtran.bloqs.basic_gates import CNOT, Toffoli, XGate
+    from qualtran._infra.bloq import Bloq
+    from qualtran._infra.data_types import QUInt
+    from qualtran.bloqs.arithmetic.addition import Add
+    from qualtran.bloqs.basic_gates.cnot import CNOT
+    from qualtran.bloqs.basic_gates.toffoli import Toffoli
+    from qualtran.bloqs.basic_gates.x_basis import XGate
 
+    source: Bloq
     registers: tuple[Register, ...]
     bit = RegisterType("bit", 1)
     if kind == "add":

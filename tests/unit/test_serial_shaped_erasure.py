@@ -7,7 +7,12 @@ from dataclasses import replace
 from itertools import product
 from typing import Any
 
-import numpy as np
+from tests._reference_dependencies import unavailable_reference
+
+try:
+    import numpy as np
+except ModuleNotFoundError as _reference_import_error:
+    unavailable_reference(_reference_import_error)
 import pytest
 import torch
 
@@ -125,7 +130,9 @@ def test_serial_calls_reuse_work_but_preserve_event_slots_and_all_branches(
     order: tuple[int, ...],
     expanded: bool,
 ) -> None:
-    from qualtran.resource_counting import QECGatesCost, QubitCount, get_cost_value
+    from qualtran.resource_counting._bloq_counts import QECGatesCost
+    from qualtran.resource_counting._costing import get_cost_value
+    from qualtran.resource_counting._qubit_counts import QubitCount
 
     from examples.algorithms.binary_field_arithmetic import FieldOperation
     from flagquantum.dynamic import DynamicCircuit
@@ -240,7 +247,9 @@ def test_two_control_serial_exact_inverse_all_history_pairs(
     order: tuple[int, ...],
     expanded: bool,
 ) -> None:
-    from qualtran.resource_counting import QECGatesCost, QubitCount, get_cost_value
+    from qualtran.resource_counting._bloq_counts import QECGatesCost
+    from qualtran.resource_counting._costing import get_cost_value
+    from qualtran.resource_counting._qubit_counts import QubitCount
 
     from examples.algorithms.binary_field_arithmetic import FieldOperation
     from flagquantum.dynamic import DynamicCircuit

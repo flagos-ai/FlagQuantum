@@ -7,6 +7,7 @@ import pytest
 import torch
 
 from flagquantum.core.ir import Instruction
+from tests._reference_dependencies import unavailable_reference
 from tests.unit.large_register_fixture import large_fixture_ir, large_fixture_signature
 from tests.unit.measurement_checks import certified_and_channel_map, forced_branch
 from tests.unit.register_source_graph import SourcePorts, SourceResult
@@ -19,12 +20,15 @@ pytestmark = [pytest.mark.unit, pytest.mark.ftqc_reference]
 def controlled_source_atom(
     bloq: Any, inputs: SourcePorts, desired: SourcePorts
 ) -> SourceResult | None:
-    from qualtran import Controlled
+    from qualtran._infra.controlled import Controlled
     from qualtran.bloqs.for_testing.atom import TestAtom
 
     if not isinstance(bloq, Controlled) or not isinstance(bloq.subbloq, TestAtom):
         return None
-    from cirq import CNOT, unitary
+    try:
+        from cirq import CNOT, unitary
+    except ModuleNotFoundError as _reference_import_error:
+        unavailable_reference(_reference_import_error)
 
     tensor = torch.as_tensor(bloq.tensor_contract().copy())
     torch.testing.assert_close(
@@ -39,9 +43,11 @@ def test_large_fixture_gate_polarities_and_coherent_channel(
     n_select: int, repetitions: int
 ) -> None:
     pytest.importorskip("qualtran")
-    from qualtran import DecomposeTypeError
+    from qualtran._infra.bloq import DecomposeTypeError
     from qualtran.bloqs.for_testing.large_bloq import LargeBloq
-    from qualtran.resource_counting import QECGatesCost, QubitCount, get_cost_value
+    from qualtran.resource_counting._bloq_counts import QECGatesCost
+    from qualtran.resource_counting._costing import get_cost_value
+    from qualtran.resource_counting._qubit_counts import QubitCount
 
     source = LargeBloq(n_select, repetitions)
     assert [(r.name, r.bitsize) for r in large_fixture_signature(n_select)] == [
