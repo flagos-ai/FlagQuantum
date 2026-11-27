@@ -18,7 +18,7 @@ from ....core.ir.program.signatures import Signature
 from ....core.value_parameters import is_symbolic_value
 from ..component_builder import ComponentProgramBuilder
 from ..component_gate_function import bit_gate_function
-from .field_word import field_word_width
+from .field_word import field_word_width, raw_field_word_width
 
 
 def monomial_multiplication_program(
@@ -34,6 +34,13 @@ def monomial_multiplication_program(
         raise ValueError("Monomial exponent must be a concrete integer")
     if not modulus & 1:
         raise ValueError("Monomial multiplication requires a nonzero polynomial root")
+    degrees = tuple(i for i in range(1, width) if modulus >> i & 1)
+    return _monomial_word_program(dtype, power, degrees, active=width > 1)
+
+
+def _monomial_word_program(
+    dtype: RegisterType, power: int, degrees: tuple[int, ...], *, active: bool
+) -> ProgramRecord:
     leaf = bit_gate_function(
         "field_shift_cx",
         tuple(Signature.build(ctrl=1, target=1)),
@@ -43,8 +50,7 @@ def monomial_multiplication_program(
     word = builder.inputs["f"]
     assert isinstance(word, RegisterBinding)
     bits = np.asarray(builder.split(word)[::-1], dtype=object)
-    degrees = tuple(i for i in range(1, width) if modulus >> i & 1)
-    if width > 1:
+    if active:
         for _ in range(abs(power)):
             if power >= 0:
                 bits = np.concatenate((bits[-1:], bits[:-1]))
@@ -55,7 +61,8 @@ def monomial_multiplication_program(
                 bits[0], bits[i] = result["ctrl"], result["target"]
             if power < 0:
                 bits = np.concatenate((bits[1:], bits[:1]))
-    return builder.finalize({"f": builder.join(bits[::-1], dtype)})
+        bits = bits[::-1]
+    return builder.finalize({"f": builder.join(bits, dtype)})
 
 
 def monomial_decomposition_program(
@@ -70,7 +77,25 @@ def monomial_decomposition_program(
         raise ValueError("Literal field shift count requires a concrete integer")
     if type(adjoint) is not bool:
         raise ValueError("Literal field shift direction requires a boolean")
+    raw_field_word_width(dtype)
+    metadata = dict(dtype.parameters)
+    characteristic, degree = metadata["characteristic"], metadata["degree"]
+    if type(characteristic) is not int or type(degree) is not int:
+        raise ValueError("Literal field shifts require concrete field metadata")
+    if type(modulus) is not int or modulus <= 0:
+        raise ValueError("Literal field shift polynomial must be a positive integer")
+    if metadata.get("polynomial", modulus) != modulus:
+        raise ValueError("Field modulus must match the field descriptor")
+    value, position = modulus, 0
+    nonzero: list[int] = []
+    while value:
+        value, coefficient = divmod(value, characteristic)
+        if coefficient:
+            nonzero.append(position)
+        position += 1
+    if not nonzero or nonzero[-1] != degree:
+        raise ValueError("Literal shift polynomial must match the field degree")
     steps = max(index(count), 0)
-    return monomial_multiplication_program(
-        dtype, -steps if adjoint else steps, modulus=modulus
+    return _monomial_word_program(
+        dtype, -steps if adjoint else steps, tuple(nonzero[1:-1]), active=degree > 1
     )
