@@ -1,0 +1,771 @@
+{
+  "qualification_head": "f42066f001fb1f6aaabd7a18ff33e03a1701cddd",
+  "image_lock_git_blob": "5d3148ea37cc4eb4817753e9cb72755ba69cbfd9",
+  "qualification_workflow_git_blob": "14a628c9e5a37565ea06520eca11548f8194b5f4",
+  "profiles": [
+    "core-py3.10",
+    "core-py3.11",
+    "core-py3.12",
+    "coverage-py3.12"
+  ],
+  "mode": "Existing locked images only; export-bundle=false; no image download/import or runner configuration mutation. Every listed actual registration passed all four offline profile checks.",
+  "excluded": "MC550 representatives failed core-py3.10 qualification; offline BW slots are not certified or selected.",
+  "qualified_slots": [
+    {
+      "selector": "fq-bw1100-10-cpu01-validation",
+      "runner": "fq-bw1100-10-cpu-pilot",
+      "run": 46010700562,
+      "job": 140545157802
+    },
+    {
+      "selector": "fq-bw1100-10-cpu02-validation",
+      "runner": "fq-bw1100-10-cpu02",
+      "run": 46010078828,
+      "job": 140543059499
+    },
+    {
+      "selector": "fq-bw1100-10-cpu03-validation",
+      "runner": "fq-bw1100-10-cpu03",
+      "run": 46010700562,
+      "job": 140545157518
+    },
+    {
+      "selector": "fq-bw1100-10-cpu04-validation",
+      "runner": "fq-bw1100-10-cpu04",
+      "run": 46010700562,
+      "job": 140545157405
+    },
+    {
+      "selector": "fq-bw1100-10-cpu05-validation",
+      "runner": "fq-bw1100-10-cpu05",
+      "run": 46010700562,
+      "job": 140545157451
+    },
+    {
+      "selector": "fq-bw1100-10-cpu06-validation",
+      "runner": "fq-bw1100-10-cpu06",
+      "run": 46010700562,
+      "job": 140545157491
+    },
+    {
+      "selector": "fq-bw1100-10-cpu07-validation",
+      "runner": "fq-bw1100-10-cpu07",
+      "run": 46010700562,
+      "job": 140545157700
+    },
+    {
+      "selector": "fq-bw1100-10-cpu08-validation",
+      "runner": "fq-bw1100-10-cpu08",
+      "run": 46010700562,
+      "job": 140545157730
+    },
+    {
+      "selector": "fq-bw1100-10-cpu09-validation",
+      "runner": "fq-bw1100-10-cpu09",
+      "run": 46010700562,
+      "job": 140545157500
+    },
+    {
+      "selector": "fq-bw1100-10-cpu10-validation",
+      "runner": "fq-bw1100-10-cpu10",
+      "run": 46010700562,
+      "job": 140545157610
+    },
+    {
+      "selector": "fq-bw1100-10-cpu11-validation",
+      "runner": "fq-bw1100-10-cpu11",
+      "run": 46010700562,
+      "job": 140545157614
+    },
+    {
+      "selector": "fq-bw1100-10-cpu12-validation",
+      "runner": "fq-bw1100-10-cpu12",
+      "run": 46010700562,
+      "job": 140545157698
+    },
+    {
+      "selector": "fq-bw1100-10-cpu13-validation",
+      "runner": "fq-bw1100-10-cpu13",
+      "run": 46010700562,
+      "job": 140545157539
+    },
+    {
+      "selector": "fq-bw1100-10-cpu14-validation",
+      "runner": "fq-bw1100-10-cpu14",
+      "run": 46010700562,
+      "job": 140545157640
+    },
+    {
+      "selector": "fq-bw1100-10-cpu15-validation",
+      "runner": "fq-bw1100-10-cpu15",
+      "run": 46010700562,
+      "job": 140545157936
+    },
+    {
+      "selector": "fq-bw1100-10-cpu16-validation",
+      "runner": "fq-bw1100-10-cpu16",
+      "run": 46010700562,
+      "job": 140545157487
+    },
+    {
+      "selector": "fq-bw1100-11-cpu01-validation",
+      "runner": "fq-bw1100-11-cpu-pilot",
+      "run": 46010700562,
+      "job": 140545442381
+    },
+    {
+      "selector": "fq-bw1100-11-cpu02-validation",
+      "runner": "fq-bw1100-11-cpu02",
+      "run": 46010078828,
+      "job": 140543059705
+    },
+    {
+      "selector": "fq-bw1100-11-cpu03-validation",
+      "runner": "fq-bw1100-11-cpu03",
+      "run": 46010700562,
+      "job": 140545159253
+    },
+    {
+      "selector": "fq-bw1100-11-cpu04-validation",
+      "runner": "fq-bw1100-11-cpu04",
+      "run": 46010700562,
+      "job": 140545361011
+    },
+    {
+      "selector": "fq-bw1100-11-cpu05-validation",
+      "runner": "fq-bw1100-11-cpu05",
+      "run": 46010700562,
+      "job": 140545386559
+    },
+    {
+      "selector": "fq-bw1100-11-cpu06-validation",
+      "runner": "fq-bw1100-11-cpu06",
+      "run": 46010700562,
+      "job": 140545387528
+    },
+    {
+      "selector": "fq-bw1100-11-cpu07-validation",
+      "runner": "fq-bw1100-11-cpu07",
+      "run": 46010700562,
+      "job": 140545398428
+    },
+    {
+      "selector": "fq-bw1100-11-cpu08-validation",
+      "runner": "fq-bw1100-11-cpu08",
+      "run": 46010700562,
+      "job": 140545400462
+    },
+    {
+      "selector": "fq-bw1100-11-cpu09-validation",
+      "runner": "fq-bw1100-11-cpu09",
+      "run": 46010700562,
+      "job": 140545401358
+    },
+    {
+      "selector": "fq-bw1100-11-cpu10-validation",
+      "runner": "fq-bw1100-11-cpu10",
+      "run": 46010700562,
+      "job": 140545402501
+    },
+    {
+      "selector": "fq-bw1100-11-cpu11-validation",
+      "runner": "fq-bw1100-11-cpu11",
+      "run": 46010700562,
+      "job": 140545404353
+    },
+    {
+      "selector": "fq-bw1100-11-cpu12-validation",
+      "runner": "fq-bw1100-11-cpu12",
+      "run": 46010700562,
+      "job": 140545409864
+    },
+    {
+      "selector": "fq-bw1100-11-cpu13-validation",
+      "runner": "fq-bw1100-11-cpu13",
+      "run": 46010700562,
+      "job": 140545419671
+    },
+    {
+      "selector": "fq-bw1100-11-cpu14-validation",
+      "runner": "fq-bw1100-11-cpu14",
+      "run": 46010700562,
+      "job": 140545420282
+    },
+    {
+      "selector": "fq-bw1100-11-cpu15-validation",
+      "runner": "fq-bw1100-11-cpu15",
+      "run": 46010700562,
+      "job": 140545421636
+    },
+    {
+      "selector": "fq-bw1100-11-cpu16-validation",
+      "runner": "fq-bw1100-11-cpu16",
+      "run": 46010700562,
+      "job": 140545440452
+    },
+    {
+      "selector": "fq-bw1100-12-cpu01-validation",
+      "runner": "fq-bw1100-12-cpu-pilot",
+      "run": 46010700562,
+      "job": 140545643307
+    },
+    {
+      "selector": "fq-bw1100-12-cpu02-validation",
+      "runner": "fq-bw1100-12-cpu02",
+      "run": 46010078828,
+      "job": 140543059050
+    },
+    {
+      "selector": "fq-bw1100-12-cpu03-validation",
+      "runner": "fq-bw1100-12-cpu03",
+      "run": 46010700562,
+      "job": 140545449093
+    },
+    {
+      "selector": "fq-bw1100-12-cpu04-validation",
+      "runner": "fq-bw1100-12-cpu04",
+      "run": 46010700562,
+      "job": 140545477955
+    },
+    {
+      "selector": "fq-bw1100-12-cpu05-validation",
+      "runner": "fq-bw1100-12-cpu05",
+      "run": 46010700562,
+      "job": 140545588295
+    },
+    {
+      "selector": "fq-bw1100-12-cpu06-validation",
+      "runner": "fq-bw1100-12-cpu06",
+      "run": 46010700562,
+      "job": 140545589028
+    },
+    {
+      "selector": "fq-bw1100-12-cpu07-validation",
+      "runner": "fq-bw1100-12-cpu07",
+      "run": 46010700562,
+      "job": 140545609800
+    },
+    {
+      "selector": "fq-bw1100-12-cpu08-validation",
+      "runner": "fq-bw1100-12-cpu08",
+      "run": 46010700562,
+      "job": 140545613949
+    },
+    {
+      "selector": "fq-bw1100-12-cpu09-validation",
+      "runner": "fq-bw1100-12-cpu09",
+      "run": 46010700562,
+      "job": 140545619070
+    },
+    {
+      "selector": "fq-bw1100-12-cpu10-validation",
+      "runner": "fq-bw1100-12-cpu10",
+      "run": 46010700562,
+      "job": 140545627295
+    },
+    {
+      "selector": "fq-bw1100-12-cpu11-validation",
+      "runner": "fq-bw1100-12-cpu11",
+      "run": 46010700562,
+      "job": 140545629169
+    },
+    {
+      "selector": "fq-bw1100-12-cpu12-validation",
+      "runner": "fq-bw1100-12-cpu12",
+      "run": 46010700562,
+      "job": 140545631059
+    },
+    {
+      "selector": "fq-bw1100-12-cpu13-validation",
+      "runner": "fq-bw1100-12-cpu13",
+      "run": 46010700562,
+      "job": 140545631737
+    },
+    {
+      "selector": "fq-bw1100-12-cpu14-validation",
+      "runner": "fq-bw1100-12-cpu14",
+      "run": 46010700562,
+      "job": 140545634302
+    },
+    {
+      "selector": "fq-bw1100-12-cpu15-validation",
+      "runner": "fq-bw1100-12-cpu15",
+      "run": 46010700562,
+      "job": 140545639447
+    },
+    {
+      "selector": "fq-bw1100-12-cpu16-validation",
+      "runner": "fq-bw1100-12-cpu16",
+      "run": 46010700562,
+      "job": 140545639641
+    },
+    {
+      "selector": "fq-bw1100-14-cpu01-validation",
+      "runner": "fq-bw1100-14-cpu-pilot",
+      "run": 46010700562,
+      "job": 140545920945
+    },
+    {
+      "selector": "fq-bw1100-14-cpu02-validation",
+      "runner": "fq-bw1100-14-cpu02",
+      "run": 46010078828,
+      "job": 140543059458
+    },
+    {
+      "selector": "fq-bw1100-14-cpu03-validation",
+      "runner": "fq-bw1100-14-cpu03",
+      "run": 46010700562,
+      "job": 140545660166
+    },
+    {
+      "selector": "fq-bw1100-14-cpu04-validation",
+      "runner": "fq-bw1100-14-cpu04",
+      "run": 46010700562,
+      "job": 140545666211
+    },
+    {
+      "selector": "fq-bw1100-14-cpu05-validation",
+      "runner": "fq-bw1100-14-cpu05",
+      "run": 46010700562,
+      "job": 140545682473
+    },
+    {
+      "selector": "fq-bw1100-14-cpu06-validation",
+      "runner": "fq-bw1100-14-cpu06",
+      "run": 46010700562,
+      "job": 140545781741
+    },
+    {
+      "selector": "fq-bw1100-14-cpu07-validation",
+      "runner": "fq-bw1100-14-cpu07",
+      "run": 46010700562,
+      "job": 140545803847
+    },
+    {
+      "selector": "fq-bw1100-14-cpu08-validation",
+      "runner": "fq-bw1100-14-cpu08",
+      "run": 46010700562,
+      "job": 140545837647
+    },
+    {
+      "selector": "fq-bw1100-14-cpu09-validation",
+      "runner": "fq-bw1100-14-cpu09",
+      "run": 46010700562,
+      "job": 140545845170
+    },
+    {
+      "selector": "fq-bw1100-14-cpu10-validation",
+      "runner": "fq-bw1100-14-cpu10",
+      "run": 46010700562,
+      "job": 140545867325
+    },
+    {
+      "selector": "fq-bw1100-14-cpu11-validation",
+      "runner": "fq-bw1100-14-cpu11",
+      "run": 46010700562,
+      "job": 140545876993
+    },
+    {
+      "selector": "fq-bw1100-14-cpu12-validation",
+      "runner": "fq-bw1100-14-cpu12",
+      "run": 46010700562,
+      "job": 140545883482
+    },
+    {
+      "selector": "fq-bw1100-14-cpu13-validation",
+      "runner": "fq-bw1100-14-cpu13",
+      "run": 46010700562,
+      "job": 140545886047
+    },
+    {
+      "selector": "fq-bw1100-14-cpu14-validation",
+      "runner": "fq-bw1100-14-cpu14",
+      "run": 46010700562,
+      "job": 140545894150
+    },
+    {
+      "selector": "fq-bw1100-14-cpu15-validation",
+      "runner": "fq-bw1100-14-cpu15",
+      "run": 46010700562,
+      "job": 140545898091
+    },
+    {
+      "selector": "fq-bw1100-14-cpu16-validation",
+      "runner": "fq-bw1100-14-cpu16",
+      "run": 46010700562,
+      "job": 140545902150
+    },
+    {
+      "selector": "fq-bw1100-15-cpu01-validation",
+      "runner": "fq-bw1100-15-cpu-pilot",
+      "run": 46010700562,
+      "job": 140546159916
+    },
+    {
+      "selector": "fq-bw1100-15-cpu02-validation",
+      "runner": "fq-bw1100-15-cpu02",
+      "run": 46010078828,
+      "job": 140543059533
+    },
+    {
+      "selector": "fq-bw1100-15-cpu03-validation",
+      "runner": "fq-bw1100-15-cpu03",
+      "run": 46010700562,
+      "job": 140545928701
+    },
+    {
+      "selector": "fq-bw1100-15-cpu04-validation",
+      "runner": "fq-bw1100-15-cpu04",
+      "run": 46010700562,
+      "job": 140545935007
+    },
+    {
+      "selector": "fq-bw1100-15-cpu05-validation",
+      "runner": "fq-bw1100-15-cpu05",
+      "run": 46010700562,
+      "job": 140545946005
+    },
+    {
+      "selector": "fq-bw1100-15-cpu06-validation",
+      "runner": "fq-bw1100-15-cpu06",
+      "run": 46010700562,
+      "job": 140545946932
+    },
+    {
+      "selector": "fq-bw1100-15-cpu07-validation",
+      "runner": "fq-bw1100-15-cpu07",
+      "run": 46010700562,
+      "job": 140546017018
+    },
+    {
+      "selector": "fq-bw1100-15-cpu08-validation",
+      "runner": "fq-bw1100-15-cpu08",
+      "run": 46010700562,
+      "job": 140546053179
+    },
+    {
+      "selector": "fq-bw1100-15-cpu09-validation",
+      "runner": "fq-bw1100-15-cpu09",
+      "run": 46010700562,
+      "job": 140546064668
+    },
+    {
+      "selector": "fq-bw1100-15-cpu10-validation",
+      "runner": "fq-bw1100-15-cpu10",
+      "run": 46010700562,
+      "job": 140546065410
+    },
+    {
+      "selector": "fq-bw1100-15-cpu12-validation",
+      "runner": "fq-bw1100-15-cpu12",
+      "run": 46010700562,
+      "job": 140546100822
+    },
+    {
+      "selector": "fq-bw1100-15-cpu13-validation",
+      "runner": "fq-bw1100-15-cpu13",
+      "run": 46010700562,
+      "job": 140546107894
+    },
+    {
+      "selector": "fq-bw1100-15-cpu14-validation",
+      "runner": "fq-bw1100-15-cpu14",
+      "run": 46010700562,
+      "job": 140546121053
+    },
+    {
+      "selector": "fq-bw1100-15-cpu15-validation",
+      "runner": "fq-bw1100-15-cpu15",
+      "run": 46010700562,
+      "job": 140546146542
+    },
+    {
+      "selector": "fq-bw1100-15-cpu16-validation",
+      "runner": "fq-bw1100-15-cpu16",
+      "run": 46010700562,
+      "job": 140546158758
+    },
+    {
+      "selector": "fq-bw1100-16-cpu01-validation",
+      "runner": "fq-bw1100-16-cpu-pilot",
+      "run": 46010700562,
+      "job": 140546394457
+    },
+    {
+      "selector": "fq-bw1100-16-cpu02-validation",
+      "runner": "fq-bw1100-16-cpu02",
+      "run": 46010700562,
+      "job": 140546165032
+    },
+    {
+      "selector": "fq-bw1100-16-cpu03-validation",
+      "runner": "fq-bw1100-16-cpu03",
+      "run": 46010078828,
+      "job": 140543059735
+    },
+    {
+      "selector": "fq-bw1100-16-cpu04-validation",
+      "runner": "fq-bw1100-16-cpu04",
+      "run": 46010700562,
+      "job": 140546190037
+    },
+    {
+      "selector": "fq-bw1100-16-cpu05-validation",
+      "runner": "fq-bw1100-16-cpu05",
+      "run": 46010700562,
+      "job": 140546199291
+    },
+    {
+      "selector": "fq-bw1100-16-cpu06-validation",
+      "runner": "fq-bw1100-16-cpu06",
+      "run": 46010700562,
+      "job": 140546203478
+    },
+    {
+      "selector": "fq-bw1100-16-cpu07-validation",
+      "runner": "fq-bw1100-16-cpu07",
+      "run": 46010700562,
+      "job": 140546232296
+    },
+    {
+      "selector": "fq-bw1100-16-cpu08-validation",
+      "runner": "fq-bw1100-16-cpu08",
+      "run": 46010700562,
+      "job": 140546287649
+    },
+    {
+      "selector": "fq-bw1100-16-cpu09-validation",
+      "runner": "fq-bw1100-16-cpu09",
+      "run": 46010700562,
+      "job": 140546288431
+    },
+    {
+      "selector": "fq-bw1100-16-cpu10-validation",
+      "runner": "fq-bw1100-16-cpu10",
+      "run": 46010700562,
+      "job": 140546311903
+    },
+    {
+      "selector": "fq-bw1100-16-cpu11-validation",
+      "runner": "fq-bw1100-16-cpu11",
+      "run": 46010700562,
+      "job": 140546315707
+    },
+    {
+      "selector": "fq-bw1100-16-cpu12-validation",
+      "runner": "fq-bw1100-16-cpu12",
+      "run": 46010700562,
+      "job": 140546320131
+    },
+    {
+      "selector": "fq-bw1100-16-cpu13-validation",
+      "runner": "fq-bw1100-16-cpu13",
+      "run": 46010700562,
+      "job": 140546324953
+    },
+    {
+      "selector": "fq-bw1100-16-cpu14-validation",
+      "runner": "fq-bw1100-16-cpu14",
+      "run": 46010700562,
+      "job": 140546326219
+    },
+    {
+      "selector": "fq-bw1100-16-cpu15-validation",
+      "runner": "fq-bw1100-16-cpu15",
+      "run": 46010700562,
+      "job": 140546338919
+    },
+    {
+      "selector": "fq-bw1100-16-cpu16-validation",
+      "runner": "fq-bw1100-16-cpu16",
+      "run": 46010700562,
+      "job": 140546369758
+    },
+    {
+      "selector": "fq-bw1100-17-cpu01-validation",
+      "runner": "fq-bw1100-17-cpu-pilot",
+      "run": 46010700562,
+      "job": 140546591251
+    },
+    {
+      "selector": "fq-bw1100-17-cpu02-validation",
+      "runner": "fq-bw1100-17-cpu02",
+      "run": 46010078828,
+      "job": 140543059453
+    },
+    {
+      "selector": "fq-bw1100-17-cpu03-validation",
+      "runner": "fq-bw1100-17-cpu03",
+      "run": 46010700562,
+      "job": 140546398268
+    },
+    {
+      "selector": "fq-bw1100-17-cpu04-validation",
+      "runner": "fq-bw1100-17-cpu04",
+      "run": 46010700562,
+      "job": 140546402949
+    },
+    {
+      "selector": "fq-bw1100-17-cpu05-validation",
+      "runner": "fq-bw1100-17-cpu05",
+      "run": 46010700562,
+      "job": 140546412749
+    },
+    {
+      "selector": "fq-bw1100-17-cpu07-validation",
+      "runner": "fq-bw1100-17-cpu07",
+      "run": 46010700562,
+      "job": 140546422175
+    },
+    {
+      "selector": "fq-bw1100-17-cpu08-validation",
+      "runner": "fq-bw1100-17-cpu08",
+      "run": 46010700562,
+      "job": 140546434746
+    },
+    {
+      "selector": "fq-bw1100-17-cpu09-validation",
+      "runner": "fq-bw1100-17-cpu09",
+      "run": 46010700562,
+      "job": 140546465337
+    },
+    {
+      "selector": "fq-bw1100-17-cpu10-validation",
+      "runner": "fq-bw1100-17-cpu10",
+      "run": 46010700562,
+      "job": 140546501578
+    },
+    {
+      "selector": "fq-bw1100-17-cpu11-validation",
+      "runner": "fq-bw1100-17-cpu11",
+      "run": 46010700562,
+      "job": 140546505380
+    },
+    {
+      "selector": "fq-bw1100-17-cpu12-validation",
+      "runner": "fq-bw1100-17-cpu12",
+      "run": 46010700562,
+      "job": 140546528460
+    },
+    {
+      "selector": "fq-bw1100-17-cpu13-validation",
+      "runner": "fq-bw1100-17-cpu13",
+      "run": 46010700562,
+      "job": 140546530014
+    },
+    {
+      "selector": "fq-bw1100-17-cpu14-validation",
+      "runner": "fq-bw1100-17-cpu14",
+      "run": 46010700562,
+      "job": 140546557602
+    },
+    {
+      "selector": "fq-bw1100-17-cpu15-validation",
+      "runner": "fq-bw1100-17-cpu15",
+      "run": 46010700562,
+      "job": 140546571265
+    },
+    {
+      "selector": "fq-bw1100-17-cpu16-validation",
+      "runner": "fq-bw1100-17-cpu16",
+      "run": 46010700562,
+      "job": 140546578651
+    },
+    {
+      "selector": "fq-bw1100-2-cpu01-validation",
+      "runner": "fq-bw1100-2-cpu-pilot",
+      "run": 46010700562,
+      "job": 140546771978
+    },
+    {
+      "selector": "fq-bw1100-2-cpu02-validation",
+      "runner": "fq-bw1100-2-cpu02",
+      "run": 46010078828,
+      "job": 140543059519
+    },
+    {
+      "selector": "fq-bw1100-2-cpu03-validation",
+      "runner": "fq-bw1100-2-cpu03",
+      "run": 46010700562,
+      "job": 140546592726
+    },
+    {
+      "selector": "fq-bw1100-2-cpu04-validation",
+      "runner": "fq-bw1100-2-cpu04",
+      "run": 46010700562,
+      "job": 140546600456
+    },
+    {
+      "selector": "fq-bw1100-2-cpu05-validation",
+      "runner": "fq-bw1100-2-cpu05",
+      "run": 46010700562,
+      "job": 140546607629
+    },
+    {
+      "selector": "fq-bw1100-2-cpu06-validation",
+      "runner": "fq-bw1100-2-cpu06",
+      "run": 46010700562,
+      "job": 140546626107
+    },
+    {
+      "selector": "fq-bw1100-2-cpu07-validation",
+      "runner": "fq-bw1100-2-cpu07",
+      "run": 46010700562,
+      "job": 140546632120
+    },
+    {
+      "selector": "fq-bw1100-2-cpu08-validation",
+      "runner": "fq-bw1100-2-cpu08",
+      "run": 46010700562,
+      "job": 140546644566
+    },
+    {
+      "selector": "fq-bw1100-2-cpu09-validation",
+      "runner": "fq-bw1100-2-cpu09",
+      "run": 46010700562,
+      "job": 140546645206
+    },
+    {
+      "selector": "fq-bw1100-2-cpu10-validation",
+      "runner": "fq-bw1100-2-cpu10",
+      "run": 46010700562,
+      "job": 140546670091
+    },
+    {
+      "selector": "fq-bw1100-2-cpu11-validation",
+      "runner": "fq-bw1100-2-cpu11",
+      "run": 46010700562,
+      "job": 140546691824
+    },
+    {
+      "selector": "fq-bw1100-2-cpu12-validation",
+      "runner": "fq-bw1100-2-cpu12",
+      "run": 46010700562,
+      "job": 140546732698
+    },
+    {
+      "selector": "fq-bw1100-2-cpu13-validation",
+      "runner": "fq-bw1100-2-cpu13",
+      "run": 46010700562,
+      "job": 140546745413
+    },
+    {
+      "selector": "fq-bw1100-2-cpu14-validation",
+      "runner": "fq-bw1100-2-cpu14",
+      "run": 46010700562,
+      "job": 140546746692
+    },
+    {
+      "selector": "fq-bw1100-2-cpu15-validation",
+      "runner": "fq-bw1100-2-cpu15",
+      "run": 46010700562,
+      "job": 140546749828
+    },
+    {
+      "selector": "fq-bw1100-2-cpu16-validation",
+      "runner": "fq-bw1100-2-cpu16",
+      "run": 46010700562,
+      "job": 140546768384
+    }
+  ]
+}

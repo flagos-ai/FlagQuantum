@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from collections.abc import Sequence
+from collections.abc import Mapping, Sequence
 from typing import Any
 
 from flagquantum.core.ir import ensure_circuit_ir
@@ -16,7 +16,6 @@ from flagquantum.simulation.mps.jax.batched import (
 from ....distributed.backend_policy import DistributedBackendPolicy
 from ..array_conversions import (
     _gate_matrix_as_jax,
-    _jax_split_record,
     _parameterized_gate_matrix_as_jax,
 )
 from ..backend_dispatch import plan_jax_distributed_quantum_backend
@@ -390,3 +389,23 @@ def _jax_parameterized_mps_rank_tensors(
         truncation_records,
         boundary_protocols,
     )
+
+
+def _jax_split_record(
+    split_info: Mapping[str, Any],
+    *,
+    bond: int,
+    max_bond: int | None,
+    cutoff: float,
+) -> dict[str, Any] | None:
+    if split_info.get("method") != "svd":
+        return None
+    return {
+        "bond": int(bond),
+        "kept_rank": int(split_info["rank"]),
+        "original_rank": int(split_info["original_rank"]),
+        "discarded_weight": float(split_info["discarded_weight"]),
+        "max_bond": max_bond,
+        "cutoff": float(cutoff),
+        "source": "jax_sharded_mps_two_site",
+    }
