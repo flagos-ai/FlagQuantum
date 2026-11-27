@@ -179,3 +179,97 @@ def test_unproved_root_release_refuses_without_claiming_clean_work(
         ValueError, match="root temporary release has no clean-work proof"
     ):
         field_inverse_decomposition_program(dtype(width, modulus), modulus=modulus)
+
+
+@pytest.mark.parametrize("width,modulus,bad_inputs", ((4, 19, 12), (8, 283, 250)))
+def test_static_source_graph_diagnoses_dirty_free_without_resetting(
+    width: int, modulus: int, bad_inputs: int
+) -> None:
+    from qualtran.bloqs.gf_arithmetic.gf2_inverse import GF2Inverse
+
+    from examples.algorithms.register_field_inverse import FieldInverse
+    from flagquantum.compiler.registers.finite_field.inverse_decomposition import (
+        field_inverse_decomposition_graph,
+    )
+
+    field_type = dtype(width, modulus)
+    graph = field_inverse_decomposition_graph(field_type, modulus=modulus)
+    bound = bind_register_program(
+        graph,
+        (tuple(range(width)),),
+        clean=tuple(range(width, width * 12)),
+        allow_workspace_outputs=True,
+    )
+    gates, _ = product_source_stream(
+        GF2Inverse(_source_type(width, modulus)), bound, {"x": tuple(range(width))}
+    )
+    assert gates == bound.circuit.instructions
+    active = max(w for event in bound.events for w in event.wires) + 1
+    columns = np.zeros((active, 1 << width), dtype=np.bool_)
+    for wire in range(width):
+        columns[wire] = (np.arange(1 << width) >> (width - 1 - wire)) & 1
+    violations = []
+    dirty_reuse = False
+    for offset in range(len(gates) + 1):
+        for event in bound.events:
+            if event.instruction_offset != offset:
+                continue
+            if event.kind == "free":
+                bad = np.any(columns[list(event.wires)], axis=0)
+                if np.any(bad):
+                    violations.append(int(np.count_nonzero(bad)))
+            elif event.kind == "allocate" and np.any(columns[list(event.wires)]):
+                dirty_reuse = True
+        if offset == len(gates):
+            break
+        gate = gates[offset]
+        columns[gate.wires[-1]] ^= np.all(columns[list(gate.wires[:-1])], axis=0)
+    assert bad_inputs in violations
+    assert dirty_reuse
+    operation = FieldInverse(
+        field_type,
+        tuple(range(width)),
+        tuple(range(width, width * 12)),
+        modulus,
+        literal=True,
+    )
+    with pytest.raises(ValueError, match="root temporary release"):
+        Circuit(width).append(operation)
+
+
+@pytest.mark.parametrize("width,modulus", FIELDS[:2])
+def test_literal_append_uses_source_recipe_without_mathematical_owner(
+    width: int, modulus: int, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    from examples.algorithms import register_field_inverse as example
+
+    def unavailable(*args: object, **kwargs: object) -> None:
+        raise AssertionError("Literal append must not call the mathematical owner")
+
+    monkeypatch.setattr(example, "field_inverse_program", unavailable)
+    count = width * 3
+    operation = example.FieldInverse(
+        dtype(width, modulus),
+        tuple(range(width)),
+        tuple(range(width, count)),
+        modulus,
+        literal=True,
+    )
+    bound = operation.bind()
+    weights = torch.randn(
+        1 << width,
+        2,
+        dtype=torch.complex128,
+        generator=torch.Generator().manual_seed(5162),
+    )
+    weights /= weights.norm()
+    state = torch.zeros(1 << (count + 1), dtype=torch.complex128)
+    state.reshape(1 << width, -1)[:, (0, 1)] = weights
+    expected = (
+        Circuit(count + 1, inputs=state, dtype=torch.complex128)
+        .append(FieldOperation(count + 1, bound.circuit.instructions))
+        .state()
+    )
+    actual = Circuit(count + 1, inputs=state, dtype=torch.complex128).append(operation)
+    torch.testing.assert_close(actual.state(), expected, atol=2e-12, rtol=0)
+    assert bound.circuit.instructions != ()

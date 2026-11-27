@@ -12,6 +12,9 @@ import flagquantum as fq
 from flagquantum.compiler.registers.finite_field.inverse_component import (
     field_inverse_program,
 )
+from flagquantum.compiler.registers.finite_field.inverse_decomposition import (
+    field_inverse_decomposition_program,
+)
 from flagquantum.compiler.registers.register_binding import (
     BoundRegisterProgram,
     bind_register_program,
@@ -22,16 +25,28 @@ from flagquantum.core.ir.program.registers import RegisterType
 
 @dataclass(frozen=True)
 class FieldInverse:
-    """Bind a stored raw inverse, preserving every returned result/junk alias."""
+    """Bind a mathematical or literal recipe, retaining result/junk aliases.
+
+    The explicit literal profile preserves original defects and rejects unproved
+    clean releases; the default computes the correct mathematical inverse.
+    """
 
     dtype: RegisterType
     source: tuple[int, ...]
     workspace: tuple[int, ...]
     modulus: int
+    literal: bool = False
 
     def bind(self) -> BoundRegisterProgram:
+        if type(self.literal) is not bool:
+            raise ValueError("Inverse profile requires a boolean literal flag")
+        program = (
+            field_inverse_decomposition_program
+            if self.literal
+            else field_inverse_program
+        )(self.dtype, modulus=self.modulus)
         return bind_register_program(
-            field_inverse_program(self.dtype, modulus=self.modulus),
+            program,
             (self.source,),
             clean=self.workspace,
             allow_workspace_outputs=True,
