@@ -433,3 +433,38 @@ def test_mixed_partition_retains_original_routing_without_unused_qualification(
     assert row["runner"] == ""
     assert row["exclusive"] is False
     assert row["a800"] is False
+
+
+def test_wide_state_oracle_keeps_complete_selection_on_qualified_bw_slot(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    from tools.ci import ci_coverage_plan
+
+    node = (
+        "tests/integration/test_synthesis_glued_trees_notebook.py::"
+        "test_wide_full_state_at_original_first_time"
+    )
+    ordinary = "tests/test_small.py::test_original"
+    monkeypatch.setenv("GITHUB_SHA", "c" * 40)
+    monkeypatch.setenv("GITHUB_OUTPUT", str(tmp_path / "output"))
+    monkeypatch.setattr(
+        ci_coverage_plan,
+        "load_duration_hints",
+        lambda: (0.05, {node: 166.0}),
+    )
+    directory = tmp_path / "plan"
+    assert write_plan((node, ordinary), directory, 2) == 2
+    rows = json.loads((tmp_path / "output").read_text().split("matrix=", 1)[1])[
+        "include"
+    ]
+    selected = {
+        tuple(verify_plan(directory, row["shard"]).read_text().splitlines()): row
+        for row in rows
+    }
+    assert set(selected) == {(node,), (ordinary,)}
+    row = selected[(node,)]
+    assert row["runner"] == "fq-bw1100-17-cpu16-validation"
+    assert row["exclusive"] is True
+    assert row["a800"] is False
+    assert row["timeout-minutes"] == 60
+    assert selected[(ordinary,)]["runner"] == ""

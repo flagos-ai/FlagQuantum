@@ -437,3 +437,24 @@ report the BW service's actual four-core budget rather than the A800 allowance.
 No service, label, quota, dependency or numerical algorithm is changed. Actual
 whole-job timing and all original scientific results on these targets remain
 required before calling the bottleneck resolved.
+
+
+## Rootless preparation and full-width placement
+
+Offline environment preparation reads the complete Docker security-options
+query before selecting the container user. Under `pipefail`, a producer writing
+after `grep -q` has already matched can receive SIGPIPE and make a positive
+rootless match appear false. A query failure now stops preparation rather than
+selecting a host UID without knowing the daemon's identity. Rootless container
+UID zero maps to the unprivileged daemon user; it does not grant host root.
+The original failed preparation and deterministic regression outcomes are
+retained separately from successful verification.
+
+The complete wide-state glued-trees oracle has an existing qualified BW slot,
+just as the four serial embedding workloads do. It remains a sole test with its
+original full amplitudes, width, oracle and finite budget. Qualification still
+checks the locked coverage profile and exact runner selector; trust rules,
+resource shares and other heavy A800 routes are unchanged. No service, runner
+label, image or quota is modified. The placement must be accepted through the
+new head's actual scientific result, resource report and entire job duration;
+a cache qualification or scheduling replay alone cannot certify performance.
