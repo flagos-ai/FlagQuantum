@@ -242,3 +242,41 @@ scope, language, links, architecture, IR and protected API checks pass. Frozen
 source/test blobs and the real Kickmix 0.1 Simulator are verified. Receipts use
 `g2-signed-set-*-20261125`. Q-0205 retains its separately recorded source/model,
 general nominal-type, symbolic physical and whole-network comparison limits.
+
+
+## Whole-file acceptance under the approved closure rule, 2026-11-28
+
+Q-0205 closes the complete 135-line source: fields, concrete/symbolic lhs/rhs
+validation, ordered THRU signature, ten-edge forward/adjoint model, three
+factories and concrete-only DocSpec. Constructor declarations, exact nominal
+metadata, foreign transport and symbolic/concrete model owners already account
+for all definitions. The original source has no root executable decomposition
+or classical callback. Its unequal-half merge, floored cardinality comparison
+and misleading flag prose remain literal analytical responsibilities.
+
+The independent signed/unsigned sorted-set Program keeps its existing ascending
+unique-input contract, occupied XOR output/flag, success-dependent payload,
+parity/compaction, inverse and clean-work proofs. Small complex channels exhaust
+applicable histories; larger padded coherent profiles retain sampled trajectories
+and separate basis cleanup certificates. These are not a nonexistent upstream
+root stream. The older fixed-clean-wire comparison to the flat native network
+failed at three shapes; that diagnostic remains unaccepted and is not promoted
+by this migration disposition. Emitted primitives and source models stay separate.
+
+General nominal types retain source declarations, rather than a fabricated
+physical set oracle for all types. Proposal120 admits logical symbolic arrays;
+unknown physical extents still refuse. Original Hamming peak, symbol transport
+assumption loss and no-compaction/parity source model remain recorded. The
+approved model-only/source-defect rule supersedes earlier whole-parent holds;
+it does not expand the native synthesis contract or erase performance/layout
+follow-ups. Q-0206's already accepted original test responsibility is reused.
+
+Current acceptance receipts use `g2-list-primitives-full-closure-*20261128`:
+842 concentrated cases and 99 independent Cirq1.6 cases pass; 109 frozen blobs
+are unchanged. Existing original full tests/notebook, exact primitive/model
+resource rows and strict owner checks are reused. This batch changes only
+these complete source dispositions. The immediately preceding 32 local
+integration checks remain valid for the unchanged list owners. Compiler scope,
+English/links, architecture/IR/API/required checks and whitespace pass; reference
+policy retains 570 existing findings with no new consumer or waiver. No source,
+algorithm, public contract, checker or dependency exclusion is changed.
