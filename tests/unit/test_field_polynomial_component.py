@@ -3,7 +3,12 @@
 from hashlib import sha1
 from pathlib import Path
 
-import numpy as np
+from tests._reference_dependencies import unavailable_reference
+
+try:
+    import numpy as np
+except ModuleNotFoundError as _reference_import_error:
+    unavailable_reference(_reference_import_error)
 import pytest
 import torch
 
@@ -27,6 +32,7 @@ from flagquantum.drawer.component_score import component_register_score
 from flagquantum.drawer.partition_symbols import split_join_wire_symbol
 from flagquantum.drawer.register_score_data import register_score_data
 from flagquantum.simulation.finite_field_encoding import FiniteFieldEncoding
+from tests.unit.register_source_graph import source_line_qubit_index
 from tests.unit.test_drawer_component_score import assert_source_geometry
 
 pytestmark = [pytest.mark.unit, pytest.mark.ftqc_reference]
@@ -47,17 +53,28 @@ def frozen_source() -> None:
 def test_polynomial_control_keeps_typed_coefficient_order_and_state(
     reverse: bool, degree: int, field_degree: int
 ) -> None:
-    from cirq import LineQubit
-    from qualtran import QGF, BloqBuilder, CtrlSpec, QBit, QGFPoly
-    from qualtran import Register as ForeignRegister
-    from qualtran import Signature as ForeignSignature
+    try:
+        from cirq import LineQubit
+    except ModuleNotFoundError as _reference_import_error:
+        unavailable_reference(_reference_import_error)
+    from qualtran._infra.bloq import Bloq
+    from qualtran._infra.composite_bloq import BloqBuilder
+    from qualtran._infra.controlled import CtrlSpec
+    from qualtran._infra.data_types import QGF, QBit, QGFPoly
+    from qualtran._infra.registers import Register as ForeignRegister
+    from qualtran._infra.registers import Signature as ForeignSignature
     from qualtran.bloqs.gf_poly_arithmetic.gf_poly_split_and_join import GFPolySplit
-    from qualtran.drawing import get_musical_score_data
-    from qualtran.resource_counting import QECGatesCost, QubitCount, get_cost_value
+    from qualtran.drawing.musical_score import get_musical_score_data
+    from qualtran.resource_counting._bloq_counts import QECGatesCost
+    from qualtran.resource_counting._costing import get_cost_value
+    from qualtran.resource_counting._qubit_counts import QubitCount
 
-    source = GFPolySplit(QGFPoly(degree, QGF(2, field_degree)))
+    source: Bloq = GFPolySplit(QGFPoly(degree, QGF(2, field_degree)))
     if reverse:
         source = source.adjoint()
+    from qualtran.bloqs.gf_poly_arithmetic.gf_poly_split_and_join import GFPolyJoin
+
+    assert isinstance(source, (GFPolySplit, GFPolyJoin))
     field = FiniteFieldEncoding(2, field_degree).register_type()
     layout = FieldPolynomialLayout(degree, field_degree)
     record = field_polynomial_component_program(layout, field, "leaf", reverse=reverse)
@@ -114,7 +131,9 @@ def test_polynomial_control_keeps_typed_coefficient_order_and_state(
     original = source_ports["reg"].reshape(
         -1, layout.logical_width if reverse else field_degree
     )
-    expected = tuple(tuple(q.x for q in word) for word in original)
+    expected = tuple(
+        tuple(source_line_qubit_index(q) for q in word) for word in original
+    )
     bound = bind_register_program(
         controlled, ((0,), (1,), *(words if reverse else (packed,)))
     )
