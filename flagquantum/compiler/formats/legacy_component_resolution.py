@@ -66,6 +66,8 @@ def _build_composite(
     entries: Mapping[int, ComponentLibraryEntry],
     definitions: Mapping[int, FunctionRecord],
     functions: Mapping[str, FunctionRecord],
+    *,
+    execution_order: tuple[ComponentOccurrence, ...] | None = None,
 ) -> FunctionRecord:
     registers = entry.declaration.registers
     if registers is None:
@@ -78,9 +80,21 @@ def _build_composite(
         occurrence.definition_id
         for occurrence in _ordered_occurrences(entry.connections)
     }
+    if execution_order is not None:
+        if len({owner.instance_id for owner in execution_order}) != len(
+            execution_order
+        ):
+            raise SerializationError("Live component order repeats an instance")
+        if not set(_ordered_occurrences(entry.connections)).issubset(execution_order):
+            raise SerializationError("Live component order omits a connected instance")
+        if any(owner.definition_id not in entries for owner in execution_order):
+            raise SerializationError(
+                "Live component order references an unknown definition"
+            )
     for child, count in entry.counts:
         if (
-            count != 0
+            execution_order is None
+            and count != 0
             and child not in connected
             and child in entries
             and entries[child].declaration.registers == ()
@@ -101,11 +115,18 @@ def _build_composite(
         source = nodes.setdefault(left.owner, len(nodes))
         target = nodes.setdefault(right.owner, len(nodes))
         edges.append(WidthConnection(source, target, left.register.bitsize))
-    order = schedule_width_steps(
-        [WidthStep(_step_kind(node, entries)) for node in nodes],
-        edges,
-        group_components=False,
-    )
+    if execution_order is None:
+        order = schedule_width_steps(
+            [WidthStep(_step_kind(node, entries)) for node in nodes],
+            edges,
+            group_components=False,
+        )
+    else:
+        # Only a live producer can supply disconnected execution occurrences.
+        # Analytical counts never establish their multiplicity or placement.
+        order = tuple(
+            (nodes.setdefault(owner, len(nodes)),) for owner in execution_order
+        )
     builder = ComponentProgramBuilder(signature, functions.values(), name=name)
     available: dict[ComponentPort, RegisterBinding] = {}
 
@@ -162,6 +183,20 @@ def resolve_component_program(
     *,
     entry_name: str = "main",
 ) -> ProgramRecord:
+    """Resolve stored constructor data without inferring omitted execution effects."""
+    return _resolve_component_program(
+        library, identifier, factories, entry_name=entry_name
+    )
+
+
+def _resolve_component_program(
+    library: ComponentLibrary,
+    identifier: int,
+    factories: Mapping[str, ComponentFactory],
+    *,
+    entry_name: str = "main",
+    execution_orders: Mapping[int, tuple[ComponentOccurrence, ...]] | None = None,
+) -> ProgramRecord:
     """Resolve one library entry and its code dependencies into native Program.
 
     The supplied factories own named executable definitions. A constructor
@@ -195,9 +230,23 @@ def resolve_component_program(
         if declaration.name == _COMPOSITE or (
             declaration.name not in factories and entry.connections
         ):
-            for occurrence in _ordered_occurrences(entry.connections):
+            execution_order = (
+                execution_orders.get(row_id) if execution_orders is not None else None
+            )
+            for occurrence in (
+                _ordered_occurrences(entry.connections)
+                if execution_order is None
+                else execution_order
+            ):
                 resolve(occurrence.definition_id)
-            function = _build_composite(name, entry, entries, definitions, functions)
+            function = _build_composite(
+                name,
+                entry,
+                entries,
+                definitions,
+                functions,
+                execution_order=execution_order,
+            )
         else:
             if declaration.name not in factories:
                 raise SerializationError(f"No native factory for {declaration.name!r}")
