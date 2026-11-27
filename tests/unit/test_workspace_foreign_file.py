@@ -99,6 +99,9 @@ def test_actual_symbolic_factories_complete_wire_and_native_declaration(
         "signed_fixed_negative_fraction",
         "empty_fixed",
         "empty_fixed_negative_fraction",
+        "signed_empty_fixed_minus_one",
+        "signed_empty_fixed_minus_two",
+        "signed_empty_fixed_minus_seven",
         "ones_complement",
         "bounded",
         "montgomery",
@@ -134,6 +137,9 @@ def test_concrete_foreign_lifetimes_roundtrip_supported_wire_dtypes(
         "signed_fixed_negative_fraction": QFxp(3, -2, signed=True),
         "empty_fixed": QFxp(0, 0),
         "empty_fixed_negative_fraction": QFxp(0, -2),
+        "signed_empty_fixed_minus_one": QFxp(0, -1, signed=True),
+        "signed_empty_fixed_minus_two": QFxp(0, -2, signed=True),
+        "signed_empty_fixed_minus_seven": QFxp(0, -7, signed=True),
         "ones_complement": QIntOnesComp(3),
         "bounded": BQUInt(3, 5),
         "montgomery": QMontgomeryUInt(3),
@@ -203,6 +209,9 @@ def test_concrete_foreign_lifetimes_roundtrip_supported_wire_dtypes(
         assert get_cost_value(source, QubitCount()) == width
     if width:
         assert allocation.on_classical_vals()["reg"] == 0
+    elif kind.startswith("signed_empty_fixed"):
+        with pytest.raises(IndexError, match="list index out of range"):
+            allocation.on_classical_vals()
     else:
         with pytest.raises(ValueError, match="invalid literal for int"):
             allocation.on_classical_vals()

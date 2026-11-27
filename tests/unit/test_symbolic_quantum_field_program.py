@@ -144,3 +144,60 @@ def test_malformed_and_partly_concrete_invalid_metadata_still_fail() -> None:
     ):
         assert verify_program_record(identity(invalid))
     assert parameters["polynomial_degree"] == N
+
+
+@pytest.mark.ftqc_reference
+@pytest.mark.parametrize("characteristic,degree,polynomial_degree", PROFILES)
+@pytest.mark.parametrize("dirty", (False, True))
+def test_source_symbolic_field_lifetime_calls_remain_logical(
+    characteristic: SymbolicInt,
+    degree: SymbolicInt,
+    polynomial_degree: SymbolicInt | None,
+    dirty: bool,
+) -> None:
+    from qualtran._infra.composite_bloq import BloqBuilder
+    from qualtran._infra.data_types import QGF, QGFPoly
+    from qualtran.bloqs.bookkeeping.allocate import Allocate
+    from qualtran.bloqs.bookkeeping.free import Free
+    from qualtran.resource_counting._bloq_counts import QECGatesCost
+    from qualtran.resource_counting._costing import get_cost_value
+    from qualtran.serialization.bloq import bloqs_to_proto
+    from qualtran.testing import assert_valid_cbloq
+
+    field = QGF(characteristic, degree)
+    source_dtype = (
+        field if polynomial_degree is None else QGFPoly(polynomial_degree, field)
+    )
+    allocation, release = Allocate(source_dtype, dirty), Free(source_dtype, dirty)
+    source = BloqBuilder()
+    source_word = source.add(allocation)
+    source.add(release, reg=source_word)
+    reference = source.finalize()
+    assert_valid_cbloq(reference)
+    assert reference.bloq_counts() == {allocation: 1, release: 1}
+    assert get_cost_value(reference, QECGatesCost()).asdict() == {}
+    assert allocation.adjoint() == release and release.adjoint() == allocation
+    with pytest.raises(TypeError, match="is not recognized"):
+        bloqs_to_proto(reference)
+
+    dtype = declaration(characteristic, degree, polynomial_degree)
+    builder = ComponentProgramBuilder(Signature(()))
+    native_word = builder.allocate(dtype=dtype, dirty=dirty)
+    builder.free(native_word, dirty=dirty)
+    program = builder.finalize({})
+    assert verify_program_record(program) == ()
+    assert len(program.functions[0].blocks[0].operations) == 2
+    operations = tuple(
+        op for f in program.functions[1:] for b in f.blocks for op in b.operations
+    )
+    assert [op.opcode for op in operations] == ["allocate_register", "free_register"]
+    assert all(op.workspace_dirty is dirty for op in operations)
+    assert program.functions[1].registers is not None
+    assert program.functions[2].registers is not None
+    assert (
+        program.functions[1].registers[0].dtype
+        == program.functions[2].registers[0].dtype
+        == dtype
+    )
+    with pytest.raises(ValueError):
+        bind_register_program(program, (), borrowed=(0,))
