@@ -62,3 +62,28 @@ Before this closes Q-0519, qualify actual catalog calls and logical adjoint
 identities, validate raw source operators/aliases and independent resource models,
 and retain measured-erasure compatibility or failure as a separate observation.
 No public API, IR vocabulary or numerical execution contract changes here.
+
+
+## Zero-pivot PLU and literal shifts
+
+The existing private Core `BinaryMatrix.plu` contract is unchanged: singular
+matrices return None. A separately named private matrix method may retain the
+same first-pivot factorization with missing-pivot columns, sharing one internal
+factorization loop. Its consumer is static Compiler decomposition, not state
+execution. No Stable Core export, IR, parameter validator or serialized schema
+changes. Compiler shares the existing PLU gate schedule for both profiles.
+
+A literal shaped-bit Program accepts the source's square binary matrices,
+including zero/rank-deficient cases, and ignores the source physical inverse
+flag. It must preserve distinct declared forward/adjoint function identities
+when used by graph consumers. The mathematical linear Program remains invertible
+only. The original declaration may be negative for missing diagonals; retain it
+as a source model observation, separate from nonnegative measured primitives.
+Never describe the emitted reversible circuit as implementing a singular matrix.
+
+Binary field constant decomposition may use this literal child for zero as well
+as fitting nonzero constants. The mathematical constant owner remains nonzero
+only. Source left/right shift constructors receive a signed iteration count;
+negative counts emit no loop, rather than a mathematical opposite shift. A
+separate literal shift entry preserves that behavior using the existing no-shift
+word views. Numerical callbacks remain separately owned by Simulation.
