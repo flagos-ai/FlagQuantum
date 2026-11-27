@@ -12,6 +12,7 @@ from ....core.ir.program.registers import Register
 from ....core.ir.program.signatures import Signature
 from ....core.value_math import SymbolicInt
 from ..component_builder import ComponentProgramBuilder
+from ..primitives.pauli_rotation import RotationAngle
 from ..primitives.pauli_rotation_component import z_power_function
 from .phase_addition import source_phase_add_signature
 from .qvr_phase_gradient import qvr_phase_format
@@ -44,15 +45,28 @@ def qvr_zpow_program(
         signed=signed,
         adjoint=adjoint,
     )
+    return qvr_phase_power_program(
+        cost, tuple((wire, exponent) for wire, exponent, _ in schedule)
+    )
+
+
+def qvr_phase_power_program(
+    cost: Register, schedule: tuple[tuple[int, RotationAngle], ...]
+) -> ProgramRecord:
+    """Apply an owned finite phase schedule to a named cost word, MSB first.
+
+    Numerical and source-expression schedules share this typed storage owner.
+    Formats converts external symbolic scalars before entering the register layer.
+    """
     phases = tuple(
         z_power_function(f"power_{i}", exponent)
-        for i, (_, exponent, _) in enumerate(schedule)
+        for i, (_, exponent) in enumerate(schedule)
     )
     builder = ComponentProgramBuilder(Signature((cost,)), phases)
     word = builder.inputs[cost.name]
     assert isinstance(word, RegisterBinding)
     bits = builder.split(word)
-    for function, (wire, _, _) in zip(phases, schedule, strict=True):
+    for function, (wire, _) in zip(phases, schedule, strict=True):
         bits[wire] = builder.call_dict(function.name, {"q": bits[wire]})["q"]
     return builder.finalize({cost.name: builder.join(bits, cost.dtype)})
 

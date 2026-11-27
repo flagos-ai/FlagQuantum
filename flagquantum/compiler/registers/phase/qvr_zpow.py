@@ -161,3 +161,57 @@ def qvr_zpow_ir(
             adjoint=adjoint,
         )
     )
+
+
+def symbolic_qvr_zpow_schedule(
+    cost: tuple[int, ...],
+    *,
+    cost_fraction_bits: int,
+    coefficient: SymbolicReal,
+    epsilon: SymbolicReal,
+    signed: bool = False,
+) -> tuple[tuple[int, SymbolicReal, SymbolicReal], ...]:
+    """Retain the original expression dispatch when rotation indices are finite.
+
+    The source uses the entire cost width if its rotation count is a SymPy
+    expression, even a constant. Do not replace this branch with the numerical
+    schedule. Unresolved or out-of-range indices have no finite source body.
+    """
+    from sympy import Integer
+
+    _validate_wires(cost)
+    width = len(cost)
+    if type(cost_fraction_bits) is not int or cost_fraction_bits > width:
+        raise ValueError("QVR Z power requires a valid cost fraction width")
+    if (
+        type(signed) is not bool
+        or signed
+        and (width < 2 or cost_fraction_bits == width)
+    ):
+        raise ValueError("QVR Z power requires a valid signed cost format")
+    fractional = _fractional_rotations(cost_fraction_bits, coefficient, epsilon)
+    declared = width - cost_fraction_bits + fractional + int(signed)
+    rotations = declared if isinstance(declared, int) else width
+    offset = 1 + cost_fraction_bits - fractional
+    if not isinstance(offset, (int, Integer)):
+        raise ValueError("QVR Z power source rotation indices remain symbolic")
+    if rotations == 0:
+        raise ValueError("QVR Z power source precision allocation has zero rotations")
+    tolerance = epsilon / rotations
+    phases: list[tuple[int, SymbolicReal, SymbolicReal]] = (
+        [(cost[0], 1, tolerance)] if signed else []
+    )
+    try:
+        for i in range(rotations):
+            phases.append(
+                (
+                    cost[-(i + int(offset))],
+                    (2 ** (i - fractional)) * coefficient * 2,
+                    tolerance,
+                )
+            )
+    except IndexError as error:
+        raise ValueError(
+            "QVR Z power source rotation index exceeds cost word"
+        ) from error
+    return tuple(phases)

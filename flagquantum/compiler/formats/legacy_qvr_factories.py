@@ -16,16 +16,21 @@ from ...errors import SerializationError
 from ..registers.phase.qvr_component import (
     qvr_phase_addition_program,
     qvr_phase_gradient_program,
+    qvr_phase_power_program,
     qvr_zpow_program,
 )
 from ..registers.phase.qvr_phase_gradient import (
     qvr_phase_format,
     source_symbolic_qvr_gradient_cost,
 )
-from ..registers.phase.qvr_zpow import _fractional_rotations
+from ..registers.phase.qvr_zpow import (
+    _fractional_rotations,
+    symbolic_qvr_zpow_schedule,
+)
 from .legacy_component_resolution import ComponentFactory, ResolvedArgument
 from .legacy_rotation_factories import _real_argument
 from .legacy_word_factories import _rename_program
+from .symbolic_parameters import symbolic_parameter_value
 
 
 def _qvr_factory(
@@ -87,14 +92,34 @@ def _qvr_factory(
             )
         assert isinstance(epsilon, (float, int))
         return _rename_program(qvr_phase_gradient_program(cost, gamma, epsilon), name)
-    if (
-        cost.dtype.is_symbolic()
-        or isinstance(gamma, sympy.Expr)
-        or isinstance(epsilon, sympy.Expr)
-        or gamma == 0
-    ):
+    if cost.dtype.is_symbolic() or gamma == 0:
         return FunctionRecord(name, (), registers=ports)
     assert isinstance(fraction, int) and isinstance(signed, bool)
+    if isinstance(gamma, sympy.Expr) or isinstance(epsilon, sympy.Expr):
+        assert isinstance(width, int)
+        try:
+            schedule = symbolic_qvr_zpow_schedule(
+                tuple(range(width)),
+                cost_fraction_bits=fraction,
+                coefficient=gamma,
+                epsilon=epsilon,
+                signed=signed,
+            )
+        except ValueError:
+            # Source symbolic-index and out-of-range paths have no finite body.
+            return FunctionRecord(name, (), registers=ports)
+        powers = tuple(
+            (
+                wire,
+                (
+                    symbolic_parameter_value(exponent)
+                    if isinstance(exponent, sympy.Expr)
+                    else exponent
+                ),
+            )
+            for wire, exponent, _ in schedule
+        )
+        return _rename_program(qvr_phase_power_program(cost, powers), name)
     fractional = _fractional_rotations(fraction, gamma, epsilon)
     rotations = width - fraction + fractional + int(signed)
     if rotations == 0 or signed and rotations > 0:
