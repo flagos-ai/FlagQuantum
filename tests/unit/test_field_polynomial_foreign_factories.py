@@ -4,7 +4,12 @@ import builtins
 from collections import Counter
 from typing import Any
 
-import numpy as np
+from tests._reference_dependencies import unavailable_reference
+
+try:
+    import numpy as np
+except ModuleNotFoundError as _reference_import_error:
+    unavailable_reference(_reference_import_error)
 import pytest
 import torch
 
@@ -24,6 +29,7 @@ from flagquantum.simulation.finite_field_encoding import FiniteFieldEncoding
 from flagquantum.simulation.finite_field_polynomial_encoding import (
     FiniteFieldPolynomialEncoding,
 )
+from tests.unit.register_source_graph import source_line_qubit_index
 from tests.unit.test_binary_polynomial import execute_sparse
 from tests.unit.test_field_multiplication import assert_gate_streams
 
@@ -35,9 +41,14 @@ pytestmark = [pytest.mark.unit, pytest.mark.ftqc_reference]
 def test_actual_polynomial_factories_original_directions_sparse_complex_and_resources(
     constant: bool, reversed_binding: bool
 ) -> None:
-    import cirq
+    try:
+        import cirq
+    except ModuleNotFoundError as _reference_import_error:
+        unavailable_reference(_reference_import_error)
     from qualtran.bloqs.gf_poly_arithmetic import gf2_poly_add, gf2_poly_add_k
-    from qualtran.resource_counting import QECGatesCost, QubitCount, get_cost_value
+    from qualtran.resource_counting._bloq_counts import QECGatesCost
+    from qualtran.resource_counting._costing import get_cost_value
+    from qualtran.resource_counting._qubit_counts import QubitCount
 
     source = (
         gf2_poly_add_k._gf2_poly_4_8_add_k.make()
@@ -78,20 +89,25 @@ def test_actual_polynomial_factories_original_directions_sparse_complex_and_reso
             direction.decompose_bloq()
             .flatten()
             .to_cirq_circuit_and_quregs(
+                qubit_manager=None,
                 **{
                     name: np.array([cirq.LineQubit(w) for w in word])
                     for name, word in ports.items()
-                }
+                },
             )
         )
         assert {
-            name: tuple(q.x for q in word.flat) for name, word in returned.items()
+            name: tuple(source_line_qubit_index(q) for q in word.flat)
+            for name, word in returned.items()
         } == ports
         independent = []
         for op in raw.all_operations():
             assert op.gate == (cirq.X if constant else cirq.CNOT)
             independent.append(
-                ("x" if constant else "cx", tuple(q.x for q in op.qubits))
+                (
+                    "x" if constant else "cx",
+                    tuple(source_line_qubit_index(q) for q in op.qubits),
+                )
             )
         gates = emitter(ports, (), (), bool(adjoint))
         assert_gate_streams([(g.name, g.wires) for g in gates], independent)
@@ -124,6 +140,7 @@ def test_actual_polynomial_factories_original_directions_sparse_complex_and_reso
             )
         result = source.on_classical_vals(**args)
         output = result["f_x" if constant else "g_x"]
+        assert isinstance(output, galois.Poly)
         packed = sum(
             int(v) << (3 * (4 - i))
             for i, v in enumerate(dtype.to_gf_coefficients(output))
@@ -135,7 +152,7 @@ def test_actual_polynomial_factories_original_directions_sparse_complex_and_reso
 def test_native_polynomial_append_after_sdk_removal(
     constant: bool, monkeypatch: pytest.MonkeyPatch
 ) -> None:
-    from qualtran import QGF, QGFPoly
+    from qualtran._infra.data_types import QGF, QGFPoly
     from qualtran.bloqs.gf_poly_arithmetic import gf2_poly_add, gf2_poly_add_k
 
     # The constant case uses the exact 15-bit factory. Register addition uses
@@ -183,9 +200,14 @@ def test_native_polynomial_append_after_sdk_removal(
 def test_actual_coefficient_view_factory_typed_aliases_and_complex_append(
     join: bool, reversed_binding: bool, monkeypatch: pytest.MonkeyPatch
 ) -> None:
-    import cirq
+    try:
+        import cirq
+    except ModuleNotFoundError as _reference_import_error:
+        unavailable_reference(_reference_import_error)
     from qualtran.bloqs.gf_poly_arithmetic import gf_poly_split_and_join as original
-    from qualtran.resource_counting import QECGatesCost, QubitCount, get_cost_value
+    from qualtran.resource_counting._bloq_counts import QECGatesCost
+    from qualtran.resource_counting._costing import get_cost_value
+    from qualtran.resource_counting._qubit_counts import QubitCount
 
     source = (original._gf_poly_join if join else original._gf_poly_split).make()
     field = FiniteFieldEncoding(2, 3)
@@ -215,7 +237,7 @@ def test_actual_coefficient_view_factory_typed_aliases_and_complex_append(
     operation, returned = source.as_cirq_op(cirq.SimpleQubitManager(), array)
     assert operation is None
     assert returned["reg"].shape == ((15,) if join else (5, 3))
-    expected = tuple(q.x for q in returned["reg"].flat)
+    expected = tuple(source_line_qubit_index(q) for q in returned["reg"].flat)
     inputs = (
         tuple(tuple(wires[i : i + 3]) for i in range(0, 15, 3)) if join else (wires,)
     )
@@ -250,13 +272,15 @@ def test_actual_coefficient_view_factory_typed_aliases_and_complex_append(
 def test_complete_polynomial_factory_inventory_original_codec_and_symbolic_boundaries() -> (
     None
 ):
-    from qualtran import BloqExample, DecomposeTypeError
+    from qualtran._infra.bloq import DecomposeTypeError
+    from qualtran._infra.bloq_example import BloqExample
     from qualtran.bloqs.gf_poly_arithmetic import (
         gf2_poly_add,
         gf2_poly_add_k,
         gf_poly_split_and_join,
     )
-    from qualtran.resource_counting import QECGatesCost, get_cost_value
+    from qualtran.resource_counting._bloq_counts import QECGatesCost
+    from qualtran.resource_counting._costing import get_cost_value
     from qualtran.serialization.bloq import bloqs_to_proto
 
     modules = (gf2_poly_add, gf2_poly_add_k, gf_poly_split_and_join)
