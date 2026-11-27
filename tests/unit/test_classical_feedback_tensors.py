@@ -4,10 +4,19 @@ from collections import Counter
 from collections.abc import Callable, Iterable, Mapping
 from itertools import product
 
-import numpy as np
+from tests._reference_dependencies import unavailable_reference
+
+try:
+    import numpy as np
+except ModuleNotFoundError as _reference_import_error:
+    unavailable_reference(_reference_import_error)
 import pytest
 import torch
-from numpy.typing import NDArray
+
+try:
+    from numpy.typing import NDArray
+except ModuleNotFoundError as _reference_import_error:
+    unavailable_reference(_reference_import_error)
 
 from examples.algorithms.binary_field_arithmetic import FieldOperation
 from flagquantum.circuit import Circuit
@@ -43,6 +52,7 @@ from flagquantum.simulation.tensor_network.register_tensor_binding import (
     bind_register_tensor,
 )
 from flagquantum.simulation.tensor_network.trace_indices import trace_conjugate_indices
+from tests.unit.classical_source_callbacks import source_tensors
 from tests.unit.measurement_checks import forced_branch
 from tests.unit.test_component_tensor_nodes import order
 from tests.unit.test_program_owned_measurement import measured_function
@@ -59,8 +69,11 @@ Ports = Mapping[str, tuple[tuple[int, ...], ...]]
 def test_original_classical_control_raw_axes_full_tensor_and_both_polarities(
     polarity: int, kind: str, dtype: torch.dtype
 ) -> None:
-    from qualtran import CBit, CtrlSpec
-    from qualtran.bloqs.basic_gates import SGate, XGate, ZGate
+    from qualtran._infra.controlled import CtrlSpec
+    from qualtran._infra.data_types import CBit
+    from qualtran.bloqs.basic_gates.s_gate import SGate
+    from qualtran.bloqs.basic_gates.x_basis import XGate
+    from qualtran.bloqs.basic_gates.z_basis import ZGate
     from qualtran.bloqs.mcmt.classically_controlled import ClassicallyControlled
 
     from flagquantum.simulation.tensor_network.register_tensor_binding import (
@@ -87,7 +100,9 @@ def test_original_classical_control_raw_axes_full_tensor_and_both_polarities(
         out,
         torch.empty((), dtype=dtype),
     )
-    source = original.my_tensors({"ctrl": "a", "q": "b"}, {"ctrl": "c", "q": "d"})[0]
+    source = source_tensors(original, {"ctrl": "a", "q": "b"}, {"ctrl": "c", "q": "d"})[
+        0
+    ]
     assert calls == [1] and node.labels == (2, 3, 0, 1)
     assert source.inds == (("c", 0), ("d", 0), ("a", 0), ("b", 0))
     np.testing.assert_array_equal(node.tensor.numpy(), source.data)
@@ -165,6 +180,7 @@ def graph_supplier(
                 table = torch.zeros((2,) * (2 * width + 1), dtype=like.dtype)
                 for bits in product((0, 1), repeat=width):
                     x, p = Parity(width).call_classically(x=np.array(bits, dtype=int))
+                    assert isinstance(x, np.ndarray)
                     table[(*map(int, x), int(p), *bits)] = 1
                 nodes = (
                     bind_register_tensor(
@@ -174,8 +190,10 @@ def graph_supplier(
             else:
                 nodes = classical_parity_nodes(width, inc, out, fresh, like)
         else:
-            from qualtran import CBit, CtrlSpec
-            from qualtran.bloqs.basic_gates import XGate, ZGate
+            from qualtran._infra.controlled import CtrlSpec
+            from qualtran._infra.data_types import CBit
+            from qualtran.bloqs.basic_gates.x_basis import XGate
+            from qualtran.bloqs.basic_gates.z_basis import ZGate
             from qualtran.bloqs.mcmt.classically_controlled import ClassicallyControlled
 
             intermediate = fresh()
@@ -193,7 +211,8 @@ def graph_supplier(
                     "q": out["targets"][i : i + 1],
                 }
                 if original:
-                    tensor = source.my_tensors(
+                    tensor = source_tensors(
+                        source,
                         {"ctrl": incoming["ctrl"][0][0], "q": incoming["q"][0][0]},
                         {"ctrl": outgoing["ctrl"][0][0], "q": outgoing["q"][0][0]},
                     )[0]
