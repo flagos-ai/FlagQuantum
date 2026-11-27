@@ -7,7 +7,12 @@ from importlib import import_module
 from itertools import product
 from typing import Any
 
-import numpy as np
+from tests._reference_dependencies import unavailable_reference
+
+try:
+    import numpy as np
+except ModuleNotFoundError as _reference_import_error:
+    unavailable_reference(_reference_import_error)
 import pytest
 import torch
 
@@ -39,7 +44,10 @@ pytestmark = [pytest.mark.unit, pytest.mark.ftqc_reference]
 
 
 def _source_operations(source: Any) -> tuple[tuple[Any, ...], dict[str, Any]]:
-    import cirq
+    try:
+        import cirq
+    except ModuleNotFoundError as _reference_import_error:
+        unavailable_reference(_reference_import_error)
 
     position = 0
     quregs = {}
@@ -63,7 +71,10 @@ def _source_operations(source: Any) -> tuple[tuple[Any, ...], dict[str, Any]]:
 
 
 def _reference_operator(source: Any, *, encoder_tensors: bool = False) -> torch.Tensor:
-    import cirq
+    try:
+        import cirq
+    except ModuleNotFoundError as _reference_import_error:
+        unavailable_reference(_reference_import_error)
 
     operations, ports = _source_operations(source)
     public = tuple(q for r in source.signature for q in ports[r.name].flat)
@@ -142,7 +153,10 @@ def _check(
     *,
     reference_operator: torch.Tensor | None = None,
 ) -> Counter[str]:
-    import cirq
+    try:
+        import cirq
+    except ModuleNotFoundError as _reference_import_error:
+        unavailable_reference(_reference_import_error)
 
     width = int(source.signature.n_qubits())
     precision = source.arctan_bitsize
@@ -458,7 +472,10 @@ def _phase_aliases(instructions: Any) -> Any:
 def test_each_literal_phase_recipe_matches_source_sdk_wires_feedback_and_angles(
     power: int, sign: int, value: int, adjoint: bool
 ) -> None:
-    import cirq
+    try:
+        import cirq
+    except ModuleNotFoundError as _reference_import_error:
+        unavailable_reference(_reference_import_error)
     from qualtran.cirq_interop._cirq_to_bloq import cirq_gate_to_bloq
 
     from flagquantum.ecosystem.cirq._component_library import _gate_program
