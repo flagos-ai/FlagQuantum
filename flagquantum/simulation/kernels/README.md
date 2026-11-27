@@ -1450,3 +1450,18 @@ The next development sequence is:
 This keeps the direct FlagQuantum kernel line primary and independently usable,
 while FlagTree and Torch-FL remain compatible provider and integration paths
 rather than mandatory ownership layers.
+
+## Shared kernel primitives
+
+`dispatch.py` owns common fail-closed catalog matching and operand-axis checks.
+`complex_bmm.py` admits the existing layout-aware complex matrix product.
+`real_imag.py` owns eager/compiled complex contraction, layout preparation and
+its cache. Statevector, MPS, tensor-network and Runtime callers use these
+implementations directly; resource selection and execution lifecycle stay with
+their established owners. The package initializer remains metadata-only and
+does not eagerly import these Torch-dependent modules.
+
+For a small change, run `tests/unit/test_complex_bmm_catalog_dispatch.py` and
+`tests/unit/test_real_imag_kernels.py`. Their mocked catalog/compiled paths test
+selection and numerical behavior; physical accelerator qualification still
+requires the existing separate gates.

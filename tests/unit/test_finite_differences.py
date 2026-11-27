@@ -17,11 +17,11 @@ import pytest
 import torch
 
 import flagquantum as fq
-from flagquantum.core.finite_differences import (
+from flagquantum.errors import ValidationError
+from flagquantum.simulation.numerics.finite_differences import (
     central_difference_gradient,
     default_difference_step,
 )
-from flagquantum.errors import ValidationError
 
 pytestmark = pytest.mark.unit
 

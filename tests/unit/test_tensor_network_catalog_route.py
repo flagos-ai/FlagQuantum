@@ -6,7 +6,7 @@ import pytest
 import torch
 
 import flagquantum as fq
-from flagquantum.simulation.complex_bmm_dispatch import (
+from flagquantum.simulation.kernels.complex_bmm import (
     _layout_complex_bmm_declared,
     _layout_complex_bmm_declared_for,
 )

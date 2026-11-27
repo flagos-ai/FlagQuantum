@@ -5,7 +5,7 @@ from __future__ import annotations
 import pytest
 import torch
 
-import flagquantum.simulation.kernel_dispatch as kernel_dispatch
+import flagquantum.simulation.kernels.dispatch as kernel_dispatch
 from flagquantum.simulation import density_matrix_dispatch as dispatch
 from flagquantum.simulation.density_matrix import (
     apply_kraus_density,
@@ -19,10 +19,6 @@ from flagquantum.simulation.density_matrix_dispatch import (
     density_matmul_route_stats,
     reset_density_matmul_route_stats,
 )
-from flagquantum.simulation.kernel_dispatch import (
-    _catalog_declares_kernel,
-    _operand_kernel_axis,
-)
 from flagquantum.simulation.kernels.catalog import (
     EVIDENCE,
     IMPLEMENTATIONS,
@@ -32,6 +28,10 @@ from flagquantum.simulation.kernels.catalog import (
     KernelMatchResult,
     KernelRequest,
     match_kernel_implementations,
+)
+from flagquantum.simulation.kernels.dispatch import (
+    _catalog_declares_kernel,
+    _operand_kernel_axis,
 )
 
 pytestmark = pytest.mark.unit

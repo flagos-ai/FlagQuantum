@@ -8,8 +8,8 @@ from typing import Any
 
 import torch
 
-from ....core.finite_differences import central_difference_gradient
 from ....core.parameters import Parameter
+from ....simulation.numerics.finite_differences import central_difference_gradient
 from .split_real_imag import (
     _complex128_pauli_expectation,
     _normalized_observables,

@@ -9,6 +9,8 @@ from collections.abc import Sequence
 
 import torch
 
+from flagquantum.core.operators.pauli import decode_controlled_pauli
+
 from ..errors import ValidationError
 from .matrices import GATE_MAT_DICT
 from .statevector.operations import _apply_matrix
@@ -324,3 +326,26 @@ __all__ = (
     "pauli_word_operators",
     "pauli_words",
 )
+
+
+def controlled_pauli(bits: str, pauli: str) -> tuple[str, torch.Tensor]:
+    """Return a gate name and matrix for Circuit.gate or dynamic feedback.
+
+    The bits follow the supplied control-qubit order. The target qubit is last.
+    """
+    name = f"c{bits}{pauli.lower()}"
+    if decode_controlled_pauli(name) is None:
+        raise ValueError("Expected a nonempty binary pattern and Pauli X or Z.")
+    matrix = torch.eye(2 ** (len(bits) + 1), dtype=torch.complex64)
+    start = 2 * int(bits, 2)
+    block = [[0, 1], [1, 0]] if pauli.upper() == "X" else [[1, 0], [0, -1]]
+    matrix[start : start + 2, start : start + 2] = torch.tensor(block)
+    return name, matrix
+
+
+# The experimental factory originally exposed eager annotations to introspection.
+controlled_pauli.__annotations__ = {
+    "bits": str,
+    "pauli": str,
+    "return": tuple[str, torch.Tensor],
+}

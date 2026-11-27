@@ -31,9 +31,8 @@ import inspect
 import pytest
 import torch
 
-import flagquantum.simulation.kernel_dispatch as kernel_dispatch
-import flagquantum.simulation.real_imag_kernels as kernels_runtime
-from flagquantum.simulation.complex_bmm_dispatch import _layout_complex_bmm_declared
+import flagquantum.simulation.kernels.dispatch as kernel_dispatch
+import flagquantum.simulation.kernels.real_imag as kernels_runtime
 from flagquantum.simulation.kernels.catalog import (
     EVIDENCE,
     IMPLEMENTATIONS,
@@ -44,7 +43,8 @@ from flagquantum.simulation.kernels.catalog import (
     KernelRequest,
     match_kernel_implementations,
 )
-from flagquantum.simulation.real_imag_kernels import complex_einsum_pair
+from flagquantum.simulation.kernels.complex_bmm import _layout_complex_bmm_declared
+from flagquantum.simulation.kernels.real_imag import complex_einsum_pair
 
 pytestmark = pytest.mark.unit
 
@@ -87,7 +87,7 @@ def _declare_cpu_implementations(monkeypatch) -> None:
     """Add CPU records to the catalog the dispatcher actually reads.
 
     The declared-route question is asked through
-    ``flagquantum.simulation.kernel_dispatch._catalog_declares_kernel``, which is
+    ``flagquantum.simulation.kernels.dispatch._catalog_declares_kernel``, which is
     the one seam every fused contraction route in Simulation shares: the
     tensor-network, layout-BMM, and density-matrix callers all reach the catalog
     through it. Patching the catalog lookup there is what makes this a

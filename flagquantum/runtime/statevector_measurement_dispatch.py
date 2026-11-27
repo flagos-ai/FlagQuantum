@@ -14,8 +14,7 @@ from flagquantum.simulation.kernels.catalog import (
     match_kernel_implementations,
 )
 from flagquantum.simulation.kernels.catalog.schema import KernelDirection
-
-from ..simulation.kernel_dispatch import _require_cataloged_kernel
+from flagquantum.simulation.kernels.dispatch import _require_cataloged_kernel
 
 _IMPLEMENTATION_ID = "FQKI-TRITON-MEAS-003-A"
 _MAX_QUBITS = 30

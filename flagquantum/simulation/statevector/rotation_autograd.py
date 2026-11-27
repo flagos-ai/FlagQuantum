@@ -32,8 +32,7 @@ def _require_fp64_kernel(state: torch.Tensor, backward: bool = False) -> None:
         KernelRequest,
         match_kernel_implementations,
     )
-
-    from ..kernel_dispatch import _require_cataloged_kernel
+    from flagquantum.simulation.kernels.dispatch import _require_cataloged_kernel
 
     request = KernelRequest(
         semantic_id=(

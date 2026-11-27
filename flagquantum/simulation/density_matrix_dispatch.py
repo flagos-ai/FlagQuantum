@@ -17,8 +17,7 @@ from flagquantum.simulation.kernels.catalog import (
     KernelRequest,
     match_kernel_implementations,
 )
-
-from .kernel_dispatch import (
+from flagquantum.simulation.kernels.dispatch import (
     _catalog_declares_kernel,
     _operand_kernel_axis,
     _require_cataloged_kernel,

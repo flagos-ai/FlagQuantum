@@ -236,3 +236,10 @@ builds and installed native acceptance passed, including an environment without
 the Stim Python package. See the implementation acceptance record in
 `docs/development/QEC_COMPILED_DEM_SAMPLING_PROPOSAL.md`. This bounded
 capability makes no performance, threshold, full-parity or scalability claim.
+
+
+`experiments.run_stim_matching_experiment` owns the existing fixed-shot workflow
+for a caller-supplied decoding graph. The experimental QEC namespace publishes
+that same function and decoder rather than implementing a second workflow.
+Run `tests/qec/test_sparse_blossom.py` with the bundled native extension and Stim
+to check batch predictions, fixed-shot counts and the published experiment path.

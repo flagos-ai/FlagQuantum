@@ -53,7 +53,7 @@ Repeat the overlap and consumer audit if either input advances before integratio
 | Root configuration | Architecture/team policies live in `config/`; the Conda recipe lives in `config/environments/`, with its editable path adjusted to the same repository checkout. |
 | Workshops | Executable material lives in `examples/workshops/flagos2026/`; standalone guides live in `docs/guides/workshops/flagos2026/`. The six-notebook localization exception moves with the same notebooks. |
 
-The cumulative 526-row [path map](migration/independent-structure-path-map.md) and
+The cumulative 533-row [path map](migration/independent-structure-path-map.md) and
 [machine-readable symbol ledger](migration/independent-structure-moves.json)
 identify every relocated file and every partial extraction. An implementation
 has one owner even when more than one historical public module exports it.
@@ -209,3 +209,17 @@ a separate integration boundary, and Rust work remains deferred.
 The [follow-up acceptance record](migration/followup-structure-acceptance.md)
 records complete local regressions, installed-wheel verification and the
 remaining exact-commit CI and incoming-integration gates.
+
+The [shared-kernel batch](migration/shared-kernel-structure-migration.md) gives
+catalog admission and compiled complex-contraction primitives one owner under
+Simulation Kernels. Old internal files are removed; no public compatibility
+entry or eager package import is added.
+
+The [experimental ownership closure](migration/experimental-implementation-ownership.md)
+removes the remaining behavioral definitions from experimental entry modules,
+keeping their shipped workflows and explicitly unstable status unchanged.
+
+The [shared gradient numerics batch](migration/shared-gradient-numerics-migration.md)
+places the one finite-difference quotient and step calculation in Simulation
+Numerics. Public gradient requests, results and frozen source identifiers stay
+unchanged. The old internal Core file is removed without a forwarding entry.
