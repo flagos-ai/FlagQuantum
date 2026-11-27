@@ -1,8 +1,13 @@
 """Reconstruct numerical field metadata without changing executable type admission."""
 
+from dataclasses import replace
 from importlib import import_module
+from operator import index
+from typing import SupportsIndex
 
+from ..core.ir.program.register_verifier import executable_register_width
 from ..core.ir.program.registers import RegisterType
+from ..core.value_parameters import is_symbolic_value
 from .finite_field_encoding import FiniteFieldEncoding
 
 
@@ -78,3 +83,27 @@ def resolve_finite_field_encoding(dtype: RegisterType) -> FiniteFieldEncoding:
     if encoding.register_type(classical=classical) != dtype:
         raise ValueError("resolved field encoding differs from declared metadata")
     return encoding
+
+
+def resolve_quantum_field_storage(dtype: RegisterType) -> RegisterType:
+    """Realize exact integral aliases as canonical quantum field storage.
+
+    The original logical descriptor is not mutated. Literal register projection
+    remains independent and preserves scalar types and symbolic protocols.
+    This numerical storage boundary admits neither classical descriptors nor
+    rounding nor unresolved metadata; Core admission itself is unchanged.
+    """
+    if dtype.encoding != "finite_field" or dtype.classical_bits != 0:
+        raise ValueError("Quantum field storage requires a quantum field descriptor")
+    parameters: list[tuple[str, int]] = []
+    changed = False
+    for name, value in dtype.parameters:
+        if is_symbolic_value(value) or not isinstance(value, SupportsIndex):
+            raise ValueError(
+                "Quantum field storage requires concrete integral metadata"
+            )
+        parameters.append((name, index(value)))
+        changed |= type(value) is not int
+    resolved = replace(dtype, parameters=tuple(parameters)) if changed else dtype
+    executable_register_width(resolved)
+    return resolved
