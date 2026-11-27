@@ -88,7 +88,9 @@ def certified_and_monomial_map(
     the resulting columns to coherent states and every combined raw history.
     X-basis lookup erasure retains each outcome's Boolean phase coefficient
     until actual Z/CZ feedback cancels it on every supplied input column.
-    Unknown gates, unbalanced erase targets and conditional atoms fail closed.
+    Classical XOR slots retain affine functions of earlier measurement outcomes;
+    conditional Z/CZ feedback cancels each outcome's phase coefficient separately.
+    Unknown gates, unbalanced erase targets and other conditional atoms fail closed.
     """
     from flagquantum.compiler.registers.primitives.and_compute import (
         and_compute_ir,
@@ -108,6 +110,7 @@ def certified_and_monomial_map(
     values = torch.tensor(basis_bits, dtype=torch.uint8).T.contiguous()
     phases = torch.ones(len(basis_bits), dtype=torch.complex128)
     measurement_phases: dict[int, torch.Tensor] = {}
+    classical_affine: dict[int, int] = {}
     i, events = 0, 0
     while i < len(gates):
         gate = gates[i]
@@ -175,27 +178,41 @@ def certified_and_monomial_map(
                 assert bit not in measurement_phases
                 # X-basis erasure contributes (-1)**(outcome * old_bit).
                 # Keep that coefficient until actual later feedback cancels it.
+                classical_affine[bit] = 1 << (len(measurement_phases) + 1)
                 measurement_phases[bit] = values[target].clone()
                 values[target] = 0
                 events += 1
                 i += 3
                 continue
         clauses = instruction_condition_clauses(gate)
+        if gate.name == "classical_xor":
+            assert not clauses, "Affine proof refuses guarded classical writes"
+            assignment = parse_classical_xor(gate)
+            expression = int(assignment.constant)
+            for bit in assignment.sources:
+                assert bit in classical_affine, "XOR reads undefined outcome"
+                expression ^= classical_affine[bit]
+            classical_affine[assignment.target] = expression
+            i += 1
+            continue
         if clauses and gate.name in {"z", "cz"}:
             assert gate.matrix is None and not gate.params
             assert set(gate.metadata) == {"conditions"}
             assert len(clauses) == 1 and len(clauses[0]) == 1
             bit, activation = clauses[0][0]
-            assert bit in measurement_phases
+            assert bit in classical_affine
             assert len(gate.wires) == (1 if gate.name == "z" else 2)
             assert len(set(gate.wires)) == len(gate.wires)
             assert all(0 <= wire < width for wire in gate.wires)
             coefficient = values[gate.wires[0]].clone()
             if gate.name == "cz":
                 coefficient &= values[gate.wires[1]]
-            measurement_phases[bit] ^= coefficient
-            if activation == 0:
+            expression = classical_affine[bit] ^ int(activation == 0)
+            if expression & 1:
                 phases *= 1 - 2 * coefficient.to(torch.int64)
+            for index, phase in enumerate(measurement_phases.values(), start=1):
+                if expression >> index & 1:
+                    phase ^= coefficient
             i += 1
             continue
         if (
