@@ -299,3 +299,48 @@ at their backend-neutral Runtime owner. All current executor callers import
 that owner directly; private wrappers and duplicate formulas are removed.
 Existing subgroup, environment precedence, communication policy, schemas and
 public class identities retain their semantics.
+
+
+## JAX representation conversions and in-process shard gates
+
+Applied closure: numerical gate application belongs to the existing Simulation
+JAX statevector owner; Runtime retains optional-engine readiness, gate-shape
+admission and shard record reconstruction. Representation-specific MPS split
+evidence and tensor-network conversion move to their existing executor modules,
+with all consumers updated and no old shared forwarding bindings.
+
+See [the boundary and acceptance record](migration/jax-representation-conversion-ownership.md).
+Preview acceptance is not formal source, wheel or published-head qualification.
+
+
+## User-requested test partition critical path
+
+The same change addresses the measured CI bottleneck with source-bound timing
+weights, complete heavy-case isolation, bounded one-worker resource profiles,
+256 coverage partitions, 128 Runtime partitions and four Python3.12 unit
+partitions. Exact CPU Toffoli permutation reuses the existing implementation
+and complete tests from PR1253 without merging its branch. See the
+[implementation and pending elapsed-job acceptance](migration/ci-partition-critical-path.md).
+The ten-minute target still requires the new published run; local scientific
+acceptance and the complete original-corpus replay do not certify it.
+
+
+Runtime partitions now collect their original tier/shard selection serially
+before starting workers, then execute the verified exact node list. This avoids
+repeated full-tier discovery by every worker. Only sole measured-heavy Runtime
+selections use the existing exclusive CPU profile; mixed selections retain
+parallel workers. Collection failures/skips, original admission, selected-node
+identity and execution reports remain retained. This refinement changes no
+product source, public contract, scientific workload or compatibility boundary.
+
+
+### PR 1344 full timing census and internal import closure
+
+Coverage run `45998519970` records all 38,464 selected nodes exactly once across
+256 digest-verified reports, retaining the original failed Lindblad outcomes.
+The complete integrator test file now imports Runtime evolution explicitly and
+passes all 48 cases independently, without relying on another module to import
+the historical `flagquantum.lindblad` facade. Public compatibility scope is
+unchanged. Updated scheduling weights and qualified routing of indivisible heavy
+cases are documented in [the critical-path record](migration/ci-partition-critical-path.md).
+Published candidate CI and the whole-job ten-minute target remain outstanding.

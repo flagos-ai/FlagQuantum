@@ -28,3 +28,15 @@ def tf32_disabled() -> Iterator[None]:
             module.allow_tf32 = False
             stack.callback(setattr, module, "allow_tf32", previous)
         yield
+
+
+@pytest.fixture(autouse=True)
+def single_torch_thread() -> Iterator[None]:
+    """Keep QEC's one-thread evidence contract and restore the caller's budget."""
+
+    previous = torch.get_num_threads()
+    torch.set_num_threads(1)
+    try:
+        yield
+    finally:
+        torch.set_num_threads(previous)

@@ -44,3 +44,26 @@ Runtime owns the observable weight cache and its limits, keys, LRU and rollback.
 The numerical scalar uses `simulation.statevector.adjoint` directly, which
 retains the existing native provider and exact Tensor route. The old imported
 Runtime `fused_observable_expectation` binding is removed.
+
+## Gate composition boundary
+
+The forward sweep groups adjacent gates, respects layout and communication
+boundaries, and counts admitted operations. Matrix multiplication for same-wire
+fusion, native rotation tiles, rotations following RZZ segments, and cross-shard
+fusion uses the existing
+[`simulation.statevector.operations`](../../../simulation/statevector/operations.py)
+owner directly. Runtime keeps no second composition loop or imported function
+alias. Replacing that Simulation implementation therefore reaches its consumers
+without changing the executor. Grouping, scratch ownership and native admission
+remain here; no public API or numerical precision policy changes.
+
+For a short replacement check, run:
+
+```bash
+python -m pytest tests/unit/test_runtime_matrix_composition.py -q
+```
+
+This checks full amplitudes through the existing zero-initialized, one-process
+internal executor with Simulation composition replaced. The internal executor
+does not load a Circuit's external initial amplitudes. Local conformance is not
+evidence of distributed capacity or accelerator performance.

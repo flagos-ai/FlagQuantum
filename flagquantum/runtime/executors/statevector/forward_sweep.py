@@ -44,9 +44,9 @@ from ....simulation.native_cpu import (
     use_compact_cpu_cx_mapping,
 )
 from ....simulation.native_cpu.rotation import native_cpu_forward_rotation_tile_qubits
+from ....simulation.statevector import operations as _statevector_operations
 from ....simulation.statevector.operations import (
     _apply_cx_sequence_gather,
-    _compose_gate_matrices,
     _cx_sequence_permutation_index,
     _instruction_matrix,
 )
@@ -562,7 +562,9 @@ class _ShardedForwardSweep:
             if wire in self.plan.sharded_qubits:
                 break
             if wire == active_wire:
-                block_matrices[-1] = self.matrices[cursor] @ block_matrices[-1]
+                block_matrices[-1] = _statevector_operations._compose_gate_matrices(
+                    (block_matrices[-1], self.matrices[cursor])
+                )
             else:
                 if wire in block_wires or len(block_wires) == max_block_wires:
                     break
@@ -626,9 +628,7 @@ class _ShardedForwardSweep:
             cursor += 1
         if len(matrices) == 1:
             return None
-        combined = matrices[0]
-        for candidate_matrix in matrices[1:]:
-            combined = candidate_matrix @ combined
+        combined = _statevector_operations._compose_gate_matrices(matrices)
         self.shard_state, scratch = _vectorized_local_gate(
             self.shard_state,
             combined,
@@ -713,7 +713,9 @@ class _ShardedForwardSweep:
 
         if self.fuse_cross_shard_gates and touched and cursor - index > 1:
             group = self.ir.instructions[index:cursor]
-            matrix = _compose_gate_matrices(self.matrices[index:cursor])
+            matrix = _statevector_operations._compose_gate_matrices(
+                self.matrices[index:cursor]
+            )
             diagonal_count = sum(_is_diagonal_instruction(item) for item in group)
             non_diagonal_count = len(group) - diagonal_count
             if non_diagonal_count == 0:
