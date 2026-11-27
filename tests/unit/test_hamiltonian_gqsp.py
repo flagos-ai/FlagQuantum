@@ -1,11 +1,19 @@
 """Compare the bound Hamiltonian GQSP path with its locked source."""
 
-from collections import Counter
-from collections.abc import Mapping
-from importlib.metadata import version
-from typing import Any, no_type_check
+from __future__ import annotations
 
-import numpy as np
+from collections import Counter
+from collections.abc import Callable, Iterator, Mapping
+from importlib.metadata import version
+from typing import TYPE_CHECKING, Any, Self
+
+from tests._reference_dependencies import unavailable_reference
+
+try:
+    import numpy as np
+    from numpy.typing import NDArray
+except ModuleNotFoundError as _reference_import_error:
+    unavailable_reference(_reference_import_error)
 import pytest
 import torch
 from scipy.linalg import expm
@@ -21,16 +29,27 @@ from flagquantum.circuit import Circuit
 from flagquantum.compiler.registers.control.control_predicate import ControlRegister
 from flagquantum.compiler.registers.phase.su2_rotation import su2_rotation_ir
 from flagquantum.core.ir import Instruction
+from flagquantum.simulation.value_dimensions import SymbolicArrayShape
+
+if TYPE_CHECKING:
+    from qualtran.bloqs.hamiltonian_simulation.hamiltonian_simulation_by_gqsp import (
+        HamiltonianSimulationByGQSP,
+    )
 
 pytestmark = [pytest.mark.unit, pytest.mark.ftqc_reference]
 
 
-@no_type_check
-def _source(time: float, precision: float) -> Any:
-    import cirq
+def _source(time: float, precision: float) -> HamiltonianSimulationByGQSP:
+    try:
+        import cirq
+    except ModuleNotFoundError as _reference_import_error:
+        unavailable_reference(_reference_import_error)
     from attrs import frozen
-    from qualtran import QBit, Register
-    from qualtran.bloqs.basic_gates import Hadamard, XGate
+    from qualtran._infra.composite_bloq import BloqBuilder, SoquetT
+    from qualtran._infra.data_types import QBit
+    from qualtran._infra.registers import Register
+    from qualtran.bloqs.basic_gates.hadamard import Hadamard
+    from qualtran.bloqs.basic_gates.x_basis import XGate
     from qualtran.bloqs.block_encoding.lcu_block_encoding import (
         SelectBlockEncoding as SourceBlock,
     )
@@ -38,47 +57,53 @@ def _source(time: float, precision: float) -> Any:
         HamiltonianSimulationByGQSP,
     )
     from qualtran.bloqs.multiplexers.select_base import SelectOracle
-    from qualtran.bloqs.qubitization import QubitizationWalkOperator
+    from qualtran.bloqs.qubitization.qubitization_walk_operator import (
+        QubitizationWalkOperator,
+    )
     from qualtran.bloqs.state_preparation.prepare_base import PrepareOracle
 
     @frozen
-    class Prepare(PrepareOracle):  # type: ignore[misc]
+    class Prepare(PrepareOracle):
         @property
-        def selection_registers(self):
+        def selection_registers(self) -> tuple[Register, ...]:
             return (Register("selection", QBit()),)
 
         @property
-        def junk_registers(self):
+        def junk_registers(self) -> tuple[Register, ...]:
             return (Register("junk", QBit()),)
 
         @property
-        def l1_norm_of_coeffs(self):
+        def l1_norm_of_coeffs(self) -> float:
             return 2.0
 
-        def build_composite_bloq(self, bb, **soqs):
+        def build_composite_bloq(
+            self, bb: BloqBuilder, **soqs: SoquetT[np.object_]
+        ) -> dict[str, SoquetT[np.object_]]:
             return {
                 "selection": bb.add(Hadamard(), q=soqs["selection"]),
                 "junk": bb.add(XGate(), q=soqs["junk"]),
             }
 
     @frozen
-    class Select(SelectOracle):  # type: ignore[misc]
+    class Select(SelectOracle):
         @property
-        def control_registers(self):
+        def control_registers(self) -> tuple[Register, ...]:
             return ()
 
         @property
-        def selection_registers(self):
+        def selection_registers(self) -> tuple[Register, ...]:
             return (Register("selection", QBit()),)
 
         @property
-        def target_registers(self):
+        def target_registers(self) -> tuple[Register, ...]:
             return (Register("target", QBit()),)
 
-        def decompose_from_registers(self, *, context, **quregs):
+        def decompose_from_registers(
+            self, *, context: cirq.DecompositionContext, **quregs: NDArray[Any]
+        ) -> Iterator[cirq.Operation]:
             yield cirq.CNOT(*quregs["selection"], *quregs["target"])
 
-        def adjoint(self):
+        def adjoint(self) -> Self:
             return self
 
     return HamiltonianSimulationByGQSP(
@@ -92,16 +117,19 @@ def _source(time: float, precision: float) -> Any:
 def test_locked_coefficients_walk_calls_and_complete_state(
     time: float, precision: float
 ) -> None:
-    import cirq
+    try:
+        import cirq
+    except ModuleNotFoundError as _reference_import_error:
+        unavailable_reference(_reference_import_error)
     import kickmix
-    from qualtran import CtrlSpec
-    from qualtran.bloqs.basic_gates import SU2RotationGate
-    from qualtran.bloqs.bookkeeping import Always
-    from qualtran.cirq_interop import BloqAsCirqGate
-    from qualtran.resource_counting import SympySymbolAllocator
+    from qualtran._infra.controlled import CtrlSpec
+    from qualtran.bloqs.basic_gates.su2_rotation import SU2RotationGate
+    from qualtran.bloqs.bookkeeping.always import Always
+    from qualtran.cirq_interop._bloq_to_cirq import BloqAsCirqGate
+    from qualtran.resource_counting._call_graph import SympySymbolAllocator
 
     assert version("qualtran") == "0.7.0"
-    assert kickmix.__version__ == "0.1" and hasattr(kickmix, "Simulator")
+    assert getattr(kickmix, "__version__") == "0.1" and hasattr(kickmix, "Simulator")
     original = _source(time, precision)
 
     def prepare(
@@ -172,7 +200,10 @@ def test_locked_coefficients_walk_calls_and_complete_state(
     )
     assert model.degree == original.degree
     np.testing.assert_array_equal(model.coefficients, original.approx_cos)
-    np.testing.assert_allclose(model.gqsp.q, original.gqsp.Q, atol=1e-13, rtol=0)
+    assert not isinstance(model.gqsp.q, SymbolicArrayShape)
+    np.testing.assert_allclose(
+        np.asarray(model.gqsp.q), np.asarray(original.gqsp.Q), atol=1e-13, rtol=0
+    )
     assert model.gqsp.precision == original.gqsp.precision
     allocated_ports = (("selection", (1,)), ("target", (0,)))
     program = model.make_on(
@@ -203,12 +234,13 @@ def test_locked_coefficients_walk_calls_and_complete_state(
         "Always",
         "Free",
     ]
-    source_costs = original.build_call_graph(SympySymbolAllocator())
+    allocator_factory: Callable[[], SympySymbolAllocator] = SympySymbolAllocator
+    source_costs = original.build_call_graph(allocator_factory())
     source_walk = original.walk_operator
     labels = {
         Always(source_walk.prepare): "Always(PREPARE)",
         Always(source_walk.prepare.adjoint()): "Always(PREPARE†)",
-        source_walk.controlled(CtrlSpec(cvs=0)): "ZeroControlledWalk",
+        getattr(source_walk, "controlled")(CtrlSpec(cvs=0)): "ZeroControlledWalk",
         source_walk.adjoint().controlled(): "PositiveControlledWalk†",
     }
     assert hamiltonian_gqsp_source_graph(2.0, time, precision).leaf_counts == {
@@ -241,14 +273,14 @@ def test_locked_coefficients_walk_calls_and_complete_state(
 
 @pytest.mark.parametrize("symbolic", [False, True])
 def test_hubbard_example_declares_the_five_exact_costs(symbolic: bool) -> None:
-    from qualtran import CtrlSpec
-    from qualtran.bloqs.basic_gates import SU2RotationGate
-    from qualtran.bloqs.bookkeeping import Always
+    from qualtran._infra.controlled import CtrlSpec
+    from qualtran.bloqs.basic_gates.su2_rotation import SU2RotationGate
+    from qualtran.bloqs.bookkeeping.always import Always
     from qualtran.bloqs.hamiltonian_simulation.hamiltonian_simulation_by_gqsp import (
         _hubbard_time_evolution_by_gqsp,
         _symbolic_hamsim_by_gqsp,
     )
-    from qualtran.resource_counting import SympySymbolAllocator
+    from qualtran.resource_counting._call_graph import SympySymbolAllocator
 
     factory = _symbolic_hamsim_by_gqsp if symbolic else _hubbard_time_evolution_by_gqsp
     original = factory.make()
@@ -256,10 +288,11 @@ def test_hubbard_example_declares_the_five_exact_costs(symbolic: bool) -> None:
     keys = {
         Always(walk.prepare): "Always(PREPARE)",
         Always(walk.prepare.adjoint()): "Always(PREPARE†)",
-        walk.controlled(CtrlSpec(cvs=0)): "ZeroControlledWalk",
+        getattr(walk, "controlled")(CtrlSpec(cvs=0)): "ZeroControlledWalk",
         walk.adjoint().controlled(): "PositiveControlledWalk†",
     }
-    counts = original.build_call_graph(SympySymbolAllocator())
+    allocator_factory: Callable[[], SympySymbolAllocator] = SympySymbolAllocator
+    counts = original.build_call_graph(allocator_factory())
     graph = hamiltonian_gqsp_source_graph(
         original.alpha, original.t, original.precision
     )
@@ -279,7 +312,10 @@ def test_source_random_unitary_matrix_grid(
         "markers", "notebook: frozen Qualtran notebook fixture"
     )
     pytestconfig.addinivalue_line("markers", "slow: frozen Qualtran slow fixture")
-    import cirq
+    try:
+        import cirq
+    except ModuleNotFoundError as _reference_import_error:
+        unavailable_reference(_reference_import_error)
     from qualtran.bloqs.for_testing.matrix_gate import MatrixGate
     from qualtran.bloqs.for_testing.random_select_and_prepare import (
         random_qubitization_walk_operator,
