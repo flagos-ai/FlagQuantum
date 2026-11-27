@@ -207,3 +207,37 @@ changed Python files, Black/Ruff, both owning-team scopes, English/local links,
 architecture, multi-level IR and the protected API snapshot. Eight locked
 source/direct-dependency blobs match the CSV. Constructor discovery invokes no
 source constructor or child callback and finds no provider import failures.
+
+## Complete-source closure review
+
+Q-0611 is eligible for complete-file acceptance under the explicitly approved
+[faithful-migration rule](G2_FAITHFUL_MIGRATION_CLOSURE_PROPOSAL.md). The complete
+SimpleGuidingState, ProbabilisticUncompute and GuidingState responsibilities,
+five factories, both DocSpecs, properties, default amplitude/precision and every
+defined root call have native owners. SimpleGuidingState maps to
+ScopeGuidingState; the sparse-preparation child retains its caller-owned phase
+gradient. No source numerical body is invented to bridge the omitted root port.
+
+The literal guiding root has already been replaced by the exact shared
+Partition/AutoPartition recipe, source child signatures, scalar/array
+predecessors and returned outputs. Its default duplicate child retains the
+original inverse aliases; the separately corrected physical duplicate emitter
+is not a parity surrogate. Sorting and scope-preparation prefixes remain
+declarations when the original has no body. Symbolic c retains original refusal;
+a concrete c can retain logical word widths without enabling symbolic-array
+execution. The complete tutorial and original-test parents are already accepted.
+
+Reuse the published complete resource chains, source/native typed root and
+expanded-call checks, 247-case dual-SDK graph/dependency evidence and exact
+measured suffix certificates recorded above. The current 149-case dependency
+regression includes these complete file/component/tutorial consumers. The suffix
+checks retain absolute complex phase, every applicable small measurement
+history, spectator coherence and private zero work. Logical sorting junk and
+flags remain outputs, never reset private workspace.
+
+The earlier full-preparation state/primitive requirement was blocked by missing
+original prefixes and a phase-gradient interface, not an unimplemented valid
+source circuit. Those source limitations and the original duplicate-erasure
+defect remain explicit. Full guiding-state amplitudes, success-bound execution,
+primitive counts and whole-root private-zero certification are not claimed.
+Physical suffix inventories and the full source analytical model stay separate.
