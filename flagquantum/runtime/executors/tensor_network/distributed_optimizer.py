@@ -11,8 +11,7 @@ import torch
 import torch.distributed as dist
 
 from flagquantum.compute.local import get_platform_runtime
-
-from ...distributed.context import resolve_local_world_size, resolve_node_count
+from flagquantum.runtime.distributed import placement as _placement
 
 #: How each sliced-reverse gradient reduction leaves the reduced gradient
 #: distributed. `owner_reduce` zeroes every non-owned gradient, so the reduced
@@ -71,7 +70,9 @@ class DistributedTNOptimizerStepResult:
         return self.ownership
 
     def summary(self) -> dict[str, Any]:
-        node_count = resolve_node_count(self.world_size, self.local_world_size)
+        node_count = _placement.resolve_node_count(
+            self.world_size, self.local_world_size
+        )
         return {
             "rank": self.rank,
             "world_size": self.world_size,
@@ -271,7 +272,7 @@ def execute_rank_owned_tn_sgd_step(
     return DistributedTNOptimizerStepResult(
         rank=rank,
         world_size=world_size,
-        local_world_size=resolve_local_world_size(world_size),
+        local_world_size=_placement.resolve_local_world_size(world_size),
         learning_rate=step_size,
         owned_parameter_indices=owned,
         ownership=ownership,

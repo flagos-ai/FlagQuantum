@@ -5,10 +5,11 @@ from __future__ import annotations
 from collections.abc import Sequence
 from typing import Any
 
+from flagquantum.runtime.distributed import placement as _placement
+
 from ....distributed.backend_policy import DistributedBackendPolicy
 from ..array_conversions import _jax_nodes_from_torch_nodes
 from ..backend_dispatch import plan_jax_distributed_quantum_backend
-from ..common import node_count as _node_count
 from ..runtime_environment import (
     _jax_complex_dtype,
     _jnp_device_put,
@@ -182,7 +183,9 @@ def run_jax_sharded_tensor_network(
         bsz=plan.bsz,
         complex_bytes=complex_bytes,
         local_world_size=resolved_local_world_size,
-        node_count=_node_count(resolved_world_size, resolved_local_world_size),
+        node_count=_placement.resolve_node_count(
+            resolved_world_size, resolved_local_world_size
+        ),
         compute_backend=resolved_compute_backend,
         compute_execution=compute_execution,
         collective_backend=resolved_collective_backend,

@@ -9,9 +9,10 @@ from typing import Any
 import torch
 import torch.distributed as dist
 
+from flagquantum.runtime.distributed import placement as _placement
+
 from ....core.ir import Instruction, ensure_circuit_ir
 from ....simulation.mps.rank_local import tensor_nbytes
-from ...distributed.context import resolve_local_world_size
 from .records import (
     MPSReverseCheckpointPolicy,
     MPSReverseContractError,
@@ -378,7 +379,7 @@ def execute_torch_distributed_mps_reverse(
         gradient_policy=gradient_policy,
         gradient_tolerance=gradient_tolerance,
         world_size=world,
-        local_world_size=resolve_local_world_size(world),
+        local_world_size=_placement.resolve_local_world_size(world),
         rank=rank,
         _backward=backward,
         objective_scan_pairs=int(objective_execution != "single_observable_scan"),

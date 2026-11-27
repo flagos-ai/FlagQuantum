@@ -16,6 +16,8 @@ from typing import Any
 import torch
 import torch.distributed as dist
 
+from flagquantum.runtime.distributed import placement as _placement
+
 from ....simulation.mps.models import (
     MPSAdaptiveBondPlan,
     MPSConfig,
@@ -35,7 +37,6 @@ from ...distributed.backend_policy import DistributedBackendPolicy
 from ...distributed.context import (
     TorchDistributedContext,
     _communication_tier,
-    _node_count,
     _rank_placement_summary,
 )
 from ...distributed.identity import backend_uses_accelerator_tensors
@@ -121,7 +122,9 @@ def _boundary_communication_tiers(
         "model": "rank_endpoint_attributed_for_boundary_syncs",
         "local_world_size": local_world_size,
         "node_count": (
-            context.node_count if context else _node_count(world_size, local_world_size)
+            context.node_count
+            if context
+            else _placement.resolve_node_count(world_size, local_world_size)
         ),
         "intra_node_boundary_bytes": intra_bytes,
         "inter_node_boundary_bytes": inter_bytes,

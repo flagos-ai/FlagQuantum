@@ -12,6 +12,7 @@ import torch
 import torch.distributed as dist
 
 from flagquantum.compute.local import resolve_platform_device
+from flagquantum.runtime.distributed import placement as _placement
 
 from ....core.ir import CircuitIR, ensure_circuit_ir
 from ....simulation.native_cpu import (
@@ -19,7 +20,6 @@ from ....simulation.native_cpu import (
     native_cpu_cx_adjoint_inplace_available,
     use_compact_cpu_cx_adjoint_cycles,
 )
-from ...distributed.context import resolve_local_world_size
 from .checkpointing import StatevectorCheckpointPolicy, resolve_checkpoint_policy
 from .forward import communication_aware_qubit_layout
 from .forward_executor import execute_torch_distributed_statevector
@@ -607,7 +607,7 @@ def execute_torch_distributed_statevector_reverse(
     requested_policy = checkpoint_policy or StatevectorCheckpointPolicy()
     world_size = dist.get_world_size(process_group) if dist.is_initialized() else 1
     rank = dist.get_rank(process_group) if dist.is_initialized() else 0
-    local_world_size = resolve_local_world_size(
+    local_world_size = _placement.resolve_local_world_size(
         world_size, subgroup=process_group is not None
     )
     (

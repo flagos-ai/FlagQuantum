@@ -17,14 +17,6 @@ def env_int(name: str, default: int = 0) -> int:
         return int(default)
 
 
-def node_count(world_size: int, local_world_size: int) -> int:
-    return max(
-        1,
-        (max(1, int(world_size)) + max(1, int(local_world_size)) - 1)
-        // max(1, int(local_world_size)),
-    )
-
-
 def communication_tier(
     left_rank: int, right_rank: int, *, local_world_size: int
 ) -> str:

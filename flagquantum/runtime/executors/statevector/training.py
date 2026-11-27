@@ -21,13 +21,13 @@ import torch.distributed as dist
 
 from flagquantum.compute.local import get_platform_runtime, resolve_platform_device
 from flagquantum.compute.local._memory import _peak_allocated_memory
+from flagquantum.runtime.distributed import placement as _placement
 from flagquantum.runtime.observability.watchdog import (
     PhaseAwareWatchdog,
     ProgressSnapshot,
 )
 
 from ....core.ir import ensure_circuit_ir
-from ...distributed.context import resolve_local_world_size, resolve_node_count
 from .gradient_reduction import OWNER_SHARDED_REDUCE_SCATTER, REPLICATED_ALL_REDUCE
 from .reverse import (
     StatevectorCheckpointPolicy,
@@ -913,8 +913,8 @@ class _ShardedTrainingSweep:
             )
             for index, owner in enumerate(self.owners)
         )
-        local_world_size = resolve_local_world_size(self.world_size)
-        node_count = resolve_node_count(self.world_size, local_world_size)
+        local_world_size = _placement.resolve_local_world_size(self.world_size)
+        node_count = _placement.resolve_node_count(self.world_size, local_world_size)
         return ShardedTrainingResult(
             losses=tuple(self.losses),
             completed_steps=self.steps,

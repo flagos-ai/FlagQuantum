@@ -10202,6 +10202,45 @@
       "public_identity": "flagquantum.testing.watchdog; original21-object pickle includes3classes,3instances,oneboundmethod and14class-owned functions",
       "owner": "Runtime + Integration",
       "removal_condition": "Approved versioned public-payload migration and release-policy compatibility window; no automatic 0.5.0 deletion"
+    },
+    {
+      "group": "runtime-placement-count-owner",
+      "old": "flagquantum/runtime/distributed/context.py",
+      "new": "flagquantum/runtime/distributed/placement.py",
+      "symbols": [],
+      "partial": true,
+      "source_kind": "internal Runtime placement helpers; canonical bodies unchanged; duplicate formulas and exact wrappers retired",
+      "retired_private_members": [
+        "_node_count",
+        "_resolve_local_world_size",
+        "resolve_local_world_size",
+        "resolve_node_count"
+      ],
+      "retirement": "All current callers use the single backend-neutral Runtime owner directly. Helpers are outside distributed package public exports and executor backend public API; no compatibility forwarding is added."
+    },
+    {
+      "group": "runtime-placement-count-owner",
+      "old": "flagquantum/runtime/executors/statevector/planning.py",
+      "new": "flagquantum/runtime/distributed/placement.py",
+      "symbols": [],
+      "partial": true,
+      "source_kind": "internal Runtime placement helpers; canonical bodies unchanged; duplicate formulas and exact wrappers retired",
+      "retired_private_members": [
+        "_node_count"
+      ],
+      "retirement": "All current callers use the single backend-neutral Runtime owner directly. Helpers are outside distributed package public exports and executor backend public API; no compatibility forwarding is added."
+    },
+    {
+      "group": "runtime-placement-count-owner",
+      "old": "flagquantum/runtime/executors/jax/common.py",
+      "new": "flagquantum/runtime/distributed/placement.py",
+      "symbols": [],
+      "partial": true,
+      "source_kind": "internal Runtime placement helpers; canonical bodies unchanged; duplicate formulas and exact wrappers retired",
+      "retired_private_members": [
+        "node_count"
+      ],
+      "retirement": "All current callers use the single backend-neutral Runtime owner directly. Helpers are outside distributed package public exports and executor backend public API; no compatibility forwarding is added."
     }
   ],
   "retired_namespace_parents": [

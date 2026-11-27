@@ -18,6 +18,7 @@ import torch
 import torch.distributed as dist
 
 from flagquantum.compute.local import get_platform_runtime
+from flagquantum.runtime.distributed import placement as _placement
 
 from ....simulation.mps.rank_local import (
     tensor_nbytes as _tensor_nbytes,
@@ -55,7 +56,6 @@ from ...distributed.context import (
     TorchDistributedContext,
     _rank_placement_summary,
     init_torch_distributed,
-    resolve_node_count,
 )
 from ...planner.tn_calibration import TNWorkingSetCalibration
 from .joint_planning import (
@@ -557,7 +557,7 @@ def _resolve_rank_placement(
     placement["local_world_size"] = resolved
     placement["local_rank"] = (context.local_rank if context else 0) % resolved
     placement["node_rank"] = (context.rank if context else 0) // resolved
-    placement["node_count"] = resolve_node_count(int(world_size), resolved)
+    placement["node_count"] = _placement.resolve_node_count(int(world_size), resolved)
     placement["local_world_size_source"] = source
     return placement
 

@@ -5,11 +5,11 @@ from __future__ import annotations
 from typing import Any
 
 from flagquantum.core.ir import ensure_circuit_ir
+from flagquantum.runtime.distributed import placement as _placement
 
 from .....core.ir import CircuitIR
 from ....distributed.backend_policy import DistributedBackendPolicy
 from ..common import communication_tier as _communication_tier
-from ..common import node_count as _node_count
 from ..common import rank_for_qubit as _rank_for_qubit
 from ..common import split_contiguous as _split_contiguous
 from ..planning_core import JAXDistributedQuantumPlan
@@ -226,7 +226,9 @@ def plan_jax_sharded_mps_parameter_flow(
     return JAXShardedMPSParameterFlowPlan(
         world_size=int(resolved_world_size),
         local_world_size=int(resolved_local_world_size),
-        node_count=_node_count(resolved_world_size, resolved_local_world_size),
+        node_count=_placement.resolve_node_count(
+            resolved_world_size, resolved_local_world_size
+        ),
         n_qubits=int(ir.n_wires),
         site_shard_ownership=tuple(
             {
@@ -389,7 +391,9 @@ def plan_jax_sharded_mps_training(
         local_development_gradient_ready=local_development_gradient_ready,
         world_size=int(resolved_world_size),
         local_world_size=int(resolved_local_world_size),
-        node_count=_node_count(resolved_world_size, resolved_local_world_size),
+        node_count=_placement.resolve_node_count(
+            resolved_world_size, resolved_local_world_size
+        ),
         n_qubits=int(ir.n_wires),
         batch_size=int(bsz),
         max_bond=max_bond,
@@ -473,7 +477,7 @@ def _mps_plan(
         n_qubits=ir.n_wires,
         world_size=world_size,
         local_world_size=local_world_size,
-        node_count=_node_count(world_size, local_world_size),
+        node_count=_placement.resolve_node_count(world_size, local_world_size),
         backend_policy=policy,
         rank_ownership=tuple(rank_ownership),
         communication_tiers={

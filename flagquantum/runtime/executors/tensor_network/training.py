@@ -26,8 +26,9 @@ from typing import Any
 import torch
 import torch.distributed as dist
 
+from flagquantum.runtime.distributed import placement as _placement
+
 from ....simulation.tensor_network.entrypoints import build_tensor_network_expectation
-from ...distributed.context import resolve_local_world_size, resolve_node_count
 from .distributed_optimizer import (
     execute_rank_owned_tn_sgd_step,
     plan_tn_parameter_owners,
@@ -263,7 +264,7 @@ def _read_checkpoint(
     for key, expected in (
         ("rank", rank),
         ("world_size", world_size),
-        ("local_world_size", int(resolve_local_world_size(world_size))),
+        ("local_world_size", int(_placement.resolve_local_world_size(world_size))),
         ("task_plan_identity", task_plan_identity),
     ):
         if payload.get(key) != expected:
@@ -396,8 +397,8 @@ def train_distributed_tensor_network(
 
     world_size = int(dist.get_world_size(group=process_group))
     rank = int(dist.get_rank(group=process_group))
-    local_world_size = resolve_local_world_size(world_size)
-    node_count = resolve_node_count(world_size, local_world_size)
+    local_world_size = _placement.resolve_local_world_size(world_size)
+    node_count = _placement.resolve_node_count(world_size, local_world_size)
 
     x, y, z = _observable_axes(observable)
     expectation = build_tensor_network_expectation(circuit_or_ir, x=x, y=y, z=z)

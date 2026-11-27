@@ -5,6 +5,7 @@ from __future__ import annotations
 from collections.abc import Callable, Mapping, Sequence
 from typing import Any
 
+from flagquantum.runtime.distributed import placement as _placement
 from flagquantum.simulation.numerics.jax import _jax_pauli_matrix
 from flagquantum.simulation.tensor_network.jax.kernels import (
     jax_tensor_network_loss_from_output as _jax_tn_loss_from_output,
@@ -18,7 +19,6 @@ from ..array_conversions import (
     _torch_parameters_for_static_build,
 )
 from ..backend_dispatch import plan_jax_distributed_quantum_backend
-from ..common import node_count as _node_count
 from ..runtime_environment import (
     _jax_complex_dtype,
     _jax_real_dtype,
@@ -437,7 +437,9 @@ def jax_sliced_tensor_network_value_and_grad(
         bsz=plan.bsz,
         complex_bytes=complex_bytes,
         local_world_size=resolved_local_world_size,
-        node_count=_node_count(resolved_world_size, resolved_local_world_size),
+        node_count=_placement.resolve_node_count(
+            resolved_world_size, resolved_local_world_size
+        ),
         compute_backend=resolved_compute_backend,
         compute_execution=compute_execution,
         collective_backend=resolved_collective_backend,
@@ -608,7 +610,9 @@ def jax_sliced_tensor_network_parameter_value_and_grad(
         complex_bytes=complex_bytes,
         parameter_shape=parameter_shape,
         local_world_size=resolved_local_world_size,
-        node_count=_node_count(resolved_world_size, resolved_local_world_size),
+        node_count=_placement.resolve_node_count(
+            resolved_world_size, resolved_local_world_size
+        ),
         compute_backend=resolved_compute_backend,
         compute_execution=compute_execution,
         collective_backend=resolved_collective_backend,

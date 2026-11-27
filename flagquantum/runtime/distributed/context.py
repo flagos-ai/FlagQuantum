@@ -14,6 +14,7 @@ import torch
 import torch.distributed as dist
 
 from flagquantum.compute.local import get_platform_runtime
+from flagquantum.runtime.distributed import placement as _placement
 
 from .flagos_runtime import activate_flagos_device, is_flagos_request
 from .identity import DistributedIdentity, build_distributed_identity
@@ -97,52 +98,11 @@ def _normalized_active_backend() -> str:
     return str(dist.get_backend()).strip().lower()
 
 
-def resolve_local_world_size(world_size: int, *, subgroup: bool = False) -> int:
-    """How many ranks of `world_size` share one host.
-
-    One definition, because every distributed result reports `local_world_size`
-    and derives `node_count` and the intra-node/inter-node communication split
-    from it: a component that read the environment differently could report a
-    two-node run as a single node while the ranks still exchanged across the
-    network.
-
-    `LOCAL_WORLD_SIZE` and `NPROC_PER_NODE` describe the world torchrun was
-    given, so a caller running a subgroup `process_group` passes `subgroup=True`
-    and gets a single-host placement instead of a topology the environment
-    cannot describe.
-    """
-    world_size = max(1, int(world_size))
-    if subgroup:
-        return world_size
-    raw = os.environ.get("LOCAL_WORLD_SIZE") or os.environ.get("NPROC_PER_NODE")
-    if raw is None:
-        return world_size
-    return max(1, min(world_size, int(raw)))
-
-
-def resolve_node_count(world_size: int, local_world_size: int) -> int:
-    """How many hosts `world_size` ranks span at this placement."""
-
-    return max(
-        1,
-        (max(1, int(world_size)) + max(1, int(local_world_size)) - 1)
-        // max(1, int(local_world_size)),
-    )
-
-
-def _resolve_local_world_size(world_size: int) -> int:
-    return resolve_local_world_size(world_size)
-
-
 def _resolve_node_rank(rank: int, local_world_size: int) -> int:
     raw = os.environ.get("GROUP_RANK") or os.environ.get("NODE_RANK")
     if raw is not None:
         return max(0, int(raw))
     return int(rank) // max(1, int(local_world_size))
-
-
-def _node_count(world_size: int, local_world_size: int) -> int:
-    return resolve_node_count(world_size, local_world_size)
 
 
 def _rank_node(rank: int, local_world_size: int) -> int:
@@ -182,7 +142,7 @@ def _rank_placement_summary(
     node_count = (
         context.node_count
         if context
-        else _node_count(resolved_world_size, local_world_size)
+        else _placement.resolve_node_count(resolved_world_size, local_world_size)
     )
     return {
         "rank": context.rank if context else 0,
@@ -222,9 +182,9 @@ def init_torch_distributed(
     world_size = int(world_size if world_size is not None else env_world_size)
     rank = int(rank if rank is not None else env_rank)
     local_rank = int(local_rank if local_rank is not None else env_local_rank)
-    local_world_size = _resolve_local_world_size(world_size)
+    local_world_size = _placement.resolve_local_world_size(world_size)
     node_rank = _resolve_node_rank(rank, local_world_size)
-    node_count = _node_count(world_size, local_world_size)
+    node_count = _placement.resolve_node_count(world_size, local_world_size)
     hostname = socket.gethostname()
     platform_identity: Mapping[str, Any] = {}
     flagos_requested = is_flagos_request(device, backend, local_rank=local_rank)
@@ -266,9 +226,9 @@ def init_torch_distributed(
     if dist.is_initialized():
         rank = int(dist.get_rank())
         world_size = int(dist.get_world_size())
-        local_world_size = _resolve_local_world_size(world_size)
+        local_world_size = _placement.resolve_local_world_size(world_size)
         node_rank = _resolve_node_rank(rank, local_world_size)
-        node_count = _node_count(world_size, local_world_size)
+        node_count = _placement.resolve_node_count(world_size, local_world_size)
     identity = build_distributed_identity(
         outer_backend=resolved_backend,
         logical_device=(

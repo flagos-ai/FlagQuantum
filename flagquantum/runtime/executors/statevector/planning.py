@@ -9,6 +9,8 @@ from math import log2
 from threading import Lock
 from typing import Any
 
+from flagquantum.runtime.distributed import placement as _placement
+
 from ....compiler import schedule_layers
 from ....core.ir import CircuitIR, Instruction, ensure_circuit_ir
 from .models import (
@@ -262,14 +264,6 @@ def _rank_coordinates(
     )
 
 
-def _node_count(world_size: int, local_world_size: int) -> int:
-    return max(
-        1,
-        (max(1, int(world_size)) + max(1, int(local_world_size)) - 1)
-        // max(1, int(local_world_size)),
-    )
-
-
 def _communication_tier(src_rank: int, dst_rank: int, *, local_world_size: int) -> str:
     local_world_size = max(1, int(local_world_size))
     return (
@@ -350,7 +344,7 @@ def _rank_topology(
     return StatevectorRankTopology(
         world_size=world_size,
         local_world_size=max(1, int(local_world_size)),
-        node_count=_node_count(world_size, local_world_size),
+        node_count=_placement.resolve_node_count(world_size, local_world_size),
         layout=layout,
         rank_coordinates=_rank_coordinates(world_size, rank_address_bits),
         edges=edges,
@@ -408,7 +402,7 @@ def plan_distributed_statevector(
             int(local_world_size if local_world_size is not None else world_size),
         ),
     )
-    node_count = _node_count(world_size, local_world_size)
+    node_count = _placement.resolve_node_count(world_size, local_world_size)
     bsz = max(1, int(bsz))
     complex_bytes = int(complex_bytes)
     max_fusion_gate_width = max(1, int(max_fusion_gate_width))

@@ -13,7 +13,9 @@ belongs in `runtime/executors/jax`.
 
 ## Ten-minute change path
 
-- Change process-group setup, rank placement, or teardown in `context.py`.
+- Change process-group setup, node-rank policy and teardown in `context.py`.
+- Change shared node-count and torchrun local-size resolution in `placement.py`;
+  it uses only the standard library and is shared by Torch and optional JAX.
 - Change development and production backend selection in `backend_policy.py`.
 - Change backend-neutral execution requests and records in `protocols.py`.
 - Change communication-route identity in `identity.py` and observable transport

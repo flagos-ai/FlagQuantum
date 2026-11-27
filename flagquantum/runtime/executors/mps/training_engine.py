@@ -19,9 +19,9 @@ from torch.profiler import record_function
 
 from flagquantum.compute.local import PlatformRuntime, get_platform_runtime
 from flagquantum.compute.local._memory import _peak_allocated_memory
+from flagquantum.runtime.distributed import placement as _placement
 
 from ....core.ir import CircuitIR, ensure_circuit_ir
-from ...distributed.context import resolve_local_world_size
 from . import checkpointing as _checkpointing
 from .device_resolution import resolve_distributed_mps_device
 from .errors import MPSTrainingError
@@ -714,7 +714,7 @@ def train_distributed_mps(
             "circuit_factory training does not yet support checkpoint/resume"
         )
     rank, world_size = dist.get_rank(), dist.get_world_size()
-    local_world_size = resolve_local_world_size(world_size)
+    local_world_size = _placement.resolve_local_world_size(world_size)
     resolved_site_ownership, resolved_site_ownership_policy = (
         _resolve_training_site_ownership(
             ir,
