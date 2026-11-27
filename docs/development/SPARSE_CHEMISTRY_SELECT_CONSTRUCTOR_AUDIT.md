@@ -100,3 +100,19 @@ concrete constructor closes one identifier: 118/303, 185 remaining. Original
 source failures above remain recorded. Complete sparse chemistry and THC Walk
 constructors remain open, especially their RIGHT QROAM PREPARE/isometric
 dependencies. G2 continues in the same integration PR; no G3 or merge follows.
+
+
+## Complete source-file closure, 2026-11-28
+
+Q-0410 now closes the complete file: constructor fields and control validation,
+selection/control/target/signature properties, five ordered Majorana calls,
+call graph, specialized control protocol, example and documentation declaration.
+The accepted constructor, exact Majorana dependencies and source resource rows
+above are reused. Source control remains an actual bystander and generic
+controlled-adjoint decomposition remains unavailable; neither is repaired in the
+reference or relabeled as a corrected controlled unitary. The distinct native
+mathematical control remains separate. Current concentrated acceptance includes
+this whole owner and both supported source control polarities, with original
+small all-history evidence reused. The source zero-width failure stays recorded.
+Sparse PREPARE and retained-bank Walk closure is now documented in their audits;
+THC dependencies are a separate next batch.
