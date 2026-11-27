@@ -5,6 +5,7 @@ from __future__ import annotations
 from collections.abc import Sequence
 from typing import Any
 
+from flagquantum.simulation.mps.jax import pullbacks as _mps_numerics
 from flagquantum.simulation.mps.jax.pullbacks import (
     jax_mps_boundary_rxx_pullback,
     jax_mps_owner_local_vjp,
@@ -47,7 +48,7 @@ def _execute_minimal_mps_owner_rank_parameter_vjp(
             "same_shard_two_site_rxx; boundary-crossing gates are unsupported"
         )
 
-    local_scores = np.cos(parameter_values)
+    local_scores = _mps_numerics._numpy_mps_owner_local_scores(parameter_values)
     received_cotangents = local_scores[::-1].copy()
     gradients = np.empty_like(parameter_values)
     local_tensors: list[dict[str, Any]] = []

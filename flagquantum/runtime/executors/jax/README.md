@@ -31,12 +31,13 @@ QR/SVD pullbacks live in `flagquantum/simulation/mps/jax/pullbacks.py`.
 The Runtime modules `mps/backward.py`, `mps/pullbacks.py`, and
 `mps/canonicalization.py` retain the constrained rank protocol, device
 placement, parameter ownership, collective exchange, truncation policy,
-optimizer lifecycle, and evidence records. This is the MPS backward stopping
-point: the small analytic checks and tensor shapes inside those protocol
-executors are evidence construction, not a second general MPS
-implementation. Do not extract them into generic helpers unless a
-second production numerical path consumes the same operation independently of
-Runtime policy and records.
+optimizer lifecycle, and evidence records. The actual rank-local RY state,
+Z response and derivative calculations used by returned values, cotangents and
+optimizer updates also belong to the existing Simulation pullback module.
+Runtime retains the independent analytic boundary-gate checks and RY/RXX tensor
+allocations used only to record memory witnesses. These evidence-only formulas
+and shapes are not a second general MPS implementation; do not extract them
+into generic numerical helpers solely to empty the protocol executor.
 
 For sharded statevectors, start in `statevector/execution.py`.
 `statevector/kernels.py` is a Runtime transport

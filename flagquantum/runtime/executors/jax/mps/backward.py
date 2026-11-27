@@ -5,6 +5,8 @@ from __future__ import annotations
 import time
 from typing import Any
 
+from flagquantum.simulation.mps.jax import pullbacks as _mps_numerics
+
 from ..release_policy import (
     attach_mps_backward_readiness as _attach_mps_backward_readiness,
 )
@@ -70,14 +72,7 @@ def _execute_minimal_mps_sharded_backward(
         parameter_array = jnp.asarray(parameter_values, dtype=jnp.float64)
 
         def rank_step(theta: Any) -> tuple[Any, Any, Any, Any]:
-            site = jnp.stack(
-                (
-                    jnp.cos(theta / 2.0),
-                    jnp.sin(theta / 2.0),
-                )
-            )
-            local_z = site[0] * site[0] - site[1] * site[1]
-            local_dz = -jnp.sin(theta)
+            site, local_z, local_dz = _mps_numerics._jax_mps_ry_site_response(theta)
             remote_z = jax.lax.ppermute(
                 local_z,
                 "mps_rank",
@@ -132,12 +127,9 @@ def _execute_minimal_mps_sharded_backward(
         boundary_status = "accelerator_executed"
         backward_execution = "jax_pmap_minimal_mps_sharded_backward"
     else:
-        half_angles = parameter_values / 2.0
-        site_arrays = np.stack(
-            (np.cos(half_angles), np.sin(half_angles)),
-            axis=1,
+        site_arrays, local_z_values = _mps_numerics._numpy_mps_ry_site_response(
+            parameter_values
         )
-        local_z_values = site_arrays[:, 0] ** 2 - site_arrays[:, 1] ** 2
         first_copy_start = time.perf_counter()
         remote_rank_zero = np.copy(local_z_values[1])
         first_copy_seconds = max(time.perf_counter() - first_copy_start, 1e-12)
@@ -145,7 +137,9 @@ def _execute_minimal_mps_sharded_backward(
         remote_rank_one = np.copy(local_z_values[0])
         second_copy_seconds = max(time.perf_counter() - second_copy_start, 1e-12)
         remote_z_values = np.asarray((remote_rank_zero, remote_rank_one))
-        gradients = -np.sin(parameter_values) * remote_z_values
+        gradients = _mps_numerics._numpy_mps_ry_weighted_gradient(
+            parameter_values, remote_z_values
+        )
         event_elapsed_times = (second_copy_seconds, first_copy_seconds)
         communication_seconds = sum(event_elapsed_times)
         device_placement = (

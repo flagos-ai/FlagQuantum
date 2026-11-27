@@ -4,6 +4,7 @@ from __future__ import annotations
 
 from typing import Any
 
+from flagquantum.simulation.mps.jax import pullbacks as _mps_numerics
 from flagquantum.simulation.mps.jax.pullbacks import jax_mps_canonicalization_pullback
 
 from ..common import communication_tier as _communication_tier
@@ -193,13 +194,13 @@ def _execute_minimal_mps_sharded_optimizer_step(
         jax.config.update("jax_enable_x64", True)
 
         def rank_optimizer_step(theta: Any) -> tuple[Any, Any]:
-            local_z = jnp.cos(theta)
+            local_z, local_dz = _mps_numerics._jax_mps_ry_z_response(theta)
             remote_z = jax.lax.ppermute(
                 local_z,
                 "mps_rank",
                 ((0, 1), (1, 0)),
             )
-            gradient = -jnp.sin(theta) * remote_z
+            gradient = local_dz * remote_z
             return gradient, theta - learning_rate_value * gradient
 
         mapped_step = jax.pmap(
