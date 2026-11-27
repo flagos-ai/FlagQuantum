@@ -241,3 +241,88 @@ findings are unchanged; the global dependency check is not green. The original
 41-case suite includes every slow parameter and has no deselected test. Full
 LP stored-root/scalar-effect and SDK-default boundaries still prevent Q-0625
 closure. No parent or constructor count is increased by this batch.
+
+## Complete original test-file closure review
+
+Q-0625 is eligible for acceptance under the approved
+[faithful-migration rule](G2_FAITHFUL_MIGRATION_CLOSURE_PROPOSAL.md) after
+publication and final local checks. The earlier stored-root condition was
+resolved by the complete forward LP/LPRS constructor delivery recorded above.
+Proposal 119 is not required for that existing scalar-carrier path. This review
+does not silently introduce a general scalar-effect contract.
+
+Every responsibility of the complete original test file now has evidence:
+
+| Original definitions | Native verification |
+| --- | --- |
+| Both interim/full autotesters | Actual native stored constructors at shallow and expanded source-library depths, real SSA calls and output ownership, serialized native execution, and original protocol outcomes kept separately |
+| Symbolic LP complexity | Complete symbolic historical T/Clifford/rotation fields, including the original symbolic versus concrete Clifford distinction |
+| Both closed-form state helpers and both quick-state tests | Interim cos/imaginary-sin and final real-sin vectors compared against actual prepared states, retaining absolute phase |
+| Both slow parameterized state tests | Every original width 1/3/5/7/9/11/13, complete complex state, coherent spectator and separately measured cleanup residual |
+| Full LP historical complexity assertions | All seven original widths, exact 4n+4 T, 26n+33 Clifford and 6n+6 rotations, with the declared source call counts retained |
+| Interim historical complexity assertions | All seven widths, exact 0 T, 3n+2 Clifford and 2n+1 rotations |
+
+This table covers all nine original test functions and both state helper
+definitions. The fresh complete original suite has 38 passes, one original
+QDType skip and two original count xfails, including every slow parameter.
+The skip identifies QFxp(5,5) to QAny(5); the native source-compatible opaque
+word binding follows its already-approved contract without patching that source
+validator. Original protocol failures remain visible, not converted to passes.
+
+### SDK-default execution is now verified
+
+The existing Ecosystem directional emitter can already import the default SDK
+synthesis, including its explicit small matrix atoms. The missing condition was
+an execution certificate, not an unavailable native conversion implementation.
+The new whole-width scenario captures both source directions, serializes both
+owned CircuitIR snapshots, then blocks Qualtran, Cirq and Kickmix imports before
+binding reversed/offset physical ports and using ordinary circuit.append(op).
+No external source object remains in the emitter or executes during that append.
+
+All seven original widths now pass that separate SDK-default path. Forward
+states match the unchanged source tensor with a coherent spectator, and private
+work leakage is below 1.6e-29 in the recorded run. The accepted probability bound
+is 1e-24; the complete amplitude bound is 2e-12. The captured generic adjoint
+returns minus the original input on the prepared image, preserving the source's
+known extra minus sign. Its maximum complete error is below 2.9e-14 against that
+defective result. The independent native mathematical inverse remains correct
+and separately labeled; it is not substituted into the literal SDK snapshot.
+
+The captured default synthesis uses three private work wires and no measurement
+slots at every checked width. Every explicit matrix atom acts on one qubit;
+the importer does not contract the entire LP algorithm into a dense matrix.
+This certificate uses the existing native execution path and makes no backend
+substitution, acceleration or scalability claim. The canonical measured source
+graph retains its separate all-history certificates and source lifetimes.
+
+### Actual inventories versus source models
+
+| Output width | Canonical native instructions | SDK-default instructions | Canonical private work / measurements | SDK private work / measurements | Original historical T / Clifford / rotations |
+| --- | ---: | ---: | --- | --- | --- |
+| 1 | 86 | 82 | 5 / 2 | 3 / 0 | 8 / 59 / 12 |
+| 3 | 162 | 238 | 7 / 4 | 3 / 0 | 16 / 111 / 24 |
+| 5 | 238 | 736 | 9 / 6 | 3 / 0 | 24 / 163 / 36 |
+| 7 | 314 | 1626 | 11 / 8 | 3 / 0 | 32 / 215 / 48 |
+| 9 | 390 | 2908 | 13 / 10 | 3 / 0 | 40 / 267 / 60 |
+| 11 | 466 | 4582 | 15 / 12 | 3 / 0 | 48 / 319 / 72 |
+| 13 | 542 | 6648 | 17 / 14 | 3 / 0 | 56 / 371 / 84 |
+
+These are three distinct accounts. SDK matrix atoms and rotations are not
+silently priced as synthesized T gates. Canonical one-bit I instructions and
+the source's atomic/wide Identity lowering difference remain explicit above;
+cross-policy total primitive equality is not claimed. Every comparable root
+call, interim operation, source-controlled rotation and non-identity canonical
+inventory retains its existing source comparison. Default SDK snapshots retain
+their own actual source operations, output aliases and global phases.
+
+The modern seven-category model is independently checked at all seven widths.
+At width 13 it remains And 14, Clifford 203, rotations 84 and measurements 14,
+with source peak 30. Its peak excludes the external coherent spectator. It is
+not rewritten to match the three-work-wire SDK synthesis or the scan of emitted
+canonical primitives. Receipts use `g2-lp-test-closure` and
+`g2-lp-sdk-resources-20261127.json` in the reference workspace.
+
+The generic nonreal-reflection adjoint defect, original count/type failures,
+atomic Identity granularity, unresolved physical sizes and unqualified private
+presentation helpers remain separate limitations. They do not leave an original
+assertion or source-defined execution path in this test file unimplemented.
