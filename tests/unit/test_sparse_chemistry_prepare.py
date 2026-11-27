@@ -1,15 +1,24 @@
 """Compare complete sparse chemistry preparation with the pinned source."""
 
+from __future__ import annotations
+
 from cmath import exp
 from collections import defaultdict
-from collections.abc import Iterable
+from collections.abc import Iterable, Mapping
 from itertools import product
 from math import cos, sin, sqrt
+from typing import TYPE_CHECKING, Any
 
-import numpy as np
+from tests._reference_dependencies import unavailable_reference
+
+try:
+    import numpy as np
+except ModuleNotFoundError as _reference_import_error:
+    unavailable_reference(_reference_import_error)
 import pytest
 
 from flagquantum.algorithms.primitives.sparse_chemistry_data import (
+    SparseChemistryData,
     sparse_chemistry_data,
 )
 from flagquantum.algorithms.primitives.sparse_chemistry_prepare import (
@@ -17,14 +26,23 @@ from flagquantum.algorithms.primitives.sparse_chemistry_prepare import (
 )
 from flagquantum.compiler.registers.layout.partition import partition_register
 from flagquantum.core.ir import Instruction
+from flagquantum.core.ir.program.registers import Register
 from flagquantum.dynamic import DynamicCircuit
 from flagquantum.qec.resources.estimation import estimate_ftqc_resources
-from tests.unit.register_source_graph import walk_source_graph
+from tests.unit.register_source_graph import (
+    SourcePorts,
+    SourceResult,
+    walk_source_graph,
+)
 from tests.unit.test_first_quantization_resource_model import assert_source_model
 from tests.unit.test_register_constant_addition import reference_arithmetic_gates
 from tests.unit.test_register_subtraction import assert_source
 from tests.unit.test_relative_controlled_swap import source_relative_swap
 from tests.unit.test_source_qroam_clean import source_clean_graph
+
+if TYPE_CHECKING:
+    from qualtran._infra.data_types import QDType
+    from qualtran._infra.registers import Register as SourceRegister
 
 pytestmark = pytest.mark.unit
 
@@ -39,7 +57,7 @@ def _branch(
 ) -> dict[int, complex]:
     """Evaluate the small-support fixture without allocating dense bank states."""
     state = {0: 1 + 0j} if state is None else state
-    bits = {}
+    bits: dict[int, int] = {}
     outcomes = iter(history)
     phase = {
         "i": 1,
@@ -73,7 +91,7 @@ def _branch(
                 projected = {index: amp * sqrt(2) for index, amp in projected.items()}
             state = projected
             continue
-        updated = defaultdict(complex)
+        updated: defaultdict[int, complex] = defaultdict(complex)
         for index, amp in state.items():
             if gate.name == "h" or (gate.name == "ch" and index & masks[0]):
                 updated[index & ~mask] += amp / sqrt(2)
@@ -121,10 +139,12 @@ def _branch(
     return state
 
 
-def _assert_sparse_signature(native, reference):
-    from qualtran import BQUInt, QAny, QBit, QUInt
+def _assert_sparse_signature(
+    native: Iterable[Register], reference: Iterable[SourceRegister]
+) -> None:
+    from qualtran._infra.data_types import BQUInt, QAny, QBit, QUInt
 
-    def source_type(reg):
+    def source_type(reg: Register) -> QDType[int]:
         kind = reg.dtype.encoding
         if kind == "uint":
             bound = dict(reg.dtype.parameters).get("bound")
@@ -141,10 +161,12 @@ def _assert_sparse_signature(native, reference):
 
 @pytest.mark.ftqc_reference
 @pytest.mark.parametrize("spatial,log", [(2, 0), (2, 1), (3, 0), (3, 1)])
-def test_prepare_forward_source_graph_and_resources(spatial, log):
+def test_prepare_forward_source_graph_and_resources(spatial: int, log: int) -> None:
     pytest.importorskip("qualtran")
-    from qualtran.bloqs.arithmetic import LessThanEqual
-    from qualtran.bloqs.basic_gates import CSwap, Hadamard, OnEach
+    from qualtran.bloqs.arithmetic.comparison import LessThanEqual
+    from qualtran.bloqs.basic_gates.hadamard import Hadamard
+    from qualtran.bloqs.basic_gates.on_each import OnEach
+    from qualtran.bloqs.basic_gates.swap import CSwap
     from qualtran.bloqs.basic_gates.z_basis import CZ
     from qualtran.bloqs.chemistry.sparse.prepare import PrepareSparse
     from qualtran.bloqs.data_loading.qroam_clean import (
@@ -207,7 +229,9 @@ def test_prepare_forward_source_graph_and_resources(spatial, log):
     assert_source_model(operation.resource_model(adjoint=True), source_adjoint)
     lookup_work = data.lookup_table().workspace_size(0, (data.address_width,))
 
-    def leaf(bloq, inputs, desired):
+    def leaf(
+        bloq: Any, inputs: SourcePorts, desired: SourcePorts
+    ) -> SourceResult | None:
         child = getattr(bloq, "subbloq", bloq)
         if isinstance(child, PrepareSparse):
             return None
@@ -223,7 +247,7 @@ def test_prepare_forward_source_graph_and_resources(spatial, log):
             )
             return gates, desired
         if isinstance(bloq, QROAMCleanAdjointWrapper):
-            from qualtran import DecomposeNotImplementedError
+            from qualtran._infra.bloq import DecomposeNotImplementedError
 
             with pytest.raises(DecomposeNotImplementedError):
                 bloq.qroam_clean_adjoint_bloq.decompose_bloq()
@@ -317,7 +341,12 @@ def test_prepare_forward_source_graph_and_resources(spatial, log):
                 )
 
 
-def _expected_unblocked(data, layout, work, events):
+def _expected_unblocked(
+    data: SparseChemistryData,
+    layout: tuple[tuple[str, int], ...],
+    work: int,
+    events: int,
+) -> dict[int, float]:
     """Compute the signed alias selection and symmetry action classically."""
     result = {}
     for row, sigma, pq, rs, pqrs in product(
@@ -355,7 +384,7 @@ def _expected_unblocked(data, layout, work, events):
 
 
 @pytest.mark.ftqc_reference
-def test_padded_lookup_adjoint_and_non_power_of_two_uniform_round_trip():
+def test_padded_lookup_adjoint_and_non_power_of_two_uniform_round_trip() -> None:
     pytest.importorskip("qualtran")
     from qualtran.bloqs.chemistry.sparse.prepare import PrepareSparse
 
@@ -392,7 +421,9 @@ def test_padded_lookup_adjoint_and_non_power_of_two_uniform_round_trip():
 
 
 @pytest.mark.parametrize(("log", "include_two_body"), [(0, True), (1, False)])
-def test_measurement_adjoint_consumes_lookup_banks(log, include_two_body):
+def test_measurement_adjoint_consumes_lookup_banks(
+    log: int, include_two_body: bool
+) -> None:
     one = np.array([[1.0, -0.75], [-0.75, 1.0]])
     two = np.zeros((2,) * 4)
     if include_two_body:
@@ -462,7 +493,9 @@ def test_measurement_adjoint_consumes_lookup_banks(log, include_two_body):
 
 @pytest.mark.ftqc_reference
 @pytest.mark.parametrize(("spatial", "log"), [(1, 0), (1, 1), (2, 2)])
-def test_signature_preserves_empty_orbitals_and_multiple_retained_cells(spatial, log):
+def test_signature_preserves_empty_orbitals_and_multiple_retained_cells(
+    spatial: int, log: int
+) -> None:
     pytest.importorskip("qualtran")
     from qualtran.bloqs.chemistry.sparse.prepare import PrepareSparse
 
@@ -485,7 +518,9 @@ def test_signature_preserves_empty_orbitals_and_multiple_retained_cells(spatial,
 
 
 @pytest.mark.parametrize(("two_body", "log"), [(0.0, 0), (-0.5, 0), (-0.5, 1)])
-def test_single_orbital_prepares_and_clears_without_empty_bank_binding(two_body, log):
+def test_single_orbital_prepares_and_clears_without_empty_bank_binding(
+    two_body: float, log: int
+) -> None:
     one = np.array([[1.0]])
     two = np.full((1,) * 4, two_body)
     data = sparse_chemistry_data(one, two, probability_bits=1, log_block_size=log)
@@ -529,7 +564,9 @@ def test_single_orbital_prepares_and_clears_without_empty_bank_binding(two_body,
         assert sum(g.name in {"t", "tdg"} for g in stage.instructions) == (
             31 if log else 11
         )
-    expected = None if log else _expected_unblocked(data, layout, work, events)
+    expected: Mapping[int, complex] | None = (
+        None if log else _expected_unblocked(data, layout, work, events)
+    )
     for history in product((0, 1), repeat=events):
         prepared = _branch(raw.instructions, wires, history)
         if expected is None:
