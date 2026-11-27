@@ -409,3 +409,40 @@ functions pass with both producers. Native and unchanged source produce the
 same ordered rows for `QFTTextBook(5)`, totaling T190 at the root, and the
 unchanged T496 assertion fails with either producer. No analytic model or
 historical source assertion is altered by the drawing acceptance.
+
+
+## Complete original test-file disposition — 2026-11-28
+
+The full frozen `flame_graph_test.py` was reread. All four test functions
+retain their original assertions. CSwap's ten repeated seven-T rows,
+MultiAnd's eleven repeated four-T rows and uniform preparation's seven
+ordered rows are exercised against both unchanged source and native producers.
+The source's explicitly skipped floating-angle string comparison remains
+limited to the same Rz rows; no numerical resource tolerance is added.
+
+The fourth function is already marked xfail upstream for issue 1474. Both
+producers return exactly the same QFTTextBook(5) rows, with root T190. Calling
+the original assertion directly bypasses pytest's xfail handling and raises
+AssertionError for both producers against its historical T496 rows. This
+reproduction remains in `test_qft_data_matches_actual_source_with_original_failure_retained`.
+The source test and model are not rewritten to make the expectation pass.
+
+Under the explicitly approved faithful-migration rule, Q-0740 now accepts
+this complete original-test responsibility. The T496 historical expectation
+remains a source-test defect, with its input, actual rows and upstream issue
+recorded. It is not a claim of resource-model correctness, a new physical
+implementation or a performance equivalence. Q-0739's earlier complete
+implementation/rendering/browser acceptance remains separate and unchanged.
+
+Fresh validation reports 69 native/source cases with 370 existing original
+protocol warnings. The original complete test file independently reports
+three passes and one xfail. Its four frozen source/dependency blobs remain
+unchanged. Current Integration scope, English, local links and whitespace
+checks pass; unchanged Python owners retain prior strict and architecture
+evidence. Folded-stack generation emits no quantum primitives, measurements
+or work wires. Its T values are modeled graph weights, not measured gates.
+Receipts use `g2-flame-source-test-closure-*20261128`.
+
+The independent Cirq 1.6 lane also passes all 69 cases with the same 370
+source protocol warnings. No SDK gate conversion, Compiler model or renderer
+implementation is changed by this test-source disposition.
