@@ -3,7 +3,12 @@
 from dataclasses import replace
 from typing import Any
 
-import numpy as np
+from tests._reference_dependencies import unavailable_reference
+
+try:
+    import numpy as np
+except ModuleNotFoundError as _reference_import_error:
+    unavailable_reference(_reference_import_error)
 import pytest
 import sympy
 
@@ -21,7 +26,7 @@ KINDS = ["opaque", "uint", "signed", "bounded", "ones", "fxp", "mont"]
 
 
 def pair(kind: str, mode: str, classical: bool) -> tuple[RegisterType, Any]:
-    import qualtran as q
+    import qualtran._infra.data_types as q
 
     n, b = sympy.symbols("n b", integer=True, positive=True)
     width = 3 if mode == "parameter" else n
