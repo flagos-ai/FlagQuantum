@@ -5,9 +5,12 @@
 
 """Share typed, gate-free rebinding for descending polynomial coefficients."""
 
-from ....core.ir.program import ProgramRecord
+from ....core.ir.program import FunctionRecord, ProgramRecord
 from ....core.ir.program.register_types import opaque_register_type
-from ....core.ir.program.register_verifier import executable_register_width
+from ....core.ir.program.register_verifier import (
+    executable_register_width,
+    logical_register_width,
+)
 from ....core.ir.program.registers import Register, RegisterSide, RegisterType
 from ....core.ir.program.signatures import Signature
 from ..component_builder import ComponentProgramBuilder
@@ -62,3 +65,39 @@ def field_polynomial_component_program(
     builder = ComponentProgramBuilder(signature, name=name)
     outputs = rebind_partition(builder, packed, (coefficients,), reverse=reverse)
     return _namespace_helpers(builder.finalize(outputs), name)
+
+
+def field_polynomial_component_declaration(
+    degree: int,
+    coefficient: RegisterType,
+    name: str = "main",
+    *,
+    reverse: bool = False,
+    packed_dtype: RegisterType | None = None,
+) -> ProgramRecord:
+    """Declare the original atomic view without assuming an executable width.
+
+    Concrete extent retains source constructor admission. The coefficient field
+    and packed polynomial metadata remain intact. Empty blocks are declarations,
+    not the executable identities produced by the physical view builder above.
+    """
+    if type(degree) is not int or degree < 0 or type(reverse) is not bool:
+        raise ValueError(
+            "Polynomial view declarations require a concrete degree and direction"
+        )
+    if coefficient.encoding != "finite_field":
+        raise ValueError("Polynomial view coefficients require a field descriptor")
+    width = logical_register_width(coefficient)
+    expected = RegisterType(
+        "finite_field_polynomial",
+        width * (degree + 1),
+        parameters=(("polynomial_degree", degree),) + coefficient.parameters,
+    )
+    packed = expected if packed_dtype is None else packed_dtype
+    if packed != expected:
+        raise ValueError("Packed polynomial and coefficient declarations must agree")
+    logical_register_width(packed)
+    word = Register("reg", packed, side=RegisterSide.LEFT)
+    array = Register("reg", coefficient, (degree + 1,), RegisterSide.RIGHT)
+    ports = (array.adjoint(), word.adjoint()) if reverse else (word, array)
+    return ProgramRecord((FunctionRecord(name, (), registers=ports),))

@@ -18,10 +18,14 @@ from flagquantum.compiler.registers.finite_field.field_polynomial_layout import 
 )
 from flagquantum.compiler.registers.finite_field.polynomial_addition_component import (
     field_polynomial_addition_program,
+    logical_field_polynomial_addition_program,
 )
 from flagquantum.core.ir.program import ProgramRecord
-from flagquantum.core.ir.program.registers import Register
+from flagquantum.core.ir.program.register_verifier import logical_register_width
+from flagquantum.core.ir.program.registers import Register, RegisterType
 from flagquantum.core.ir.program.signatures import Signature
+from flagquantum.core.value_math import bit_length
+from flagquantum.core.value_parameters import is_symbolic_value
 from flagquantum.drawer.component_score import component_register_score
 from flagquantum.drawer.partition_symbols import (
     partition_wire_symbol,
@@ -33,6 +37,14 @@ from flagquantum.drawer.register_score_data import (
     RegisterWireSymbolSupplier,
     SymbolClass,
     register_score_data,
+)
+from flagquantum.simulation.finite_field_addition import binary_field_encoding
+from flagquantum.simulation.finite_field_encoding import FiniteFieldEncoding
+from flagquantum.simulation.finite_field_polynomial_addition import (
+    validate_polynomial_constant,
+)
+from flagquantum.simulation.finite_field_polynomial_encoding import (
+    FiniteFieldPolynomialEncoding,
 )
 from flagquantum.simulation.finite_field_polynomial_metadata import (
     resolve_finite_field_polynomial_encoding,
@@ -46,11 +58,15 @@ def field_polynomial_program(
     if operation not in {"GF2PolyAdd", "GF2PolyAddK"}:
         return None
     dtype = ports[0].dtype
-    if type(dtype.num_qubits) is not int:
-        return None
+    if is_symbolic_value(dtype.num_qubits, *(value for _, value in dtype.parameters)):
+        return _symbolic_polynomial_program(operation, dtype, parameters)
     encoding = resolve_finite_field_polynomial_encoding(dtype)
     degree, width = encoding.degree, encoding.field.bitsize
     assert type(degree) is int and type(width) is int
+    if encoding.field.register_type() != binary_field_encoding(width).register_type():
+        return (
+            None  # Original polynomial children reconstruct the default binary field.
+        )
     constants = (
         tuple(int(c) for c in encoding.to_gf_coefficients(parameters["g_x"]))
         if operation == "GF2PolyAddK"
@@ -62,6 +78,84 @@ def field_polynomial_program(
         constants=constants,
         packed_dtype=dtype,
     )
+
+
+def _symbolic_polynomial_program(
+    operation: str, dtype: RegisterType, parameters: Mapping[str, object]
+) -> ProgramRecord | None:
+    from sympy import Expr
+
+    entries = dict(dtype.parameters)
+    degree = entries.get("polynomial_degree")
+    if type(degree) is not int or degree < 0:
+        return None
+    logical_register_width(dtype)
+    order = entries["order"]
+    if not isinstance(order, (int, Expr)):
+        raise ValueError("Polynomial field order must be an integral expression")
+    coefficient = RegisterType(
+        "finite_field", bit_length(order - 1), parameters=dtype.parameters[1:]
+    )
+    field = dict(coefficient.parameters)
+    if (
+        tuple(field) != ("characteristic", "degree", "order")
+        or field["characteristic"] != 2
+        or field["degree"] != coefficient.num_qubits
+    ):
+        return None  # Preserve original symbolic nominal-binding failures.
+    constants = None
+    if operation == "GF2PolyAddK":
+        characteristic, field_degree = field["characteristic"], field["degree"]
+        if not isinstance(characteristic, (int, Expr)) or not isinstance(
+            field_degree, (int, Expr)
+        ):
+            raise ValueError("Polynomial field dimensions must be integral expressions")
+        if any(
+            isinstance(v, Expr) and v.free_symbols
+            for v in (characteristic, field_degree)
+        ):
+            return None  # The original coefficient callback cannot resolve this field.
+        encoding = FiniteFieldPolynomialEncoding(
+            degree, FiniteFieldEncoding(characteristic, field_degree, None)
+        )
+        validate_polynomial_constant(encoding, parameters["g_x"])
+        constants = tuple(
+            int(v) for v in encoding.to_gf_coefficients(parameters["g_x"])
+        )
+    return logical_field_polynomial_addition_program(
+        degree, coefficient, dtype, constants=constants
+    )
+
+
+def _symbolic_polynomial_definition(
+    record: ProgramRecord,
+    entry: str,
+    ports: Signature,
+    parameters: Mapping[str, object],
+) -> tuple[str, ProgramRecord] | None:
+    operation = "GF2PolyAddK" if "g_x" in parameters else "GF2PolyAdd"
+    template = field_polynomial_program(operation, ports, parameters)
+    if template is None or not matches_component_definition(
+        record, record.functions[0].name, template
+    ):
+        return None
+    definitions = {function.name: function for function in template.functions}
+    for block, expected_block in zip(
+        record.functions[0].blocks, template.functions[0].blocks, strict=True
+    ):
+        for call, expected in zip(
+            block.operations, expected_block.operations, strict=True
+        ):
+            if call.callee != entry:
+                continue
+            assert expected.callee is not None
+            function = definitions[expected.callee]
+            names = tuple(r.name for r in function.registers or ())
+            if names not in {("x",), ("x", "y")}:
+                return None
+            child = ProgramRecord((function,))
+            return ("GF2AddK" if names == ("x",) else "GF2Addition"), child
+    return None
 
 
 def field_polynomial_definition(
@@ -76,6 +170,10 @@ def field_polynomial_definition(
     names = tuple(r.name for r in registers)
     if names not in {("x",), ("x", "y")}:
         return None
+    if is_symbolic_value(
+        ports[0].dtype.num_qubits, *(v for _, v in ports[0].dtype.parameters)
+    ):
+        return _symbolic_polynomial_definition(record, entry, ports, parameters)
     encoding = resolve_finite_field_polynomial_encoding(ports[0].dtype)
     coefficient = encoding.field.register_type()
     constants: tuple[int | None, ...] = (
