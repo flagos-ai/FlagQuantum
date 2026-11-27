@@ -9,6 +9,13 @@ from typing import Any
 import pytest
 import torch
 
+from tests._reference_dependencies import unavailable_reference
+
+try:
+    import cirq as cirq
+except ModuleNotFoundError as _reference_import_error:
+    unavailable_reference(_reference_import_error)
+
 from examples.algorithms.binary_field_arithmetic import FieldOperation
 from flagquantum import Circuit
 from flagquantum.compiler.formats.legacy_component_arguments import ComponentReference
@@ -151,7 +158,10 @@ def _resolve(
 
 
 def _assert_source_call_operands(source: Any, program: ProgramRecord) -> None:
-    import numpy as np
+    try:
+        import numpy as np
+    except ModuleNotFoundError as _reference_import_error:
+        unavailable_reference(_reference_import_error)
 
     from flagquantum.compiler.registers.component_graph import (
         _elements,
@@ -225,7 +235,10 @@ def _check(
     *,
     reference_operator: torch.Tensor | None = None,
 ) -> Counter[str]:
-    import cirq
+    try:
+        import cirq
+    except ModuleNotFoundError as _reference_import_error:
+        unavailable_reference(_reference_import_error)
 
     _assert_source_call_operands(source, program)
     width = int(source.U.signature.n_qubits())
@@ -574,8 +587,14 @@ def test_scalar_unitary_uses_existing_carrier_and_retains_original_sdk_refusal(
         scalar, (0.5, 0, 0.5), negative_power=power
     )
     program = _resolve(source, 0, monkeypatch)
-    import cirq
-    import numpy as np
+    try:
+        import cirq
+    except ModuleNotFoundError as _reference_import_error:
+        unavailable_reference(_reference_import_error)
+    try:
+        import numpy as np
+    except ModuleNotFoundError as _reference_import_error:
+        unavailable_reference(_reference_import_error)
 
     with pytest.raises(AssertionError, match="All registers"):
         cirq.unitary(source)
@@ -597,10 +616,14 @@ def test_scalar_unitary_uses_existing_carrier_and_retains_original_sdk_refusal(
                 )
             )
         )
+        operations: list[cirq.Operation] = []
+        for operation in literal:
+            assert isinstance(operation, cirq.Operation)
+            operations.append(operation)
         assert (
             sum(
                 type(getattr(op.gate, "bloq", op.gate)).__name__ == "GlobalPhase"
-                for op in literal
+                for op in operations
             )
             == power - 2
         )
