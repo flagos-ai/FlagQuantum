@@ -188,8 +188,6 @@ def luis_perina_state_program(width: int) -> ProgramRecord:
     builder.free(flag)
     builder.free(anc)
     assert isinstance(m, RegisterBinding)
-    # Shared calls use QAny views; retain the declared fractional output type.
-    m = builder.join(builder.split(m), dtype=state.m_qdtype)
     return builder.finalize({"qpe_reg": m})
 
 

@@ -157,11 +157,9 @@ def test_complete_source_root_calls_operands_and_primitive_inventories(
     definitions = {f.name: f for f in program.functions}
     calls = tuple(sorted(graph.iter_bloqsoqs(), key=lambda item: item[0].i))
     operations = root.blocks[0].operations
-    assert len(operations) == len(calls) + 2
+    assert len(operations) == len(calls) == 15
     values: dict[object, ValueRef] = {}
-    for operation, (instance, inputs, outputs) in zip(
-        operations[:-2], calls, strict=True
-    ):
+    for operation, (instance, inputs, outputs) in zip(operations, calls, strict=True):
         child = definitions[operation.callee or ""]
         assert [
             (r.name, r.bitsize, r.shape, r.side.value) for r in child.registers or ()
@@ -177,14 +175,11 @@ def test_complete_source_root_calls_operands_and_primitive_inventories(
             soquet for word in outputs for soquet in np.asarray(word, dtype=object).flat
         )
         values.update(zip(original_outputs, operation.results, strict=True))
-    # The final nominal view restores QFxp from the source's QAny child output.
-    for operation in operations[-2:]:
-        view = definitions[operation.callee or ""]
-        assert all(
-            op.opcode in {"split_register", "join_register"}
-            for block in view.blocks
-            for op in block.operations
-        )
+    assert root.blocks[0].return_values == tuple(
+        values[soquet]
+        for reg in graph.signature.rights()
+        for soquet in np.asarray(graph.final_soqs()[reg.name], dtype=object).flat
+    )
     clean = tuple(range(1, 3 * width + 13))
     bound = bind_register_program(
         program, (), clean=clean, allow_workspace_outputs=True
