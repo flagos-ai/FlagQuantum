@@ -41,10 +41,12 @@ gate. Re-run it with::
 from __future__ import annotations
 
 import argparse
+import contextlib
 import itertools
 import json
 import random
 import sys
+from collections.abc import Iterator
 from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
@@ -52,6 +54,7 @@ from unittest.mock import patch
 
 import torch
 
+from flagquantum.compiler.optimization import commutation as commutation_rules
 from flagquantum.compiler.optimization.commutation import (
     _RULE_OPCODES,
     analyze_commutation,
@@ -71,6 +74,35 @@ from flagquantum.core.ir import CircuitIR, Instruction
 from flagquantum.core.operator_schema import OPERATOR_SCHEMAS
 from flagquantum.simulation.gate_matrix import gate_matrix
 from flagquantum.simulation.statevector.local import run_local_statevector
+
+
+@contextlib.contextmanager
+def _before_controlled_commutation_extension() -> Iterator[None]:
+    """Replay historical pass attribution without the later controlled-gate reach.
+
+    Keep archived counts fixed by substituting the earlier decision boundary,
+    following the existing rotation-merge and fold substitution instruments.
+    This scope is for historical contract replay, never a current SDK ranking.
+    Current production reach is covered independently by complete operators.
+    """
+
+    current = commutation_rules.commute
+    controlled = frozenset({"cx", "cy", "crx", "cry"})
+
+    def historical(left: Instruction, right: Instruction) -> bool:
+        if (
+            left.name in controlled
+            and right.name in controlled
+            and len(left.wires) == len(right.wires) == 2
+            and left.wires != right.wires
+            and not set(left.wires).isdisjoint(right.wires)
+        ):
+            return False
+        return current(left, right)
+
+    with patch.object(commutation_rules, "commute", historical):
+        yield
+
 
 SCHEMA = "flagquantum_compiler_commutation_cancellation_benchmark_v1"
 

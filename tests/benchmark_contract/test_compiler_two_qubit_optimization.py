@@ -13,9 +13,13 @@ this is the round that found it cannot decide the question on its own. See
 """
 
 import random
+from collections.abc import Iterator
 
 import pytest
 
+from benchmarks.compiler_commutation_cancellation import (
+    _before_controlled_commutation_extension,
+)
 from benchmarks.compiler_identity_elimination import (
     _CIRCUITS_PER_POPULATION as IDENTITY_CIRCUIT_COUNT,
 )
@@ -40,6 +44,14 @@ from flagquantum.compiler.pipeline import optimize
 from tests.benchmark_contract.qiskit_lane import require_certified_lane
 
 pytestmark = pytest.mark.benchmark_contract
+
+
+@pytest.fixture(scope="module", autouse=True)
+def historical_commutation_boundary() -> Iterator[None]:
+    """Keep historical attribution pins under their original rule boundary."""
+    with _before_controlled_commutation_extension():
+        yield
+
 
 #: Mean optimized length per source run length. Pinned because a fold that stopped
 #: composing -- or one that started re-spelling a run as an equal-length one --

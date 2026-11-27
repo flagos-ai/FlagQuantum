@@ -1,17 +1,19 @@
 """One-bit logic is coherent, eager and built from existing arithmetic."""
 
+from collections.abc import Callable
 from typing import Literal
 
 import pytest
 
 import flagquantum as fq
 from flagquantum import synth
+from flagquantum.compiler import ResourceEstimate
 from flagquantum.ecosystem import InteropConversionError
 from tests.synthesis_workflow_helpers import check_state
 from tools.synthesis_import_examples.qmod_bit_predicates.main import SOURCE
 
 pytestmark = pytest.mark.integration
-CASES = {
+CASES: dict[str, Callable[[int, int], int]] = {
     "x&y": lambda x, y: x & y,
     "x|y": lambda x, y: x | y,
     "x^y": lambda x, y: x ^ y,
@@ -39,6 +41,7 @@ def test_logic_truth_tables_coherent_reference_and_clean_work(
     action = f"phase({expression},pi);" if phase else f"result={expression};"
     source = f"qfunc main({outputs}) {{allocate(x);H(x);S(x);allocate(y);H(y);ref=x;{action}}}"
     p = synth.synthesize(source, source_format="qmod", objective=objective)
+    expected: dict[tuple[int, ...], complex]
     if phase:
         expected = {
             (x, y, x): 1j**x * (-1) ** CASES[expression](x, y) / 2
@@ -67,7 +70,9 @@ def test_classical_bit_literals_fold(expression: str) -> None:
     ("expression", "expected"),
     [("x&1", 0), ("x|0", 0), ("~x", 3), ("x^1", 1), ("2&1", 0)],
 )
-def test_multibit_width_is_independent_of_initial_value(expression, expected):
+def test_multibit_width_is_independent_of_initial_value(
+    expression: str, expected: int
+) -> None:
     program = synth.synthesize(
         f"qfunc main(output x:qnum<2>,output result:qnum) {{x=0;result={expression};}}",
         source_format="qmod",
@@ -112,8 +117,9 @@ def test_user_example_honors_width_depth_tradeoff(
         {(x, y): (-1) ** int(x < 2 or y == 3) / 4 for x in range(4) for y in range(4)},
     )
     resource = p.report["resources"]
+    assert isinstance(resource, ResourceEstimate)
     expected_width = 14 if objective == "depth" and max_qubits == 14 else 13
     assert resource.n_qubits == expected_width
-    assert resource.depth == (53 if expected_width == 14 else 69)
+    assert resource.depth == (49 if expected_width == 14 else 67)
     with pytest.raises(synth.SynthesisError):
         synth.synthesize(SOURCE, source_format="qmod", max_qubits=12)

@@ -93,7 +93,7 @@ _WIRE_EXCHANGE_SYMMETRIC = frozenset(
 
 #: Two families of controlled opcodes that each act as the identity on the
 #: control's `|0>` branch and as a Pauli-family operator on its `|1>` branch, so
-#: two members of one family on the same qubits commute for any angles. `cx` and
+#: two members of one family commute unless a target is the other's control. `cx` and
 #: `cy` are the parameter-free ends of their families and `crx` and `cry` the
 #: rotations, which is why `cx` against `crx` is a pair this rule has to state:
 #: `crx` alone is in `_SINGLE_GENERATOR`, but the pair is two different opcodes
@@ -293,21 +293,29 @@ def commute(left: Instruction, right: Instruction) -> bool:
         # only when they sit on the same qubits. See `_ISING_ENTANGLER`.
         return left_opcode == right_opcode or left.wires == right.wires
 
-    # The remaining two rules need the two operators to act on the same ordered
-    # qubits: `swap` against an exchange-symmetric operator, and the `cx`/`crx`
-    # family pair, which no branch above reaches because the two are different
-    # opcodes.
+    # Controlled gates on distinct targets commute when neither target changes
+    # the other's control. Shared targets additionally require commuting target
+    # operators: each Pauli family consists of functions of one Pauli matrix.
+    # The existing target table includes CCX, so restrict this rule to two qubits.
+    if (
+        len(left.wires) == len(right.wires) == 2
+        and left_opcode in _TARGET_PAULI
+        and right_opcode in _TARGET_PAULI
+    ):
+        left_control, left_target = left.wires
+        right_control, right_target = right.wires
+        if left_control != right_target and right_control != left_target:
+            if left_target != right_target or any(
+                left_opcode in family and right_opcode in family
+                for family in _PAULI_FAMILIES
+            ):
+                return True
+
     if left.wires == right.wires:
         if left_opcode == "swap" and right_opcode in _WIRE_EXCHANGE_SYMMETRIC:
             return True
         if right_opcode == "swap" and left_opcode in _WIRE_EXCHANGE_SYMMETRIC:
             return True
-        if any(
-            left_opcode in family and right_opcode in family
-            for family in _PAULI_FAMILIES
-        ):
-            return True
-
     return _one_against_controlled(left, right) or _one_against_controlled(right, left)
 
 

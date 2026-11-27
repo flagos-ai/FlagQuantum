@@ -1,0 +1,63 @@
+{
+  "diagnosis": {
+    "scope": "Untimed original thermal-reset compiler cost diagnosis; no performance or channel-semantic claim",
+    "source_head": "e6dc85d30830563456c7e5735a4490100ebb848e",
+    "rows": {
+      "earlier decision boundary": {
+        "n_operations": 22200,
+        "depth": 19901,
+        "counts": {
+          "ry": 1650,
+          "cx": 3500,
+          "u3": 100,
+          "phase": 300,
+          "cphase": 6950,
+          "ccx": 3200,
+          "x": 350,
+          "sdg": 100,
+          "s": 100,
+          "h": 3500,
+          "swap": 100,
+          "rx": 100,
+          "crz": 800,
+          "amplitude_damping": 400,
+          "ch": 300,
+          "cry": 750
+        },
+        "channel_count": 400,
+        "workspace_qubits": 1
+      },
+      "current controlled commutation": {
+        "n_operations": 22100,
+        "depth": 19801,
+        "counts": {
+          "ry": 1650,
+          "cx": 3400,
+          "u3": 100,
+          "phase": 300,
+          "cphase": 6950,
+          "ccx": 3200,
+          "x": 350,
+          "sdg": 100,
+          "s": 100,
+          "h": 3500,
+          "swap": 100,
+          "rx": 100,
+          "crz": 800,
+          "amplitude_damping": 400,
+          "ch": 300,
+          "cry": 750
+        },
+        "channel_count": 400,
+        "workspace_qubits": 1
+      }
+    }
+  },
+  "diagnosis_sha256": "8a8dc3dc9845bf1d0a8bc5fedf46ab2f135194e10a258a71677405ba58b7fa01",
+  "driver_source": "import json\nfrom pathlib import Path\nfrom unittest.mock import patch\nfrom flagquantum import synth\nfrom flagquantum.compiler.optimization import commutation\nfrom flagquantum.core.ir import Instruction\n\npredicate = commutation.commute\ncontrolled = frozenset({'cx', 'cy', 'crx', 'cry'})\ndef historical(left: Instruction, right: Instruction) -> bool:\n    if left.name in controlled and right.name in controlled and len(left.wires) == len(right.wires) == 2 and left.wires != right.wires and not set(left.wires).isdisjoint(right.wires):\n        return False\n    return predicate(left, right)\npath=Path('tests/fixtures/classiq_qmod/quantum_thermal_state_preparation.qmod')\nrows={}\nfor variant, checker in (('earlier decision boundary',historical),('current controlled commutation',predicate)):\n    with patch.object(commutation,'commute',checker):\n        program=synth.synthesize(path,max_qubits=11,max_workspace=1,max_operations=25000)\n    resource=program.report['resources']\n    rows[variant]={'n_operations':resource.n_operations,'depth':resource.depth,'counts':dict(resource.operation_counts),'channel_count':resource.channel_count,'workspace_qubits':program.report['workspace_qubits']}\nreport={'scope':'Untimed original thermal-reset compiler cost diagnosis; no performance or channel-semantic claim','source_head':'e6dc85d30830563456c7e5735a4490100ebb848e','rows':rows}\nPath('/private/tmp/fq-controlled-thermal-cost-diagnosis-20261122.json').write_text(json.dumps(report,indent=2)+'\\n')\nprint(json.dumps(report),flush=True)\n",
+  "driver_sha256": "761e0a53e57a7937d6c9579d4239452e2bd854c56b59ab35d5cdc4b66a687228",
+  "raw_ci_jobs": [
+    "https://github.com/flagos-ai/FlagQuantum/actions/runs/45027453942/job/137226397298",
+    "https://github.com/flagos-ai/FlagQuantum/actions/runs/45027453942/job/137226397058"
+  ]
+}

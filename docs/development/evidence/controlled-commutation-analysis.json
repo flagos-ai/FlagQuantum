@@ -1,0 +1,253 @@
+{
+  "scope": "Complete paired controlled-gate quality analysis; CZ and dependency depth kept separate",
+  "draws": {
+    "inspected": {
+      "observation_sha256": "339e55c5d3262428500639e5274e02862a68e3d78f9c694e4a31ae1f2958ce0b",
+      "rows": 240,
+      "nonce": "0101010101010101010101010101010101010101010101010101010101010101",
+      "counts": {
+        "flagquantum-ordinary-restored": {
+          "equal": 60
+        },
+        "flagquantum-target-artifact": {
+          "equal": 60
+        }
+      },
+      "all_changes": [],
+      "post_observation_instruction_diagnostic": [
+        {
+          "case": "06/repetition/line",
+          "workflow": "flagquantum-ordinary-restored",
+          "baseline_operations": 268,
+          "candidate_operations": 267,
+          "opcode_delta": {
+            "rz": -1
+          }
+        },
+        {
+          "case": "06/repetition/ring",
+          "workflow": "flagquantum-ordinary-restored",
+          "baseline_operations": 286,
+          "candidate_operations": 285,
+          "opcode_delta": {
+            "rz": -1
+          }
+        },
+        {
+          "case": "06/repetition/grid",
+          "workflow": "flagquantum-ordinary-restored",
+          "baseline_operations": 250,
+          "candidate_operations": 249,
+          "opcode_delta": {
+            "rz": -1
+          }
+        },
+        {
+          "case": "06/repetition/sparse",
+          "workflow": "flagquantum-ordinary-restored",
+          "baseline_operations": 142,
+          "candidate_operations": 141,
+          "opcode_delta": {
+            "rz": -1
+          }
+        },
+        {
+          "case": "08/repetition/line",
+          "workflow": "flagquantum-ordinary-restored",
+          "baseline_operations": 306,
+          "candidate_operations": 305,
+          "opcode_delta": {
+            "rz": -1
+          }
+        },
+        {
+          "case": "08/repetition/ring",
+          "workflow": "flagquantum-ordinary-restored",
+          "baseline_operations": 306,
+          "candidate_operations": 305,
+          "opcode_delta": {
+            "rz": -1
+          }
+        },
+        {
+          "case": "08/repetition/grid",
+          "workflow": "flagquantum-ordinary-restored",
+          "baseline_operations": 198,
+          "candidate_operations": 197,
+          "opcode_delta": {
+            "rz": -1
+          }
+        },
+        {
+          "case": "08/repetition/sparse",
+          "workflow": "flagquantum-ordinary-restored",
+          "baseline_operations": 216,
+          "candidate_operations": 215,
+          "opcode_delta": {
+            "rz": -1
+          }
+        },
+        {
+          "case": "12/repetition/line",
+          "workflow": "flagquantum-ordinary-restored",
+          "baseline_operations": 382,
+          "candidate_operations": 381,
+          "opcode_delta": {
+            "rz": -1
+          }
+        },
+        {
+          "case": "12/repetition/ring",
+          "workflow": "flagquantum-ordinary-restored",
+          "baseline_operations": 382,
+          "candidate_operations": 381,
+          "opcode_delta": {
+            "rz": -1
+          }
+        },
+        {
+          "case": "12/repetition/grid",
+          "workflow": "flagquantum-ordinary-restored",
+          "baseline_operations": 346,
+          "candidate_operations": 345,
+          "opcode_delta": {
+            "rz": -1
+          }
+        },
+        {
+          "case": "12/repetition/sparse",
+          "workflow": "flagquantum-ordinary-restored",
+          "baseline_operations": 274,
+          "candidate_operations": 273,
+          "opcode_delta": {
+            "rz": -1
+          }
+        }
+      ]
+    },
+    "fresh": {
+      "observation_sha256": "f09a246056171a55425e2ea33015c1e1745745f79e038781922b6d5bfe760d6e",
+      "rows": 240,
+      "nonce": "4796a91e2a3de34a0fb526e017a1649a38b05bdc5303a53b44a8e4ebabf5b1a1",
+      "counts": {
+        "flagquantum-ordinary-restored": {
+          "equal": 60
+        },
+        "flagquantum-target-artifact": {
+          "equal": 60
+        }
+      },
+      "all_changes": [],
+      "post_observation_instruction_diagnostic": [
+        {
+          "case": "06/repetition/line",
+          "workflow": "flagquantum-ordinary-restored",
+          "baseline_operations": 340,
+          "candidate_operations": 339,
+          "opcode_delta": {
+            "rz": -1
+          }
+        },
+        {
+          "case": "06/repetition/ring",
+          "workflow": "flagquantum-ordinary-restored",
+          "baseline_operations": 286,
+          "candidate_operations": 285,
+          "opcode_delta": {
+            "rz": -1
+          }
+        },
+        {
+          "case": "06/repetition/grid",
+          "workflow": "flagquantum-ordinary-restored",
+          "baseline_operations": 196,
+          "candidate_operations": 195,
+          "opcode_delta": {
+            "rz": -1
+          }
+        },
+        {
+          "case": "06/repetition/sparse",
+          "workflow": "flagquantum-ordinary-restored",
+          "baseline_operations": 250,
+          "candidate_operations": 249,
+          "opcode_delta": {
+            "rz": -1
+          }
+        },
+        {
+          "case": "08/repetition/line",
+          "workflow": "flagquantum-ordinary-restored",
+          "baseline_operations": 396,
+          "candidate_operations": 395,
+          "opcode_delta": {
+            "rz": -1
+          }
+        },
+        {
+          "case": "08/repetition/ring",
+          "workflow": "flagquantum-ordinary-restored",
+          "baseline_operations": 288,
+          "candidate_operations": 287,
+          "opcode_delta": {
+            "rz": -1
+          }
+        },
+        {
+          "case": "08/repetition/grid",
+          "workflow": "flagquantum-ordinary-restored",
+          "baseline_operations": 252,
+          "candidate_operations": 251,
+          "opcode_delta": {
+            "rz": -1
+          }
+        },
+        {
+          "case": "08/repetition/sparse",
+          "workflow": "flagquantum-ordinary-restored",
+          "baseline_operations": 288,
+          "candidate_operations": 287,
+          "opcode_delta": {
+            "rz": -1
+          }
+        },
+        {
+          "case": "12/repetition/line",
+          "workflow": "flagquantum-ordinary-restored",
+          "baseline_operations": 346,
+          "candidate_operations": 345,
+          "opcode_delta": {
+            "rz": -1
+          }
+        },
+        {
+          "case": "12/repetition/ring",
+          "workflow": "flagquantum-ordinary-restored",
+          "baseline_operations": 472,
+          "candidate_operations": 471,
+          "opcode_delta": {
+            "rz": -1
+          }
+        },
+        {
+          "case": "12/repetition/grid",
+          "workflow": "flagquantum-ordinary-restored",
+          "baseline_operations": 292,
+          "candidate_operations": 291,
+          "opcode_delta": {
+            "rz": -1
+          }
+        },
+        {
+          "case": "12/repetition/sparse",
+          "workflow": "flagquantum-ordinary-restored",
+          "baseline_operations": 256,
+          "candidate_operations": 255,
+          "opcode_delta": {
+            "rz": -1
+          }
+        }
+      ]
+    }
+  }
+}

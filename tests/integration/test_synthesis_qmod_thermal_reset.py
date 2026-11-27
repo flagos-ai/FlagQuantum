@@ -5,6 +5,7 @@ import hashlib
 import json
 import math
 import re
+from collections.abc import Callable
 from dataclasses import replace
 from pathlib import Path
 
@@ -13,11 +14,15 @@ import torch
 
 import flagquantum as fq
 from flagquantum import synth
+from flagquantum.compiler import ResourceEstimate
 from flagquantum.ecosystem import InteropConversionError
 from flagquantum.errors import PlanningError
 from flagquantum.runtime.execution_plan_contract import plan_program
+from flagquantum.runtime.result import ExecutionResult
+from flagquantum.services.synthesis import Program
 from flagquantum.simulation.density_matrix import density_matrix_from_ir
 
+_block_diag: Callable[..., torch.Tensor] = torch.block_diag
 DTYPE = torch.complex128
 pytestmark = pytest.mark.integration
 _FIXTURES = Path(__file__).resolve().parents[1] / "fixtures/classiq_qmod"
@@ -46,14 +51,14 @@ def block_encoding(source: str) -> fq.Circuit:
     for bit, control in enumerate(reversed(BOHR)):
         phases = torch.diag(torch.exp(-1j * elapsed * (2**bit) * energy))
         evolution.any(
-            control, *STATE, matrix=torch.block_diag(torch.eye(4, dtype=DTYPE), phases)
+            control, *STATE, matrix=_block_diag(torch.eye(4, dtype=DTYPE), phases)
         )
     block.compose(evolution)
 
     x = torch.tensor([[0, 1], [1, 0]], dtype=DTYPE)
     y = torch.tensor([[0, -1j], [1j, 0]], dtype=DTYPE)
     eye = torch.eye(2, dtype=DTYPE)
-    select_jump = torch.block_diag(
+    select_jump = _block_diag(
         torch.kron(eye, x), torch.kron(eye, y), torch.kron(x, eye), torch.kron(y, eye)
     )
     block.h(JUMP[0]).h(JUMP[1]).any(*JUMP, *STATE, matrix=select_jump)
@@ -76,7 +81,7 @@ def block_encoding(source: str) -> fq.Circuit:
     for angle in angles:
         c, s = math.cos(angle / 2), math.sin(angle / 2)
         rotations.append(torch.tensor([[c, -s], [s, c]], dtype=DTYPE))
-    block.any(*BOHR, BOLTZMANN, matrix=torch.block_diag(*rotations))
+    block.any(*BOHR, BOLTZMANN, matrix=_block_diag(*rotations))
     return block.x(BOLTZMANN)
 
 
@@ -117,7 +122,9 @@ def evolve(operators: torch.Tensor, rounds: int) -> torch.Tensor:
 def _original() -> Path:
     manifest = json.loads((_FIXTURES / "thermal_reset_sources.json").read_text())
     [row] = manifest["fixtures"]
-    path = _FIXTURES / row["file"]
+    filename = row["file"]
+    assert isinstance(filename, str)
+    path = _FIXTURES / filename
     raw = path.read_bytes()
     assert (
         hashlib.sha1(f"blob {len(raw)}\0".encode() + raw).hexdigest()
@@ -129,8 +136,9 @@ def _original() -> Path:
     return path
 
 
-def _state_density(program, result) -> torch.Tensor:
+def _state_density(program: Program, result: ExecutionResult) -> torch.Tensor:
     state = result.state
+    assert state is not None
     assert program.registers["be.state"] == (0, 1)
     matrix = state.reshape(4, -1, 4, 1 << (program.circuit.n_wires - 2))
     density = matrix[:, 0, :, 0]
@@ -152,19 +160,30 @@ def test_thermal_reset_matches_independent_complete_density(
 ) -> None:
     path = _original()
     source = path.read_text()
-    limits = dict(max_qubits=11, max_workspace=1, max_operations=25_000)
     if rounds == 50:
-        program = synth.synthesize(path, **limits)
-        assert program.report["resources"].n_operations == 22200
-        assert program.report["resources"].depth == 19901
+        program = synth.synthesize(
+            path, max_qubits=11, max_workspace=1, max_operations=25_000
+        )
     else:
         modified = source.replace("repeat (i: 50)", f"repeat (i: {rounds})")
         modified = modified.replace(
             "delta_step_expanded___0(0.1,", f"delta_step_expanded___0({delta},"
         )
-        program = synth.synthesize(modified, source_format="qmod", **limits)
+        program = synth.synthesize(
+            modified,
+            source_format="qmod",
+            max_qubits=11,
+            max_workspace=1,
+            max_operations=25_000,
+        )
+    resources = program.report["resources"]
+    assert isinstance(resources, ResourceEstimate)
+    if rounds == 50:
+        assert resources.n_operations == 22100
+        assert resources.depth == 19801
+        assert resources.operation_counts["cx"] == 3400
     assert program.execution.state_mode == "density_matrix"
-    assert program.report["resources"].channel_count == 8 * rounds
+    assert resources.channel_count == 8 * rounds
     assert program.report["workspace_qubits"] == 1
     result = fq.run(program)
     density = _state_density(program, result)

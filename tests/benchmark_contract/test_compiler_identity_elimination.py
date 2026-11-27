@@ -40,9 +40,13 @@ published reason covers.
 """
 
 import math
+from collections.abc import Iterator
 
 import pytest
 
+from benchmarks.compiler_commutation_cancellation import (
+    _before_controlled_commutation_extension,
+)
 from benchmarks.compiler_identity_elimination import (
     _MODULAR_FOLD_LIMIT,
     _POINTS,
@@ -53,6 +57,14 @@ from benchmarks.compiler_identity_elimination import (
 from tests.benchmark_contract.qiskit_lane import require_certified_lane
 
 pytestmark = pytest.mark.benchmark_contract
+
+
+@pytest.fixture(scope="module", autouse=True)
+def historical_commutation_boundary() -> Iterator[None]:
+    """Keep historical attribution pins under their original rule boundary."""
+    with _before_controlled_commutation_extension():
+        yield
+
 
 #: The rule. Every number here is a property of the pass module's text, of the
 #: operator census, or of the runtime gate matrices, so it is a fixture rather than a

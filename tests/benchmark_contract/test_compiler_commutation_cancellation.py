@@ -23,6 +23,7 @@ Qiskit's when the two passes are measuring different sets.
 
 import contextlib
 import random
+from collections.abc import Iterator
 
 import pytest
 
@@ -31,6 +32,7 @@ from benchmarks.compiler_commutation_cancellation import (
     _QISKIT_SCOPE,
     _REGISTER_WIDTH,
     _SWEEP_SEED,
+    _before_controlled_commutation_extension,
     run_benchmark,
 )
 from benchmarks.compiler_identity_elimination import (
@@ -50,6 +52,14 @@ from benchmarks.compiler_two_qubit_optimization import (
 from flagquantum.compiler.pipeline import optimize
 
 pytestmark = pytest.mark.benchmark_contract
+
+
+@pytest.fixture(scope="module", autouse=True)
+def historical_commutation_boundary() -> Iterator[None]:
+    """Keep historical attribution pins under their original rule boundary."""
+    with _before_controlled_commutation_extension():
+        yield
+
 
 #: The pair counts the rule source is pinned to. `pair_count` is a property of
 #: the placement list and the declared opcode set, so it is a fixture rather than

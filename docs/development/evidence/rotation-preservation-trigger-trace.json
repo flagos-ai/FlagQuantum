@@ -1,0 +1,3513 @@
+{
+  "scope": "Untimed per-sweep work trace; current memo predicate wrapping is scoped to actual sweeps only; accepted output/audit preserved; no resource claim",
+  "source_head": "9f307bbd6cbb4aaf39d04e2defb155c875118cb2",
+  "base_commit": "d8941cea0950447ef4e3bb73ad42a5d5efe4b2ae",
+  "quality_sha256": "7dae0dbb52d681b321352c5f36bd641fe6c9a9c23c14412a6283134551efe242",
+  "driver_source": "\"\"\"Untimed trace of the first failed composed-candidate workload.\"\"\"\nimport collections\nimport difflib\nimport hashlib\nimport json\nimport subprocess\nimport sys\nimport types\nfrom pathlib import Path\nfrom types import SimpleNamespace\nfrom unittest.mock import patch\n\nsys.path.insert(0,'/private/tmp/sdkbench-product-conformance-20261121/src')\nfrom sdkbench.candidates.adapters import load_adapter,workflow_configuration\nfrom sdkbench.candidates.applications import fixture\nfrom flagquantum.compiler.optimization import commutation,pass_manager\nBASE='d8941cea0950447ef4e3bb73ad42a5d5efe4b2ae'\nsource=subprocess.check_output(['git','show',BASE+':flagquantum/compiler/optimization/commutation.py'],text=True,timeout=20)\nold=types.ModuleType('flagquantum.compiler.optimization._census_main');old.__package__='flagquantum.compiler.optimization';sys.modules[old.__name__]=old;exec(compile(source,'<census-main>','exec'),old.__dict__)\nquality=json.loads(Path('/private/tmp/fq-controlled-integrated-inspected-20261122.json').read_text())\nreference={r['variant']:r for r in quality['rows'] if r['case']=='06/repetition/ring' and r['workflow']=='flagquantum-ordinary-restored'}\nCANDIDATE=commutation.commute\nSWEEP=commutation._sweep_commutation\nAPPLIED=pass_manager.PassManager._applied\nrows=[]\nfor variant,predicate in (('baseline',old.commute),('candidate',CANDIDATE)):\n    sweeps=[]\n    passes=[]\n    def applied(self,name,spec,ir,run):\n        before=ir.to_dict()\n        result=APPLIED(self,name,spec,ir,run)\n        after=result.to_dict()\n        b=[json.dumps(g,sort_keys=True) for g in before['instructions']]\n        a=[json.dumps(g,sort_keys=True) for g in after['instructions']]\n        changes=[{'kind':tag,'before':before['instructions'][i:j],'after':after['instructions'][k:l]} for tag,i,j,k,l in difflib.SequenceMatcher(a=b,b=a,autojunk=False).get_opcodes() if tag!='equal']\n        passes.append({'pass':name,'input_count':len(ir),'output_count':len(result),'changes':changes})\n        return result\n    def sweep(ir):\n        queries=0\n        def observe(left,right):\n            nonlocal queries\n            queries+=1\n            return predicate(left,right)\n        with patch.object(commutation,'commute',observe):\n            result=SWEEP(ir)\n        sweeps.append({'operation_count':len(ir.instructions),'operations':[{'name':g.name,'wires':g.wires,'matrix':g.matrix is not None,'parameters':tuple(g.params)} for g in ir.instructions],'predicate_calls':queries,'summary':result.summary()})\n        return result\n    config=workflow_configuration('flagquantum-ordinary-restored')\n    adapter=load_adapter(SimpleNamespace(configuration={'options':{'sdk':config['sdk'],'workflow':'flagquantum-ordinary-restored','compiler_options':config}}))\n    with patch.object(commutation,'commute',predicate),patch.object(commutation,'_sweep_commutation',sweep),patch.object(pass_manager.PassManager,'_applied',applied):\n        payload=adapter.execute('route',fixture(6,'repetition','ring','01'*32),11)\n    digest=hashlib.sha256(json.dumps({k:payload[k] for k in ('operations','final_layout')},sort_keys=True,separators=(',',':'),allow_nan=False).encode()).hexdigest()\n    assert digest==reference[variant]['payload_sha256'] and dict(adapter.audit)==reference[variant]['audit']\n    rows.append({'variant':variant,'sweeps':sweeps,'passes':passes,'payload_sha256':digest,'audit':dict(adapter.audit)})\nreport={'scope':'Untimed per-sweep work trace; current memo predicate wrapping is scoped to actual sweeps only; accepted output/audit preserved; no resource claim','source_head':subprocess.check_output(['git','rev-parse','HEAD'],text=True,timeout=20).strip(),'base_commit':BASE,'quality_sha256':hashlib.sha256(Path('/private/tmp/fq-controlled-integrated-inspected-20261122.json').read_bytes()).hexdigest(),'driver_source':Path(__file__).read_text(),'rows':rows}\nPath('/private/tmp/fq-controlled-pass-census-20261122.json').write_text(json.dumps(report,indent=2)+'\\n')\nfor row in rows:\n print(row['variant'],[(p['pass'],p['input_count'],p['output_count']) for p in row['passes'] if p['changes']],flush=True)\n",
+  "rows": [
+    {
+      "variant": "baseline",
+      "sweeps": [
+        {
+          "operation_count": 58,
+          "operations": [
+            {
+              "name": "ry",
+              "wires": [
+                3
+              ],
+              "matrix": false,
+              "parameters": [
+                "theta"
+              ]
+            },
+            {
+              "name": "cx",
+              "wires": [
+                3,
+                1
+              ],
+              "matrix": false,
+              "parameters": []
+            },
+            {
+              "name": "cx",
+              "wires": [
+                3,
+                2
+              ],
+              "matrix": false,
+              "parameters": []
+            },
+            {
+              "name": "x",
+              "wires": [
+                3
+              ],
+              "matrix": false,
+              "parameters": []
+            },
+            {
+              "name": "cx",
+              "wires": [
+                3,
+                5
+              ],
+              "matrix": false,
+              "parameters": []
+            },
+            {
+              "name": "cx",
+              "wires": [
+                1,
+                5
+              ],
+              "matrix": false,
+              "parameters": []
+            },
+            {
+              "name": "cx",
+              "wires": [
+                1,
+                4
+              ],
+              "matrix": false,
+              "parameters": []
+            },
+            {
+              "name": "cx",
+              "wires": [
+                2,
+                4
+              ],
+              "matrix": false,
+              "parameters": []
+            },
+            {
+              "name": "h",
+              "wires": [
+                1
+              ],
+              "matrix": false,
+              "parameters": []
+            },
+            {
+              "name": "cx",
+              "wires": [
+                4,
+                1
+              ],
+              "matrix": false,
+              "parameters": []
+            },
+            {
+              "name": "rz",
+              "wires": [
+                1
+              ],
+              "matrix": false,
+              "parameters": [
+                "theta"
+              ]
+            },
+            {
+              "name": "cx",
+              "wires": [
+                5,
+                1
+              ],
+              "matrix": false,
+              "parameters": []
+            },
+            {
+              "name": "rz",
+              "wires": [
+                1
+              ],
+              "matrix": false,
+              "parameters": [
+                "theta"
+              ]
+            },
+            {
+              "name": "cx",
+              "wires": [
+                4,
+                1
+              ],
+              "matrix": false,
+              "parameters": []
+            },
+            {
+              "name": "rz",
+              "wires": [
+                1
+              ],
+              "matrix": false,
+              "parameters": [
+                "theta"
+              ]
+            },
+            {
+              "name": "cx",
+              "wires": [
+                5,
+                1
+              ],
+              "matrix": false,
+              "parameters": []
+            },
+            {
+              "name": "rz",
+              "wires": [
+                4
+              ],
+              "matrix": false,
+              "parameters": [
+                "theta"
+              ]
+            },
+            {
+              "name": "rz",
+              "wires": [
+                1
+              ],
+              "matrix": false,
+              "parameters": [
+                "theta"
+              ]
+            },
+            {
+              "name": "h",
+              "wires": [
+                1
+              ],
+              "matrix": false,
+              "parameters": []
+            },
+            {
+              "name": "cx",
+              "wires": [
+                5,
+                4
+              ],
+              "matrix": false,
+              "parameters": []
+            },
+            {
+              "name": "rz",
+              "wires": [
+                5
+              ],
+              "matrix": false,
+              "parameters": [
+                "theta"
+              ]
+            },
+            {
+              "name": "rz",
+              "wires": [
+                4
+              ],
+              "matrix": false,
+              "parameters": [
+                "theta"
+              ]
+            },
+            {
+              "name": "cx",
+              "wires": [
+                5,
+                4
+              ],
+              "matrix": false,
+              "parameters": []
+            },
+            {
+              "name": "x",
+              "wires": [
+                4
+              ],
+              "matrix": false,
+              "parameters": []
+            },
+            {
+              "name": "h",
+              "wires": [
+                3
+              ],
+              "matrix": false,
+              "parameters": []
+            },
+            {
+              "name": "cx",
+              "wires": [
+                4,
+                3
+              ],
+              "matrix": false,
+              "parameters": []
+            },
+            {
+              "name": "rz",
+              "wires": [
+                3
+              ],
+              "matrix": false,
+              "parameters": [
+                "theta"
+              ]
+            },
+            {
+              "name": "cx",
+              "wires": [
+                5,
+                3
+              ],
+              "matrix": false,
+              "parameters": []
+            },
+            {
+              "name": "rz",
+              "wires": [
+                3
+              ],
+              "matrix": false,
+              "parameters": [
+                "theta"
+              ]
+            },
+            {
+              "name": "cx",
+              "wires": [
+                4,
+                3
+              ],
+              "matrix": false,
+              "parameters": []
+            },
+            {
+              "name": "rz",
+              "wires": [
+                3
+              ],
+              "matrix": false,
+              "parameters": [
+                "theta"
+              ]
+            },
+            {
+              "name": "cx",
+              "wires": [
+                5,
+                3
+              ],
+              "matrix": false,
+              "parameters": []
+            },
+            {
+              "name": "rz",
+              "wires": [
+                4
+              ],
+              "matrix": false,
+              "parameters": [
+                "theta"
+              ]
+            },
+            {
+              "name": "rz",
+              "wires": [
+                3
+              ],
+              "matrix": false,
+              "parameters": [
+                "theta"
+              ]
+            },
+            {
+              "name": "h",
+              "wires": [
+                3
+              ],
+              "matrix": false,
+              "parameters": []
+            },
+            {
+              "name": "cx",
+              "wires": [
+                5,
+                4
+              ],
+              "matrix": false,
+              "parameters": []
+            },
+            {
+              "name": "rz",
+              "wires": [
+                5
+              ],
+              "matrix": false,
+              "parameters": [
+                "theta"
+              ]
+            },
+            {
+              "name": "rz",
+              "wires": [
+                4
+              ],
+              "matrix": false,
+              "parameters": [
+                "theta"
+              ]
+            },
+            {
+              "name": "cx",
+              "wires": [
+                5,
+                4
+              ],
+              "matrix": false,
+              "parameters": []
+            },
+            {
+              "name": "x",
+              "wires": [
+                4
+              ],
+              "matrix": false,
+              "parameters": []
+            },
+            {
+              "name": "x",
+              "wires": [
+                5
+              ],
+              "matrix": false,
+              "parameters": []
+            },
+            {
+              "name": "h",
+              "wires": [
+                2
+              ],
+              "matrix": false,
+              "parameters": []
+            },
+            {
+              "name": "cx",
+              "wires": [
+                4,
+                2
+              ],
+              "matrix": false,
+              "parameters": []
+            },
+            {
+              "name": "rz",
+              "wires": [
+                2
+              ],
+              "matrix": false,
+              "parameters": [
+                "theta"
+              ]
+            },
+            {
+              "name": "cx",
+              "wires": [
+                5,
+                2
+              ],
+              "matrix": false,
+              "parameters": []
+            },
+            {
+              "name": "rz",
+              "wires": [
+                2
+              ],
+              "matrix": false,
+              "parameters": [
+                "theta"
+              ]
+            },
+            {
+              "name": "cx",
+              "wires": [
+                4,
+                2
+              ],
+              "matrix": false,
+              "parameters": []
+            },
+            {
+              "name": "rz",
+              "wires": [
+                2
+              ],
+              "matrix": false,
+              "parameters": [
+                "theta"
+              ]
+            },
+            {
+              "name": "cx",
+              "wires": [
+                5,
+                2
+              ],
+              "matrix": false,
+              "parameters": []
+            },
+            {
+              "name": "rz",
+              "wires": [
+                4
+              ],
+              "matrix": false,
+              "parameters": [
+                "theta"
+              ]
+            },
+            {
+              "name": "rz",
+              "wires": [
+                2
+              ],
+              "matrix": false,
+              "parameters": [
+                "theta"
+              ]
+            },
+            {
+              "name": "h",
+              "wires": [
+                2
+              ],
+              "matrix": false,
+              "parameters": []
+            },
+            {
+              "name": "cx",
+              "wires": [
+                5,
+                4
+              ],
+              "matrix": false,
+              "parameters": []
+            },
+            {
+              "name": "rz",
+              "wires": [
+                5
+              ],
+              "matrix": false,
+              "parameters": [
+                "theta"
+              ]
+            },
+            {
+              "name": "rz",
+              "wires": [
+                4
+              ],
+              "matrix": false,
+              "parameters": [
+                "theta"
+              ]
+            },
+            {
+              "name": "cx",
+              "wires": [
+                5,
+                4
+              ],
+              "matrix": false,
+              "parameters": []
+            },
+            {
+              "name": "x",
+              "wires": [
+                5
+              ],
+              "matrix": false,
+              "parameters": []
+            },
+            {
+              "name": "rz",
+              "wires": [
+                0
+              ],
+              "matrix": false,
+              "parameters": [
+                "theta"
+              ]
+            }
+          ],
+          "predicate_calls": 79,
+          "summary": {
+            "qubit_count": 6,
+            "block_count": 65,
+            "widest_block": 3,
+            "queried_pairs": 82,
+            "commuting_pairs": 23
+          }
+        },
+        {
+          "operation_count": 78,
+          "operations": [
+            {
+              "name": "ry",
+              "wires": [
+                3
+              ],
+              "matrix": false,
+              "parameters": [
+                "theta"
+              ]
+            },
+            {
+              "name": "rz",
+              "wires": [
+                0
+              ],
+              "matrix": false,
+              "parameters": [
+                "theta"
+              ]
+            },
+            {
+              "name": "swap",
+              "wires": [
+                2,
+                3
+              ],
+              "matrix": false,
+              "parameters": []
+            },
+            {
+              "name": "cx",
+              "wires": [
+                2,
+                1
+              ],
+              "matrix": false,
+              "parameters": []
+            },
+            {
+              "name": "cx",
+              "wires": [
+                2,
+                3
+              ],
+              "matrix": false,
+              "parameters": []
+            },
+            {
+              "name": "x",
+              "wires": [
+                2
+              ],
+              "matrix": false,
+              "parameters": []
+            },
+            {
+              "name": "swap",
+              "wires": [
+                0,
+                5
+              ],
+              "matrix": false,
+              "parameters": []
+            },
+            {
+              "name": "swap",
+              "wires": [
+                0,
+                1
+              ],
+              "matrix": false,
+              "parameters": []
+            },
+            {
+              "name": "cx",
+              "wires": [
+                2,
+                1
+              ],
+              "matrix": false,
+              "parameters": []
+            },
+            {
+              "name": "cx",
+              "wires": [
+                0,
+                1
+              ],
+              "matrix": false,
+              "parameters": []
+            },
+            {
+              "name": "h",
+              "wires": [
+                2
+              ],
+              "matrix": false,
+              "parameters": []
+            },
+            {
+              "name": "swap",
+              "wires": [
+                4,
+                5
+              ],
+              "matrix": false,
+              "parameters": []
+            },
+            {
+              "name": "cx",
+              "wires": [
+                0,
+                5
+              ],
+              "matrix": false,
+              "parameters": []
+            },
+            {
+              "name": "h",
+              "wires": [
+                0
+              ],
+              "matrix": false,
+              "parameters": []
+            },
+            {
+              "name": "swap",
+              "wires": [
+                3,
+                4
+              ],
+              "matrix": false,
+              "parameters": []
+            },
+            {
+              "name": "cx",
+              "wires": [
+                4,
+                5
+              ],
+              "matrix": false,
+              "parameters": []
+            },
+            {
+              "name": "cx",
+              "wires": [
+                5,
+                0
+              ],
+              "matrix": false,
+              "parameters": []
+            },
+            {
+              "name": "h",
+              "wires": [
+                4
+              ],
+              "matrix": false,
+              "parameters": []
+            },
+            {
+              "name": "rz",
+              "wires": [
+                0
+              ],
+              "matrix": false,
+              "parameters": [
+                "theta"
+              ]
+            },
+            {
+              "name": "cx",
+              "wires": [
+                1,
+                0
+              ],
+              "matrix": false,
+              "parameters": []
+            },
+            {
+              "name": "rz",
+              "wires": [
+                0
+              ],
+              "matrix": false,
+              "parameters": [
+                "theta"
+              ]
+            },
+            {
+              "name": "cx",
+              "wires": [
+                5,
+                0
+              ],
+              "matrix": false,
+              "parameters": []
+            },
+            {
+              "name": "rz",
+              "wires": [
+                0
+              ],
+              "matrix": false,
+              "parameters": [
+                "theta"
+              ]
+            },
+            {
+              "name": "rz",
+              "wires": [
+                5
+              ],
+              "matrix": false,
+              "parameters": [
+                "theta"
+              ]
+            },
+            {
+              "name": "cx",
+              "wires": [
+                1,
+                0
+              ],
+              "matrix": false,
+              "parameters": []
+            },
+            {
+              "name": "rz",
+              "wires": [
+                0
+              ],
+              "matrix": false,
+              "parameters": [
+                "theta"
+              ]
+            },
+            {
+              "name": "h",
+              "wires": [
+                0
+              ],
+              "matrix": false,
+              "parameters": []
+            },
+            {
+              "name": "swap",
+              "wires": [
+                0,
+                5
+              ],
+              "matrix": false,
+              "parameters": []
+            },
+            {
+              "name": "cx",
+              "wires": [
+                1,
+                0
+              ],
+              "matrix": false,
+              "parameters": []
+            },
+            {
+              "name": "rz",
+              "wires": [
+                1
+              ],
+              "matrix": false,
+              "parameters": [
+                "theta"
+              ]
+            },
+            {
+              "name": "rz",
+              "wires": [
+                0
+              ],
+              "matrix": false,
+              "parameters": [
+                "theta"
+              ]
+            },
+            {
+              "name": "cx",
+              "wires": [
+                1,
+                0
+              ],
+              "matrix": false,
+              "parameters": []
+            },
+            {
+              "name": "x",
+              "wires": [
+                0
+              ],
+              "matrix": false,
+              "parameters": []
+            },
+            {
+              "name": "swap",
+              "wires": [
+                1,
+                2
+              ],
+              "matrix": false,
+              "parameters": []
+            },
+            {
+              "name": "cx",
+              "wires": [
+                0,
+                1
+              ],
+              "matrix": false,
+              "parameters": []
+            },
+            {
+              "name": "rz",
+              "wires": [
+                1
+              ],
+              "matrix": false,
+              "parameters": [
+                "theta"
+              ]
+            },
+            {
+              "name": "cx",
+              "wires": [
+                2,
+                1
+              ],
+              "matrix": false,
+              "parameters": []
+            },
+            {
+              "name": "rz",
+              "wires": [
+                1
+              ],
+              "matrix": false,
+              "parameters": [
+                "theta"
+              ]
+            },
+            {
+              "name": "cx",
+              "wires": [
+                0,
+                1
+              ],
+              "matrix": false,
+              "parameters": []
+            },
+            {
+              "name": "rz",
+              "wires": [
+                1
+              ],
+              "matrix": false,
+              "parameters": [
+                "theta"
+              ]
+            },
+            {
+              "name": "rz",
+              "wires": [
+                0
+              ],
+              "matrix": false,
+              "parameters": [
+                "theta"
+              ]
+            },
+            {
+              "name": "cx",
+              "wires": [
+                2,
+                1
+              ],
+              "matrix": false,
+              "parameters": []
+            },
+            {
+              "name": "rz",
+              "wires": [
+                1
+              ],
+              "matrix": false,
+              "parameters": [
+                "theta"
+              ]
+            },
+            {
+              "name": "h",
+              "wires": [
+                1
+              ],
+              "matrix": false,
+              "parameters": []
+            },
+            {
+              "name": "swap",
+              "wires": [
+                1,
+                2
+              ],
+              "matrix": false,
+              "parameters": []
+            },
+            {
+              "name": "cx",
+              "wires": [
+                1,
+                0
+              ],
+              "matrix": false,
+              "parameters": []
+            },
+            {
+              "name": "rz",
+              "wires": [
+                1
+              ],
+              "matrix": false,
+              "parameters": [
+                "theta"
+              ]
+            },
+            {
+              "name": "rz",
+              "wires": [
+                0
+              ],
+              "matrix": false,
+              "parameters": [
+                "theta"
+              ]
+            },
+            {
+              "name": "cx",
+              "wires": [
+                1,
+                0
+              ],
+              "matrix": false,
+              "parameters": []
+            },
+            {
+              "name": "x",
+              "wires": [
+                0
+              ],
+              "matrix": false,
+              "parameters": []
+            },
+            {
+              "name": "x",
+              "wires": [
+                1
+              ],
+              "matrix": false,
+              "parameters": []
+            },
+            {
+              "name": "swap",
+              "wires": [
+                4,
+                5
+              ],
+              "matrix": false,
+              "parameters": []
+            },
+            {
+              "name": "cx",
+              "wires": [
+                0,
+                5
+              ],
+              "matrix": false,
+              "parameters": []
+            },
+            {
+              "name": "rz",
+              "wires": [
+                5
+              ],
+              "matrix": false,
+              "parameters": [
+                "theta"
+              ]
+            },
+            {
+              "name": "swap",
+              "wires": [
+                0,
+                1
+              ],
+              "matrix": false,
+              "parameters": []
+            },
+            {
+              "name": "cx",
+              "wires": [
+                0,
+                5
+              ],
+              "matrix": false,
+              "parameters": []
+            },
+            {
+              "name": "rz",
+              "wires": [
+                5
+              ],
+              "matrix": false,
+              "parameters": [
+                "theta"
+              ]
+            },
+            {
+              "name": "swap",
+              "wires": [
+                0,
+                1
+              ],
+              "matrix": false,
+              "parameters": []
+            },
+            {
+              "name": "cx",
+              "wires": [
+                0,
+                5
+              ],
+              "matrix": false,
+              "parameters": []
+            },
+            {
+              "name": "rz",
+              "wires": [
+                5
+              ],
+              "matrix": false,
+              "parameters": [
+                "theta"
+              ]
+            },
+            {
+              "name": "rz",
+              "wires": [
+                0
+              ],
+              "matrix": false,
+              "parameters": [
+                "theta"
+              ]
+            },
+            {
+              "name": "swap",
+              "wires": [
+                0,
+                1
+              ],
+              "matrix": false,
+              "parameters": []
+            },
+            {
+              "name": "cx",
+              "wires": [
+                0,
+                5
+              ],
+              "matrix": false,
+              "parameters": []
+            },
+            {
+              "name": "rz",
+              "wires": [
+                5
+              ],
+              "matrix": false,
+              "parameters": [
+                "theta"
+              ]
+            },
+            {
+              "name": "cx",
+              "wires": [
+                0,
+                1
+              ],
+              "matrix": false,
+              "parameters": []
+            },
+            {
+              "name": "h",
+              "wires": [
+                5
+              ],
+              "matrix": false,
+              "parameters": []
+            },
+            {
+              "name": "rz",
+              "wires": [
+                0
+              ],
+              "matrix": false,
+              "parameters": [
+                "theta"
+              ]
+            },
+            {
+              "name": "rz",
+              "wires": [
+                1
+              ],
+              "matrix": false,
+              "parameters": [
+                "theta"
+              ]
+            },
+            {
+              "name": "cx",
+              "wires": [
+                0,
+                1
+              ],
+              "matrix": false,
+              "parameters": []
+            },
+            {
+              "name": "x",
+              "wires": [
+                0
+              ],
+              "matrix": false,
+              "parameters": []
+            },
+            {
+              "name": "swap",
+              "wires": [
+                2,
+                3
+              ],
+              "matrix": false,
+              "parameters": []
+            },
+            {
+              "name": "swap",
+              "wires": [
+                0,
+                5
+              ],
+              "matrix": false,
+              "parameters": []
+            },
+            {
+              "name": "swap",
+              "wires": [
+                0,
+                1
+              ],
+              "matrix": false,
+              "parameters": []
+            },
+            {
+              "name": "swap",
+              "wires": [
+                1,
+                2
+              ],
+              "matrix": false,
+              "parameters": []
+            },
+            {
+              "name": "swap",
+              "wires": [
+                4,
+                5
+              ],
+              "matrix": false,
+              "parameters": []
+            },
+            {
+              "name": "swap",
+              "wires": [
+                0,
+                5
+              ],
+              "matrix": false,
+              "parameters": []
+            },
+            {
+              "name": "swap",
+              "wires": [
+                0,
+                1
+              ],
+              "matrix": false,
+              "parameters": []
+            },
+            {
+              "name": "swap",
+              "wires": [
+                4,
+                5
+              ],
+              "matrix": false,
+              "parameters": []
+            }
+          ],
+          "predicate_calls": 119,
+          "summary": {
+            "qubit_count": 6,
+            "block_count": 102,
+            "widest_block": 5,
+            "queried_pairs": 128,
+            "commuting_pairs": 32
+          }
+        }
+      ],
+      "passes": [
+        {
+          "pass": "remove_zero_state_resets",
+          "input_count": 58,
+          "output_count": 58,
+          "changes": []
+        },
+        {
+          "pass": "remove_diagonal_gates_before_measure",
+          "input_count": 58,
+          "output_count": 58,
+          "changes": []
+        },
+        {
+          "pass": "remove_identity_gates",
+          "input_count": 58,
+          "output_count": 58,
+          "changes": []
+        },
+        {
+          "pass": "merge_self_inverse",
+          "input_count": 58,
+          "output_count": 58,
+          "changes": []
+        },
+        {
+          "pass": "merge_inverse_pairs",
+          "input_count": 58,
+          "output_count": 58,
+          "changes": []
+        },
+        {
+          "pass": "merge_adjacent_rotations",
+          "input_count": 58,
+          "output_count": 58,
+          "changes": []
+        },
+        {
+          "pass": "merge_commuting_rotations",
+          "input_count": 58,
+          "output_count": 58,
+          "changes": []
+        },
+        {
+          "pass": "cancel_commuting_self_inverse",
+          "input_count": 58,
+          "output_count": 58,
+          "changes": []
+        },
+        {
+          "pass": "remove_identity_gates",
+          "input_count": 58,
+          "output_count": 58,
+          "changes": []
+        },
+        {
+          "pass": "collapse_one_qubit_runs",
+          "input_count": 58,
+          "output_count": 58,
+          "changes": []
+        },
+        {
+          "pass": "collapse_two_qubit_blocks",
+          "input_count": 58,
+          "output_count": 58,
+          "changes": []
+        },
+        {
+          "pass": "remove_zero_state_resets",
+          "input_count": 78,
+          "output_count": 78,
+          "changes": []
+        },
+        {
+          "pass": "remove_diagonal_gates_before_measure",
+          "input_count": 78,
+          "output_count": 78,
+          "changes": []
+        },
+        {
+          "pass": "remove_identity_gates",
+          "input_count": 78,
+          "output_count": 78,
+          "changes": []
+        },
+        {
+          "pass": "merge_self_inverse",
+          "input_count": 78,
+          "output_count": 78,
+          "changes": []
+        },
+        {
+          "pass": "merge_inverse_pairs",
+          "input_count": 78,
+          "output_count": 78,
+          "changes": []
+        },
+        {
+          "pass": "merge_adjacent_rotations",
+          "input_count": 78,
+          "output_count": 78,
+          "changes": []
+        },
+        {
+          "pass": "merge_commuting_rotations",
+          "input_count": 78,
+          "output_count": 78,
+          "changes": []
+        },
+        {
+          "pass": "cancel_commuting_self_inverse",
+          "input_count": 78,
+          "output_count": 78,
+          "changes": []
+        },
+        {
+          "pass": "remove_identity_gates",
+          "input_count": 78,
+          "output_count": 78,
+          "changes": []
+        },
+        {
+          "pass": "collapse_one_qubit_runs",
+          "input_count": 78,
+          "output_count": 78,
+          "changes": []
+        },
+        {
+          "pass": "collapse_two_qubit_blocks",
+          "input_count": 78,
+          "output_count": 78,
+          "changes": []
+        }
+      ],
+      "payload_sha256": "8d7120eb4e2b78ad7cc4e3f7d086afa118f9e032464f4b50cbe5c3d4ec7ecc1f",
+      "audit": {
+        "native_program_builds": 1,
+        "native_executions": 0,
+        "native_compilations": 1,
+        "compiler_seed_supported": 0,
+        "restoration_swaps": 0,
+        "restoration_cz_count": 0,
+        "restoration_operations": 0
+      }
+    },
+    {
+      "variant": "candidate",
+      "sweeps": [
+        {
+          "operation_count": 58,
+          "operations": [
+            {
+              "name": "ry",
+              "wires": [
+                3
+              ],
+              "matrix": false,
+              "parameters": [
+                "theta"
+              ]
+            },
+            {
+              "name": "cx",
+              "wires": [
+                3,
+                1
+              ],
+              "matrix": false,
+              "parameters": []
+            },
+            {
+              "name": "cx",
+              "wires": [
+                3,
+                2
+              ],
+              "matrix": false,
+              "parameters": []
+            },
+            {
+              "name": "x",
+              "wires": [
+                3
+              ],
+              "matrix": false,
+              "parameters": []
+            },
+            {
+              "name": "cx",
+              "wires": [
+                3,
+                5
+              ],
+              "matrix": false,
+              "parameters": []
+            },
+            {
+              "name": "cx",
+              "wires": [
+                1,
+                5
+              ],
+              "matrix": false,
+              "parameters": []
+            },
+            {
+              "name": "cx",
+              "wires": [
+                1,
+                4
+              ],
+              "matrix": false,
+              "parameters": []
+            },
+            {
+              "name": "cx",
+              "wires": [
+                2,
+                4
+              ],
+              "matrix": false,
+              "parameters": []
+            },
+            {
+              "name": "h",
+              "wires": [
+                1
+              ],
+              "matrix": false,
+              "parameters": []
+            },
+            {
+              "name": "cx",
+              "wires": [
+                4,
+                1
+              ],
+              "matrix": false,
+              "parameters": []
+            },
+            {
+              "name": "rz",
+              "wires": [
+                1
+              ],
+              "matrix": false,
+              "parameters": [
+                "theta"
+              ]
+            },
+            {
+              "name": "cx",
+              "wires": [
+                5,
+                1
+              ],
+              "matrix": false,
+              "parameters": []
+            },
+            {
+              "name": "rz",
+              "wires": [
+                1
+              ],
+              "matrix": false,
+              "parameters": [
+                "theta"
+              ]
+            },
+            {
+              "name": "cx",
+              "wires": [
+                4,
+                1
+              ],
+              "matrix": false,
+              "parameters": []
+            },
+            {
+              "name": "rz",
+              "wires": [
+                1
+              ],
+              "matrix": false,
+              "parameters": [
+                "theta"
+              ]
+            },
+            {
+              "name": "cx",
+              "wires": [
+                5,
+                1
+              ],
+              "matrix": false,
+              "parameters": []
+            },
+            {
+              "name": "rz",
+              "wires": [
+                4
+              ],
+              "matrix": false,
+              "parameters": [
+                "theta"
+              ]
+            },
+            {
+              "name": "rz",
+              "wires": [
+                1
+              ],
+              "matrix": false,
+              "parameters": [
+                "theta"
+              ]
+            },
+            {
+              "name": "h",
+              "wires": [
+                1
+              ],
+              "matrix": false,
+              "parameters": []
+            },
+            {
+              "name": "cx",
+              "wires": [
+                5,
+                4
+              ],
+              "matrix": false,
+              "parameters": []
+            },
+            {
+              "name": "rz",
+              "wires": [
+                5
+              ],
+              "matrix": false,
+              "parameters": [
+                "theta"
+              ]
+            },
+            {
+              "name": "rz",
+              "wires": [
+                4
+              ],
+              "matrix": false,
+              "parameters": [
+                "theta"
+              ]
+            },
+            {
+              "name": "cx",
+              "wires": [
+                5,
+                4
+              ],
+              "matrix": false,
+              "parameters": []
+            },
+            {
+              "name": "x",
+              "wires": [
+                4
+              ],
+              "matrix": false,
+              "parameters": []
+            },
+            {
+              "name": "h",
+              "wires": [
+                3
+              ],
+              "matrix": false,
+              "parameters": []
+            },
+            {
+              "name": "cx",
+              "wires": [
+                4,
+                3
+              ],
+              "matrix": false,
+              "parameters": []
+            },
+            {
+              "name": "rz",
+              "wires": [
+                3
+              ],
+              "matrix": false,
+              "parameters": [
+                "theta"
+              ]
+            },
+            {
+              "name": "cx",
+              "wires": [
+                5,
+                3
+              ],
+              "matrix": false,
+              "parameters": []
+            },
+            {
+              "name": "rz",
+              "wires": [
+                3
+              ],
+              "matrix": false,
+              "parameters": [
+                "theta"
+              ]
+            },
+            {
+              "name": "cx",
+              "wires": [
+                4,
+                3
+              ],
+              "matrix": false,
+              "parameters": []
+            },
+            {
+              "name": "rz",
+              "wires": [
+                3
+              ],
+              "matrix": false,
+              "parameters": [
+                "theta"
+              ]
+            },
+            {
+              "name": "cx",
+              "wires": [
+                5,
+                3
+              ],
+              "matrix": false,
+              "parameters": []
+            },
+            {
+              "name": "rz",
+              "wires": [
+                4
+              ],
+              "matrix": false,
+              "parameters": [
+                "theta"
+              ]
+            },
+            {
+              "name": "rz",
+              "wires": [
+                3
+              ],
+              "matrix": false,
+              "parameters": [
+                "theta"
+              ]
+            },
+            {
+              "name": "h",
+              "wires": [
+                3
+              ],
+              "matrix": false,
+              "parameters": []
+            },
+            {
+              "name": "cx",
+              "wires": [
+                5,
+                4
+              ],
+              "matrix": false,
+              "parameters": []
+            },
+            {
+              "name": "rz",
+              "wires": [
+                5
+              ],
+              "matrix": false,
+              "parameters": [
+                "theta"
+              ]
+            },
+            {
+              "name": "rz",
+              "wires": [
+                4
+              ],
+              "matrix": false,
+              "parameters": [
+                "theta"
+              ]
+            },
+            {
+              "name": "cx",
+              "wires": [
+                5,
+                4
+              ],
+              "matrix": false,
+              "parameters": []
+            },
+            {
+              "name": "x",
+              "wires": [
+                4
+              ],
+              "matrix": false,
+              "parameters": []
+            },
+            {
+              "name": "x",
+              "wires": [
+                5
+              ],
+              "matrix": false,
+              "parameters": []
+            },
+            {
+              "name": "h",
+              "wires": [
+                2
+              ],
+              "matrix": false,
+              "parameters": []
+            },
+            {
+              "name": "cx",
+              "wires": [
+                4,
+                2
+              ],
+              "matrix": false,
+              "parameters": []
+            },
+            {
+              "name": "rz",
+              "wires": [
+                2
+              ],
+              "matrix": false,
+              "parameters": [
+                "theta"
+              ]
+            },
+            {
+              "name": "cx",
+              "wires": [
+                5,
+                2
+              ],
+              "matrix": false,
+              "parameters": []
+            },
+            {
+              "name": "rz",
+              "wires": [
+                2
+              ],
+              "matrix": false,
+              "parameters": [
+                "theta"
+              ]
+            },
+            {
+              "name": "cx",
+              "wires": [
+                4,
+                2
+              ],
+              "matrix": false,
+              "parameters": []
+            },
+            {
+              "name": "rz",
+              "wires": [
+                2
+              ],
+              "matrix": false,
+              "parameters": [
+                "theta"
+              ]
+            },
+            {
+              "name": "cx",
+              "wires": [
+                5,
+                2
+              ],
+              "matrix": false,
+              "parameters": []
+            },
+            {
+              "name": "rz",
+              "wires": [
+                4
+              ],
+              "matrix": false,
+              "parameters": [
+                "theta"
+              ]
+            },
+            {
+              "name": "rz",
+              "wires": [
+                2
+              ],
+              "matrix": false,
+              "parameters": [
+                "theta"
+              ]
+            },
+            {
+              "name": "h",
+              "wires": [
+                2
+              ],
+              "matrix": false,
+              "parameters": []
+            },
+            {
+              "name": "cx",
+              "wires": [
+                5,
+                4
+              ],
+              "matrix": false,
+              "parameters": []
+            },
+            {
+              "name": "rz",
+              "wires": [
+                5
+              ],
+              "matrix": false,
+              "parameters": [
+                "theta"
+              ]
+            },
+            {
+              "name": "rz",
+              "wires": [
+                4
+              ],
+              "matrix": false,
+              "parameters": [
+                "theta"
+              ]
+            },
+            {
+              "name": "cx",
+              "wires": [
+                5,
+                4
+              ],
+              "matrix": false,
+              "parameters": []
+            },
+            {
+              "name": "x",
+              "wires": [
+                5
+              ],
+              "matrix": false,
+              "parameters": []
+            },
+            {
+              "name": "rz",
+              "wires": [
+                0
+              ],
+              "matrix": false,
+              "parameters": [
+                "theta"
+              ]
+            }
+          ],
+          "predicate_calls": 96,
+          "summary": {
+            "qubit_count": 6,
+            "block_count": 57,
+            "widest_block": 10,
+            "queried_pairs": 121,
+            "commuting_pairs": 70
+          }
+        },
+        {
+          "operation_count": 57,
+          "operations": [
+            {
+              "name": "ry",
+              "wires": [
+                3
+              ],
+              "matrix": false,
+              "parameters": [
+                "theta"
+              ]
+            },
+            {
+              "name": "cx",
+              "wires": [
+                3,
+                1
+              ],
+              "matrix": false,
+              "parameters": []
+            },
+            {
+              "name": "cx",
+              "wires": [
+                3,
+                2
+              ],
+              "matrix": false,
+              "parameters": []
+            },
+            {
+              "name": "x",
+              "wires": [
+                3
+              ],
+              "matrix": false,
+              "parameters": []
+            },
+            {
+              "name": "cx",
+              "wires": [
+                3,
+                5
+              ],
+              "matrix": false,
+              "parameters": []
+            },
+            {
+              "name": "cx",
+              "wires": [
+                1,
+                5
+              ],
+              "matrix": false,
+              "parameters": []
+            },
+            {
+              "name": "cx",
+              "wires": [
+                1,
+                4
+              ],
+              "matrix": false,
+              "parameters": []
+            },
+            {
+              "name": "cx",
+              "wires": [
+                2,
+                4
+              ],
+              "matrix": false,
+              "parameters": []
+            },
+            {
+              "name": "h",
+              "wires": [
+                1
+              ],
+              "matrix": false,
+              "parameters": []
+            },
+            {
+              "name": "cx",
+              "wires": [
+                4,
+                1
+              ],
+              "matrix": false,
+              "parameters": []
+            },
+            {
+              "name": "rz",
+              "wires": [
+                1
+              ],
+              "matrix": false,
+              "parameters": [
+                "theta"
+              ]
+            },
+            {
+              "name": "cx",
+              "wires": [
+                5,
+                1
+              ],
+              "matrix": false,
+              "parameters": []
+            },
+            {
+              "name": "rz",
+              "wires": [
+                1
+              ],
+              "matrix": false,
+              "parameters": [
+                "theta"
+              ]
+            },
+            {
+              "name": "cx",
+              "wires": [
+                4,
+                1
+              ],
+              "matrix": false,
+              "parameters": []
+            },
+            {
+              "name": "rz",
+              "wires": [
+                1
+              ],
+              "matrix": false,
+              "parameters": [
+                "theta"
+              ]
+            },
+            {
+              "name": "cx",
+              "wires": [
+                5,
+                1
+              ],
+              "matrix": false,
+              "parameters": []
+            },
+            {
+              "name": "rz",
+              "wires": [
+                4
+              ],
+              "matrix": false,
+              "parameters": [
+                "theta"
+              ]
+            },
+            {
+              "name": "rz",
+              "wires": [
+                1
+              ],
+              "matrix": false,
+              "parameters": [
+                "theta"
+              ]
+            },
+            {
+              "name": "h",
+              "wires": [
+                1
+              ],
+              "matrix": false,
+              "parameters": []
+            },
+            {
+              "name": "cx",
+              "wires": [
+                5,
+                4
+              ],
+              "matrix": false,
+              "parameters": []
+            },
+            {
+              "name": "rz",
+              "wires": [
+                5
+              ],
+              "matrix": false,
+              "parameters": [
+                "theta"
+              ]
+            },
+            {
+              "name": "rz",
+              "wires": [
+                4
+              ],
+              "matrix": false,
+              "parameters": [
+                "theta"
+              ]
+            },
+            {
+              "name": "cx",
+              "wires": [
+                5,
+                4
+              ],
+              "matrix": false,
+              "parameters": []
+            },
+            {
+              "name": "x",
+              "wires": [
+                4
+              ],
+              "matrix": false,
+              "parameters": []
+            },
+            {
+              "name": "h",
+              "wires": [
+                3
+              ],
+              "matrix": false,
+              "parameters": []
+            },
+            {
+              "name": "cx",
+              "wires": [
+                4,
+                3
+              ],
+              "matrix": false,
+              "parameters": []
+            },
+            {
+              "name": "rz",
+              "wires": [
+                3
+              ],
+              "matrix": false,
+              "parameters": [
+                "theta"
+              ]
+            },
+            {
+              "name": "cx",
+              "wires": [
+                5,
+                3
+              ],
+              "matrix": false,
+              "parameters": []
+            },
+            {
+              "name": "rz",
+              "wires": [
+                3
+              ],
+              "matrix": false,
+              "parameters": [
+                "theta"
+              ]
+            },
+            {
+              "name": "cx",
+              "wires": [
+                4,
+                3
+              ],
+              "matrix": false,
+              "parameters": []
+            },
+            {
+              "name": "rz",
+              "wires": [
+                3
+              ],
+              "matrix": false,
+              "parameters": [
+                "theta"
+              ]
+            },
+            {
+              "name": "cx",
+              "wires": [
+                5,
+                3
+              ],
+              "matrix": false,
+              "parameters": []
+            },
+            {
+              "name": "rz",
+              "wires": [
+                4
+              ],
+              "matrix": false,
+              "parameters": [
+                "theta"
+              ]
+            },
+            {
+              "name": "rz",
+              "wires": [
+                3
+              ],
+              "matrix": false,
+              "parameters": [
+                "theta"
+              ]
+            },
+            {
+              "name": "h",
+              "wires": [
+                3
+              ],
+              "matrix": false,
+              "parameters": []
+            },
+            {
+              "name": "cx",
+              "wires": [
+                5,
+                4
+              ],
+              "matrix": false,
+              "parameters": []
+            },
+            {
+              "name": "rz",
+              "wires": [
+                4
+              ],
+              "matrix": false,
+              "parameters": [
+                "theta"
+              ]
+            },
+            {
+              "name": "cx",
+              "wires": [
+                5,
+                4
+              ],
+              "matrix": false,
+              "parameters": []
+            },
+            {
+              "name": "x",
+              "wires": [
+                4
+              ],
+              "matrix": false,
+              "parameters": []
+            },
+            {
+              "name": "x",
+              "wires": [
+                5
+              ],
+              "matrix": false,
+              "parameters": []
+            },
+            {
+              "name": "h",
+              "wires": [
+                2
+              ],
+              "matrix": false,
+              "parameters": []
+            },
+            {
+              "name": "cx",
+              "wires": [
+                4,
+                2
+              ],
+              "matrix": false,
+              "parameters": []
+            },
+            {
+              "name": "rz",
+              "wires": [
+                2
+              ],
+              "matrix": false,
+              "parameters": [
+                "theta"
+              ]
+            },
+            {
+              "name": "cx",
+              "wires": [
+                5,
+                2
+              ],
+              "matrix": false,
+              "parameters": []
+            },
+            {
+              "name": "rz",
+              "wires": [
+                2
+              ],
+              "matrix": false,
+              "parameters": [
+                "theta"
+              ]
+            },
+            {
+              "name": "cx",
+              "wires": [
+                4,
+                2
+              ],
+              "matrix": false,
+              "parameters": []
+            },
+            {
+              "name": "rz",
+              "wires": [
+                2
+              ],
+              "matrix": false,
+              "parameters": [
+                "theta"
+              ]
+            },
+            {
+              "name": "cx",
+              "wires": [
+                5,
+                2
+              ],
+              "matrix": false,
+              "parameters": []
+            },
+            {
+              "name": "rz",
+              "wires": [
+                4
+              ],
+              "matrix": false,
+              "parameters": [
+                "theta"
+              ]
+            },
+            {
+              "name": "rz",
+              "wires": [
+                2
+              ],
+              "matrix": false,
+              "parameters": [
+                "theta"
+              ]
+            },
+            {
+              "name": "h",
+              "wires": [
+                2
+              ],
+              "matrix": false,
+              "parameters": []
+            },
+            {
+              "name": "cx",
+              "wires": [
+                5,
+                4
+              ],
+              "matrix": false,
+              "parameters": []
+            },
+            {
+              "name": "rz",
+              "wires": [
+                5
+              ],
+              "matrix": false,
+              "parameters": [
+                "theta"
+              ]
+            },
+            {
+              "name": "rz",
+              "wires": [
+                4
+              ],
+              "matrix": false,
+              "parameters": [
+                "theta"
+              ]
+            },
+            {
+              "name": "cx",
+              "wires": [
+                5,
+                4
+              ],
+              "matrix": false,
+              "parameters": []
+            },
+            {
+              "name": "x",
+              "wires": [
+                5
+              ],
+              "matrix": false,
+              "parameters": []
+            },
+            {
+              "name": "rz",
+              "wires": [
+                0
+              ],
+              "matrix": false,
+              "parameters": [
+                "theta"
+              ]
+            }
+          ],
+          "predicate_calls": 92,
+          "summary": {
+            "qubit_count": 6,
+            "block_count": 57,
+            "widest_block": 9,
+            "queried_pairs": 112,
+            "commuting_pairs": 61
+          }
+        },
+        {
+          "operation_count": 77,
+          "operations": [
+            {
+              "name": "ry",
+              "wires": [
+                3
+              ],
+              "matrix": false,
+              "parameters": [
+                "theta"
+              ]
+            },
+            {
+              "name": "rz",
+              "wires": [
+                0
+              ],
+              "matrix": false,
+              "parameters": [
+                "theta"
+              ]
+            },
+            {
+              "name": "swap",
+              "wires": [
+                2,
+                3
+              ],
+              "matrix": false,
+              "parameters": []
+            },
+            {
+              "name": "cx",
+              "wires": [
+                2,
+                1
+              ],
+              "matrix": false,
+              "parameters": []
+            },
+            {
+              "name": "cx",
+              "wires": [
+                2,
+                3
+              ],
+              "matrix": false,
+              "parameters": []
+            },
+            {
+              "name": "x",
+              "wires": [
+                2
+              ],
+              "matrix": false,
+              "parameters": []
+            },
+            {
+              "name": "swap",
+              "wires": [
+                0,
+                5
+              ],
+              "matrix": false,
+              "parameters": []
+            },
+            {
+              "name": "swap",
+              "wires": [
+                0,
+                1
+              ],
+              "matrix": false,
+              "parameters": []
+            },
+            {
+              "name": "cx",
+              "wires": [
+                2,
+                1
+              ],
+              "matrix": false,
+              "parameters": []
+            },
+            {
+              "name": "cx",
+              "wires": [
+                0,
+                1
+              ],
+              "matrix": false,
+              "parameters": []
+            },
+            {
+              "name": "h",
+              "wires": [
+                2
+              ],
+              "matrix": false,
+              "parameters": []
+            },
+            {
+              "name": "swap",
+              "wires": [
+                4,
+                5
+              ],
+              "matrix": false,
+              "parameters": []
+            },
+            {
+              "name": "cx",
+              "wires": [
+                0,
+                5
+              ],
+              "matrix": false,
+              "parameters": []
+            },
+            {
+              "name": "h",
+              "wires": [
+                0
+              ],
+              "matrix": false,
+              "parameters": []
+            },
+            {
+              "name": "swap",
+              "wires": [
+                3,
+                4
+              ],
+              "matrix": false,
+              "parameters": []
+            },
+            {
+              "name": "cx",
+              "wires": [
+                4,
+                5
+              ],
+              "matrix": false,
+              "parameters": []
+            },
+            {
+              "name": "cx",
+              "wires": [
+                5,
+                0
+              ],
+              "matrix": false,
+              "parameters": []
+            },
+            {
+              "name": "h",
+              "wires": [
+                4
+              ],
+              "matrix": false,
+              "parameters": []
+            },
+            {
+              "name": "rz",
+              "wires": [
+                0
+              ],
+              "matrix": false,
+              "parameters": [
+                "theta"
+              ]
+            },
+            {
+              "name": "cx",
+              "wires": [
+                1,
+                0
+              ],
+              "matrix": false,
+              "parameters": []
+            },
+            {
+              "name": "rz",
+              "wires": [
+                0
+              ],
+              "matrix": false,
+              "parameters": [
+                "theta"
+              ]
+            },
+            {
+              "name": "cx",
+              "wires": [
+                5,
+                0
+              ],
+              "matrix": false,
+              "parameters": []
+            },
+            {
+              "name": "rz",
+              "wires": [
+                0
+              ],
+              "matrix": false,
+              "parameters": [
+                "theta"
+              ]
+            },
+            {
+              "name": "rz",
+              "wires": [
+                5
+              ],
+              "matrix": false,
+              "parameters": [
+                "theta"
+              ]
+            },
+            {
+              "name": "cx",
+              "wires": [
+                1,
+                0
+              ],
+              "matrix": false,
+              "parameters": []
+            },
+            {
+              "name": "rz",
+              "wires": [
+                0
+              ],
+              "matrix": false,
+              "parameters": [
+                "theta"
+              ]
+            },
+            {
+              "name": "h",
+              "wires": [
+                0
+              ],
+              "matrix": false,
+              "parameters": []
+            },
+            {
+              "name": "swap",
+              "wires": [
+                0,
+                5
+              ],
+              "matrix": false,
+              "parameters": []
+            },
+            {
+              "name": "cx",
+              "wires": [
+                1,
+                0
+              ],
+              "matrix": false,
+              "parameters": []
+            },
+            {
+              "name": "rz",
+              "wires": [
+                1
+              ],
+              "matrix": false,
+              "parameters": [
+                "theta"
+              ]
+            },
+            {
+              "name": "rz",
+              "wires": [
+                0
+              ],
+              "matrix": false,
+              "parameters": [
+                "theta"
+              ]
+            },
+            {
+              "name": "cx",
+              "wires": [
+                1,
+                0
+              ],
+              "matrix": false,
+              "parameters": []
+            },
+            {
+              "name": "x",
+              "wires": [
+                0
+              ],
+              "matrix": false,
+              "parameters": []
+            },
+            {
+              "name": "swap",
+              "wires": [
+                1,
+                2
+              ],
+              "matrix": false,
+              "parameters": []
+            },
+            {
+              "name": "cx",
+              "wires": [
+                0,
+                1
+              ],
+              "matrix": false,
+              "parameters": []
+            },
+            {
+              "name": "rz",
+              "wires": [
+                1
+              ],
+              "matrix": false,
+              "parameters": [
+                "theta"
+              ]
+            },
+            {
+              "name": "cx",
+              "wires": [
+                2,
+                1
+              ],
+              "matrix": false,
+              "parameters": []
+            },
+            {
+              "name": "rz",
+              "wires": [
+                1
+              ],
+              "matrix": false,
+              "parameters": [
+                "theta"
+              ]
+            },
+            {
+              "name": "cx",
+              "wires": [
+                0,
+                1
+              ],
+              "matrix": false,
+              "parameters": []
+            },
+            {
+              "name": "rz",
+              "wires": [
+                1
+              ],
+              "matrix": false,
+              "parameters": [
+                "theta"
+              ]
+            },
+            {
+              "name": "rz",
+              "wires": [
+                0
+              ],
+              "matrix": false,
+              "parameters": [
+                "theta"
+              ]
+            },
+            {
+              "name": "cx",
+              "wires": [
+                2,
+                1
+              ],
+              "matrix": false,
+              "parameters": []
+            },
+            {
+              "name": "rz",
+              "wires": [
+                1
+              ],
+              "matrix": false,
+              "parameters": [
+                "theta"
+              ]
+            },
+            {
+              "name": "h",
+              "wires": [
+                1
+              ],
+              "matrix": false,
+              "parameters": []
+            },
+            {
+              "name": "swap",
+              "wires": [
+                1,
+                2
+              ],
+              "matrix": false,
+              "parameters": []
+            },
+            {
+              "name": "cx",
+              "wires": [
+                1,
+                0
+              ],
+              "matrix": false,
+              "parameters": []
+            },
+            {
+              "name": "rz",
+              "wires": [
+                0
+              ],
+              "matrix": false,
+              "parameters": [
+                "theta"
+              ]
+            },
+            {
+              "name": "cx",
+              "wires": [
+                1,
+                0
+              ],
+              "matrix": false,
+              "parameters": []
+            },
+            {
+              "name": "x",
+              "wires": [
+                0
+              ],
+              "matrix": false,
+              "parameters": []
+            },
+            {
+              "name": "x",
+              "wires": [
+                1
+              ],
+              "matrix": false,
+              "parameters": []
+            },
+            {
+              "name": "swap",
+              "wires": [
+                4,
+                5
+              ],
+              "matrix": false,
+              "parameters": []
+            },
+            {
+              "name": "cx",
+              "wires": [
+                0,
+                5
+              ],
+              "matrix": false,
+              "parameters": []
+            },
+            {
+              "name": "rz",
+              "wires": [
+                5
+              ],
+              "matrix": false,
+              "parameters": [
+                "theta"
+              ]
+            },
+            {
+              "name": "swap",
+              "wires": [
+                0,
+                1
+              ],
+              "matrix": false,
+              "parameters": []
+            },
+            {
+              "name": "cx",
+              "wires": [
+                0,
+                5
+              ],
+              "matrix": false,
+              "parameters": []
+            },
+            {
+              "name": "rz",
+              "wires": [
+                5
+              ],
+              "matrix": false,
+              "parameters": [
+                "theta"
+              ]
+            },
+            {
+              "name": "swap",
+              "wires": [
+                0,
+                1
+              ],
+              "matrix": false,
+              "parameters": []
+            },
+            {
+              "name": "cx",
+              "wires": [
+                0,
+                5
+              ],
+              "matrix": false,
+              "parameters": []
+            },
+            {
+              "name": "rz",
+              "wires": [
+                5
+              ],
+              "matrix": false,
+              "parameters": [
+                "theta"
+              ]
+            },
+            {
+              "name": "rz",
+              "wires": [
+                0
+              ],
+              "matrix": false,
+              "parameters": [
+                "theta"
+              ]
+            },
+            {
+              "name": "swap",
+              "wires": [
+                0,
+                1
+              ],
+              "matrix": false,
+              "parameters": []
+            },
+            {
+              "name": "cx",
+              "wires": [
+                0,
+                5
+              ],
+              "matrix": false,
+              "parameters": []
+            },
+            {
+              "name": "rz",
+              "wires": [
+                5
+              ],
+              "matrix": false,
+              "parameters": [
+                "theta"
+              ]
+            },
+            {
+              "name": "cx",
+              "wires": [
+                0,
+                1
+              ],
+              "matrix": false,
+              "parameters": []
+            },
+            {
+              "name": "h",
+              "wires": [
+                5
+              ],
+              "matrix": false,
+              "parameters": []
+            },
+            {
+              "name": "rz",
+              "wires": [
+                0
+              ],
+              "matrix": false,
+              "parameters": [
+                "theta"
+              ]
+            },
+            {
+              "name": "rz",
+              "wires": [
+                1
+              ],
+              "matrix": false,
+              "parameters": [
+                "theta"
+              ]
+            },
+            {
+              "name": "cx",
+              "wires": [
+                0,
+                1
+              ],
+              "matrix": false,
+              "parameters": []
+            },
+            {
+              "name": "x",
+              "wires": [
+                0
+              ],
+              "matrix": false,
+              "parameters": []
+            },
+            {
+              "name": "swap",
+              "wires": [
+                2,
+                3
+              ],
+              "matrix": false,
+              "parameters": []
+            },
+            {
+              "name": "swap",
+              "wires": [
+                0,
+                5
+              ],
+              "matrix": false,
+              "parameters": []
+            },
+            {
+              "name": "swap",
+              "wires": [
+                0,
+                1
+              ],
+              "matrix": false,
+              "parameters": []
+            },
+            {
+              "name": "swap",
+              "wires": [
+                1,
+                2
+              ],
+              "matrix": false,
+              "parameters": []
+            },
+            {
+              "name": "swap",
+              "wires": [
+                4,
+                5
+              ],
+              "matrix": false,
+              "parameters": []
+            },
+            {
+              "name": "swap",
+              "wires": [
+                0,
+                5
+              ],
+              "matrix": false,
+              "parameters": []
+            },
+            {
+              "name": "swap",
+              "wires": [
+                0,
+                1
+              ],
+              "matrix": false,
+              "parameters": []
+            },
+            {
+              "name": "swap",
+              "wires": [
+                4,
+                5
+              ],
+              "matrix": false,
+              "parameters": []
+            }
+          ],
+          "predicate_calls": 119,
+          "summary": {
+            "qubit_count": 6,
+            "block_count": 97,
+            "widest_block": 5,
+            "queried_pairs": 128,
+            "commuting_pairs": 37
+          }
+        }
+      ],
+      "passes": [
+        {
+          "pass": "remove_zero_state_resets",
+          "input_count": 58,
+          "output_count": 58,
+          "changes": []
+        },
+        {
+          "pass": "remove_diagonal_gates_before_measure",
+          "input_count": 58,
+          "output_count": 58,
+          "changes": []
+        },
+        {
+          "pass": "remove_identity_gates",
+          "input_count": 58,
+          "output_count": 58,
+          "changes": []
+        },
+        {
+          "pass": "merge_self_inverse",
+          "input_count": 58,
+          "output_count": 58,
+          "changes": []
+        },
+        {
+          "pass": "merge_inverse_pairs",
+          "input_count": 58,
+          "output_count": 58,
+          "changes": []
+        },
+        {
+          "pass": "merge_adjacent_rotations",
+          "input_count": 58,
+          "output_count": 58,
+          "changes": []
+        },
+        {
+          "pass": "merge_commuting_rotations",
+          "input_count": 58,
+          "output_count": 57,
+          "changes": [
+            {
+              "kind": "replace",
+              "before": [
+                {
+                  "opcode": "rz",
+                  "wires": [
+                    5
+                  ],
+                  "params": {
+                    "theta": {
+                      "$tensor": {
+                        "dtype": "float64",
+                        "shape": [],
+                        "data": 0.7853981633974483
+                      }
+                    }
+                  },
+                  "matrix": null,
+                  "metadata": {}
+                }
+              ],
+              "after": [
+                {
+                  "opcode": "rz",
+                  "wires": [
+                    5
+                  ],
+                  "params": {
+                    "theta": {
+                      "$tensor": {
+                        "dtype": "float64",
+                        "shape": [],
+                        "data": 1.5707963267948966
+                      }
+                    }
+                  },
+                  "matrix": null,
+                  "metadata": {}
+                }
+              ]
+            },
+            {
+              "kind": "delete",
+              "before": [
+                {
+                  "opcode": "rz",
+                  "wires": [
+                    5
+                  ],
+                  "params": {
+                    "theta": {
+                      "$tensor": {
+                        "dtype": "float64",
+                        "shape": [],
+                        "data": 0.7853981633974483
+                      }
+                    }
+                  },
+                  "matrix": null,
+                  "metadata": {}
+                }
+              ],
+              "after": []
+            }
+          ]
+        },
+        {
+          "pass": "cancel_commuting_self_inverse",
+          "input_count": 57,
+          "output_count": 57,
+          "changes": []
+        },
+        {
+          "pass": "remove_identity_gates",
+          "input_count": 57,
+          "output_count": 57,
+          "changes": []
+        },
+        {
+          "pass": "collapse_one_qubit_runs",
+          "input_count": 57,
+          "output_count": 57,
+          "changes": []
+        },
+        {
+          "pass": "collapse_two_qubit_blocks",
+          "input_count": 57,
+          "output_count": 57,
+          "changes": []
+        },
+        {
+          "pass": "remove_zero_state_resets",
+          "input_count": 57,
+          "output_count": 57,
+          "changes": []
+        },
+        {
+          "pass": "remove_diagonal_gates_before_measure",
+          "input_count": 57,
+          "output_count": 57,
+          "changes": []
+        },
+        {
+          "pass": "remove_identity_gates",
+          "input_count": 57,
+          "output_count": 57,
+          "changes": []
+        },
+        {
+          "pass": "merge_self_inverse",
+          "input_count": 57,
+          "output_count": 57,
+          "changes": []
+        },
+        {
+          "pass": "merge_inverse_pairs",
+          "input_count": 57,
+          "output_count": 57,
+          "changes": []
+        },
+        {
+          "pass": "merge_adjacent_rotations",
+          "input_count": 57,
+          "output_count": 57,
+          "changes": []
+        },
+        {
+          "pass": "merge_commuting_rotations",
+          "input_count": 57,
+          "output_count": 57,
+          "changes": []
+        },
+        {
+          "pass": "cancel_commuting_self_inverse",
+          "input_count": 57,
+          "output_count": 57,
+          "changes": []
+        },
+        {
+          "pass": "remove_identity_gates",
+          "input_count": 57,
+          "output_count": 57,
+          "changes": []
+        },
+        {
+          "pass": "collapse_one_qubit_runs",
+          "input_count": 57,
+          "output_count": 57,
+          "changes": []
+        },
+        {
+          "pass": "collapse_two_qubit_blocks",
+          "input_count": 57,
+          "output_count": 57,
+          "changes": []
+        },
+        {
+          "pass": "remove_zero_state_resets",
+          "input_count": 77,
+          "output_count": 77,
+          "changes": []
+        },
+        {
+          "pass": "remove_diagonal_gates_before_measure",
+          "input_count": 77,
+          "output_count": 77,
+          "changes": []
+        },
+        {
+          "pass": "remove_identity_gates",
+          "input_count": 77,
+          "output_count": 77,
+          "changes": []
+        },
+        {
+          "pass": "merge_self_inverse",
+          "input_count": 77,
+          "output_count": 77,
+          "changes": []
+        },
+        {
+          "pass": "merge_inverse_pairs",
+          "input_count": 77,
+          "output_count": 77,
+          "changes": []
+        },
+        {
+          "pass": "merge_adjacent_rotations",
+          "input_count": 77,
+          "output_count": 77,
+          "changes": []
+        },
+        {
+          "pass": "merge_commuting_rotations",
+          "input_count": 77,
+          "output_count": 77,
+          "changes": []
+        },
+        {
+          "pass": "cancel_commuting_self_inverse",
+          "input_count": 77,
+          "output_count": 77,
+          "changes": []
+        },
+        {
+          "pass": "remove_identity_gates",
+          "input_count": 77,
+          "output_count": 77,
+          "changes": []
+        },
+        {
+          "pass": "collapse_one_qubit_runs",
+          "input_count": 77,
+          "output_count": 77,
+          "changes": []
+        },
+        {
+          "pass": "collapse_two_qubit_blocks",
+          "input_count": 77,
+          "output_count": 77,
+          "changes": []
+        }
+      ],
+      "payload_sha256": "9baf8d269a0bad8c19e5ecd60f9a07522fc4dd32e5a75bbfabe61492ce6358ba",
+      "audit": {
+        "native_program_builds": 1,
+        "native_executions": 0,
+        "native_compilations": 1,
+        "compiler_seed_supported": 0,
+        "restoration_swaps": 0,
+        "restoration_cz_count": 0,
+        "restoration_operations": 0
+      }
+    }
+  ]
+}

@@ -46,7 +46,7 @@ def test_full_state_and_the_named_hardware_profile(result: workflow.Result) -> N
     assert result.target_error < 1e-11
     assert result.program.report["workspace_qubits"] == 0
     assert set(result.target_resources.operation_counts) == {"cx", "u3"}
-    assert result.target_resources.operation_counts["cx"] == 4176
+    assert result.target_resources.operation_counts["cx"] == 3694
     assert result.target_resources.n_qubits == 12
     assert sum(p for _, p in result.distribution) == pytest.approx(1.0, abs=1e-11)
     assert all(0 <= word < 2**12 for word, _ in result.distribution)

@@ -3,6 +3,7 @@
 import math
 from collections.abc import Callable
 from dataclasses import replace
+from typing import Any, Literal, NoReturn
 
 import pytest
 import torch
@@ -10,6 +11,10 @@ import torch
 import flagquantum as fq
 from examples.synthesis.tutorials.getting_started.trial.main import polynomial, pressure
 from flagquantum import synth
+from flagquantum.compiler._construction.scheduling.selection import (
+    Selection,
+    select_arithmetic,
+)
 from flagquantum.core.ir import Instruction
 from flagquantum.runtime.execution_plan import ExecutionPlan
 from flagquantum.services import _synthesis_readout as readout
@@ -23,7 +28,9 @@ def branch_pressure(x: int, y: int) -> int:
     return (t + x) * (t + y)
 
 
-def _program(*, function: Callable[[int, int], int] = pressure, **kwargs):
+def _program(
+    *, function: Callable[[int, int], int] = pressure, **kwargs: Any
+) -> synth.Program:
     return synth.synthesize(
         function,
         inputs={"y": synth.UInt(1), "x": synth.UInt(1)},
@@ -36,7 +43,9 @@ def _program(*, function: Callable[[int, int], int] = pressure, **kwargs):
 @pytest.mark.parametrize("objective", ["width", "depth"])
 @pytest.mark.parametrize("state", ["basis", "uniform"])
 def test_high_level_inputs_and_names_need_no_gates_maps_or_decoding(
-    topology, objective, state
+    topology: Literal["line"] | None,
+    objective: Literal["width", "depth"],
+    state: Literal["basis", "uniform"],
 ) -> None:
     program = synth.synthesize(
         pressure,
@@ -60,6 +69,7 @@ def test_high_level_inputs_and_names_need_no_gates_maps_or_decoding(
     assert program.report["candidate"] == "retain"
     assert program.report["resources"] == program._checked.verify_result(result)
     row = program.selection.selected
+    assert row is not None and row.target is not None
     assert row.source_identities
     if topology:
         assert any(g.name == "swap" for g in row.target.executable.instructions)
@@ -78,7 +88,7 @@ def test_high_level_inputs_and_names_need_no_gates_maps_or_decoding(
 
 def test_final_constraints_change_schedule_without_user_selecting_one() -> None:
     narrow = _program(function=branch_pressure, max_qubits=17)
-    shallow = _program(function=branch_pressure, max_operations=105)
+    shallow = _program(function=branch_pressure, max_operations=97)
     assert narrow.report["candidate"] == "recompute"
     assert shallow.report["candidate"] == "retain"
     for program in (narrow, shallow):
@@ -105,7 +115,8 @@ def test_every_user_repair_is_a_real_complete_retry() -> None:
             1.0
         )
         with pytest.raises(TypeError):
-            repair["max_qubits"] = 100
+            invalid_mutation: Any = repair
+            invalid_mutation["max_qubits"] = 100
 
 
 def test_budget_exhaustion_is_not_a_partial_success() -> None:
@@ -117,7 +128,7 @@ def test_budget_exhaustion_is_not_a_partial_success() -> None:
 
 
 def test_synthesis_plans_once_and_execution_property_and_reading_do_not_replan(
-    monkeypatch,
+    monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     import flagquantum._api as api
     import flagquantum.compiler as compiler
@@ -125,11 +136,11 @@ def test_synthesis_plans_once_and_execution_property_and_reading_do_not_replan(
     original = api.plan
     calls = []
 
-    def count(*args, **kwargs):
+    def count(*args: Any, **kwargs: Any) -> ExecutionPlan:
         calls.append(1)
         return original(*args, **kwargs)
 
-    def forbidden(*args, **kwargs):
+    def forbidden(*args: object, **kwargs: object) -> NoReturn:
         raise AssertionError("this operation must not execute, compile or replan")
 
     monkeypatch.setattr(api, "plan", count)
@@ -146,11 +157,13 @@ def test_synthesis_plans_once_and_execution_property_and_reading_do_not_replan(
     assert len(program.probabilities(result)) == 2
 
 
-def test_reader_budget_precedes_norm_scan_and_marginal_allocation(monkeypatch) -> None:
+def test_reader_budget_precedes_norm_scan_and_marginal_allocation(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
     program = _program(topology="line")
     result = fq.run(program)
 
-    def forbidden(*args, **kwargs):
+    def forbidden(*args: object, **kwargs: object) -> NoReturn:
         raise AssertionError("read budget must precede state scanning/allocation")
 
     monkeypatch.setattr(torch.linalg, "vector_norm", forbidden)
@@ -160,7 +173,9 @@ def test_reader_budget_precedes_norm_scan_and_marginal_allocation(monkeypatch) -
 
 
 @pytest.mark.parametrize("topology", [None, "line"])
-def test_checked_plan_serialization_preserves_named_reading(topology) -> None:
+def test_checked_plan_serialization_preserves_named_reading(
+    topology: Literal["line"] | None,
+) -> None:
     program = _program(topology=topology)
     restored = ExecutionPlan.from_json(program.execution.to_json())
     observed = program.probabilities(fq.run(restored), registers=("x", "y", "result"))
@@ -196,15 +211,16 @@ def test_changed_options_same_size_program_and_logical_bindings_are_refused() ->
 
 
 def test_compiler_prediction_is_bound_to_actual_runtime_even_if_fake_claims_success(
-    monkeypatch,
+    monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     from flagquantum.services import synthesis as workflow
 
-    original = workflow.select_arithmetic
+    original = select_arithmetic
 
-    def wrong_prediction(*args, **kwargs):
+    def wrong_prediction(*args: Any, **kwargs: Any) -> Selection:
         selection = original(*args, **kwargs)
         row = selection.selected
+        assert row is not None and row.target is not None
         wrong = replace(
             row.target.executable,
             instructions=(*row.target.executable.instructions, Instruction("x", (0,))),
@@ -225,10 +241,9 @@ def test_compiler_prediction_is_bound_to_actual_runtime_even_if_fake_claims_succ
 def test_u3_cx_basis_preserves_arithmetic_state() -> None:
     reference = _program()
     lowered = _program(basis=("u3", "cx"))
-    assert {
-        instruction.name
-        for instruction in lowered.selection.selected.target.executable.instructions
-    } <= {
+    row = lowered.selection.selected
+    assert row is not None and row.target is not None
+    assert {instruction.name for instruction in row.target.executable.instructions} <= {
         "u3",
         "cx",
     }
@@ -269,7 +284,11 @@ def test_physical_port_substitution_and_mutated_compiler_stages_are_refused() ->
     )
     with pytest.raises(ValueError, match="named ports"):
         replace(program, _checked=forged).probabilities(fq.run(program))
-    program.selection.selected.target.stages[0][1].metadata["stale"] = True
+    row = program.selection.selected
+    assert row is not None and row.target is not None
+    metadata = row.target.stages[0][1].metadata
+    assert isinstance(metadata, dict)
+    metadata["stale"] = True
     with pytest.raises(ValueError, match="circuit changed"):
         _ = program.execution
 
@@ -293,7 +312,7 @@ def test_routed_filtering_reports_omitted_mass_and_never_renormalizes() -> None:
 @pytest.mark.parametrize("topology", [None, "line"])
 @pytest.mark.parametrize("theta", [0.37, 1.1, 2.0])
 def test_bound_preparation_gradient_survives_single_user_product(
-    topology, theta
+    topology: Literal["line"] | None, theta: float
 ) -> None:
     parameter = torch.tensor(theta, dtype=torch.float64, requires_grad=True)
     prep = fq.Circuit(2, dtype=torch.complex128).ry(0, parameter).to_ir()

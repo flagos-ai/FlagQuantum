@@ -92,7 +92,7 @@ def test_complete_cost_matrix_and_nondominated_default(
 
 def test_constraints_and_objectives_select_real_different_schedules() -> None:
     narrow = _select(constraints=Constraints(CircuitLimits(max_qubits=17)))
-    shallow = _select(constraints=Constraints(CircuitLimits(max_operations=103)))
+    shallow = _select(constraints=Constraints(CircuitLimits(max_operations=95)))
     assert narrow.selected is not None and shallow.selected is not None
     assert narrow.selected.strategy == "recompute"
     assert shallow.selected.strategy == "retain"
@@ -124,7 +124,7 @@ def test_determinism_ignores_elapsed_observations(
 
 def test_all_violations_and_every_combined_recovery_is_retried() -> None:
     constraints = Constraints(
-        CircuitLimits(max_qubits=16, max_operations=102, max_depth=72), max_workspace=11
+        CircuitLimits(max_qubits=16, max_operations=94, max_depth=68), max_workspace=11
     )
     failed = _select(constraints=constraints)
     assert failed.selected is None and failed.complete
@@ -192,12 +192,12 @@ def test_preparation_scope_final_limit_does_not_prune_larger_source() -> None:
     preparation = CircuitIR(2, tuple(Instruction("x", (0,)) for _ in range(100)))
     result = _select(
         preparation=preparation,
-        constraints=Constraints(CircuitLimits(max_operations=103)),
+        constraints=Constraints(CircuitLimits(max_operations=95)),
     )
     assert result.selected is not None and result.selected.strategy == "retain"
     costs = dict(result.selected.stage_resources)
     assert costs["source"].n_operations == 205
-    assert costs["executable"].n_operations == 103
+    assert costs["executable"].n_operations == 95
 
 
 def test_preparation_cannot_claim_dirty_workspace_or_measurements() -> None:
@@ -315,13 +315,17 @@ def test_target_validation_reads_each_shared_object_once_and_detects_later_mutat
     from flagquantum.compiler.layout import Layout
 
     program = CircuitIR(1, (Instruction("h", (0,)),))
-    original = CircuitIR.content_hash.fget
+    descriptor = vars(CircuitIR)["content_hash"]
+    assert isinstance(descriptor, property)
+    original = descriptor.fget
     assert original is not None
     calls: list[int] = []
 
     def digest(value: CircuitIR) -> str:
         calls.append(id(value))
-        return original(value)
+        identity = original(value)
+        assert isinstance(identity, str)
+        return identity
 
     monkeypatch.setattr(CircuitIR, "content_hash", property(digest))
     target = TargetProduct(
@@ -339,6 +343,7 @@ def test_target_validation_reads_each_shared_object_once_and_detects_later_mutat
     assert calls == [id(program)]
     target.validate()
     assert calls == [id(program)] * 2
+    assert isinstance(program.metadata, dict)
     program.metadata["changed"] = True
     with pytest.raises(TargetError, match="changed"):
         target.validate()

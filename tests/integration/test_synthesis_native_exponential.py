@@ -217,8 +217,8 @@ def test_invalid_overlap_refuses(success: float) -> None:
         {"max_qubits": 5},
         {"max_qubits": 7, "max_operations": 2399},
         {"max_workspace": 1, "max_operations": 2399},
-        {"max_operations": 2398},
-        {"max_depth": 2045},
+        {"max_operations": 2386},
+        {"max_depth": 2038},
         {"memory_limit_bytes": 1024},
     ],
 )
@@ -230,6 +230,17 @@ def test_resource_budgets_refuse(limits: Limits) -> None:
         synth.synthesize(
             native.main, classical_inputs=native.classical_inputs(), **limits
         )
+
+
+@pytest.mark.parametrize("limits", ({"max_operations": 2387}, {"max_depth": 2039}))
+def test_resource_budgets_accept_the_exact_current_boundary(limits: Limits) -> None:
+    program = synth.synthesize(
+        native.main, classical_inputs=native.classical_inputs(), **limits
+    )
+    resources = program.report["resources"]
+    assert isinstance(resources, ResourceEstimate)
+    assert resources.n_operations == 2387
+    assert resources.depth == 2039
 
 
 @pytest.mark.parametrize("workspace", (0, 1))

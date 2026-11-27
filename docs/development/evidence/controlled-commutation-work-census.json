@@ -1,0 +1,148 @@
+{
+  "scope": "Untimed post-observation work census of the adverse inspected repetition6/ring ordinary case; not resource replication",
+  "implementation_commit": "1b859d7cf1de0929b9e5ce53c515c663058d004e",
+  "source_commit": "9aa9260920984e2ca05bcb293abb885fccd9c144",
+  "quality_observation_sha256": "339e55c5d3262428500639e5274e02862a68e3d78f9c694e4a31ae1f2958ce0b",
+  "variants": {
+    "baseline": {
+      "predicate_counts": {
+        "predicate_calls": 396,
+        "false": 310,
+        "true": 86
+      },
+      "analysis_calls": [
+        {
+          "source_operations": 58,
+          "summary": {
+            "qubit_count": 6,
+            "block_count": 65,
+            "widest_block": 3,
+            "queried_pairs": 82,
+            "commuting_pairs": 23
+          }
+        },
+        {
+          "source_operations": 58,
+          "summary": {
+            "qubit_count": 6,
+            "block_count": 65,
+            "widest_block": 3,
+            "queried_pairs": 82,
+            "commuting_pairs": 23
+          }
+        },
+        {
+          "source_operations": 78,
+          "summary": {
+            "qubit_count": 6,
+            "block_count": 102,
+            "widest_block": 5,
+            "queried_pairs": 128,
+            "commuting_pairs": 32
+          }
+        },
+        {
+          "source_operations": 78,
+          "summary": {
+            "qubit_count": 6,
+            "block_count": 102,
+            "widest_block": 5,
+            "queried_pairs": 128,
+            "commuting_pairs": 32
+          }
+        }
+      ],
+      "payload_sha256": "8d7120eb4e2b78ad7cc4e3f7d086afa118f9e032464f4b50cbe5c3d4ec7ecc1f",
+      "audit": {
+        "native_program_builds": 1,
+        "native_executions": 0,
+        "native_compilations": 1,
+        "compiler_seed_supported": 0,
+        "restoration_swaps": 0,
+        "restoration_cz_count": 0,
+        "restoration_operations": 0
+      }
+    },
+    "candidate": {
+      "predicate_counts": {
+        "predicate_calls": 610,
+        "false": 386,
+        "true": 224
+      },
+      "analysis_calls": [
+        {
+          "source_operations": 58,
+          "summary": {
+            "qubit_count": 6,
+            "block_count": 57,
+            "widest_block": 10,
+            "queried_pairs": 121,
+            "commuting_pairs": 70
+          }
+        },
+        {
+          "source_operations": 57,
+          "summary": {
+            "qubit_count": 6,
+            "block_count": 57,
+            "widest_block": 9,
+            "queried_pairs": 112,
+            "commuting_pairs": 61
+          }
+        },
+        {
+          "source_operations": 57,
+          "summary": {
+            "qubit_count": 6,
+            "block_count": 57,
+            "widest_block": 9,
+            "queried_pairs": 112,
+            "commuting_pairs": 61
+          }
+        },
+        {
+          "source_operations": 57,
+          "summary": {
+            "qubit_count": 6,
+            "block_count": 57,
+            "widest_block": 9,
+            "queried_pairs": 112,
+            "commuting_pairs": 61
+          }
+        },
+        {
+          "source_operations": 77,
+          "summary": {
+            "qubit_count": 6,
+            "block_count": 97,
+            "widest_block": 5,
+            "queried_pairs": 128,
+            "commuting_pairs": 37
+          }
+        },
+        {
+          "source_operations": 77,
+          "summary": {
+            "qubit_count": 6,
+            "block_count": 97,
+            "widest_block": 5,
+            "queried_pairs": 128,
+            "commuting_pairs": 37
+          }
+        }
+      ],
+      "payload_sha256": "9baf8d269a0bad8c19e5ecd60f9a07522fc4dd32e5a75bbfabe61492ce6358ba",
+      "audit": {
+        "native_program_builds": 1,
+        "native_executions": 0,
+        "native_compilations": 1,
+        "compiler_seed_supported": 0,
+        "restoration_swaps": 0,
+        "restoration_cz_count": 0,
+        "restoration_operations": 0
+      }
+    }
+  },
+  "script_sha256": "d0c21e4803c07db5027c4e5b22a5bf1e33500c8308b03fa79ad460a7901f0bc4",
+  "script_source": "import collections,hashlib,json,subprocess,sys,types\nfrom pathlib import Path\nfrom types import SimpleNamespace\nfrom unittest.mock import patch\nsys.path.insert(0,'/private/tmp/sdkbench-product-conformance-20261121/src')\nfrom sdkbench.candidates.adapters import load_adapter,workflow_configuration\nfrom sdkbench.candidates.applications import fixture\nfrom flagquantum.compiler.optimization import commutation,commutation_cancellation,pass_registry\nbaseline_source=subprocess.check_output(['git','show','46ba1523ed0c47fcf304d64d33b34d3f6c4b9629:flagquantum/compiler/optimization/commutation.py'],text=True,timeout=20)\nold=types.ModuleType('flagquantum.compiler.optimization._controlled_baseline');old.__package__='flagquantum.compiler.optimization';sys.modules[old.__name__]=old;exec(compile(baseline_source,'<frozen-baseline>','exec'),old.__dict__)\nquality=json.loads(Path('/private/tmp/fq-controlled-commutation-inspected.json').read_text());records={(r['case'],r['workflow'],r['variant']):r for r in quality['rows']};workflow='flagquantum-ordinary-restored';config=workflow_configuration(workflow);source=fixture(6,'repetition','ring','01'*32);original_analysis=commutation.analyze_commutation\nreport={'scope':'Untimed post-observation work census of the adverse inspected repetition6/ring ordinary case; not resource replication','implementation_commit':quality['implementation_commit'],'source_commit':quality['source_commit'],'quality_observation_sha256':hashlib.sha256(Path('/private/tmp/fq-controlled-commutation-inspected.json').read_bytes()).hexdigest(),'variants':{}}\nfor variant,checker in (('baseline',old.commute),('candidate',commutation.commute)):\n calls=collections.Counter();analyses=[]\n def counted(a,b):\n  result=checker(a,b);calls['predicate_calls']+=1;calls['true' if result else 'false']+=1;return result\n def analysis(ir):\n  result=original_analysis(ir);analyses.append({'source_operations':len(ir.instructions),'summary':result.summary()});return result\n adapter=load_adapter(SimpleNamespace(configuration={'options':{'sdk':config['sdk'],'workflow':workflow,'compiler_options':config}}))\n with patch.object(commutation,'commute',counted),patch.object(pass_registry,'analyze_commutation',analysis),patch.object(commutation_cancellation,'analyze_commutation',analysis):payload=adapter.execute('route',source,11)\n normalized=json.dumps({k:payload[k] for k in ('operations','final_layout')},sort_keys=True,separators=(',',':'),allow_nan=False);digest=hashlib.sha256(normalized.encode()).hexdigest();assert digest==records['06/repetition/ring',workflow,variant]['payload_sha256'];assert dict(adapter.audit)==records['06/repetition/ring',workflow,variant]['audit']\n report['variants'][variant]={'predicate_counts':dict(calls),'analysis_calls':analyses,'payload_sha256':digest,'audit':dict(adapter.audit)}\nreport.update(script_sha256=hashlib.sha256(Path(__file__).read_bytes()).hexdigest(),script_source=Path(__file__).read_text())\nPath('/private/tmp/fq-controlled-commutation-work-census.json').write_text(json.dumps(report,indent=2)+'\\n');print(json.dumps({k:v for k,v in report.items() if k!='script_source'},indent=2))\n"
+}
