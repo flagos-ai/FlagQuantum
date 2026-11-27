@@ -54,6 +54,31 @@ class _CleanDecompositionManager(InteropQubitManager):
         raise ValueError("Cirq register import requires clean decomposition workspace")
 
 
+def _operation_body(
+    cirq: Any, operation: Any, context: Any, *, source_graph: bool = False
+) -> tuple[Any, ...] | None:
+    try:
+        tree = (
+            source_graph_operations(operation, context.qubit_manager)
+            if source_graph
+            else None
+        )
+        if tree is None:
+            tree = cirq.decompose_once(
+                operation, context=context, flatten=False, default=None
+            )
+        return None if tree is None else tuple(cirq.flatten_to_ops(tree))
+    except (ValueError, TypeError, KeyError, IndexError, AssertionError):
+        if not isinstance(operation.gate, cirq.ArithmeticGate):
+            raise
+        # An arithmetic gate's SDK unitary may remain defined when its optional
+        # decomposition fails. Capture that protocol, not a repaired gate stream.
+        matrix = cirq.unitary(operation.gate, default=None)
+        if matrix is None:
+            raise
+        return (cirq.MatrixGate(matrix).on(*operation.qubits),)
+
+
 def _register_operations(
     circuit: Any,
     declared: Mapping[Hashable, FunctionRecord],
@@ -148,11 +173,7 @@ def _register_operations(
                     raise ValueError(
                         "Cirq register decomposition is cyclic or too deep"
                     )
-                tree = source_graph_operations(operation, manager)
-                if tree is None:
-                    tree = cirq.decompose_once(
-                        operation, context=context, flatten=False, default=None
-                    )
+                tree = _operation_body(cirq, operation, context, source_graph=True)
                 if tree is None:
                     # Match the SDK wrapper's tensor-backed unitary fallback only
                     # after its declared decomposition has declined the operation.
@@ -525,9 +546,7 @@ def import_cirq_register_gate(
         cirq.GreedyQubitManager(prefix="register_work", maximize_reuse=True)
     )
     manager.manage_qubits(value.qubits)
-    operations = cirq.decompose_once(
-        value, context=cirq.DecompositionContext(manager), default=None
-    )
+    operations = _operation_body(cirq, value, cirq.DecompositionContext(manager))
     if operations is None:
         return None
     return import_cirq_register_optree(

@@ -1,19 +1,22 @@
 """Frozen parameterized SDK leaves preserve exact phase and measurement histories."""
 
 from collections.abc import Callable
+from importlib import import_module
 from typing import Any
 
 import pytest
 import torch
 
+from tests._reference_dependencies import unavailable_reference
+
 try:
     import cirq
     import numpy as np
     import sympy
-except ModuleNotFoundError:
-    pytest.skip(
-        "Symbolic SDK reference dependencies are absent", allow_module_level=True
-    )
+
+    _source_interop = import_module("qualtran.cirq_interop._cirq_to_bloq")
+except ModuleNotFoundError as _reference_import_error:
+    unavailable_reference(_reference_import_error)
 
 from examples.algorithms.binary_field_arithmetic import FieldOperation
 from flagquantum.circuit import Circuit
@@ -27,11 +30,11 @@ from flagquantum.ecosystem.cirq._register_gate import RegisterCirqGate
 from flagquantum.ecosystem.cirq._register_import import import_cirq_register_optree
 from flagquantum.ecosystem.cirq.conversion import _flagquantum_parameter_value
 from flagquantum.ecosystem.cirq.models import CirqConversionError
+from flagquantum.simulation.unitary import get_unitary
 from tests.unit.measurement_checks import forced_branch
 from tests.unit.test_cirq_feedback_import import source_branch
 
 pytestmark = [pytest.mark.unit, pytest.mark.ftqc_reference]
-pytest.importorskip("qualtran")
 
 
 def _gate(kind: str, angle: Any) -> Any:
@@ -55,7 +58,7 @@ def _gate(kind: str, angle: Any) -> Any:
 def test_parameterized_leaf_matches_frozen_source_before_and_after_resolution(
     kind: str,
 ) -> None:
-    from qualtran.cirq_interop._cirq_to_bloq import cirq_optree_to_cbloq
+    cirq_optree_to_cbloq = _source_interop.cirq_optree_to_cbloq
 
     theta, other = sympy.symbols("theta other")
     angle = 2 * theta - other + sympy.Rational(1, 8)
@@ -169,18 +172,49 @@ def test_symbolic_feedback_every_branch_and_record_reset(kind: str) -> None:
 
 
 def test_unsupported_symbolic_forms_keep_explicit_boundary() -> None:
-    from qualtran.cirq_interop._cirq_to_bloq import cirq_optree_to_cbloq
-
     theta = sympy.Symbol("theta")
-    for value in (sympy.sin(theta), theta**2, 1 / theta, sympy.I * theta):
+    for value in (sympy.gamma(theta), sympy.I * theta):
         with pytest.raises(ValueError):
             _flagquantum_parameter_value(cirq, value)
-    nonlinear = cirq.Circuit(cirq.rz(sympy.sin(theta)).on(cirq.LineQubit(0)))
-    original = cirq_optree_to_cbloq(nonlinear)
-    assert cirq.is_parameterized(original.to_cirq_circuit())
+    unsupported = cirq.Circuit(cirq.rz(sympy.gamma(theta)).on(cirq.LineQubit(0)))
     with pytest.raises(CirqConversionError, match="unsupported_parameter_expression"):
-        import_cirq_register_optree(nonlinear)
-    with pytest.raises(CirqConversionError):
-        import_cirq_register_optree(
-            cirq.ZPowGate(exponent=theta, global_shift=theta).on(cirq.LineQubit(0))
+        import_cirq_register_optree(unsupported)
+
+
+@pytest.mark.parametrize("kind", ("sin", "pow", "reciprocal", "eigen_shift"))
+def test_approved_nonlinear_and_eigen_shift_forms_preserve_full_operator(
+    kind: str,
+) -> None:
+    theta = sympy.Symbol("theta")
+
+    def gate(value: Any) -> Any:
+        if kind == "eigen_shift":
+            return cirq.ZPowGate(exponent=value, global_shift=value)
+        expression = {
+            "sin": sympy.sin(value),
+            "pow": value**2,
+            "reciprocal": 1 / value,
+        }[kind]
+        if not isinstance(value, sympy.Basic):
+            expression = float(expression)
+        return cirq.rz(expression)
+
+    original = _source_interop.cirq_optree_to_cbloq(
+        cirq.Circuit(gate(theta).on(cirq.LineQubit(0)))
+    )
+    assert cirq.is_parameterized(original.to_cirq_circuit())
+    program = import_cirq_register_optree(gate(theta).on(cirq.LineQubit(0)))
+    bound = bind_register_program(program, ((0,),))
+    for value in (0.37, -0.5):
+        circuit = Circuit(1, dtype=torch.complex128).append(
+            FieldOperation(1, bound.circuit.instructions)
+        )
+        resolved = circuit.bind_parameters({"theta": value})
+        # The SDK discovers only an eigen-gate exponent, not its symbolic shift.
+        # A fresh numeric gate substitutes both fields without editing source.
+        torch.testing.assert_close(
+            get_unitary(resolved, dtype=torch.complex128),
+            torch.as_tensor(cirq.unitary(gate(value))),
+            rtol=0,
+            atol=2e-12,
         )
