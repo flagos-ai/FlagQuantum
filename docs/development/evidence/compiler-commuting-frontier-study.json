@@ -1,0 +1,27 @@
+{
+  "scope": "Rejected compiler prototype development study; no production adoption, SDK ranking, held-out or qualified resource claim",
+  "compiler": {
+    "repository": "flagos-ai/FlagQuantum",
+    "revision": "b8e57f85acc8e0fe05fa67be4482788dc12a9486"
+  },
+  "sdkbench": {
+    "repository": "sdkbench-org/sdkbench",
+    "revision": "5ba03de33f8a9193f86b26d2cb3fa841ede7c98a"
+  },
+  "attribution": {
+    "inspected_source": "qiskit/transpiler/passes/routing/commuting_2q_gate_routing/commuting_2q_gate_router.py",
+    "qiskit_version": "2.6.2",
+    "revision": "0c26a5a158c4d62b2b303a8c2f3c6eb2b14653b4",
+    "sha256": "27ba2ce60f16a770a8a75b004498a30f684e6d59a959caa660a33feedc8afe27",
+    "copyright": "IBM 2022",
+    "license": "Apache-2.0",
+    "reuse": "Algorithmic inspiration only; no source implementation copied"
+  },
+  "archive": {
+    "path": "compiler-commuting-frontier-study.json.gz",
+    "sha256": "a6bdaa9d2af2423f0d54552f2df33217f3a682803903ee9637be440ec4bb1940",
+    "uncompressed_sha256": "26710cded8ba48fe81720e5ea90aad381f1357eeae7e35dfaa7a8fad31a68c9d",
+    "original_json_sha256": "2ffda245298095a38001fa66bb1742905932edd9078a63b6ffe7b9fb3ebefa7d",
+    "note": "Lossless gzip of the full report after normalizing only two compiler and two SDKBench revision field paths. Numerical observations and retained sources are unchanged."
+  }
+}

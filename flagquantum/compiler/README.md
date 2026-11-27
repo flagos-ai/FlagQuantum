@@ -731,6 +731,10 @@ holds the membership table, the reach and its decline, the boundary sweep with
 `false_yes` required to be zero, and a Qiskit anchor that reports what
 `OptimizeCliffords` and `CollectCliffords` actually do to a gate-level circuit.
 
+The [constant scalar reuse study](../../docs/development/COMPILER_CONSTANT_SCALAR_REUSE.md)
+retains a rejected cache extension, its semantic tests, and both gains and
+regressions. It does not change the production fold.
+
 The fold has an inverse, and it is the one form of "take a two-qubit unitary apart"
 this IR can state exactly. `split_two_qubit_blocks` reads one two-wire instruction
 that carries a matrix and whose opcode no operator schema declares, and emits the two
