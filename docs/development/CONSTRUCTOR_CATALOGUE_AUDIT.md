@@ -18,16 +18,16 @@ source registry, rather than inferred from package aliases.
 | --- | ---: |
 | Frozen source keys | 303 |
 | Exact Compiler format registrations | 203 |
-| Keys reachable through Ecosystem providers | 97 |
-| Union of exact native registrations | 258 |
-| Keys without an exact factory in these providers | 45 |
+| Keys reachable through Ecosystem providers | 101 |
+| Union of exact native registrations | 260 |
+| Keys without an exact factory in these providers | 43 |
 | Stale Compiler registration rows corrected in this update | 14 |
 
-The Ecosystem count overlaps Compiler for 42 keys. CirqGateAsBloq, twenty-nine
+The Ecosystem count overlaps Compiler for 44 keys. CirqGateAsBloq, twenty-nine
 finite first-quantization constructors, five single-factorization, six double-
 factorization, two chemistry lookup, two RSA/shim and seven ECC addition
 constructors, one ECC window root and the standalone particle-pair
-declaration and the probabilistic-uncompute leaf add 55 unique Ecosystem keys. These are registration facts, not
+declaration, the probabilistic-uncompute leaf and two LP window constructors add 57 unique Ecosystem keys. These are registration facts, not
 accepted constructor totals. The ECC family includes all six literal stages and
 its root, with source-success libraries 0/1/2, complex channels, explicit work
 ownership and separate measured/model inventories. Its upstream release,
@@ -44,14 +44,14 @@ reconciled against independently published source-module receipts, including
 admitted metadata, original failures and the complete execution path. A factory
 mapping or a large test count alone cannot close a parent checklist item.
 
-The 45 keys without exact factories have these distinct source roles:
+The 43 keys without exact factories have these distinct source roles:
 
 | Source role | Count | Disposition |
 | --- | ---: | --- |
 | CompositeBloq graph and CtrlSpec descriptor | 2 | Existing graph/argument parsing; not ordinary constructors |
 | Abstract source interfaces | 5 | No instantiable source constructor; inherited abstract methods checked |
 | Original module-valued registry entry | 1 | Source registry defect; not a class constructor |
-| Concrete source classes | 37 | No exact shallow factory here; existing native algorithms and connected graph evidence must be assessed separately |
+| Concrete source classes | 35 | No exact shallow factory here; existing native algorithms and connected graph evidence must be assessed separately |
 
 The module-valued source key is
 `qualtran.bloqs.chemistry.trotter.trotterized_unitary`, not the
@@ -356,8 +356,8 @@ replacement global completion counter derived from registrations.
 | `qualtran.bloqs.optimization.k_xor_sat.load_kxor_instance.PRGAUniqueConstraintRHS` | `qualtran/bloqs/optimization/k_xor_sat/load_kxor_instance.py` | No exact factory | Concrete source class; no exact shallow factory in this inventory; connected graph support is separate |
 | `qualtran.bloqs.phase_estimation.kaiser_window_state.KaiserWindowState` | `qualtran/bloqs/phase_estimation/kaiser_window_state.py` | `compiler/formats/legacy_phase_window_factories.py:phase_window_library_factories` | Scoped constructor receipt: [audit](RESOLVER_PHASE_WINDOW_AUDIT.md); original limits retained |
 | `qualtran.bloqs.phase_estimation.qpe_window_state.RectangularWindowState` | `qualtran/bloqs/phase_estimation/qpe_window_state.py` | `compiler/formats/legacy_phase_window_factories.py:phase_window_library_factories`, `compiler/formats/legacy_textbook_qpe_factories.py:textbook_qpe_library_factories` | Scoped constructor receipt: [audit](RESOLVER_PHASE_WINDOW_AUDIT.md); original limits retained |
-| `qualtran.bloqs.phase_estimation.lp_resource_state.LPRSInterimPrep` | `qualtran/bloqs/phase_estimation/lp_resource_state.py` | No exact factory | Concrete source class; no exact shallow factory in this inventory; connected graph support is separate |
-| `qualtran.bloqs.phase_estimation.lp_resource_state.LPResourceState` | `qualtran/bloqs/phase_estimation/lp_resource_state.py` | No exact factory | Concrete source class; no exact shallow factory in this inventory; connected graph support is separate |
+| `qualtran.bloqs.phase_estimation.lp_resource_state.LPRSInterimPrep` | `qualtran/bloqs/phase_estimation/lp_resource_state.py` | `ecosystem/_phase_window_library.py:phase_window_factories` | Complete native interim Program; eps metadata and symbolic declaration retained. [Audit](LUIS_PERINA_STATE_FILE_AUDIT.md) |
+| `qualtran.bloqs.phase_estimation.lp_resource_state.LPResourceState` | `qualtran/bloqs/phase_estimation/lp_resource_state.py` | `ecosystem/_phase_window_library.py:phase_window_factories` | Complete forward Program and private cleanup; source inverse defect and identity lowering count difference retained. [Audit](LUIS_PERINA_STATE_FILE_AUDIT.md) |
 | `qualtran.bloqs.phase_estimation.qubitization_qpe.QubitizationQPE` | `qualtran/bloqs/phase_estimation/qubitization_qpe.py` | `compiler/formats/legacy_qubitization_qpe_factories.py:qubitization_qpe_factories` | Factory mapping verified; published constructor-scope receipts still require reconciliation |
 | `qualtran.bloqs.phase_estimation.text_book_qpe.TextbookQPE` | `qualtran/bloqs/phase_estimation/text_book_qpe.py` | `compiler/formats/legacy_textbook_qpe_factories.py:textbook_qpe_library_factories` | Scoped constructor receipt: [audit](RESOLVER_TEXTBOOK_QPE_AUDIT.md); original limits retained |
 | `qualtran.bloqs.qft.approximate_qft.ApproximateQFT` | `qualtran/bloqs/qft/approximate_qft.py` | `compiler/formats/legacy_approximate_qft_factories.py:approximate_qft_factories` | Factory mapping verified; published constructor-scope receipts still require reconciliation |

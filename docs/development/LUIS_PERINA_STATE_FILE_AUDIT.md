@@ -23,6 +23,42 @@ Interim uses no scratch, measurement or result slot. Core owns exact unitary
 inversion. Compiler owns OnEach, CRz, predicate measurement and reflection.
 No production code imports Qualtran or Cirq.
 
+## Complete stored constructors
+
+`luis_perina_state_program` composes the complete source forward graph through
+the existing interim, exact interim adjoint and zero-state reflection Programs.
+Allocation, source call order and private frees remain explicit. A final shared
+Split/Join restores the fractional output descriptor from the child QAny view;
+these are nominal views and emit no physical gates. This does not change the
+source's defective generic full-window adjoint or identify it with the exact
+mathematical inverse.
+
+Ecosystem's `_phase_window_library.phase_window_factories` adds the exact
+LPRSInterimPrep and LPResourceState identifiers to the existing rectangular and
+Kaiser providers. Compiler does not import Algorithms. The interim eps field
+is validated metadata and does not alter source rotations. Symbolic declarations
+retain the existing wire's symbols without inventing an executable body; source
+symbol serialization omits assumptions. Shallow and one-level source libraries
+resolve to the same complete native definition.
+
+Both stored constructors preserve coherent inputs or prepared outputs at widths
+1, 2, 3, 5 and 7 with ordinary `circuit.append(op)`, JSON and SDK-free resolution
+and execution. Every original root call and operand matches construction order.
+All measurement histories share the certified complex channel, and numerical
+prepared outputs verify private zero work with a coherent spectator. Existing
+full source/module evidence, including n=13 and the inverse counterexample,
+remains applicable to unchanged dependencies.
+
+Measured inventories and source estimates remain separate. Stored LP emits
+8/16/32 T or TDG primitives and 2/4/8 measurements at widths 1/3/7. Its independent
+source model reports 2/4/8 And calls and 12/24/48 rotations. All non-identity
+primitive inventories match live original capture. Atomic source Identity(n)
+has no primitive recipe: native word lowering emits n one-bit I instructions,
+whereas Cirq removes multi-bit Identity and retains one-bit I. Consequently
+stored LP has 6/10/18 I instructions versus live capture's 6/4/4. This boundary
+is explicit; total primitive counts across these two lowerings are not claimed
+equal, and their identical complex actions do not waive the count difference.
+
 ## Complete responsibility mapping
 
 - Interim H on the word, H on anc, reversed word traversal with exactly

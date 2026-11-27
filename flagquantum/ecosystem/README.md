@@ -46,6 +46,10 @@ point-power operands, dirty exits and SDK-free selected-child execution.
   existing numerical constant codec. Compiler receives owned MSB patterns.
   Run `tests/unit/test_legacy_word_factories.py` for the serialized-library
   through ordinary append scenario and encoder replacement.
+- `_phase_window_library.py`: LP/interim stored constructor fields terminate at
+  native Algorithms Programs, alongside the existing Compiler window providers.
+  Run `tests/unit/test_luis_perina_program.py` for serialized constructor to
+  ordinary append, complete complex outputs and private-work cleanup.
 - `_semantic_parity.py`: deterministic circuits shared by optional SDK parity lanes.
 - `<framework>/conversion.py`: external object to/from `CircuitIR` conversion.
 - `<framework>/models.py`: adapter-local results and errors.
