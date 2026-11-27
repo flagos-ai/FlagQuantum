@@ -7,7 +7,12 @@ from collections.abc import Callable
 from dataclasses import replace
 from typing import Any
 
-import numpy as np
+from tests._reference_dependencies import unavailable_reference
+
+try:
+    import numpy as np
+except ModuleNotFoundError as _reference_import_error:
+    unavailable_reference(_reference_import_error)
 import pytest
 import torch
 
@@ -36,8 +41,8 @@ pytestmark = [pytest.mark.unit, pytest.mark.ftqc_reference]
 
 
 def _hierarchy(depth: int, repeats: int = 2) -> tuple[ProgramRecord, Any]:
-    from qualtran import BloqBuilder
-    from qualtran.bloqs.basic_gates import Hadamard
+    from qualtran._infra.composite_bloq import BloqBuilder
+    from qualtran.bloqs.basic_gates.hadamard import Hadamard
 
     q, out = (ValueRef("entry", i, "register") for i in (0, 1))
     wire, rotated = (ValueRef("entry", i, "qubit") for i in (2, 3))
@@ -142,7 +147,8 @@ def test_recursive_expansion_preserves_source_labels_tensor_and_exact_primitive_
     record, source = _hierarchy(depth)
     expanded, labels = expand_component_calls(record)
     _compare(expanded, labels, source.flatten())
-    from qualtran.resource_counting import QECGatesCost, get_cost_value
+    from qualtran.resource_counting._bloq_counts import QECGatesCost
+    from qualtran.resource_counting._costing import get_cost_value
 
     model = get_cost_value(source, QECGatesCost())
     assert model.clifford == 2**depth
@@ -180,8 +186,7 @@ def test_depth_limit_includes_last_no_change_probe(depth: int, bound: int) -> No
 def test_no_work_exception_and_recursive_identity_match_source(
     empty: bool, select_none: bool
 ) -> None:
-    from qualtran import BloqBuilder
-    from qualtran._infra.composite_bloq import DidNotFlattenAnythingError
+    from qualtran._infra.composite_bloq import BloqBuilder, DidNotFlattenAnythingError
 
     record, source = _hierarchy(1)
     if empty:
@@ -229,7 +234,7 @@ def test_predicate_failure_propagates_without_partial_result() -> None:
 def test_empty_identity_decomposition_preserves_array_permutation_and_zero_width(
     shape: tuple[int, ...], width: int
 ) -> None:
-    from qualtran import BloqBuilder
+    from qualtran._infra.composite_bloq import BloqBuilder
 
     from flagquantum.core.ir.program.registers import RegisterType
     from tests.unit.test_program_classical_registers import identity
@@ -278,7 +283,8 @@ def test_invalid_unreachable_definition_is_verified_before_predicate() -> None:
 
 
 def _wrapped_erasure(width: int, depth: int) -> tuple[ProgramRecord, Any]:
-    from qualtran import QGF, BloqBuilder
+    from qualtran._infra.composite_bloq import BloqBuilder
+    from qualtran._infra.data_types import QGF
     from qualtran.bloqs.gf_arithmetic.gf2_multiplication import GF2MulMBUC
 
     from flagquantum.compiler.registers.finite_field.product_erasure_program import (
@@ -367,7 +373,7 @@ def test_expanded_erasure_all_complex_histories_and_work_zero(width: int) -> Non
 
 def test_gapped_occurrence_labels_survive_selection_and_repeated_expansion() -> None:
     record, source = _hierarchy(3)
-    from qualtran import BloqBuilder
+    from qualtran._infra.composite_bloq import BloqBuilder
 
     bb, values = BloqBuilder.from_signature(source.signature)
     children = [instance.bloq for instance, _, _ in source.iter_bloqsoqs()]
@@ -389,7 +395,7 @@ def test_gapped_occurrence_labels_survive_selection_and_repeated_expansion() -> 
 def test_nonempty_array_body_reorders_outputs_and_preserves_atomic_mixed_calls(
     count: int,
 ) -> None:
-    from qualtran.bloqs.basic_gates import Hadamard
+    from qualtran.bloqs.basic_gates.hadamard import Hadamard
 
     leaf = _hierarchy(1)[0].functions[-1]
     signature = Signature([Register("q", quantum_bit_type(), (count,))])
@@ -448,7 +454,7 @@ def test_custom_entry_block_and_canonical_payload_survive_expansion() -> None:
 def test_composite_allocation_wrapper_retains_source_priority_before_and_after_expansion() -> (
     None
 ):
-    from qualtran import QBit
+    from qualtran._infra.data_types import QBit
 
     from flagquantum.core.ir.program.registers import RegisterSide
 
@@ -482,7 +488,7 @@ def test_composite_allocation_wrapper_retains_source_priority_before_and_after_e
 
 
 def test_composite_free_wrapper_keeps_current_layer_priority() -> None:
-    from qualtran import QBit
+    from qualtran._infra.data_types import QBit
 
     from flagquantum.core.ir.program.registers import RegisterSide
 
