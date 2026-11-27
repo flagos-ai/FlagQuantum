@@ -1,8 +1,15 @@
 """Whole classical-vector source audit, including failure side effects."""
 
-from typing import Any
+from __future__ import annotations
 
-import numpy as np
+from typing import TYPE_CHECKING, Any
+
+from tests._reference_dependencies import unavailable_reference
+
+try:
+    import numpy as np
+except ModuleNotFoundError as _reference_import_error:
+    unavailable_reference(_reference_import_error)
 import pytest
 
 from flagquantum.compiler.registers.component_basis_vectors import (
@@ -18,6 +25,9 @@ from flagquantum.core.ir.program import ProgramRecord
 from flagquantum.core.ir.program.registers import Register, RegisterSide, RegisterType
 from flagquantum.core.ir.program.signatures import Signature
 
+if TYPE_CHECKING:
+    from qualtran.simulation.classical_sim import ClassicalValT
+
 pytestmark = [pytest.mark.unit, pytest.mark.ftqc_reference]
 
 
@@ -26,9 +36,10 @@ pytestmark = [pytest.mark.unit, pytest.mark.ftqc_reference]
 def test_array_effect_refusal_precedes_definition_consumption_even_when_empty(
     shape: tuple[int, ...], missing: bool
 ) -> None:
-    from qualtran import BloqBuilder, QBit
-    from qualtran import Register as SourceRegister
-    from qualtran.bloqs.basic_gates import IntState
+    from qualtran._infra.composite_bloq import BloqBuilder
+    from qualtran._infra.data_types import QBit
+    from qualtran._infra.registers import Register as SourceRegister
+    from qualtran.bloqs.basic_gates.z_basis import IntState
     from qualtran.simulation.xcheck_classical_quimb import (
         _add_classical_bras as source_bras,
     )
@@ -70,9 +81,10 @@ def test_array_effect_refusal_precedes_definition_consumption_even_when_empty(
 def test_short_value_array_preserves_successful_prefix(
     direction: str, shape: tuple[int, ...], monkeypatch: pytest.MonkeyPatch
 ) -> None:
-    from qualtran import BloqBuilder, QBit
-    from qualtran import Register as SourceRegister
-    from qualtran.bloqs.basic_gates import IntEffect, IntState
+    from qualtran._infra.composite_bloq import BloqBuilder
+    from qualtran._infra.data_types import QBit
+    from qualtran._infra.registers import Register as SourceRegister
+    from qualtran.bloqs.basic_gates.z_basis import IntEffect, IntState
     from qualtran.simulation.xcheck_classical_quimb import (
         _add_classical_bras as source_bras,
     )
@@ -132,9 +144,10 @@ def test_short_value_array_preserves_successful_prefix(
 
 
 def identity(shape: tuple[int, ...]) -> tuple[ProgramRecord, Any]:
-    from qualtran import Bloq, QBit
-    from qualtran import Register as SourceRegister
-    from qualtran import Signature as SourceSignature
+    from qualtran._infra.bloq import Bloq
+    from qualtran._infra.data_types import QBit
+    from qualtran._infra.registers import Register as SourceRegister
+    from qualtran._infra.registers import Signature as SourceSignature
 
     native = ComponentProgramBuilder(
         Signature([Register("x", RegisterType("bit", 1), shape)])
@@ -158,7 +171,7 @@ def identity(shape: tuple[int, ...]) -> tuple[ProgramRecord, Any]:
 def test_complete_wrapper_closed_call_order_and_evaluator_identity(
     shape: tuple[int, ...], explicit: bool
 ) -> None:
-    from qualtran.bloqs.basic_gates import IntEffect, IntState
+    from qualtran.bloqs.basic_gates.z_basis import IntEffect, IntState
     from qualtran.simulation.xcheck_classical_quimb import flank_with_classical_vectors
 
     from flagquantum.compiler.registers.component_basis_vectors import (
@@ -166,7 +179,7 @@ def test_complete_wrapper_closed_call_order_and_evaluator_identity(
     )
 
     record, source = identity(shape)
-    inputs: dict[str, object] = {
+    inputs: dict[str, ClassicalValT] = {
         "x": np.zeros(shape, dtype=int) if shape else np.int64(0)
     }
     seen: list[object] = []
@@ -213,8 +226,9 @@ def test_source_constructor_acceptance_is_not_native_executable_admission(
     case: str,
 ) -> None:
     import sympy
-    from qualtran import BloqBuilder, QUInt
-    from qualtran import Register as SourceRegister
+    from qualtran._infra.composite_bloq import BloqBuilder
+    from qualtran._infra.data_types import QUInt
+    from qualtran._infra.registers import Register as SourceRegister
     from qualtran.simulation.xcheck_classical_quimb import (
         _add_classical_kets as source_kets,
     )
