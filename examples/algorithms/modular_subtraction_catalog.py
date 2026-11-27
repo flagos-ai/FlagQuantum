@@ -16,6 +16,10 @@ from flagquantum.compiler._component_trace.call_graph import (
     SymbolicCallGraph,
     symbolic_call_graph,
 )
+from flagquantum.compiler.formats.legacy_component_library import ComponentLibrary
+from flagquantum.compiler.formats.symbolic_modular_library import (
+    modular_component_library,
+)
 from flagquantum.compiler.registers.modular.controlled_modular_addition import (
     controlled_modular_requirements,
 )
@@ -79,6 +83,17 @@ class ModularSubtractionExample:
         if self.kind in ("ModSub", "CModSub"):
             registers.append(Register("y", dtype))
         return Signature(registers)
+
+    def component_library(self) -> ComponentLibrary:
+        """Return the forward ordered source recipe, without physical admission."""
+        if self.adjoint:
+            raise ValueError("Ordered source libraries require the forward operation")
+        return modular_component_library(
+            self.kind,
+            unsigned_register_type(self.width),
+            self.modulus,
+            control_value=self.control_value,
+        )
 
     def call_graph(self) -> SymbolicCallGraph[str]:
         n, p, cv = self.width, self.modulus, self.control_value

@@ -1509,3 +1509,24 @@ concrete bindings rebuild a Program through the existing resolver. Symbolic
 input graphs are not executable Programs. Symbolic resource-query coverage
 remains separate. See `docs/development/GRID_POTENTIAL_FILE_AUDIT.md`.
 Run `python -m pytest tests/unit/test_grid_potential_source.py tests/unit/test_grid_potential_branches.py`.
+
+### Ordered modular constructor metadata
+
+`formats/symbolic_modular_library.py` builds the complete ordered addition,
+constant/scaled addition, negation and subtraction root libraries. It reuses
+`ComponentProgramBuilder` and `component_entry_from_program`; private addition
+and subtraction recipes own their separate source formulas. The shared private
+builder pairs calls with constructor declarations rather than encoding symbols
+in function names or introducing another IR.
+
+Use `modular_component_library("CModAdd", unsigned_register_type(3), p)` to inspect
+a known-width symbolic root. Constructor expressions and port connections stay
+in the existing `ComponentLibrary`. An unbound library grants no physical
+execution, and the legacy Montgomery writer still refuses lost modulus fields.
+Concrete libraries use the existing modular factories and register binder.
+Normal application execution remains `circuit.append(op)`.
+
+Run `tests/unit/test_symbolic_modular_library.py` for source connections and
+physical owner replacement, and `test_modular_catalog_libraries.py` for operation
+object consumers. The complete domain and evidence boundary is documented in
+`docs/development/SYMBOLIC_MODULAR_GRAPH_AUDIT.md`.

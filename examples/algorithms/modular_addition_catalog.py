@@ -16,6 +16,10 @@ from flagquantum.compiler._component_trace.call_graph import (
     SymbolicCallGraph,
     symbolic_call_graph,
 )
+from flagquantum.compiler.formats.legacy_component_library import ComponentLibrary
+from flagquantum.compiler.formats.symbolic_modular_library import (
+    modular_component_library,
+)
 from flagquantum.compiler.registers.modular.bounded_modular_addition import (
     bounded_modular_add_ir,
     bounded_modular_add_requirements,
@@ -79,6 +83,23 @@ class ModularAdditionExample:
         if self.kind in ("ModAdd", "CModAdd", "CtrlScaleModAdd"):
             ports.append(Register("y", dtype))
         return Signature(ports)
+
+    def component_library(self) -> ComponentLibrary:
+        """Return ordered finite source calls with owned constructor metadata.
+
+        Symbolic arithmetic remains metadata until it is bound. ModAddK has no
+        source decomposition, and unresolved split widths cannot be expanded.
+        """
+        if self.kind == "ModAddK":
+            raise ValueError("The source constant permutation has no ordered body")
+        if self.kind in ("CModAddK", "CtrlScaleModAdd") and self.constant is None:
+            raise ValueError("A modular constant or scale must be supplied")
+        return modular_component_library(
+            self.kind,
+            unsigned_register_type(self.width),
+            self.modulus,
+            constant=0 if self.constant is None else self.constant,
+        )
 
     def call_graph(self) -> SymbolicCallGraph[str]:
         """Return the original root declaration with parameterized child labels."""
