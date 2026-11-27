@@ -283,3 +283,76 @@ previous complete-file boundaries; no parent is accepted on the strength of
 this model extension alone. Source signed classical assertions, nominal dtype
 refusals, abstract primitive leaves and invalid small-width model estimates
 remain separate from the measured native instruction streams above.
+
+
+## Complete faithful source-file closure — 2026-11-28
+
+Q-0671 is accepted under the approved G2 faithful-migration rule after the
+complete definition map above and all later dependency closures were reviewed.
+Earlier statements retaining this parent solely for original defects or absent
+atomic recipes are historical. This closes this source file only, not generic
+SDK, serialization, workflow or platform parents. Proposal 131 remains pending.
+
+The remaining valid native invocation gap was a concrete SymPy Integer width
+for PhaseGradientUnitary. The original graph decomposition refuses it, but the
+direct SDK generator emits its ordered Z/CZ powers on the supplied finite word.
+Formats now selects the existing integer-width typed Program for that literal
+unitary. Register descriptors compare equal without a new cast or storage
+contract. State preparation explicitly rejects the same literal metadata
+upstream and remains a declaration. Nonliteral dimensions still require binding;
+supplying an arbitrary wire array to an unresolved SDK generator does not prove
+a physical width for its unresolved nominal register. Zero-width failures remain.
+
+The existing owners retain all four classes, five examples, two fixed-point
+helpers, four documentation specifications and their direct dependencies.
+Unitary/state calls use ordered Split/Join, phase powers, controlled And cleanup
+and preparation output ownership. Fractional/scaled addition keeps truncation
+before integer multiplication, coefficient signed/negative-fraction formats,
+both control polarities, unreachable integer controls and zero destinations.
+RIGHT preparation output remains live until its inverse. The accepted weighted
+integer-add Programs, exact adjoints and measurement feedback are reused.
+
+Twelve new literal-width profiles compare actual source SDK Z/CZ children,
+operands, exponents and epsilon. Each actual source leaf is traversed through
+its unchanged graph, including And/phase/And-adjoint, and the complete emitted
+primitive stream matches. Complete complex operators agree with the original
+leaf tensors. The controlled SDK circuit has no Cirq unitary protocol because
+its decomposition contains feedback; this failure is asserted and is not
+replaced by a claim of SDK-unitary success. Coherent spectator states agree on
+every small forward history and every inverse history, with the correct branch
+normalization and clean work. Existing source assets, complete raw operator
+grids, drawings/notebooks and bounded larger-state certificates are reused.
+
+Actual instructions are separate from the original models. Literal width three
+uncontrolled emits three phases and no work/measurement. Controlled emits
+three phases, twelve T/T-dagger, eighteen CX and three measurements, using one
+reusable private bit: five physical wires without a spectator. The unchanged
+symbolic-literal source model declares three And, three Clifford, three
+measurements and three rotations with peak four. This source peak is not the
+physical inventory. Original zero/small-width negative addition counts, zero
+exponent key coalescing and per-coefficient static estimates remain literal.
+
+Original AddIntoPhaseGrad is atomic and has no primitive decomposition. Its
+independently implemented native arithmetic is compared to its value/tensor
+contract; it is not advertised as a nonexistent original gate stream. Original
+signed classical callback assertions, nominal mixed-dtype graph failures,
+reachable negative shifts, symbolic physical refusals and zero-width errors
+remain separate retained limitations. Bounded numerical evidence does not claim
+unlimited floating-point accuracy for the original Fxp callbacks. Generic
+transport, arbitrary leaf synthesis and unapproved scalar behavior are not waived.
+
+Evidence uses `g2-phase-gradient-full-closure-*20261128` and
+`g2-phase-gradient-literal-*20261128` in the reference workspace. Reused
+integer-multiplier, zero-destination, signed-format and symbolic-resource
+receipts retain their original dates, inputs and limits.
+
+Final acceptance passes 499 concentrated cases, 313 final constructor/stream
+cases, 32 local integration cases and 13 independent Cirq 1.6.1 cases. Twelve
+optional/required missing-reference cases preserve explicit skip versus original
+exception behavior. Three Python files pass strict typing, Black and Ruff.
+Compiler scope, architecture, multi-level IR, protected API baseline, required
+checks, repository language, links and whitespace pass. Nineteen complete
+immutable source/asset/dependency blobs and actual Qualtran 0.7.0/Kickmix 0.1
+Simulator are verified. Six resource rows keep measured primitives and original
+models separate. The dependency scan remains at 570 existing findings with none
+in the added consumer; global workflow parents remain open.
