@@ -8,6 +8,10 @@ import subprocess
 import sys
 from pathlib import Path
 
+import pytest
+
+pytestmark = pytest.mark.unit
+
 
 def test_qec_fixture_restores_threads_after_success_and_failure(tmp_path: Path) -> None:
     root = Path(__file__).resolve().parents[2]
