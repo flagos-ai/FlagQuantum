@@ -28,7 +28,7 @@ control variants. The concrete uncontrolled declaration matches 512 CSwaps,
 1,301 Ands, 12,518 Cliffords and 1,301 measurements. These are model categories.
 The root emits no physical instruction stream in the frozen source.
 
-## Retained acceptance gaps
+## Original acceptance review (superseded below)
 
 The untouched original non-notebook suite reports five passes, six strict skips
 and two expected failures. Its source has no physical decomposition for either
@@ -65,3 +65,35 @@ explicitly. This dependency adds resource evidence and carries no new physical
 primitive, amplitude or restoration claim. Concentrated regression passed 618
 tests. Strict typing, formatting, lint, scope, architecture, IR and API checks
 passed for the three changed Python files.
+
+## Complete-source closure review
+
+Q-0605 is eligible for complete-file acceptance under the explicitly approved
+[faithful-migration rule](G2_FAITHFUL_MIGRATION_CLOSURE_PROPOSAL.md). This review
+supersedes the earlier requirement to invent a physical body absent from the
+locked source. The one class, both factories, DocSpec examples, all properties,
+five direct calls, Always control bypass and forward/adjoint resource categories
+already have native owners. The subsequent loading-component delivery supplies
+the original generic/specialized controlled declarations and typed invocation
+routes; the earlier control-adder gap is no longer an unimplemented native path.
+Its absent positive query bodies still cannot execute.
+
+The complete source and original test blobs are unchanged. The current
+149-case guided/k-XOR dependency regression includes the whole matrix-entry
+tests, loading/control consumers, exact inverse categories and both complete
+notebook counterparts. It reuses the accepted physical lookup and applicable
+measured suffix evidence; no identity child is offered as a matrix-entry circuit.
+
+The additional 24-case matrix/block domain intake compares native and untouched
+source costs for Python integer, exact SymPy integer and positive-symbolic ell,
+each with and without positive outer control. Every mutually supported query
+matches all seven QEC categories. Matrix ell zero/one retain both original and
+native cost failures. Complete original non-notebook matrix and block suites are
+rerun together; original bodyless/count/serialization cases remain visible.
+
+The remaining matrix physical body, unique-scope index algorithm and missing RHS
+phase-gradient port are original limitations. Generic controlled-adjoint pricing
+still fails at the original atomic controlled And and is explicitly refused
+natively. They are tracked as source limits, not proof of amplitudes, work
+cleanup, gate synthesis or successful full matrix execution. Existing emitted
+loader primitives and analytic matrix categories remain separate inventories.
