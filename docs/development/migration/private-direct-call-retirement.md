@@ -167,3 +167,52 @@ All 1566 product blobs remain identical to the fully regressed migration
 commit; all 1262 product Python blobs still match the same qualified native
 wheel and installation. No new wheel or repeated numerical benchmark baseline
 is substituted for the retained original evidence.
+
+
+## Coverage full-state scheduling followup
+
+Head `359b263b7` passed the GPU Gate, but Main run `45936816154` did not
+qualify: coverage job `140303576017` reached its unchanged 60-minute limit.
+The exact original plan placed both complete Vlasov 24-qubit and glued-trees
+20-qubit cases in shard 176, alongside 607 other selected nodes. Retained
+300-second watchdog snapshots show both cases executing Statevector numerical
+operations. Four CPUs and a 16 GiB cgroup limit were reported. The cancellation
+prevented the wrapper's internal report uploads; no peak-memory or completed
+case-duration report is inferred from that failed job. Its original raw log
+SHA-256 is `7e85fffbef7f2c3cf9d3fd56ed02795cd96ed4b32a7f79cffdfbdc4bd2b358fc`.
+
+The existing measured-duration table lacked these two nodes. The qualified
+parent Main run `45926173083` completed them in different jobs: Vlasov in
+`140269617054` took 817.50 seconds, and glued-trees in `140269617340` took
+201.80 seconds. Their original logs and hashes are retained; these completed
+measurements, not the cancelled job's elapsed time, supply two new scheduling
+weights. All 215 original duration values and their provenance remain.
+This table is scheduling input, not a scientific acceptance threshold.
+
+The unchanged scheduler replayed the exact original 38,354-node selection in
+192 nonempty partitions under two input orders. Each target gets its own
+single-node partition; the complete node multiset stays identical. This is an
+offline partition proof, not a recreated CI collection or runtime certificate.
+A regression checks both input orders using the real measured hints while
+retaining every selected node. Existing test bodies remain unchanged.
+
+No product source, original scientific test, Hamiltonian, qubit width, full
+state, evolution order, sample count, tolerance, selection marker, workflow,
+coverage threshold, native ABI or time limit changes. Co-location and missing
+weights are established; the retained evidence does not prove an exclusive
+cause of runtime inflation. The new source head still requires its own complete
+Main/GPU CI. The lazy-private-forwarder proposal remains unapplied until then.
+
+
+Local followup validation passes 113 related planning, sharding, hardware and
+hosted-capacity tests, including two new ordering cases. Eleven whole-repository
+quality checks and four supplemental release/document/schema checks pass.
+The initial local validation ran out of disk space while writing cache/shell
+temporary data; its 112-pass/one-shell-failure log and incomplete quality logs
+remain retained. Only this completed task's regenerable type cache was removed;
+the successful rerun disables type-cache writes and uses a bounded task test
+temporary directory. No product change or failed scientific assertion was hidden.
+Full numerical source regression and wheel acceptance remain bound to migration
+commit `f05f9bafe`: all 1566 product blobs and 1262 product Python installation
+bytes are unchanged by either CI followup. This scheduling-only followup does
+not claim that the original 60-minute cancellation is itself a passing result.

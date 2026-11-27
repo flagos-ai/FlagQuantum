@@ -221,3 +221,27 @@ def test_original_optimization_workloads_receive_only_their_finite_budgets(
         assert all(
             rows[i]["timeout-minutes"] == 60 for i in range(count) if i not in owners
         )
+
+
+@pytest.mark.parametrize("reverse", [False, True])
+def test_measured_full_state_cases_do_not_share_a_partition(
+    tmp_path, monkeypatch, reverse
+):
+    monkeypatch.setenv("GITHUB_SHA", "f" * 40)
+    monkeypatch.delenv("GITHUB_OUTPUT", raising=False)
+    full_state = (
+        "tests/integration/test_synthesis_qmod_vlasov.py::"
+        "test_original_vlasov_preserves_full_state_and_cleans_workspace",
+        "tests/integration/test_synthesis_glued_trees_notebook.py::"
+        "test_wide_full_state_at_original_first_time",
+    )
+    ordinary = tuple(f"tests/test_ordinary.py::test_case[{i}]" for i in range(32))
+    nodes = (*full_state, *ordinary)
+    if reverse:
+        nodes = tuple(reversed(nodes))
+    directory = tmp_path / "plan"
+    assert write_plan(nodes, directory, 4) == 4
+    shards = [verify_plan(directory, i).read_text().splitlines() for i in range(4)]
+    assert sorted(node for shard in shards for node in shard) == sorted(nodes)
+    for node in full_state:
+        assert [shard for shard in shards if node in shard] == [[node]]
