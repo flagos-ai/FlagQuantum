@@ -5,6 +5,7 @@
 """Present complete Frobenius and inverse graphs through existing field owners."""
 
 from collections.abc import Mapping
+from typing import SupportsIndex
 
 from examples.algorithms.field_product_decomposition import field_product_symbols
 from examples.algorithms.field_product_definitions import field_product_definition
@@ -26,6 +27,10 @@ from flagquantum.compiler.registers.finite_field.karatsuba_component import (
 from flagquantum.compiler.registers.finite_field.linear_component import (
     binary_linear_program,
 )
+from flagquantum.compiler.registers.finite_field.square_component import (
+    field_square_decomposition_matrix,
+    field_square_decomposition_program,
+)
 from flagquantum.core.ir.program import ProgramRecord
 from flagquantum.core.ir.program.registers import Register
 from flagquantum.core.ir.program.signatures import Signature
@@ -39,7 +44,10 @@ from flagquantum.drawer.register_score_data import (
     register_score_data,
 )
 from flagquantum.simulation.finite_field_frobenius import field_frobenius_matrix
-from flagquantum.simulation.finite_field_metadata import resolve_finite_field_encoding
+from flagquantum.simulation.finite_field_metadata import (
+    resolve_finite_field_encoding,
+    resolve_quantum_field_storage,
+)
 
 
 def field_power_program(
@@ -51,13 +59,16 @@ def field_power_program(
     dtype = ports[0].dtype
     if type(dtype.num_qubits) is not int:
         return None
+    dtype = resolve_quantum_field_storage(dtype)
     modulus = int(resolve_finite_field_encoding(dtype).gf_type.irreducible_poly)
     if operation == "GF2Inverse":
         return field_inverse_program(dtype, modulus=modulus)
     count, adjoint = parameters["k"], parameters["uncompute"]
-    if type(count) is not int or type(adjoint) is not bool:
+    if not isinstance(count, SupportsIndex) or type(adjoint) is not bool:
         return None
-    return field_frobenius_program(dtype, count, modulus=modulus, adjoint=adjoint)
+    return field_square_decomposition_program(
+        dtype, count, modulus=modulus, uncompute=adjoint
+    )
 
 
 def field_power_definition(
@@ -71,10 +82,33 @@ def field_power_definition(
     width = dtype.num_qubits
     if dtype.encoding != "finite_field" or type(width) is not int:
         return None
+    dtype = resolve_quantum_field_storage(dtype)
     encoding = resolve_finite_field_encoding(dtype)
     modulus = int(encoding.gf_type.irreducible_poly)
     function = next(f for f in record.functions if f.name == entry)
     names = tuple(r.name for r in function.registers or ())
+    if {"k", "uncompute"} <= parameters.keys() and names in {("x",), ("q",)}:
+        count, uncompute = parameters["k"], parameters["uncompute"]
+        if not isinstance(count, SupportsIndex) or type(uncompute) is not bool:
+            return None
+        if names == ("x",):
+            label = "GF2Square"
+            template = field_square_decomposition_program(
+                dtype, count, modulus=modulus, uncompute=uncompute
+            )
+        else:
+            # The frozen flag changes logical identity even though its physical
+            # PLU builder ignores it. Keep the caller's declared direction in
+            # the label only after matching the complete literal child body.
+            label = "SynthesizeLRCircuit" + ("†" if uncompute else "")
+            template = binary_linear_program(
+                field_square_decomposition_matrix(width, count, modulus=modulus)
+            )
+        return (
+            (label, template)
+            if matches_component_definition(record, entry, template)
+            else None
+        )
     candidates: list[tuple[str, ProgramRecord]] = []
     if names == ("x", "y"):
         candidates.append(("GF2Addition", field_addition_program(dtype)))
@@ -112,8 +146,23 @@ def field_power_symbols(
     record: ProgramRecord, ports: Signature, parameters: Mapping[str, object]
 ) -> RegisterWireSymbolSupplier:
     """Reuse product glyphs and override only complete power child labels."""
-    fallback = field_product_symbols(record, ports, parameters)
     root = record.functions[0]
+    context_dtype = ports[0].dtype
+    if context_dtype.encoding == "finite_field":
+        stored = resolve_quantum_field_storage(context_dtype)
+        if stored is not context_dtype:
+            ports = Signature(
+                tuple(
+                    Register(
+                        r.name,
+                        stored if r.dtype == context_dtype else r.dtype,
+                        r.shape_symbolic,
+                        r.side,
+                    )
+                    for r in ports
+                )
+            )
+    fallback = field_product_symbols(record, ports, parameters)
     labels = {
         op.callee: selected[0]
         for block in root.blocks
