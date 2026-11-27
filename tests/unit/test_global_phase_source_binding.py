@@ -27,6 +27,7 @@ from flagquantum.compiler.registers.primitives.global_phase import (
 from flagquantum.core.ir import CircuitIR
 from flagquantum.ecosystem.cirq._register_emitter import import_register_emitter
 from flagquantum.simulation.unitary import get_unitary
+from tests._reference_dependencies import unavailable_reference
 
 pytestmark = [pytest.mark.unit, pytest.mark.ftqc_reference]
 
@@ -46,8 +47,10 @@ def frozen_source() -> None:
 def test_whole_scalar_source_directions_carrier_and_independent_model(
     exponent: float,
 ) -> None:
-    from qualtran.bloqs.basic_gates import GlobalPhase
-    from qualtran.resource_counting import QECGatesCost, QubitCount, get_cost_value
+    from qualtran.bloqs.basic_gates.global_phase import GlobalPhase
+    from qualtran.resource_counting._bloq_counts import QECGatesCost
+    from qualtran.resource_counting._costing import get_cost_value
+    from qualtran.resource_counting._qubit_counts import QubitCount
 
     original = GlobalPhase(exponent=exponent)
     emitter = import_register_emitter(original)
@@ -121,9 +124,12 @@ def test_whole_scalar_source_directions_carrier_and_independent_model(
 def test_actual_word_controlled_phase_source_leaf_and_complex_columns(
     value: int,
 ) -> None:
-    from qualtran import CtrlSpec, QUInt
-    from qualtran.bloqs.basic_gates import GlobalPhase
-    from qualtran.resource_counting import QECGatesCost, QubitCount, get_cost_value
+    from qualtran._infra.controlled import CtrlSpec
+    from qualtran._infra.data_types import QUInt
+    from qualtran.bloqs.basic_gates.global_phase import GlobalPhase
+    from qualtran.resource_counting._bloq_counts import QECGatesCost
+    from qualtran.resource_counting._costing import get_cost_value
+    from qualtran.resource_counting._qubit_counts import QubitCount
 
     source = GlobalPhase(exponent=0.37).controlled(
         CtrlSpec(qdtypes=QUInt(2), cvs=value)
@@ -161,9 +167,12 @@ def test_actual_word_controlled_phase_source_leaf_and_complex_columns(
 
 
 def test_original_external_scalar_conventions_and_static_refusal() -> None:
-    import cirq
-    from qualtran.bloqs.basic_gates import GlobalPhase
-    from qualtran.cirq_interop import cirq_gate_to_bloq
+    try:
+        import cirq
+    except ModuleNotFoundError as _reference_import_error:
+        unavailable_reference(_reference_import_error)
+    from qualtran.bloqs.basic_gates.global_phase import GlobalPhase
+    from qualtran.cirq_interop._cirq_to_bloq import cirq_gate_to_bloq
 
     from flagquantum.ecosystem.cirq import from_cirq
     from flagquantum.ecosystem.cirq._feedback_import import import_cirq_feedback
@@ -207,8 +216,11 @@ def test_original_external_scalar_conventions_and_static_refusal() -> None:
 def test_controlled_scalar_retains_source_decomposition(
     values: tuple[int, ...],
 ) -> None:
-    import cirq
-    from qualtran.bloqs.basic_gates import GlobalPhase
+    try:
+        import cirq
+    except ModuleNotFoundError as _reference_import_error:
+        unavailable_reference(_reference_import_error)
+    from qualtran.bloqs.basic_gates.global_phase import GlobalPhase
 
     from flagquantum.ecosystem.cirq._feedback_import import (
         _has_explicit_matrix,
@@ -231,8 +243,11 @@ def test_controlled_scalar_retains_source_decomposition(
     expected = import_cirq_feedback(
         cirq.Circuit(leaves, strategy=cirq.InsertStrategy.NEW), qubit_order=wires
     ).ir
-    import numpy as np
-    from qualtran import CtrlSpec
+    try:
+        import numpy as np
+    except ModuleNotFoundError as _reference_import_error:
+        unavailable_reference(_reference_import_error)
+    from qualtran._infra.controlled import CtrlSpec
 
     captured = import_register_emitter(
         source.controlled(CtrlSpec(cvs=np.asarray(values)))
