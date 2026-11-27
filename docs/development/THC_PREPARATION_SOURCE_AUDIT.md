@@ -97,3 +97,69 @@ Literal THC physical primitive counts are unavailable because binding refuses
 missing bodies. Source model estimates must not be presented as measured gates.
 Large M450/N152 constructor intake is separate from small numerical fixtures;
 no large dense or full measurement-history result is claimed.
+
+
+## Complete file and preprocessing precision, 2026-11-28
+
+The complete Q-0417 source includes both classes, all fields, signatures and
+register properties, the uniform wire label, thirty-five-call uniform body,
+coefficient factory, QROAM construction/renaming, seventeen-call PREPARE body,
+call model, examples and documentation declarations. Literal and mathematical
+profiles stay separate. The source uses raw upper-triangle row order while the
+mathematical lookup owner explicitly permutes whole rows to contiguous addresses.
+Words are MSB-first; output banks transfer to the caller, and `s`, `less_than`
+and `extra_ctrl` are through storage. The literal uniform four-bit word is
+private, but the original invalid clean Free prevents a successful physical
+cleanup claim for that source graph.
+
+Algorithms now preserves input NumPy precision through concatenation, cumulative
+alias rounding, overlap/diagonal contractions and normalization. A float32
+four-row eight-bit witness previously produced `(64, 103, 205, 0)` instead of
+source `(65, 102, 205, 0)`, and norm `0.665686868001537` instead of
+`0.665686845779419`. Native data now matches both original values. Forty-eight
+complete old float64 records remain unchanged against published `0c05f43b0`.
+Existing real/finite tensor, shape and address-capacity admission remains in
+force; this is not arbitrary symbolic, complex or overflowed numerical support.
+
+Tests construct the literal root from native preprocessing outputs and compare
+forward/inverse recursive calls and named operands. Physical binding still
+refuses the missing GreaterThanConstant body. Separate actual eight-bit lookup
+programs compare upstream primitive calls, complete complex states entangled
+with a spectator, all small applicable histories, inverse restoration and
+private work zero. This does not claim successful physical execution of the
+original defective uniform or complete PREPARE root.
+
+The actual unchanged original rank450/spin152 factory has 101551 rows, ten keep
+bits, twenty angle bits and default log block six. All five native data columns,
+normalization `328128185.95920366` and blocking match; original root/PREPARE/SELECT
+have respectively 2/17/15 direct calls. Receipt
+`g2-thc-preprocessing-differential-20261128.json` includes the complete table
+hash. This is actual large-data/factory evidence, not an expanded native large
+primitive graph or numerical full operator.
+
+Under the approved faithful-migration disposition, the implemented complete
+Q-0417 file can close while the original sentinel, disjoint success predicate,
+invalid Free, swapped flags, zero-block junk lookup and missing comparator/erase
+bodies remain source defects. No model-only leaf is changed to an identity and
+no mathematical extension certifies the literal failed graph. Q-0422/Q-0658
+retain actual large native Walk dependency-context work. Source model estimates
+and actual lookup primitives are recorded separately under
+`g2-thc-preparation-selection-full-closure-*20261128`.
+
+Current batch verification: 147 concentrated passes and 86 independent Cirq1.6
+passes, followed by the final nine-case precision suite in each lane, including
+both block exponents. Local integration has 32 passes. Strict typing covers the
+two changed Python files; format, ownership, architecture/IR/API, required-check,
+language/link and whitespace checks pass. Six new optional/mandatory absence
+scenarios add no reference-policy findings to the existing 570. Ninety-nine
+frozen source/dependency blobs remain unchanged. Original source test and prior
+complete mathematical-execution evidence is reused under its recorded scope.
+
+For this actual eight-bit table, unblocked forward/coherent inverse each emit
+eight T-family, 29 CX and two measurements, with sixteen logical and one private
+work bit. All four forward histories and all four inverse histories are checked
+jointly. Blocked directions each emit 56 T-family and 94 CX, no measurement or
+private work, and thirty logical bits including retained banks. Independent
+source models report respectively two And/21 Clifford/two measurements/peak17
+and 56 T/320 Clifford/zero measurements/peak30. These are different accounting
+levels. The complete literal PREPARE/SELECT primitive inventories stay unavailable.

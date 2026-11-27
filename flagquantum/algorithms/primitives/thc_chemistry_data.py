@@ -139,9 +139,12 @@ def thc_chemistry_data(
         )
     if any(np.iscomplexobj(array) for array in (one, leaves, central)):
         raise ValueError("THC tensors must be real and finite")
-    one = np.asarray(one, dtype=np.float64)
-    leaves = np.asarray(leaves, dtype=np.float64)
-    central = np.asarray(central, dtype=np.float64)
+    if one.dtype.kind not in "fiu":
+        one = np.asarray(one, dtype=np.float64)
+    if leaves.dtype.kind not in "fiu":
+        leaves = np.asarray(leaves, dtype=np.float64)
+    if central.dtype.kind not in "fiu":
+        central = np.asarray(central, dtype=np.float64)
     if any(not np.isfinite(array).all() for array in (one, leaves, central)):
         raise ValueError("THC tensors must be real and finite")
 
@@ -150,9 +153,9 @@ def thc_chemistry_data(
         *((int(mu), int(nu)) for mu, nu in zip(*upper, strict=True)),
         *((mu, num_mu) for mu in range(spatial)),
     )
-    weights = (*map(float, central[upper]), *map(float, one))
+    weights = np.concatenate((central[upper], one))
     alternates, keep = alias_numerators(
-        tuple(abs(value) for value in weights), mu=probability_bits
+        tuple(np.abs(weights).flat), mu=probability_bits
     )
     theta = tuple(int(value < 0) for value in weights)
     columns = (

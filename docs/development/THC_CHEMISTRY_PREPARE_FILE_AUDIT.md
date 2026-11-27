@@ -64,3 +64,16 @@ and public API checks passed. Q-0415 and Q-0418 close the package
 mapping and original tests. Q-0416 remains for the native
 tutorial utility. Q-0417 remains open for source sentinel,
 unblocked peak and original decomposition boundaries.
+
+
+## Whole-source disposition, 2026-11-28
+
+The subsequent [literal preparation review](THC_PREPARATION_SOURCE_AUDIT.md)
+now accounts for the complete Q-0417 source, including its previously missing
+constructor graphs and exact explicit refusals. The Algorithms integral owner
+also preserves original float32 alias rounding and contractions; existing
+float64 records remain unchanged. Under the approved faithful-migration rule,
+Q-0417 closes with original source defects recorded separately. The earlier
+hold above is historical, not a claim that the original circuit now physically
+prepares the intended state. Original model-only leaves remain non-executable;
+large native Walk context is still separate Q-0422/Q-0658 work.
