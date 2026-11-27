@@ -12,6 +12,18 @@ SourceResult = tuple[tuple[Instruction, ...], SourcePorts]
 SourceLeaf = Callable[[Any, SourcePorts, SourcePorts], SourceResult | None]
 
 
+def source_line_qubit_index(qubit: object) -> int:
+    """Read the actual SDK line coordinate used by source stream comparisons."""
+    from tests._reference_dependencies import unavailable_reference
+
+    try:
+        from cirq import LineQubit
+    except ModuleNotFoundError as error:
+        unavailable_reference(error)
+    assert isinstance(qubit, LineQubit)
+    return qubit.x
+
+
 def assert_source_wire_streams(
     actual: tuple[Instruction, ...], expected: tuple[Instruction, ...]
 ) -> None:
@@ -38,8 +50,11 @@ def walk_source_graph(
     """Bind original Soquet connections; only the caller binds leaf physical work."""
     pytest.importorskip("qualtran")
     np = pytest.importorskip("numpy")
-    from qualtran import CompositeBloq, LeftDangle, Soquet
-    from qualtran.bloqs.bookkeeping import Cast, Join, Split
+    from qualtran._infra.composite_bloq import CompositeBloq
+    from qualtran._infra.quantum_graph import LeftDangle, Soquet
+    from qualtran.bloqs.bookkeeping.cast import Cast
+    from qualtran.bloqs.bookkeeping.join import Join
+    from qualtran.bloqs.bookkeeping.split import Split
 
     result = leaf(bloq, inputs, desired)
     if result is not None:
@@ -149,7 +164,7 @@ def source_partition_leaf(
     bloq: Any, inputs: SourcePorts, desired: SourcePorts
 ) -> SourceResult | None:
     """Read the original packed Partition mapping without flattening call scopes."""
-    from qualtran.bloqs.bookkeeping import Partition
+    from qualtran.bloqs.bookkeeping.partition import Partition
 
     if not isinstance(bloq, Partition):
         return None
