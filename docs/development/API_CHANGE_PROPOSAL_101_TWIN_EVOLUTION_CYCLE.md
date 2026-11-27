@@ -34,10 +34,10 @@ gate or accidentally repeat hardware work after a process restart.
 ## Public API
 
 The complete offline executable is
-[`examples/twin_evolution_cycle.py`](../../examples/twin_evolution_cycle.py):
+[`examples/twin/twin_evolution_cycle.py`](../../examples/twin/twin_evolution_cycle.py):
 
 ```bash
-python examples/twin_evolution_cycle.py
+python examples/twin/twin_evolution_cycle.py
 ```
 
 The application-level sequence is:

@@ -6,9 +6,9 @@ import pytest
 import torch
 
 import flagquantum.lindblad as fql
-from examples.rydberg_native_dynamics import native_pair_plan
-from examples.terminal_instrument_reference import presence_reference
-from examples.terminal_instrument_sampling import main
+from examples.simulation.rydberg_native_dynamics import native_pair_plan
+from examples.simulation.terminal_instrument_reference import presence_reference
+from examples.simulation.terminal_instrument_sampling import main
 from flagquantum.runtime import sample_terminal
 
 pytestmark = pytest.mark.integration

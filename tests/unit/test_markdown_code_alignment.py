@@ -145,9 +145,9 @@ def test_canonical_entry_documents_describe_the_current_execution_path() -> None
     vision = (ROOT / "docs" / "roadmap" / "FLAGQUANTUM_VISION.md").read_text(
         encoding="utf-8"
     )
-    native_example = (ROOT / "examples" / "vqe_switch_sv_mps_tn.py").read_text(
-        encoding="utf-8"
-    )
+    native_example = (
+        ROOT / "examples" / "training" / "vqe_switch_sv_mps_tn.py"
+    ).read_text(encoding="utf-8")
     mps_research = (
         ROOT / "benchmarks" / "internal" / "mps_hamiltonian_identification" / "core.py"
     ).read_text(encoding="utf-8")

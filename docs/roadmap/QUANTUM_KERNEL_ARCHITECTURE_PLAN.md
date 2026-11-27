@@ -450,7 +450,7 @@ selects the kernel when the feature is requested and the input is eligible:
 
 ```bash
 FQ_STATEVECTOR_TRITON_LOCAL_1Q=1 \
-  python -m examples.triton_statevector_local_1q
+  python -m examples.simulation.triton_statevector_local_1q
 ```
 
 The complete example builds the circuit with `fq.Circuit`, executes it through

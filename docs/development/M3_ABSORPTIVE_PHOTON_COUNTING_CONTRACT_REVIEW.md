@@ -44,7 +44,7 @@ it does not return conditional states or infer physical loss.
 
 The approved user workflow is:
 
-1. Reuse [boson_interference.py](../../examples/boson_interference.py) to evolve
+1. Reuse [boson_interference.py](../../examples/simulation/boson_interference.py) to evolve
    the declared two-mode input, including declared propagation loss.
 2. Declare a complete terminal absorptive instrument for mode 0 and a detector
    efficiency, while preserving mode 1 and the existing joint matrix coordinates.

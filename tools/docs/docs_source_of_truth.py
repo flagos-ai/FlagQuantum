@@ -48,6 +48,8 @@ except (ImportError, ModuleNotFoundError):  # direct execution beside an older i
         ORIGIN_REPOSITORY_HISTORY,
     )
 
+from tools.architecture.source_relocations import source_path
+
 ROOT = Path(__file__).resolve().parents[2]
 CONFIG = ROOT / "docs/source_of_truth.json"
 API_REF = re.compile(r"\bfq\.([A-Za-z_]\w*)")
@@ -159,7 +161,8 @@ GENERATED_REGION = re.compile(
 
 
 def root_link(path: str, label: str) -> str:
-    return f"[{label}](../../{path})"
+    current = source_path(ROOT, path).relative_to(ROOT).as_posix()
+    return f"[{label}](../../{current})"
 
 
 def quick_start_label(path: str, *, sentence_case: bool = True) -> str:

@@ -29,7 +29,7 @@ def _run(tmp_path: Path) -> dict[str, object]:
         [
             sys.executable,
             "-m",
-            "examples.vqe_switch_sv_mps_tn",
+            "examples.training.vqe_switch_sv_mps_tn",
             "--output",
             str(tmp_path / "vqe_backend_switch.json"),
         ],
@@ -37,6 +37,7 @@ def _run(tmp_path: Path) -> dict[str, object]:
         check=True,
         capture_output=True,
         text=True,
+        timeout=120,
     )
     return json.loads(completed.stdout)
 

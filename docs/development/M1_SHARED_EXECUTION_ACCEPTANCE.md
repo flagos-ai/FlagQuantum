@@ -41,7 +41,7 @@ reference. Matrix-free closure and first/second derivative checks remain in
 From the repository root, with the normal development environment installed:
 
 ```bash
-python -m examples.mixed_dimension_dynamics
+python -m examples.simulation.mixed_dimension_dynamics
 ```
 
 Observed Python 3.12 CPU output:
@@ -61,10 +61,10 @@ The other existing examples were also run successfully on that revision:
 
 | Command | Observed result and meaning |
 | --- | --- |
-| `python -m examples.boson_interference` | Without loss, P(0,2) and P(2,0) are 0.5 and P(1,1) is zero. At loss rate 0.2 per mode, the two-photon survival is 0.63839443. The model retains loss outcomes. |
-| `python -m examples.train_boson_coupling` | Population loss falls from 0.01158038 to 0.00001147. The fitted coupling is 0.68787697 against a reference 0.7; this demonstrates optimization, not an exact fit or hardware calibration. |
-| `python -m examples.train_piecewise_drive` | Initial probability 0.25121448, gradient [0.04337116, 0.08674232, 0.02168558], and `Training reduced loss: True`. |
-| `python -m examples.constrained_basis_reference` | Transfer 0.5, control derivative 1.0, fusion-channel probability 0.5, braid relation verified and declared basis labels retained. |
+| `python -m examples.simulation.boson_interference` | Without loss, P(0,2) and P(2,0) are 0.5 and P(1,1) is zero. At loss rate 0.2 per mode, the two-photon survival is 0.63839443. The model retains loss outcomes. |
+| `python -m examples.training.train_boson_coupling` | Population loss falls from 0.01158038 to 0.00001147. The fitted coupling is 0.68787697 against a reference 0.7; this demonstrates optimization, not an exact fit or hardware calibration. |
+| `python -m examples.training.train_piecewise_drive` | Initial probability 0.25121448, gradient [0.04337116, 0.08674232, 0.02168558], and `Training reduced loss: True`. |
+| `python -m examples.simulation.constrained_basis_reference` | Transfer 0.5, control derivative 1.0, fusion-channel probability 0.5, braid relation verified and declared basis labels retained. |
 
 These commands reuse the existing example sources rather than copy their model
 builders into another framework. Printed decimal values are observations of

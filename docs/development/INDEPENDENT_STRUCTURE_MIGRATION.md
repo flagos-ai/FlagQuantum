@@ -53,7 +53,7 @@ Repeat the overlap and consumer audit if either input advances before integratio
 | Root configuration | Architecture/team policies live in `config/`; the Conda recipe lives in `config/environments/`, with its editable path adjusted to the same repository checkout. |
 | Workshops | Executable material lives in `examples/workshops/flagos2026/`; standalone guides live in `docs/guides/workshops/flagos2026/`. The six-notebook localization exception moves with the same notebooks. |
 
-The exhaustive 456-row [path map](migration/independent-structure-path-map.md) and
+The cumulative 526-row [path map](migration/independent-structure-path-map.md) and
 [machine-readable symbol ledger](migration/independent-structure-moves.json)
 identify every relocated file and every partial extraction. An implementation
 has one owner even when more than one historical public module exports it.
@@ -99,7 +99,7 @@ partial rows never redirect the entire original module.
 ## Compatibility after internal retirement
 
 The [itemized retirement inventory](migration/internal-forwarder-retirement.md)
-and its JSON identify every removed path, all 99 public compatibility entries (including 16 pre-existing expert Compiler facades),
+and its JSON identify every removed path, all 100 public compatibility entries (including 16 pre-existing expert Compiler facades),
 and the only three internal files awaiting #1084 consumer reconciliation.
 They supersede the initial blanket facade policy of commit `5f8e97c77`.
 
@@ -177,3 +177,35 @@ rewritten by rollback.
 
 The [internal-retirement acceptance record](migration/internal-forwarder-retirement-acceptance.md)
 qualifies the cleaned tree separately from the preceding facade-based migration.
+
+## Subsequent independent batches
+
+The [example batch](migration/example-structure-migration.md) groups repository
+examples by capability, deletes old example paths and updates operational
+consumers without changing installed product exports. Historical contract
+references resolve through the existing source ledger. Its stacked PRs receive
+the same CI through explicit architecture branch selectors.
+
+The [matrix-free batch](migration/matrix-free-structure-migration.md) places
+linear algebra primitives under Numerics. A pre-move public-plan pickle proves
+the only additional retained boundary: two concrete type locators. No numerical
+operation is forwarded at an old path.
+
+The [physical dynamics batch](migration/physical-dynamics-structure-migration.md)
+places existing physical numerical functions under Dynamics and deletes three
+old internal modules. Runtime consumes canonical numerical owners directly;
+Core physical records and public execution results retain their identities.
+
+## Follow-up delivery boundary
+
+The example, matrix-free and physical dynamics batches are reviewed together in
+one follow-up integration PR, based on the qualified #1331 head. Each batch keeps
+its own path map, compatibility basis and focused validation. One complete CI
+run must qualify their combined tree, including coverage ownership, installed
+artifacts and public serialization. Passing a preview or an earlier batch does
+not qualify that combined commit. The directly #1084-dependent migration remains
+a separate integration boundary, and Rust work remains deferred.
+
+The [follow-up acceptance record](migration/followup-structure-acceptance.md)
+records complete local regressions, installed-wheel verification and the
+remaining exact-commit CI and incoming-integration gates.

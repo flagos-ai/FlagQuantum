@@ -50,7 +50,7 @@ for timestamp, twin_match, ideal_match, qpu_repeatability, shot_radius, bound in
 The executable repository example accepts the same persisted inputs:
 
 ```bash
-python examples/twin_validation_history.py \
+python examples/twin/twin_validation_history.py \
   --observation shenglian-state-01.json shenglian-validation-01.json \
   --observation shenglian-state-02.json shenglian-validation-02.json
 ```

@@ -25,7 +25,7 @@ cleanup evidence. Run from the repository root with project dependencies.
 
 ```bash
 python -m pytest -q tests/unit/test_synth_fixed_point.py tests/team/compiler/test_construction_numeric_expression.py
-python -m examples.synthesis_offline_deployment
+python -m examples.synthesis.synthesis_offline_deployment
 python -m pytest -q tests/integration/test_synthesis_offline_deployment.py
 ```
 

@@ -32,10 +32,10 @@ place.
 ## Public API
 
 The complete offline executable is
-[`examples/twin_candidate_fit.py`](../../examples/twin_candidate_fit.py):
+[`examples/twin/twin_candidate_fit.py`](../../examples/twin/twin_candidate_fit.py):
 
 ```bash
-python examples/twin_candidate_fit.py
+python examples/twin/twin_candidate_fit.py
 ```
 
 The application call after a successful bounded estimate is:

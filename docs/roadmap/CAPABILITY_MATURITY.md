@@ -144,7 +144,7 @@ check out. `.github/workflows/ci.yml` compares a base revision against the
 git zero-SHA placeholder, so the all-zero value is a shell literal rather than a
 revision. `examples/assets/manifest.json` records a revision of
 `google-bert/bert-base-uncased` in `assets[2].revision` and `assets[3].revision` --
-the value quoted as `BERT_TOKENIZER_REVISION` in `examples/quantum_transformer.py` --
+the value quoted as `BERT_TOKENIZER_REVISION` in `examples/training/quantum_transformer.py` --
 and `e6281661ce1c48d982bc483cf8a173c1bbeb5d31` is the same class in `stanfordnlp/imdb`;
 no FlagQuantum repository contains either and neither is this repository's to account
 for. The class the walk left outside until now -- a revision named in prose by a
@@ -235,7 +235,7 @@ to `e6281661ce1c48d982bc483cf8a173c1bbeb5d31` and this repository does not hold 
 should not. Its `assets[2].revision` and `assets[3].revision` hold the full-length
 `b644e1d1cc3f080c2e6d4db69cfdfac83719c814`, a revision of
 `google-bert/bert-base-uncased` -- the value quoted as `BERT_TOKENIZER_REVISION` in
-`examples/quantum_transformer.py` -- and the manifest's schema is a third-party asset
+`examples/training/quantum_transformer.py` -- and the manifest's schema is a third-party asset
 record rather than a FlagQuantum evidence artifact. Reading that field as a
 FlagQuantum pin would ask a reader to check out a commit of another project, so the
 root stays outside the walk and the reason is stated here rather than left to the

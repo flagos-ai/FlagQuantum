@@ -301,7 +301,7 @@ are using them.
 On Linux with the optional SDK, a user can run:
 
 ```bash
-python -m examples.cudaq_bell_export
+python -m examples.ecosystem.cudaq_bell_export
 ```
 
 Expected output on each certified version:

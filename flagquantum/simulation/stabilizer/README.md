@@ -448,7 +448,7 @@ regression were verified separately from replacement fakes. Focused tests passed
 across disjoint groups: 12,028 passed and 246 skipped. Historical failed attempts
 and approved recovery evidence are retained; this was not one uninterrupted run.
 Start with `tests/team/simulation/test_embedded_stabilizer_engine.py` and the
-public workflow in `examples/stabilizer_sampling.py`. Final-head publication and
+public workflow in `examples/simulation/stabilizer_sampling.py`. Final-head publication and
 actual-main acceptance remain separate gates; no maturity or parity is promoted.
 
 ## Embedded external Stim text experiments

@@ -112,7 +112,7 @@ def test_independent_reference_against_analytic_cascade_and_coherences(
 @pytest.mark.parametrize("initial", reference_inputs())
 def test_driven_density_order_and_physical_invariants(initial: torch.Tensor) -> None:
     import flagquantum.lindblad as fql
-    from examples.driven_three_level_relaxation import relaxation_plan
+    from examples.simulation.driven_three_level_relaxation import relaxation_plan
 
     controls = reference_controls()
     result = fql.run(relaxation_plan(controls, initial=initial))
@@ -144,7 +144,7 @@ def test_driven_density_order_and_physical_invariants(initial: torch.Tensor) -> 
 @pytest.mark.parametrize("rates", [(0.4, 0.7), (0.0, 0.7), (0.4, 0.0), (0.0, 0.0)])
 def test_production_undriven_cascade_and_coherence(rates: tuple[float, float]) -> None:
     import flagquantum.lindblad as fql
-    from examples.driven_three_level_relaxation import relaxation_plan
+    from examples.simulation.driven_three_level_relaxation import relaxation_plan
 
     controls = torch.zeros((4, 2), dtype=torch.float64)
     for initial in reference_inputs():
@@ -163,7 +163,7 @@ def test_production_undriven_cascade_and_coherence(rates: tuple[float, float]) -
 @pytest.mark.parametrize("level", [1, 2])
 def test_all_eight_control_gradients(level: int) -> None:
     import flagquantum.lindblad as fql
-    from examples.driven_three_level_relaxation import relaxation_plan
+    from examples.simulation.driven_three_level_relaxation import relaxation_plan
 
     controls = reference_controls().requires_grad_()
     result = fql.run(relaxation_plan(controls))
@@ -189,7 +189,7 @@ def test_all_eight_control_gradients(level: int) -> None:
 
 def test_runge_kutta_refinement() -> None:
     import flagquantum.lindblad as fql
-    from examples.driven_three_level_relaxation import relaxation_plan
+    from examples.simulation.driven_three_level_relaxation import relaxation_plan
 
     controls = reference_controls()
     reference = reference_states(controls, reference_inputs()[0])
@@ -208,7 +208,7 @@ def test_runge_kutta_refinement() -> None:
 
 def test_training_detached_replay_and_independent_final_populations() -> None:
     import flagquantum.lindblad as fql
-    from examples.driven_three_level_relaxation import relaxation_plan
+    from examples.simulation.driven_three_level_relaxation import relaxation_plan
 
     controls = torch.nn.Parameter(reference_controls())
     optimizer = torch.optim.Adam([controls], lr=0.08)
@@ -246,13 +246,13 @@ def test_training_detached_replay_and_independent_final_populations() -> None:
 
 def test_zero_rate_limit_retains_closed_model() -> None:
     import flagquantum.lindblad as fql
-    from examples.driven_three_level import (
+    from examples.simulation.driven_three_level import (
         pulse_plan,
     )
-    from examples.driven_three_level import (
+    from examples.simulation.driven_three_level import (
         reference_states as closed_reference,
     )
-    from examples.driven_three_level_relaxation import relaxation_plan
+    from examples.simulation.driven_three_level_relaxation import relaxation_plan
 
     controls = reference_controls()
     closed = fql.run(pulse_plan(controls))
@@ -270,7 +270,7 @@ def test_zero_rate_limit_retains_closed_model() -> None:
     "rates", [(-0.4, 0.7), (float("nan"), 0.7), (0.4, float("inf"))]
 )
 def test_existing_rate_admission(rates: tuple[float, float]) -> None:
-    from examples.driven_three_level_relaxation import relaxation_plan
+    from examples.simulation.driven_three_level_relaxation import relaxation_plan
 
     with pytest.raises(ValueError):
         relaxation_plan(reference_controls(), rates=rates)

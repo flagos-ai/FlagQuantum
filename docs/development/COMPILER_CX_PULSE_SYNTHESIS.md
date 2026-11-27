@@ -244,7 +244,7 @@ python -m pytest tests/unit/test_compilation_cx_pulse_synthesis.py \
 The existing user-facing target compilation and execution workflow remains:
 
 ```bash
-python -m examples.target_aware_compilation
+python -m examples.circuits.compiler.target_aware_compilation
 ```
 
 Expected: topology edges are valid, the mapping is restored, and the compiled

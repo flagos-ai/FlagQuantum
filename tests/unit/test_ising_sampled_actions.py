@@ -13,7 +13,7 @@ import torch
 import flagquantum as fq
 from flagquantum.core.ising import IsingBraidProgram
 from flagquantum.errors import CapabilityError, ExecutionError
-from flagquantum.simulation.ising_braid import (
+from flagquantum.simulation.dynamics.ising_braid import (
     _continue_ising_sampled,
     _ising_sampled_prefix,
     evolve_ising_braid,
@@ -182,7 +182,7 @@ def test_full_kernel_requires_selection_and_planning_does_no_arithmetic(
 
     source = IsingBraidProgram().exchange(1).measure_pair()
     monkeypatch.setattr(
-        "flagquantum.simulation.ising_braid._exchange_unitary", unexpected
+        "flagquantum.simulation.dynamics.ising_braid._exchange_unitary", unexpected
     )
     with pytest.raises(CapabilityError, match="selected"):
         evolve_ising_braid(source.to_ir())

@@ -567,6 +567,12 @@ def render_document(contract: dict[str, Any]) -> str:
         "column reads `none` has no registered maturity entry."
     )
     lines.append("")
+    lines.append(
+        "Historical source and evidence paths remain identifiers from the contract. "
+        "Current implementation locations are recorded in the "
+        "[migration path map](../development/migration/independent-structure-path-map.md)."
+    )
+    lines.append("")
     lines.append(f"- CUDA-Q baseline versions: {', '.join(contract['cudaq_versions'])}")
     provenance = baseline.get("version_provenance", {})
     if provenance:

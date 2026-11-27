@@ -28,9 +28,12 @@ from flagquantum.simulation.dynamics.lindblad import (
     _normalize_collapse_operators,
     _normalize_hamiltonian,
 )
-from flagquantum.simulation.matrix_free_exponential import exponential_action
-from flagquantum.simulation.matrix_free_hamiltonian import PauliSum, PauliSumTerm
-from flagquantum.simulation.matrix_free_linear_solve import gmres
+from flagquantum.simulation.numerics.matrix_free.exponential import exponential_action
+from flagquantum.simulation.numerics.matrix_free.hamiltonian import (
+    PauliSum,
+    PauliSumTerm,
+)
+from flagquantum.simulation.numerics.matrix_free.linear_solve import gmres
 
 pytestmark = pytest.mark.unit
 

@@ -66,7 +66,7 @@ assert coverage.confidence_level is None
 ```
 
 The four input files come from existing prospective cell-validation workflows.
-The complete example is `examples/twin_connected_region.py`. It is entirely
+The complete example is `examples/twin/twin_connected_region.py`. It is entirely
 offline and submits no QPU task.
 
 ## Interpretation

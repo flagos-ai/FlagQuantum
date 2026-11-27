@@ -122,7 +122,7 @@ Target compilation and offline deployment keep their existing entry points.
 The existing offline example exercises local circuit export and target packaging:
 
 ```bash
-python -m examples.synthesis_offline_deployment
+python -m examples.synthesis.synthesis_offline_deployment
 ```
 
 Expected output includes OpenQASM and

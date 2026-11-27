@@ -132,7 +132,7 @@ not a common execution-plan or backend capability claim. Training remains
 `prediction = model(x)`, loss, `backward()`, and `optimizer.step()`; model weights
 remain registered PyTorch parameters, not a user-managed runtime input dictionary.
 
-For the shortest hybrid training workflow, run `python examples/quick_start.py`.
+For the shortest hybrid training workflow, run `python examples/training/quick_start.py`.
 For initialization, freezing, optimizer membership, and current checkpoint
 behavior, read [Training parameters](../../docs/guides/TRAINING_PARAMETERS.md)
 and run `python -m examples.local.train_parameters`. Qualified v3 checkpoints
@@ -163,7 +163,7 @@ allocation or source decoding. Version 1.2 requires exactly one ordered
 outcome, event, classical bit or feedback record is produced. Rehashing cannot
 bypass the version or source semantics.
 
-Run `python -m examples.ising_braid_execution` for direct execution, exact JSON
+Run `python -m examples.simulation.ising_braid_execution` for direct execution, exact JSON
 replay and explicit terminal QND charge sampling. It reports plan 1.1, null qubit
 count, state shape `(1, 2, 2)`, `P(psi): 0.5`, exact replay and 2,000 terminal
 shots without changing caller RNG state. This bounded CPU complex128 route has
@@ -249,4 +249,4 @@ recorded numeric results as `.fqx` experiments without executing a program.
 `experiment.py` owns archive validation and result binding; `_experiment_codec.py`
 owns bounded JSON and tensor encoding. Historical plans remain data; existing
 live execution-plan validation is unchanged. See the [format reference](../../docs/reference/EXPERIMENT_FILES.md)
-and [CPU example](../../examples/save_experiment.py).
+and [CPU example](../../examples/training/save_experiment.py).

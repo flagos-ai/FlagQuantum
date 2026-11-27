@@ -115,7 +115,7 @@ def test_tutorial_notebook_inventory_and_outputs_are_curated() -> None:
 
 @pytest.mark.integration
 def test_quantum_transformer_feature_layer_is_differentiable() -> None:
-    from examples.quantum_transformer import QuantumFeatureLayer
+    from examples.training.quantum_transformer import QuantumFeatureLayer
 
     layer = QuantumFeatureLayer(n_qubits=3, n_layers=1)
     inputs = torch.randn(2, 3, requires_grad=True)

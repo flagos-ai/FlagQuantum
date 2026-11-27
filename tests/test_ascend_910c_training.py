@@ -10,7 +10,7 @@ from pathlib import Path
 
 import pytest
 
-from examples.ascend_910c_training import train_rotation
+from examples.training.ascend_910c_training import train_rotation
 
 pytestmark = pytest.mark.integration
 ROOT = Path(__file__).resolve().parents[1]
@@ -30,7 +30,12 @@ def test_documented_training_runs_on_ascend_910c() -> None:
     if os.environ.get("FLAGQUANTUM_TEST_ASCEND_910C") != "1":
         pytest.skip("set FLAGQUANTUM_TEST_ASCEND_910C=1 on the documented 910C stack")
     completed = subprocess.run(
-        [sys.executable, "examples/ascend_910c_training.py", "--device", "flagos:0"],
+        [
+            sys.executable,
+            "examples/training/ascend_910c_training.py",
+            "--device",
+            "flagos:0",
+        ],
         cwd=ROOT,
         capture_output=True,
         text=True,

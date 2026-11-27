@@ -11,7 +11,7 @@ import torch
 
 import flagquantum as fq
 import flagquantum.lindblad as fql
-from examples.train_rydberg_controls import control_plan, moving_pair_program
+from examples.training.train_rydberg_controls import control_plan, moving_pair_program
 from flagquantum.core.ir.program.physical_codec import (
     native_program_from_dict,
     native_program_to_dict,

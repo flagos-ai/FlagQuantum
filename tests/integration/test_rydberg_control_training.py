@@ -8,7 +8,7 @@ import pytest
 import torch
 
 import flagquantum.lindblad as fql
-from examples.train_rydberg_controls import control_plan, train_controls
+from examples.training.train_rydberg_controls import control_plan, train_controls
 from flagquantum.operators import SuperOperator
 from flagquantum.runtime import sample_terminal
 

@@ -31,8 +31,8 @@ from flagquantum.simulation.dynamics.generator import (
     Liouvillian,
 )
 from flagquantum.simulation.dynamics.integrators import advance_interval
-from flagquantum.simulation.matrix_free_exponential import exponential_action
-from flagquantum.simulation.matrix_free_hamiltonian import PauliSum
+from flagquantum.simulation.numerics.matrix_free.exponential import exponential_action
+from flagquantum.simulation.numerics.matrix_free.hamiltonian import PauliSum
 
 pytestmark = pytest.mark.unit
 

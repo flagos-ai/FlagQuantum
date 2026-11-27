@@ -14,7 +14,7 @@ from flagquantum.simulation.dynamics.lindblad import (
     EvolutionValidationError,
     evolve_density_matrix,
 )
-from flagquantum.simulation.matrix_free_hamiltonian import PauliSum
+from flagquantum.simulation.numerics.matrix_free.hamiltonian import PauliSum
 
 pytestmark = pytest.mark.unit
 

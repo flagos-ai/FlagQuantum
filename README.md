@@ -162,7 +162,7 @@ print(result.expectation())
 ```
 
 For a complete classical–quantum model, follow the
-[hybrid training example](examples/quick_start.py). The published wheel contains
+[hybrid training example](examples/training/quick_start.py). The published wheel contains
 the `flagquantum` package only, so `examples/` comes from a clone of this
 repository: `git clone https://github.com/flagos-ai/FlagQuantum.git` and run the
 examples from that working copy.

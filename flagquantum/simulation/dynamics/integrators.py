@@ -21,8 +21,8 @@ from collections.abc import Callable, Mapping
 
 import torch
 
-from flagquantum.simulation.matrix_free_exponential import exponential_action
-from flagquantum.simulation.matrix_free_linear_solve import gmres
+from flagquantum.simulation.numerics.matrix_free.exponential import exponential_action
+from flagquantum.simulation.numerics.matrix_free.linear_solve import gmres
 
 RUNGE_KUTTA = "runge-kutta"
 CRANK_NICOLSON = "crank-nicolson"

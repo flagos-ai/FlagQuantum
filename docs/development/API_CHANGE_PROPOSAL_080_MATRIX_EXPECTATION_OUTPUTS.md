@@ -42,7 +42,7 @@ as a Pauli term or padding it with fictitious qubits changes its meaning.
 The lower-level dynamics API already evaluates full-space Hermitian matrices.
 This current-API example is runnable before approval, with no hardware or
 credentials. It uses the same leakage model as
-`examples/mixed_dimension_dynamics.py`:
+`examples/simulation/mixed_dimension_dynamics.py`:
 
 ```python
 import torch

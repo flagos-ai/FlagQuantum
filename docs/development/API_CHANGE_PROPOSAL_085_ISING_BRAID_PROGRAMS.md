@@ -43,7 +43,7 @@ review or merge alone would not supply it. Follow
 ## Why this is the next boundary
 
 The roadmap requires a small braiding-and-fusion-measurement scenario. Existing
-`examples.constrained_basis_reference` supplies a caller-owned two-dimensional
+`examples.simulation.constrained_basis_reference` supplies a caller-owned two-dimensional
 matrix and literal fusion-path labels. Its logarithm witness is valid as a
 matrix reference, but does not preserve a native braid word, certify fusion
 rules or make its numerical time a braid duration.

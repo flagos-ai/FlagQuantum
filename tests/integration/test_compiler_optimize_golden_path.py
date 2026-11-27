@@ -20,7 +20,7 @@ _LEVEL_COUNTS = "gate count by level: 0 -> 8, 1 -> 3, 2 -> 3"
 def _run_example() -> str:
     root = Path(__file__).resolve().parents[2]
     completed = subprocess.run(
-        [sys.executable, "-m", "examples.compiler_optimize"],
+        [sys.executable, "-m", "examples.circuits.compiler.compiler_optimize"],
         cwd=root,
         check=True,
         capture_output=True,

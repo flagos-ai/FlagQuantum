@@ -46,6 +46,7 @@ import torch
 
 import flagquantum as fq
 from flagquantum.errors import CapabilityError
+from tools.architecture.source_relocations import source_path
 
 pytestmark = pytest.mark.unit
 
@@ -141,7 +142,8 @@ def test_the_maturity_entry_names_only_paths_that_exist() -> None:
     ):
         value = capability.get(field)
         assert isinstance(value, str) and value, field
-        assert (ROOT / value).exists(), f"{field} does not exist: {value}"
+        current = source_path(ROOT, value)
+        assert current.exists(), f"{field} does not exist: {value} -> {current}"
 
 
 def test_the_entry_declares_the_evidence_its_level_requires() -> None:
@@ -570,7 +572,8 @@ def test_the_parity_row_cites_this_capability() -> None:
     assert "maturity_refs" not in row
     for evidence in row["evidence"]:
         assert not evidence.startswith("search:"), evidence
-        assert (ROOT / evidence).exists(), evidence
+        current = source_path(ROOT, evidence)
+        assert current.exists(), f"{evidence} -> {current}"
 
 
 def test_the_parity_row_no_longer_says_the_capability_is_unregistered() -> None:

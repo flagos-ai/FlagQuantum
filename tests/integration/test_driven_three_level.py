@@ -8,7 +8,7 @@ import pytest
 import torch
 
 import flagquantum.lindblad as fql
-from examples.driven_three_level import (
+from examples.simulation.driven_three_level import (
     initial_controls,
     main,
     pulse_plan,

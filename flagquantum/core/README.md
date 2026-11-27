@@ -90,7 +90,7 @@ domains without extending Core.
 For native-control construction, run:
 
 ```bash
-python -m examples.rydberg_program_geometry
+python -m examples.circuits.rydberg_program_geometry
 python -m pytest tests/unit/test_rydberg_program.py \
   tests/unit/test_rydberg_source_codec.py \
   tests/unit/test_rydberg_program_compatibility.py -q
@@ -103,7 +103,7 @@ globally or modify old plan fixtures to hide a failure.
 For discrete braid source construction and its admission/refusal boundaries:
 
 ```bash
-python -m examples.ising_braid_source
+python -m examples.circuits.ising_braid_source
 python -m pytest tests/unit/test_ising_braid_source.py \
   tests/unit/test_ising_braid_contract.py \
   tests/unit/test_ising_sampled_source.py \

@@ -24,7 +24,10 @@ from flagquantum.simulation import (
     plan_density_matrix_evolution,
 )
 from flagquantum.simulation.dynamics import lindblad as lindblad_module
-from flagquantum.simulation.matrix_free_hamiltonian import PauliSum, PauliSumTerm
+from flagquantum.simulation.numerics.matrix_free.hamiltonian import (
+    PauliSum,
+    PauliSumTerm,
+)
 
 pytestmark = pytest.mark.unit
 
@@ -489,7 +492,7 @@ def test_the_matrix_products_share_the_commutator_block_budget(
 
     monkeypatch.setattr(PauliSum, "_left_block", recorded)
     monkeypatch.setattr(
-        "flagquantum.simulation.matrix_free_hamiltonian."
+        "flagquantum.simulation.numerics.matrix_free.hamiltonian."
         "DEFAULT_COMMUTATOR_BLOCK_BYTES",
         192,
     )

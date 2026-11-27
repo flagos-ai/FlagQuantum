@@ -10,7 +10,7 @@ no public API, serialized format, numerical implementation or execution target.
 Run the two-model example without hardware or credentials:
 
 ```bash
-python -m examples.shared_dynamics_workflow
+python -m examples.simulation.shared_dynamics_workflow
 ```
 
 Expected output:

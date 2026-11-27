@@ -8,7 +8,7 @@ import pytest
 import torch
 
 import flagquantum.lindblad as fql
-from examples.spin_mode_convergence import (
+from examples.simulation.spin_mode_convergence import (
     FINAL_TIME,
     THERMAL_RATIO,
     main,

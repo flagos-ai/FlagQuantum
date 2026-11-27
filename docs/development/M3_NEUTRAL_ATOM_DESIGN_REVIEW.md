@@ -67,7 +67,7 @@ trajectory, calibrated motion noise or hardware submission.
 Run without hardware or credentials:
 
 ```bash
-python -m examples.neutral_atom_pair_reference
+python -m examples.simulation.neutral_atom_pair_reference
 ```
 
 Expected output:

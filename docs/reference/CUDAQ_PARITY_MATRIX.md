@@ -4,6 +4,8 @@
 
 This scoreboard is generated from `contracts/cudaq-parity-matrix.toml`. It compares the CUDA-Q capability baseline against FlagQuantum. FlagQuantum maturity levels, owners, limitations, and evidence paths are read from `capability-maturity.toml` and are not restated here; a row whose registry column reads `none` has no registered maturity entry.
 
+Historical source and evidence paths remain identifiers from the contract. Current implementation locations are recorded in the [migration path map](../development/migration/independent-structure-path-map.md).
+
 - CUDA-Q baseline versions: 0.15.1, 0.16.0.post1
 - Pinned component: CUDA-Q core
 - Baseline component: cudaq-qec, also shipped as libs/qec inside NVIDIA/cudaqx

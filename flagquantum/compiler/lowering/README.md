@@ -19,7 +19,7 @@ For orchestration changes, start with the runnable topology example and compiler
 replacement tests.
 
 ```bash
-python -m examples.target_aware_compilation
+python -m examples.circuits.compiler.target_aware_compilation
 python -m pytest -q tests/hybrid_compiler/test_passes.py tests/hybrid_compiler/test_target_legalization.py tests/team/compiler/test_compiler_pipeline_replacement.py tests/team/compiler/test_routing_conformance.py
 ```
 

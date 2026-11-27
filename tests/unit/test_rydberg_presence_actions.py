@@ -9,7 +9,7 @@ import torch
 
 from flagquantum.core.rydberg import RydbergProgram
 from flagquantum.errors import ExecutionError
-from flagquantum.simulation.rydberg_presence import (
+from flagquantum.simulation.dynamics.rydberg_presence import (
     _continue_rydberg_presence,
     _presence_model,
     _presence_operators,

@@ -98,7 +98,9 @@ def test_changed_torch_build_refuses_reader_and_preflight_before_draw(
     monkeypatch.setattr(torch, "__version__", "unmatched-build")
     with (
         patch("flagquantum.runtime.measurements._draw_probability_indices") as draw,
-        patch("flagquantum.simulation.ising_braid._ising_sampled_prefix") as prefix,
+        patch(
+            "flagquantum.simulation.dynamics.ising_braid._ising_sampled_prefix"
+        ) as prefix,
     ):
         calls: tuple[Callable[[], object], ...] = (
             lambda: fq.ExecutionPlan.from_json(text),
@@ -165,7 +167,9 @@ def test_rehashed_sampling_controls_remain_explicit(
 @pytest.mark.parametrize("seed", [0, 17, 2**64 - 1])
 def test_explicit_seed_limits_and_resource_preflight(seed: int) -> None:
     source = _source()
-    with patch("flagquantum.simulation.ising_braid._ising_sampled_prefix") as prefix:
+    with patch(
+        "flagquantum.simulation.dynamics.ising_braid._ising_sampled_prefix"
+    ) as prefix:
         with pytest.raises(CapabilityError):
             fq.plan(
                 source,
@@ -244,7 +248,9 @@ def test_sampling_controls_must_be_explicit_not_inherited(
 def test_shared_dense_ceiling_is_checked_before_prefix() -> None:
     with (
         patch("flagquantum.runtime._ising_plan.DEFAULT_DENSE_MATRIX_BYTES", 215),
-        patch("flagquantum.simulation.ising_braid._ising_sampled_prefix") as prefix,
+        patch(
+            "flagquantum.simulation.dynamics.ising_braid._ising_sampled_prefix"
+        ) as prefix,
     ):
         with pytest.raises(CapabilityError):
             _plan()
@@ -269,7 +275,9 @@ def test_sampled_profiles_keep_noise_cost_and_distributed_exits_closed() -> None
             "flagquantum.runtime.distributed.backend_policy.resolve_distributed_backend_policy",
             return_value=SimpleNamespace(effective_world_size=2),
         ),
-        patch("flagquantum.simulation.ising_braid._ising_sampled_prefix") as prefix,
+        patch(
+            "flagquantum.simulation.dynamics.ising_braid._ising_sampled_prefix"
+        ) as prefix,
     ):
         with pytest.raises(CapabilityError):
             _plan()

@@ -34,7 +34,7 @@ Neither record can describe a collective rewrite of several instructions.
 The existing CPU/offline user workflow is:
 
 ```bash
-python -m examples.target_aware_compilation
+python -m examples.circuits.compiler.target_aware_compilation
 ```
 
 It must keep reporting valid target edges, restored output mapping, and a local

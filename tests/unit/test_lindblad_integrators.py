@@ -17,7 +17,7 @@ from flagquantum.simulation import (
 )
 from flagquantum.simulation.dynamics import integrators as integrators_module
 from flagquantum.simulation.dynamics import lindblad as lindblad_module
-from flagquantum.simulation.matrix_free_linear_solve import gmres
+from flagquantum.simulation.numerics.matrix_free.linear_solve import gmres
 
 pytestmark = pytest.mark.unit
 

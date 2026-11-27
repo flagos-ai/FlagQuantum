@@ -8,7 +8,7 @@ from pathlib import Path
 
 import pytest
 
-from examples.routed_artifact_preflight import main
+from examples.circuits.compiler.routed_artifact_preflight import main
 from flagquantum.core._artifacts import (
     ProgramArtifactV2,
     ProgramArtifactV3,

@@ -18,7 +18,7 @@ owning emitter or importer and add a round-trip or rejection case in the
 matching test file.
 
 ```bash
-python -m examples.synthesis_offline_deployment
+python -m examples.synthesis.synthesis_offline_deployment
 python -m pytest -q tests/test_openqasm_compiler.py tests/test_openqasm_import.py tests/hybrid_compiler/test_translate.py tests/hybrid_compiler/test_qir_emission.py tests/integration/test_synthesis_offline_deployment.py
 ```
 

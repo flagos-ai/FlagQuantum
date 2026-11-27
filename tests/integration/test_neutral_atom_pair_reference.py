@@ -6,7 +6,7 @@ import pytest
 import torch
 
 import flagquantum.lindblad as fql
-from examples.neutral_atom_pair_reference import reference_plan
+from examples.simulation.neutral_atom_pair_reference import reference_plan
 
 pytestmark = pytest.mark.integration
 

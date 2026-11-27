@@ -25,7 +25,7 @@ _CALIBRATED_PROGRAM = (
 def _run_example() -> str:
     root = Path(__file__).resolve().parents[2]
     completed = subprocess.run(
-        [sys.executable, "-m", "examples.weighted_routing"],
+        [sys.executable, "-m", "examples.circuits.compiler.weighted_routing"],
         cwd=root,
         check=True,
         capture_output=True,

@@ -7,7 +7,7 @@ from typing import Literal
 import pytest
 import torch
 
-from examples.ising_fusion_measurement import fusion_state, main
+from examples.simulation.ising_fusion_measurement import fusion_state, main
 from flagquantum.operators import SuperOperator
 
 pytestmark = pytest.mark.integration

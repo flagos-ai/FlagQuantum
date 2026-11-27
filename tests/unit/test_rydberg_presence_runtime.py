@@ -274,7 +274,8 @@ def test_world_size_refused_before_capture_and_execution(
         raise AssertionError("world-size refusal precedes prefix/draw")
 
     monkeypatch.setattr(
-        "flagquantum.simulation.rydberg_presence._rydberg_presence_prefix", forbidden
+        "flagquantum.simulation.dynamics.rydberg_presence._rydberg_presence_prefix",
+        forbidden,
     )
     with pytest.raises(CapabilityError, match="world_size"):
         _plan()

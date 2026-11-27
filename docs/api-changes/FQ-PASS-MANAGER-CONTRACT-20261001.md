@@ -146,7 +146,7 @@ Three specific things that would create the requirement are all absent:
 | Candidate requirement | Status |
 | --- | --- |
 | A third party installs a pass without editing the repository | No plugin entry point exists in `compiler/`, and none is requested. `grep -rn "entry_points\|register_pass" flagquantum/compiler/` returns nothing |
-| A user needs to insert a pass at a named position | No issue, example, or test asks for it. The two documented compiler examples are `examples/compiler_optimize.py` and `examples/target_aware_compilation.py` (`flagquantum/compiler/IMPLEMENTATION.md:40-45`), and neither inserts a pass |
+| A user needs to insert a pass at a named position | No issue, example, or test asks for it. The two documented compiler examples are `examples/circuits/compiler/compiler_optimize.py` and `examples/circuits/compiler/target_aware_compilation.py` (`flagquantum/compiler/IMPLEMENTATION.md:40-45`), and neither inserts a pass |
 | A user needs to know which passes ran | Already answerable differently: `compile` records `runtime_config` in IR metadata (`pipeline.py:257-259`) and `record_post_routing_optimization` records routing facts |
 
 ### What is genuinely missing is a level, not a manager

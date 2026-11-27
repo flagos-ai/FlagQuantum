@@ -22,7 +22,7 @@ _CASES = (
 def test_compiler_synthesis_user_example_runs_end_to_end() -> None:
     root = Path(__file__).resolve().parents[2]
     completed = subprocess.run(
-        [sys.executable, "-m", "examples.compiler_synthesis"],
+        [sys.executable, "-m", "examples.circuits.compiler.compiler_synthesis"],
         cwd=root,
         check=True,
         capture_output=True,
@@ -56,7 +56,7 @@ def test_the_example_refuses_to_approximate() -> None:
 
     root = Path(__file__).resolve().parents[2]
     completed = subprocess.run(
-        [sys.executable, "-m", "examples.compiler_synthesis"],
+        [sys.executable, "-m", "examples.circuits.compiler.compiler_synthesis"],
         cwd=root,
         check=True,
         capture_output=True,

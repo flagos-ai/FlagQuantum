@@ -161,7 +161,7 @@ def test_reference_bath_stationarity_mean_bound_and_finite_moment(cutoff: int) -
 @pytest.mark.parametrize("coherent", [False, True])
 def test_coupled_full_density_and_existing_axes(cutoff: int, coherent: bool) -> None:
     import flagquantum.lindblad as fql
-    from examples.spin_mode_thermal_bath import thermal_bath_plan
+    from examples.simulation.spin_mode_thermal_bath import thermal_bath_plan
 
     plan = thermal_bath_plan(
         cutoff, torch.tensor(0.6, dtype=torch.float64), coherent=coherent
@@ -192,7 +192,7 @@ def test_coupled_full_density_and_existing_axes(cutoff: int, coherent: bool) -> 
 @pytest.mark.parametrize("cutoff", [3, 5, 7, 9, 11])
 def test_bath_only_population_spin_coherence_and_zero_rate(cutoff: int) -> None:
     import flagquantum.lindblad as fql
-    from examples.spin_mode_thermal_bath import thermal_bath_plan
+    from examples.simulation.spin_mode_thermal_bath import thermal_bath_plan
 
     initial = reference_initial(cutoff, coherent=True)
     spin = torch.tensor([[0.5, -0.5j], [0.5j, 0.5]], dtype=torch.complex128)
@@ -223,8 +223,8 @@ def test_bath_only_population_spin_coherence_and_zero_rate(cutoff: int) -> None:
 
 def test_zero_bath_retains_lossless_rabi_reference() -> None:
     import flagquantum.lindblad as fql
-    from examples.spin_mode_convergence import reference_density
-    from examples.spin_mode_thermal_bath import thermal_bath_plan
+    from examples.simulation.spin_mode_convergence import reference_density
+    from examples.simulation.spin_mode_thermal_bath import thermal_bath_plan
 
     for cutoff in (3, 5, 7, 9, 11):
         result = fql.run(
@@ -244,7 +244,7 @@ def test_zero_bath_retains_lossless_rabi_reference() -> None:
 
 def test_cutoff_stability_is_separate_from_finite_density_error() -> None:
     import flagquantum.lindblad as fql
-    from examples.spin_mode_thermal_bath import thermal_bath_plan
+    from examples.simulation.spin_mode_thermal_bath import thermal_bath_plan
 
     observations = {}
     for cutoff in (3, 5, 7, 9, 11):
@@ -262,7 +262,7 @@ def test_cutoff_stability_is_separate_from_finite_density_error() -> None:
 
 def test_fixed_cutoff_integration_refinement() -> None:
     import flagquantum.lindblad as fql
-    from examples.spin_mode_thermal_bath import thermal_bath_plan
+    from examples.simulation.spin_mode_thermal_bath import thermal_bath_plan
 
     reference = reference_states(3, 0.6)
     errors = []
@@ -285,7 +285,7 @@ def test_fixed_cutoff_integration_refinement() -> None:
 
 def test_gradient_fitting_and_detached_replay() -> None:
     import flagquantum.lindblad as fql
-    from examples.spin_mode_thermal_bath import thermal_bath_plan
+    from examples.simulation.spin_mode_thermal_bath import thermal_bath_plan
 
     coupling = torch.tensor(0.6, dtype=torch.float64, requires_grad=True)
     result = fql.run(thermal_bath_plan(5, coupling))

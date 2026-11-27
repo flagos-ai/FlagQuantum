@@ -12,7 +12,7 @@ pytest.importorskip("numpy")
 import matplotlib.pyplot as plt
 import numpy as np
 
-from examples.visualize_rydberg_transport import transport_figure
+from examples.simulation.visualize_rydberg_transport import transport_figure
 
 pytestmark = pytest.mark.integration
 

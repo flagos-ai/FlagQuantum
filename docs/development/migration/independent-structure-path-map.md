@@ -1,7 +1,8 @@
 # Independent migration path map
 
 Main baseline: `7278efd00f6768fbbacff6a41eb4dec57a59783e`.
-PR #1084 snapshot: `9b1a8cd196f9d8b8427b382c404f66705cc57840`.
+Initial #1084 snapshot: `9b1a8cd196f9d8b8427b382c404f66705cc57840`.
+Example batch snapshot: `11fd9fa27ec31e74f03277010762e8d25d17c105`; see the [batch record](example-structure-migration.md).
 
 Each row names the authoritative owner. Partial rows move only the listed definitions. Public and #1084-dependent retained facades are individually justified in the [retirement inventory](internal-forwarder-retirement.md); retired internal/command entries are absent.
 
@@ -462,4 +463,74 @@ Each row names the authoritative owner. Partial rows move only the listed defini
 | existing-compiler-alias-retirement | `flagquantum/compiler/qcis.py` | `flagquantum/compiler/formats/qcis.py` | retired internal aliases: `_decompose` |
 | existing-compiler-alias-retirement | `flagquantum/compiler/resource_estimation.py` | `flagquantum/compiler/optimization/resource_estimation.py` | retired internal aliases: `_T_FAMILY_OPCODES` |
 | existing-compiler-alias-retirement | `flagquantum/compiler/routing.py` | `flagquantum/compiler/topology/routing.py` | retired internal aliases: `_routing_metadata` |
-| existing-compiler-alias-retirement | `flagquantum/compiler/pipeline.py` | `flagquantum/compiler/optimization/pipeline.py` | retired internal aliases: `_as_ir`, `_with_recorded_level` |
+| existing-compiler-alias-retirement | `flagquantum/compiler/pipeline.py` | `flagquantum/compiler/optimization/pipeline.py` | retired unused wrapper: `_registry_admitting` |
+| examples | `examples/absorptive_photon_counting.py` | `examples/simulation/absorptive_photon_counting.py` | entry removed; callers updated |
+| examples | `examples/ascend_910c_training.py` | `examples/training/ascend_910c_training.py` | entry removed; callers updated |
+| examples | `examples/benchmark_static_program.py` | `examples/training/benchmark_static_program.py` | entry removed; callers updated |
+| examples | `examples/boson_interference.py` | `examples/simulation/boson_interference.py` | entry removed; callers updated |
+| examples | `examples/carried_operand_execution.py` | `examples/simulation/carried_operand_execution.py` | entry removed; callers updated |
+| examples | `examples/compiler_optimize.py` | `examples/circuits/compiler/compiler_optimize.py` | entry removed; callers updated |
+| examples | `examples/compiler_synthesis.py` | `examples/circuits/compiler/compiler_synthesis.py` | entry removed; callers updated |
+| examples | `examples/constrained_basis_reference.py` | `examples/simulation/constrained_basis_reference.py` | entry removed; callers updated |
+| examples | `examples/cpu_statevector.py` | `examples/simulation/cpu_statevector.py` | entry removed; callers updated |
+| examples | `examples/cudaq_bell_export.py` | `examples/ecosystem/cudaq_bell_export.py` | entry removed; callers updated |
+| examples | `examples/density_matrix_execution.py` | `examples/simulation/density_matrix_execution.py` | entry removed; callers updated |
+| examples | `examples/driven_three_level.py` | `examples/simulation/driven_three_level.py` | entry removed; callers updated |
+| examples | `examples/driven_three_level_relaxation.py` | `examples/simulation/driven_three_level_relaxation.py` | entry removed; callers updated |
+| examples | `examples/dynamic_density_matrix.py` | `examples/simulation/dynamic_density_matrix.py` | entry removed; callers updated |
+| examples | `examples/dynamic_disjunctive_condition.py` | `examples/circuits/dynamic_disjunctive_condition.py` | entry removed; callers updated |
+| examples | `examples/gate_coverage_batch_b.py` | `examples/circuits/gate_coverage_batch_b.py` | entry removed; callers updated |
+| examples | `examples/hybrid_jax_torch_training.py` | `examples/training/hybrid_jax_torch_training.py` | entry removed; callers updated |
+| examples | `examples/hybrid_model_acceptance.py` | `examples/training/hybrid_model_acceptance.py` | entry removed; callers updated |
+| examples | `examples/ising_braid_execution.py` | `examples/simulation/ising_braid_execution.py` | entry removed; callers updated |
+| examples | `examples/ising_braid_source.py` | `examples/circuits/ising_braid_source.py` | entry removed; callers updated |
+| examples | `examples/ising_fusion_measurement.py` | `examples/simulation/ising_fusion_measurement.py` | entry removed; callers updated |
+| examples | `examples/kaiwu_matrix_boundary.py` | `examples/compute/kaiwu_matrix_boundary.py` | entry removed; callers updated |
+| examples | `examples/lindblad_evolution.py` | `examples/simulation/lindblad_evolution.py` | entry removed; callers updated |
+| examples | `examples/lindblad_output_names.py` | `examples/simulation/lindblad_output_names.py` | entry removed; callers updated |
+| examples | `examples/matrix_expectation_dynamics.py` | `examples/simulation/matrix_expectation_dynamics.py` | entry removed; callers updated |
+| examples | `examples/mixed_dimension_dynamics.py` | `examples/simulation/mixed_dimension_dynamics.py` | entry removed; callers updated |
+| examples | `examples/neutral_atom_pair_reference.py` | `examples/simulation/neutral_atom_pair_reference.py` | entry removed; callers updated |
+| examples | `examples/noisy_simulation_v1.py` | `examples/simulation/noisy_simulation_v1.py` | entry removed; callers updated |
+| examples | `examples/quantum_transformer.py` | `examples/training/quantum_transformer.py` | entry removed; callers updated |
+| examples | `examples/quick_start.py` | `examples/training/quick_start.py` | entry removed; callers updated |
+| examples | `examples/routed_artifact_preflight.py` | `examples/circuits/compiler/routed_artifact_preflight.py` | entry removed; callers updated |
+| examples | `examples/rydberg_native_dynamics.py` | `examples/simulation/rydberg_native_dynamics.py` | entry removed; callers updated |
+| examples | `examples/rydberg_program_geometry.py` | `examples/circuits/rydberg_program_geometry.py` | entry removed; callers updated |
+| examples | `examples/save_experiment.py` | `examples/training/save_experiment.py` | entry removed; callers updated |
+| examples | `examples/shared_dynamics_workflow.py` | `examples/simulation/shared_dynamics_workflow.py` | entry removed; callers updated |
+| examples | `examples/spin_mode_convergence.py` | `examples/simulation/spin_mode_convergence.py` | entry removed; callers updated |
+| examples | `examples/spin_mode_thermal_bath.py` | `examples/simulation/spin_mode_thermal_bath.py` | entry removed; callers updated |
+| examples | `examples/stabilizer_sampling.py` | `examples/simulation/stabilizer_sampling.py` | entry removed; callers updated |
+| examples | `examples/superoperator_channel_algebra.py` | `examples/simulation/superoperator_channel_algebra.py` | entry removed; callers updated |
+| examples | `examples/synthesis_offline_deployment.py` | `examples/synthesis/synthesis_offline_deployment.py` | entry removed; callers updated |
+| examples | `examples/target_aware_compilation.py` | `examples/circuits/compiler/target_aware_compilation.py` | entry removed; callers updated |
+| examples | `examples/terminal_instrument_reference.py` | `examples/simulation/terminal_instrument_reference.py` | entry removed; callers updated |
+| examples | `examples/terminal_instrument_sampling.py` | `examples/simulation/terminal_instrument_sampling.py` | entry removed; callers updated |
+| examples | `examples/train_boson_coupling.py` | `examples/training/train_boson_coupling.py` | entry removed; callers updated |
+| examples | `examples/train_parameterized_circuit_then_deploy.py` | `examples/training/train_parameterized_circuit_then_deploy.py` | entry removed; callers updated |
+| examples | `examples/train_piecewise_drive.py` | `examples/training/train_piecewise_drive.py` | entry removed; callers updated |
+| examples | `examples/train_rydberg_controls.py` | `examples/training/train_rydberg_controls.py` | entry removed; callers updated |
+| examples | `examples/triton_statevector_local_1q.py` | `examples/simulation/triton_statevector_local_1q.py` | entry removed; callers updated |
+| examples | `examples/twin_calibration_history.py` | `examples/twin/twin_calibration_history.py` | entry removed; callers updated |
+| examples | `examples/twin_candidate_fit.py` | `examples/twin/twin_candidate_fit.py` | entry removed; callers updated |
+| examples | `examples/twin_circuit_support.py` | `examples/twin/twin_circuit_support.py` | entry removed; callers updated |
+| examples | `examples/twin_connected_region.py` | `examples/twin/twin_connected_region.py` | entry removed; callers updated |
+| examples | `examples/twin_evidence_freshness.py` | `examples/twin/twin_evidence_freshness.py` | entry removed; callers updated |
+| examples | `examples/twin_evolution_cycle.py` | `examples/twin/twin_evolution_cycle.py` | entry removed; callers updated |
+| examples | `examples/twin_evolution_history.py` | `examples/twin/twin_evolution_history.py` | entry removed; callers updated |
+| examples | `examples/twin_parameter_estimation.py` | `examples/twin/twin_parameter_estimation.py` | entry removed; callers updated |
+| examples | `examples/twin_region_model.py` | `examples/twin/twin_region_model.py` | entry removed; callers updated |
+| examples | `examples/twin_region_model_persistence.py` | `examples/twin/twin_region_model_persistence.py` | entry removed; callers updated |
+| examples | `examples/twin_region_release_assessment.py` | `examples/twin/twin_region_release_assessment.py` | entry removed; callers updated |
+| examples | `examples/twin_validation_history.py` | `examples/twin/twin_validation_history.py` | entry removed; callers updated |
+| examples | `examples/visualize_rydberg_transport.py` | `examples/simulation/visualize_rydberg_transport.py` | entry removed; callers updated |
+| examples | `examples/vqe_switch_sv_mps_tn.py` | `examples/training/vqe_switch_sv_mps_tn.py` | entry removed; callers updated |
+| examples | `examples/weighted_routing.py` | `examples/circuits/compiler/weighted_routing.py` | entry removed; callers updated |
+| matrix-free-numerics | `flagquantum/simulation/matrix_free_autograd.py` | `flagquantum/simulation/numerics/matrix_free/autograd.py` | entry removed; callers updated |
+| matrix-free-numerics | `flagquantum/simulation/matrix_free_exponential.py` | `flagquantum/simulation/numerics/matrix_free/exponential.py` | entry removed; callers updated |
+| matrix-free-numerics | `flagquantum/simulation/matrix_free_hamiltonian.py` | `flagquantum/simulation/numerics/matrix_free/hamiltonian.py` | two proven public-plan type locators only |
+| matrix-free-numerics | `flagquantum/simulation/matrix_free_linear_solve.py` | `flagquantum/simulation/numerics/matrix_free/linear_solve.py` | entry removed; callers updated |
+| physical-dynamics | `flagquantum/simulation/rydberg_model.py` | `flagquantum/simulation/dynamics/rydberg.py` | entry removed; callers updated |
+| physical-dynamics | `flagquantum/simulation/rydberg_presence.py` | `flagquantum/simulation/dynamics/rydberg_presence.py` | entry removed; callers updated |
+| physical-dynamics | `flagquantum/simulation/ising_braid.py` | `flagquantum/simulation/dynamics/ising_braid.py` | entry removed; callers updated |

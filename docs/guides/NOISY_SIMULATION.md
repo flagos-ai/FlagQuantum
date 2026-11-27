@@ -469,7 +469,7 @@ exited all ranks without a collective hang. Raw evidence is
 `benchmarks/results/local/noisy_statevector_a800_8gpu_failure_isolation_20260806.json`.
 
 The complete executable version is
-[`examples/noisy_simulation_v1.py`](../../examples/noisy_simulation_v1.py).
+[`examples/simulation/noisy_simulation_v1.py`](../../examples/simulation/noisy_simulation_v1.py).
 
 ## Channels written into the circuit
 

@@ -4,6 +4,19 @@ Choose [high-level quantum programming with synth](synthesis/README.md) for
 computation, quantum data and synthesis constraints. The examples below cover
 Circuit construction, training, simulation and deployment.
 
+## Examples by capability
+
+| Goal | Directory |
+| --- | --- |
+| Build and compile circuits | [circuits/](circuits/README.md) |
+| Run numerical and dynamics examples | [simulation/](simulation/README.md) |
+| Train quantum and hybrid models | [training/](training/README.md) |
+| Work with device calibration and twins | [twin/](twin/README.md) |
+| Adapt execution resources | [compute/](compute/README.md) |
+| Exchange external framework circuits | [ecosystem/](ecosystem/README.md) |
+| Explore algorithms | [algorithms/](algorithms/README.md) |
+| Synthesize constrained programs | [synthesis/](synthesis/README.md) |
+
 ## Start with the integrated QEC workflow
 
 Follow the [Stim/PyMatching quickstart](../docs/guides/QEC_INTEGRATION_QUICKSTART.md)
@@ -75,10 +88,10 @@ The workshop support scripts use their lesson-specific interfaces: `cloud_lesson
   Stim 1.16.0 extra and an embedded build. Expected JSON fields include
   `"status": "passed"`, `"distance": 30` and `"shots": 64`.
 
-- [`synthesis_offline_deployment.py`](synthesis_offline_deployment.py) uses the
+- [`synthesis/synthesis_offline_deployment.py`](synthesis/synthesis_offline_deployment.py) uses the
   synthesis, compiler, and deployment namespaces to export OpenQASM and build
   a deployment package for a fixed local target. Run
-  `python -m examples.synthesis_offline_deployment`.
+  `python -m examples.synthesis.synthesis_offline_deployment`.
 
 - Synthesis support modules (`operations.py`, `physics.py`, `data.py`, `curve.py`,
   `portfolio_reference.py`, and `quadratic_reference.py`) define source helpers or
@@ -163,31 +176,31 @@ The workshop support scripts use their lesson-specific interfaces: `cloud_lesson
   Blossom by default. Choose `--backend minimum_weight_matching` to use the
   built-in reference decoder.
 
-- [`visualize_rydberg_transport.py`](visualize_rydberg_transport.py) uses Core
+- [`simulation/visualize_rydberg_transport.py`](simulation/visualize_rydberg_transport.py) uses Core
   commanded positions and the existing optional Matplotlib visualization extra.
-- [`terminal_instrument_sampling.py`](terminal_instrument_sampling.py) samples
+- [`simulation/terminal_instrument_sampling.py`](simulation/terminal_instrument_sampling.py) samples
   explicit presence and finite-Fock instruments through the CPU Runtime API.
-- [`terminal_instrument_reference.py`](terminal_instrument_reference.py) uses
+- [`simulation/terminal_instrument_reference.py`](simulation/terminal_instrument_reference.py) uses
   existing SuperOperator maps and illustrative Torch draws for proposal 083.
-- [`absorptive_photon_counting.py`](absorptive_photon_counting.py) uses existing
+- [`simulation/absorptive_photon_counting.py`](simulation/absorptive_photon_counting.py) uses existing
   Lindblad evolution, square vacuum-reset Kraus branches and terminal sampling
   for a finite absorptive counting reference. Run
-  `python -m examples.absorptive_photon_counting`; it retains measured-mode vacuum
+  `python -m examples.simulation.absorptive_photon_counting`; it retains measured-mode vacuum
   coordinates and makes no detector-event or hardware claim.
-- [`boson_interference.py`](boson_interference.py) — it uses the existing
+- [`simulation/boson_interference.py`](simulation/boson_interference.py) — it uses the existing
   `flagquantum.lindblad` namespace and boson algebra for two-photon interference
-  and loss with explicit mode truncations. Run `python -m examples.boson_interference`.
+  and loss with explicit mode truncations. Run `python -m examples.simulation.boson_interference`.
   Unconditional probabilities, survival, plan replay and explicit QND number
   samples share the existing dynamics and Runtime paths; this is a bounded CPU model.
-- [`superoperator_channel_algebra.py`](superoperator_channel_algebra.py) — it
+- [`simulation/superoperator_channel_algebra.py`](simulation/superoperator_channel_algebra.py) — it
   reads one amplitude-damping channel as a superoperator through
   `flagquantum.operators.SuperOperator`: the action, the dense map, the Choi
   matrix, the complete-positivity certificate, the two normalization registers,
   the Pauli transfer matrix, the local application to one qubit of a larger
   register, and the Kraus list read back off the map. Run
-  `python -m examples.superoperator_channel_algebra`. It builds no circuit and
+  `python -m examples.simulation.superoperator_channel_algebra`. It builds no circuit and
   runs no evolution; the algebra is a numerical primitive.
-- [`kaiwu_matrix_boundary.py`](kaiwu_matrix_boundary.py) — it imports the
+- [`compute/kaiwu_matrix_boundary.py`](compute/kaiwu_matrix_boundary.py) — it imports the
   experimental Kaiwu ecosystem surface directly to demonstrate local QUBO and
   Ising interoperability without credentials, provider submission, or quota.
 - [`qdiffusion_kaiwu/minimal_live_sampling.py`](qdiffusion_kaiwu/minimal_live_sampling.py)
@@ -354,11 +367,11 @@ The workshop support scripts use their lesson-specific interfaces: `cloud_lesson
 - [`catalytic-controlled-hadamard.py`](plot_gallery/quantum_circuits/catalytic-controlled-hadamard.py)
   uses the dynamic circuit and experimental trajectory interfaces to verify
   classical feedback and catalyst reuse in Lee et al. Figure 17.
-- [`dynamic_density_matrix.py`](dynamic_density_matrix.py) — it imports
+- [`simulation/dynamic_density_matrix.py`](simulation/dynamic_density_matrix.py) — it imports
   `flagquantum.dynamic` and `flagquantum.simulation.density_matrix`, because the
   exact mixed-state route for a mid-circuit measurement is reached through
   `DynamicCircuit.density_matrix()`, while `fq.run` returns sampled trajectories.
-- [`dynamic_disjunctive_condition.py`](dynamic_disjunctive_condition.py) — it
+- [`circuits/dynamic_disjunctive_condition.py`](circuits/dynamic_disjunctive_condition.py) — it
   imports `flagquantum.dynamic` and `flagquantum.experimental.dynamic`, because a
   disjunctive condition is a `DynamicCircuit.conditional` keyword, and the two
   public readers of it are the exact route through
@@ -369,7 +382,7 @@ For exact support levels, consult the
 
 ## Matrix expectation dynamics
 
-Run `python -m examples.matrix_expectation_dynamics` to evolve a three-level
+Run `python -m examples.simulation.matrix_expectation_dynamics` to evolve a three-level
 model using the shared `fq.expectation` request, retrieve a named expectation,
 and differentiate its coupling with PyTorch. It uses the existing CPU
 Lindblad planner and integrator. Expected output:
@@ -382,7 +395,7 @@ Circuit matrix output: refused; use flagquantum.lindblad
 
 ## Shared dynamics training and replay
 
-Run `python -m examples.shared_dynamics_workflow` to train a three-level and a
+Run `python -m examples.simulation.shared_dynamics_workflow` to train a three-level and a
 spin-mode model with the same output requests, batch axes and PyTorch optimizer,
 then replay detached numeric plans. Each model prints axes `(51, 2)`, initial
 transfer `0.11757891`, coupling derivative `0.32210884`, `Loss decreased: True`
@@ -392,7 +405,7 @@ physical references, supported scope and focused tests.
 
 ## Lindblad output names
 
-Run `python -m examples.lindblad_output_names` to retrieve two named expectation
+Run `python -m examples.simulation.lindblad_output_names` to retrieve two named expectation
 trajectories and see an explicit/generated name collision refused with
 `duplicate_output_name`. Expected output:
 
@@ -407,7 +420,7 @@ construction is demonstrated by the matrix dynamics example above.
 
 ## Static finite-mode training
 
-Run `python -m examples.train_boson_coupling` to fit a static exchange coupling
+Run `python -m examples.training.train_boson_coupling` to fit a static exchange coupling
 with existing `fq.Parameter.bind`, `fq.ExecutionOptions`, and PyTorch Adam.
 The example supplies boson operators with live scalar coefficients directly to
 the existing Lindblad path and rebuilds the bound request each optimizer step.
@@ -446,7 +459,7 @@ To inspect the local QBoson Kaiwu matrix boundary without installing the Kaiwu
 SDK or submitting a remote task, run:
 
 ```bash
-python -m examples.kaiwu_matrix_boundary
+python -m examples.compute.kaiwu_matrix_boundary
 ```
 
 ## First CPU execution
@@ -454,7 +467,7 @@ python -m examples.kaiwu_matrix_boundary
 Start with the complete local execution path:
 
 ```bash
-python -m examples.cpu_statevector
+python -m examples.simulation.cpu_statevector
 ```
 
 The example builds a Bell-state circuit, creates an inspectable execution plan,
@@ -465,7 +478,7 @@ fallback so a successful run proves the reported CPU path was actually used.
 To inspect target-independent compiler optimization separately:
 
 ```bash
-python -m examples.compiler_optimize
+python -m examples.circuits.compiler.compiler_optimize
 ```
 
 This example removes redundant gates, verifies that optimization reaches a
@@ -485,7 +498,7 @@ and this path reports it.
 To rewrite gates a target cannot run into the gates that target publishes:
 
 ```bash
-python -m examples.compiler_synthesis
+python -m examples.circuits.compiler.compiler_synthesis
 ```
 
 This example declares a target basis (a z-rotation, a pi/2 pulse about `x`, and
@@ -502,7 +515,7 @@ To exercise the optional single-GPU Triton kernel for local one-qubit gates:
 
 ```bash
 FQ_STATEVECTOR_TRITON_LOCAL_1Q=1 \
-  python -m examples.triton_statevector_local_1q
+  python -m examples.simulation.triton_statevector_local_1q
 ```
 
 The example uses the public `flagquantum.runtime.run_distributed` entry point.
@@ -516,7 +529,7 @@ uses the local simulator instead of this distributed-statevector kernel.
 Compile non-local gates for a concrete hardware topology with:
 
 ```bash
-python -m examples.target_aware_compilation
+python -m examples.circuits.compiler.target_aware_compilation
 ```
 
 The example targets a five-qubit line, checks every emitted two-qubit operation
@@ -526,7 +539,7 @@ compiled IR against the original result.
 Route onto a device by what its links cost rather than by how far apart they are:
 
 ```bash
-python -m examples.weighted_routing
+python -m examples.circuits.compiler.weighted_routing
 ```
 
 A `CouplingMap` says which qubits a device couples, so the router can only count
@@ -545,7 +558,7 @@ choice between fault totals.
 From an editable development installation:
 
 ```bash
-python examples/quick_start.py --mode sv --steps 40
+python examples/training/quick_start.py --mode sv --steps 40
 ```
 
 This trains a hybrid model with a `torch.nn.Linear` encoder and an `fq.Module`
@@ -555,8 +568,8 @@ target, so it reports correctness as well as training loss.
 Switch the simulation representation without rewriting the model:
 
 ```bash
-python examples/quick_start.py --mode mps --steps 40
-python examples/quick_start.py --mode tn --steps 40
+python examples/training/quick_start.py --mode mps --steps 40
+python examples/training/quick_start.py --mode tn --steps 40
 ```
 
 Statevector is the recommended first run. MPS and tensor-network support
@@ -573,12 +586,12 @@ boundaries are listed in the capability catalog.
 | Compare gradient methods and read the one that ran | [Gradient methods](gradient_methods/README.md) | One entry point, reported method |
 | Train with MPS | [`03_mps_training.py`](single_machine_quantum_ai/03_mps_training.py) | Low-entanglement systems |
 | Use a JAX kernel through PyTorch | [`04_jax_kernel_torch_layer.py`](single_machine_quantum_ai/04_jax_kernel_torch_layer.py) | Optional accelerator path |
-| Run a noisy circuit exactly instead of by trajectory | [`density_matrix_execution.py`](density_matrix_execution.py) | Dense exact oracle, 2**n by 2**n state |
-| Measure mid-circuit and keep the exact mixture | [`dynamic_density_matrix.py`](dynamic_density_matrix.py) | Dynamic subpackage surface, one branch per read bit |
-| Fire a gate on either of two readouts | [`dynamic_disjunctive_condition.py`](dynamic_disjunctive_condition.py) | Dynamic subpackage surface, disjunction of condition clauses |
+| Run a noisy circuit exactly instead of by trajectory | [`simulation/density_matrix_execution.py`](simulation/density_matrix_execution.py) | Dense exact oracle, 2**n by 2**n state |
+| Measure mid-circuit and keep the exact mixture | [`simulation/dynamic_density_matrix.py`](simulation/dynamic_density_matrix.py) | Dynamic subpackage surface, one branch per read bit |
+| Fire a gate on either of two readouts | [`circuits/dynamic_disjunctive_condition.py`](circuits/dynamic_disjunctive_condition.py) | Dynamic subpackage surface, disjunction of condition clauses |
 | Inspect sharded statevector ownership | [Distributed statevector](distributed_statevector_topologies/README.md) | One logical statevector across ranks |
 | Inspect rank-owned MPS execution | [Distributed MPS](distributed_mps/README.md) | Development evidence |
-| Train and package a circuit | [`train_parameterized_circuit_then_deploy.py`](train_parameterized_circuit_then_deploy.py) | Deployment bridge |
+| Train and package a circuit | [`training/train_parameterized_circuit_then_deploy.py`](training/train_parameterized_circuit_then_deploy.py) | Deployment bridge |
 | Build an extension | [`extensions/reference_extensions.py`](extensions/reference_extensions.py) | Experimental API |
 | Decode a Stim detector error model here | [`qec/stim_user_migration.py`](qec/stim_user_migration.py) | Experimental QEC surface |
 | State a stabilizer code as matrices | [`qec/css_code_from_matrices.py`](qec/css_code_from_matrices.py) | Experimental QEC surface |
@@ -612,7 +625,7 @@ read the operand, so an `x` carrying a matrix applied `X`, and the identity pass
 deleted a `rz(theta=0.0)` that carried one.
 
 ```bash
-python -m examples.carried_operand_execution
+python -m examples.simulation.carried_operand_execution
 ```
 
 The example attaches one real symmetric unitary -- not `X`, not `Z`, not a phase
@@ -748,7 +761,7 @@ a TeX engine and Poppler on the kernel PATH.
 
 ## Terminal instrument mathematical references
 
-Run `python -m examples.terminal_instrument_reference` for proposal 083's
+Run `python -m examples.simulation.terminal_instrument_reference` for proposal 083's
 current-API references. Existing SuperOperator Kraus maps calculate branch
 probabilities/backaction; Torch supplies illustrative samples. Expected:
 
@@ -772,7 +785,7 @@ photodetector or framework event API. The approved
 is implemented by the Runtime-only sample_terminal primitive. Existing Program
 IR fields, plan formats and MeasurementResult fields remain unchanged.
 
-Run `python -m examples.terminal_instrument_sampling` for real Runtime samples:
+Run `python -m examples.simulation.terminal_instrument_sampling` for real Runtime samples:
 
 ```text
 presence labels: ('no_flag', 'flag')
@@ -787,7 +800,7 @@ global RNG unchanged: True
 ```
 
 ```python
-from examples.terminal_instrument_reference import presence_reference
+from examples.simulation.terminal_instrument_reference import presence_reference
 from flagquantum.runtime import sample_terminal
 
 rho, instrument = presence_reference()
@@ -805,7 +818,7 @@ replay, feedback, detector trajectory or hardware submission is implied.
 
 ## Two-mode interference and number counting
 
-Run `python -m examples.boson_interference` on CPU. The existing boson algebra
+Run `python -m examples.simulation.boson_interference` on CPU. The existing boson algebra
 builds the passive coupling `0.7 * (a0_dagger * a1 + a1_dagger * a0)` from
 `|1, 1>`, for duration `T = pi / (4 * 0.7)`. Each mode has three levels.
 The same Lindblad plan supports uniform pure loss with rate 0 or 0.2 per mode;
@@ -847,7 +860,7 @@ photodetection, event timestamps or hardware submission.
 
 ## Native moving-atom dynamics
 
-Run `python -m examples.rydberg_native_dynamics` for a real RydbergProgram on
+Run `python -m examples.simulation.rydberg_native_dynamics` for a real RydbergProgram on
 the existing CPU Lindblad planner. The source declares two atoms, a linear move,
 C6 and absorbing loss; Simulation constructs the interval matrices. Expected:
 
@@ -869,7 +882,7 @@ replaces the fixed matrix adapter from the
 
 ## Native Rydberg program geometry
 
-Run `python -m examples.rydberg_program_geometry` to construct a real native
+Run `python -m examples.circuits.rydberg_program_geometry` to construct a real native
 RydbergProgram, append named moves and pulses, and query verified commanded
 positions. Expected output:
 
@@ -887,7 +900,7 @@ native numerical evolution; detector events and hardware submission remain open.
 
 ## Train native moving-atom controls
 
-Run `python -m examples.train_rydberg_controls --steps 40 --intervals 128 --shots 4096`
+Run `python -m examples.training.train_rydberg_controls --steps 40 --intervals 128 --shots 4096`
 on CPU.
 The source declares a moving atom pair and one named pulse amplitude. Two
 per-interval amplitude bindings train through the existing Lindblad planner,
@@ -934,7 +947,7 @@ The finite-dimensional example is not heating, hardware or scalability evidence.
 Install the existing `flagquantum[viz]` extra and run:
 
 ```bash
-MPLBACKEND=Agg python -m examples.visualize_rydberg_transport --output transport.svg
+MPLBACKEND=Agg python -m examples.simulation.visualize_rydberg_transport --output transport.svg
 ```
 
 Expected output:
@@ -957,8 +970,8 @@ registry. The exported SVG/PNG is suitable for inspection without a GUI.
 
 ### Ising fusion observation
 
-Run `python -m examples.ising_fusion_measurement` after
-`python -m examples.ising_braid_execution` to inspect ideal pair-charge QND
+Run `python -m examples.simulation.ising_fusion_measurement` after
+`python -m examples.simulation.ising_braid_execution` to inspect ideal pair-charge QND
 measurement. Both initial fusion channels use the same native braid, sealed
 plan replay and explicit terminal instrument. The example shows input coherence
 0.5 becoming zero when the result is unread, while each normalized conditional
@@ -975,7 +988,7 @@ universal gate set.
 
 ### Spin-mode thermal truncation
 
-Run `python -m examples.spin_mode_convergence` for resonant, lossless spin-mode
+Run `python -m examples.simulation.spin_mode_convergence` for resonant, lossless spin-mode
 exchange, with spin first and a thermal oscillator second. Unlike the vacuum
 one-excitation training example, this input has a nonzero tail at every Fock
 cutoff. The example compares mode dimensions 3, 5 and 7 to independent closed
@@ -998,7 +1011,7 @@ heating, laser calibration, hardware execution or distributed-capacity claim.
 
 ### Driven three-level leakage and time-grid convergence
 
-Run `python -m examples.driven_three_level` for a rotating-frame, weakly
+Run `python -m examples.simulation.driven_three_level` for a rotating-frame, weakly
 anharmonic three-level model with four noncommuting in-phase/quadrature pulses.
 The model includes the sqrt(2) ladder coupling to level 2, detuning 0.15 and
 anharmonicity -3, in inverse time units. A segment lasts 0.25. There is no

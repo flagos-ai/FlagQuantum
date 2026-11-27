@@ -239,7 +239,7 @@ deltas after approval; regenerating a snapshot cannot approve them.
 import torch
 import flagquantum as fq
 import flagquantum.lindblad as fql
-from examples.train_rydberg_controls import moving_pair_program
+from examples.training.train_rydberg_controls import moving_pair_program
 
 program = moving_pair_program()
 program.measure_presence("a", at=0.5, efficiency=0.8)  # Proposed method.

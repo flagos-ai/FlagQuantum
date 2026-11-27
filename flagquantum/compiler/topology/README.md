@@ -39,7 +39,7 @@ consumers migrate and private-import cleanup is explicitly approved, targeting
 the next minor release (0.5.0).
 
 ```bash
-python -m examples.weighted_routing
+python -m examples.circuits.compiler.weighted_routing
 python -m pytest -q tests/integration/test_weighted_routing_golden_path.py tests/team/compiler/test_compiler_pipeline_replacement.py
 ```
 

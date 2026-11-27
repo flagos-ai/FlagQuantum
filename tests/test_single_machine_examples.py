@@ -24,7 +24,12 @@ def _run_example(name: str, *args: str) -> str:
 
 def test_hybrid_ai_quick_start_smoke():
     completed = subprocess.run(
-        [sys.executable, str(ROOT / "examples" / "quick_start.py"), "--steps", "2"],
+        [
+            sys.executable,
+            str(ROOT / "examples" / "training" / "quick_start.py"),
+            "--steps",
+            "2",
+        ],
         cwd=ROOT,
         text=True,
         capture_output=True,
@@ -85,3 +90,27 @@ def test_1000q_structured_mps_example_smoke():
     )
     assert "single_machine_1000q_dimer_mps_training" in out
     assert "FlagQuantum structured JAX MPS" in out
+
+
+def test_quick_start_uses_this_source_checkout_outside_repository(
+    tmp_path: Path,
+) -> None:
+    example = ROOT / "examples" / "training" / "quick_start.py"
+    code = (
+        "import runpy, sys; from pathlib import Path; "
+        "example = sys.argv[1]; root = Path(sys.argv[2]); "
+        "sys.argv = [example, '--steps', '2']; "
+        "runpy.run_path(example, run_name='__main__'); "
+        "import flagquantum; "
+        "assert Path(flagquantum.__file__).resolve().is_relative_to(root.resolve()), "
+        "flagquantum.__file__"
+    )
+    completed = subprocess.run(
+        [sys.executable, "-I", "-c", code, str(example), str(ROOT)],
+        cwd=tmp_path,
+        capture_output=True,
+        text=True,
+        check=True,
+        timeout=60,
+    )
+    assert "FlagQuantum quick start complete" in completed.stdout

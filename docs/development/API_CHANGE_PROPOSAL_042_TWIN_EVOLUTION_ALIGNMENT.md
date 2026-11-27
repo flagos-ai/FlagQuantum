@@ -34,7 +34,7 @@ print(evolution.latest_verified_bound_change)
 The checked-in executable example is:
 
 ```bash
-python examples/twin_evolution_history.py \
+python examples/twin/twin_evolution_history.py \
   --calibration-history shenglian-calibration-history.json \
   --validation-history shenglian-validation-history.json
 ```

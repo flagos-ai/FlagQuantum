@@ -8,7 +8,10 @@ import pytest
 import torch
 
 import flagquantum.lindblad as fql
-from examples.boson_interference import counting_instrument, interference_plan
+from examples.simulation.boson_interference import (
+    counting_instrument,
+    interference_plan,
+)
 from flagquantum.operators import SuperOperator
 from flagquantum.runtime import sample_terminal
 

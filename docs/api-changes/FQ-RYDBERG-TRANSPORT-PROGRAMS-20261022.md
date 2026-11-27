@@ -66,7 +66,7 @@ identity and numeric replay. Do not regenerate either fixture to hide a failure.
 ## Historical runnable baseline reference
 
 The fixed adapter below was run for the baseline and is retired by native
-replacement; use examples.rydberg_native_dynamics for the current workflow.
+replacement; use examples.simulation.rydberg_native_dynamics for the current workflow.
 
 ```bash
 python -m examples.rydberg_transport_reference
@@ -221,7 +221,7 @@ fixed matrix adapter is removed; the separate neutral_atom_pair_reference remain
 an independently used numerical/detection reference. Existing source and old-plan
 fixture files are not regenerated.
 
-Run `python -m examples.rydberg_native_dynamics`: version 1.7, survival 0.81873075,
+Run `python -m examples.simulation.rydberg_native_dynamics`: version 1.7, survival 0.81873075,
 unconditional RR 0.40936538, no-flag 0.85353566 and exact numeric replay True.
 The 40 unchanged physics consumers and 48 native consistency/gradient/refusal
 cases pass locally. Three-parameter controls are compared to an independent dense

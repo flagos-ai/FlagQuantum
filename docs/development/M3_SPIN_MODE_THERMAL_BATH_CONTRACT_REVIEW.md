@@ -39,7 +39,7 @@ conditioned thermal mode and excited spin, declare fixed bath rates, inspect
 spin population/mode occupation/boundary occupation, check cutoff sensitivity,
 fit one continuous exchange coupling, and save/replay a detached numeric plan.
 
-Reuse [spin_mode_convergence.py](../../examples/spin_mode_convergence.py), existing
+Reuse [spin_mode_convergence.py](../../examples/simulation/spin_mode_convergence.py), existing
 boson matrix construction, `fq.Parameter`, numeric mixed-dimension `fql.plan/run`,
 fixed `collapse_operators`, `fq.expectation`, autograd, `EvolutionResult` and
 `LindbladPlan` JSON reading. Simulation owns this example and its scenario tests;
@@ -207,7 +207,7 @@ These are separate witnesses, not an infinite coupled-density error certificate.
 Run the implemented public example:
 
 ```bash
-python -m examples.spin_mode_thermal_bath
+python -m examples.simulation.spin_mode_thermal_bath
 ```
 
 Representative executed CPU output ends with:

@@ -146,7 +146,7 @@ def test_declared_ising_convention_and_encoded_density_reference() -> None:
 def test_reference_example_reports_current_api_limits(
     capsys: pytest.CaptureFixture[str],
 ) -> None:
-    from examples.constrained_basis_reference import main
+    from examples.simulation.constrained_basis_reference import main
 
     main()
     assert capsys.readouterr().out == (

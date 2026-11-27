@@ -126,11 +126,11 @@ stage.
 Run the user-facing optimization path from the repository root:
 
 ```bash
-python -m examples.compiler_optimize
-python -m examples.target_aware_compilation
+python -m examples.circuits.compiler.compiler_optimize
+python -m examples.circuits.compiler.target_aware_compilation
 ```
 
-`examples/compiler_optimize.py` is the Compiler domain's ten-minute golden path.
+`examples/circuits/compiler/compiler_optimize.py` is the Compiler domain's ten-minute golden path.
 It reads the level vocabulary from `optimization_levels.py` and reports the gate
 count at every implemented level, shows level `2` reaching two gates on a circuit
 where level `1` stops at three, forwards a level through `compile`, and prints a
@@ -161,7 +161,7 @@ expert-facing entry points. Change or compose them through `optimize`.
   `basis_translation.py`; re-run
   `tests/unit/test_compilation_basis_translation.py`, which pins every entry
   against the runtime, before touching anything else.
-- Run `python -m examples.compiler_synthesis` before and after changing a
+- Run `python -m examples.circuits.compiler.compiler_synthesis` before and after changing a
   synthesis leaf form. It executes each emitted leaf against the original
   program, so it localizes a broken form faster than a full test file.
 - Change one-qubit Euler angles or the z-rotation plus pi/2 pulse leaf form in

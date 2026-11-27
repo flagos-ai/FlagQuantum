@@ -68,7 +68,7 @@ capability catalog is needed to express this inventory.
 
 The user approved all five decisions in the
 [absorptive photon-counting contract](M3_ABSORPTIVE_PHOTON_COUNTING_CONTRACT_REVIEW.md).
-The new `python -m examples.absorptive_photon_counting` composition uses existing
+The new `python -m examples.simulation.absorptive_photon_counting` composition uses existing
 numeric evolution, terminal sampling and finite SuperOperator actions. It resets
 the measured mode to vacuum in the same joint coordinates, retains all outcomes
 including zero and missed counts, and sums unresolved incoming-number alternatives
@@ -290,7 +290,7 @@ Run without credentials or hardware:
 ```python
 import torch
 import flagquantum.lindblad as fql
-from examples.driven_three_level import initial_controls, pulse_plan
+from examples.simulation.driven_three_level import initial_controls, pulse_plan
 
 plan = pulse_plan(initial_controls())
 result = fql.run(plan)

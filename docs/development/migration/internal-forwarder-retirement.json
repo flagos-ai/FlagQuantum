@@ -3514,6 +3514,30 @@
       ],
       "owner": "Integration + Compiler",
       "removal_condition": "An explicit public expert API migration with API-owner approval and release-policy compatibility window."
+    },
+    {
+      "path": "flagquantum/simulation/matrix_free_hamiltonian.py",
+      "owners": [
+        "flagquantum/simulation/numerics/matrix_free/hamiltonian.py"
+      ],
+      "classification": "public-plan serialization type locator",
+      "basis": "A supported public LindbladPlan built from Pauli descriptors contains PauliSum and PauliSumTerm in its pre-move pickle. The stored wheel-produced bytes execute after relocation. This is a narrow serialization location, not an internal import adapter.",
+      "policy_or_fixture": "tests/fixtures/structure/matrix_free_public_plan_pickle.json",
+      "published_namespace_exports": [],
+      "module_exports": [
+        "PauliSum",
+        "PauliSumTerm"
+      ],
+      "documentation_references": [
+        "flagquantum/runtime/evolution/__init__.py:plan"
+      ],
+      "baseline_export_evidence": {
+        "wheel_sha256": "3288315bfaa16bcf263513f321d59df9f2209c8c0d1513130493fd451ecfb83c",
+        "source_sha256": "db9ea2dc7edbf57057d241222981e996946deb75b2cbf9dc23f46d5dfe0ee07a"
+      },
+      "owner": "Integration + Simulation",
+      "removal_condition": "An API-owner-approved versioned transition of serialized public plans with migration of historical artifacts; no automatic cleanup of a currently supported locator.",
+      "retained_private_globals": []
     }
   ],
   "pr1084_internal_dependencies": [
@@ -5895,5 +5919,16 @@
     "paths": 7,
     "relocated_source_intersections": [],
     "added_target_collisions": []
+  },
+  "matrix_free_followup": {
+    "moved_files": 4,
+    "retired_internal_files": [
+      "flagquantum/simulation/matrix_free_autograd.py",
+      "flagquantum/simulation/matrix_free_exponential.py",
+      "flagquantum/simulation/matrix_free_linear_solve.py"
+    ],
+    "new_serialization_locators": 1,
+    "new_retained_types": 2,
+    "incoming_source_snapshot": "11fd9fa27ec31e74f03277010762e8d25d17c105"
   }
 }

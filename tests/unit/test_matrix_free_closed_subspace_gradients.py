@@ -7,10 +7,10 @@ from collections.abc import Callable
 import pytest
 import torch
 
-import flagquantum.simulation.matrix_free_exponential as exponential_kernel
-import flagquantum.simulation.matrix_free_linear_solve as solve_kernel
-from flagquantum.simulation.matrix_free_exponential import exponential_action
-from flagquantum.simulation.matrix_free_linear_solve import gmres
+import flagquantum.simulation.numerics.matrix_free.exponential as exponential_kernel
+import flagquantum.simulation.numerics.matrix_free.linear_solve as solve_kernel
+from flagquantum.simulation.numerics.matrix_free.exponential import exponential_action
+from flagquantum.simulation.numerics.matrix_free.linear_solve import gmres
 
 pytestmark = pytest.mark.unit
 

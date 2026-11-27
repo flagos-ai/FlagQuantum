@@ -8421,6 +8421,800 @@
         "_registry_admitting"
       ],
       "retirement": "unused private wrapper removed; actual optimizer adapter retains public registry-factory injection"
+    },
+    {
+      "group": "examples",
+      "old": "examples/absorptive_photon_counting.py",
+      "new": "examples/simulation/absorptive_photon_counting.py",
+      "compatibility": "none",
+      "symbols": [
+        "absorptive_instrument",
+        "main"
+      ],
+      "same_import_path": false
+    },
+    {
+      "group": "examples",
+      "old": "examples/ascend_910c_training.py",
+      "new": "examples/training/ascend_910c_training.py",
+      "compatibility": "none",
+      "symbols": [
+        "RotationTrainingResult",
+        "train_rotation",
+        "main"
+      ],
+      "same_import_path": false
+    },
+    {
+      "group": "examples",
+      "old": "examples/benchmark_static_program.py",
+      "new": "examples/training/benchmark_static_program.py",
+      "compatibility": "none",
+      "symbols": [
+        "synchronize",
+        "main"
+      ],
+      "same_import_path": false
+    },
+    {
+      "group": "examples",
+      "old": "examples/boson_interference.py",
+      "new": "examples/simulation/boson_interference.py",
+      "compatibility": "none",
+      "symbols": [
+        "interference_plan",
+        "counting_instrument",
+        "main"
+      ],
+      "same_import_path": false
+    },
+    {
+      "group": "examples",
+      "old": "examples/carried_operand_execution.py",
+      "new": "examples/simulation/carried_operand_execution.py",
+      "compatibility": "none",
+      "symbols": [
+        "_amplitudes",
+        "_register",
+        "main"
+      ],
+      "same_import_path": false
+    },
+    {
+      "group": "examples",
+      "old": "examples/compiler_optimize.py",
+      "new": "examples/circuits/compiler/compiler_optimize.py",
+      "compatibility": "none",
+      "symbols": [
+        "_statevector",
+        "main"
+      ],
+      "same_import_path": false
+    },
+    {
+      "group": "examples",
+      "old": "examples/compiler_synthesis.py",
+      "new": "examples/circuits/compiler/compiler_synthesis.py",
+      "compatibility": "none",
+      "symbols": [
+        "apply",
+        "compare",
+        "state_of",
+        "report",
+        "one_qubit_case",
+        "two_qubit_case",
+        "state_preparation_case",
+        "refusal_case",
+        "main"
+      ],
+      "same_import_path": false
+    },
+    {
+      "group": "examples",
+      "old": "examples/constrained_basis_reference.py",
+      "new": "examples/simulation/constrained_basis_reference.py",
+      "compatibility": "none",
+      "symbols": [
+        "main"
+      ],
+      "same_import_path": false
+    },
+    {
+      "group": "examples",
+      "old": "examples/cpu_statevector.py",
+      "new": "examples/simulation/cpu_statevector.py",
+      "compatibility": "none",
+      "symbols": [
+        "main"
+      ],
+      "same_import_path": false
+    },
+    {
+      "group": "examples",
+      "old": "examples/cudaq_bell_export.py",
+      "new": "examples/ecosystem/cudaq_bell_export.py",
+      "compatibility": "none",
+      "symbols": [
+        "main"
+      ],
+      "same_import_path": false
+    },
+    {
+      "group": "examples",
+      "old": "examples/density_matrix_execution.py",
+      "new": "examples/simulation/density_matrix_execution.py",
+      "compatibility": "none",
+      "symbols": [],
+      "same_import_path": false
+    },
+    {
+      "group": "examples",
+      "old": "examples/driven_three_level.py",
+      "new": "examples/simulation/driven_three_level.py",
+      "compatibility": "none",
+      "symbols": [
+        "pulse_plan",
+        "reference_states",
+        "initial_controls",
+        "main"
+      ],
+      "same_import_path": false
+    },
+    {
+      "group": "examples",
+      "old": "examples/driven_three_level_relaxation.py",
+      "new": "examples/simulation/driven_three_level_relaxation.py",
+      "compatibility": "none",
+      "symbols": [
+        "relaxation_plan",
+        "main"
+      ],
+      "same_import_path": false
+    },
+    {
+      "group": "examples",
+      "old": "examples/dynamic_density_matrix.py",
+      "new": "examples/simulation/dynamic_density_matrix.py",
+      "compatibility": "none",
+      "symbols": [
+        "diagonal"
+      ],
+      "same_import_path": false
+    },
+    {
+      "group": "examples",
+      "old": "examples/dynamic_disjunctive_condition.py",
+      "new": "examples/circuits/dynamic_disjunctive_condition.py",
+      "compatibility": "none",
+      "symbols": [
+        "program"
+      ],
+      "same_import_path": false
+    },
+    {
+      "group": "examples",
+      "old": "examples/gate_coverage_batch_b.py",
+      "new": "examples/circuits/gate_coverage_batch_b.py",
+      "compatibility": "none",
+      "symbols": [],
+      "same_import_path": false
+    },
+    {
+      "group": "examples",
+      "old": "examples/hybrid_jax_torch_training.py",
+      "new": "examples/training/hybrid_jax_torch_training.py",
+      "compatibility": "none",
+      "symbols": [
+        "circuit_builder",
+        "main"
+      ],
+      "same_import_path": false
+    },
+    {
+      "group": "examples",
+      "old": "examples/hybrid_model_acceptance.py",
+      "new": "examples/training/hybrid_model_acceptance.py",
+      "compatibility": "none",
+      "symbols": [
+        "acceptance_summary",
+        "classifier_run",
+        "energy_run",
+        "main"
+      ],
+      "same_import_path": false
+    },
+    {
+      "group": "examples",
+      "old": "examples/ising_braid_execution.py",
+      "new": "examples/simulation/ising_braid_execution.py",
+      "compatibility": "none",
+      "symbols": [
+        "main"
+      ],
+      "same_import_path": false
+    },
+    {
+      "group": "examples",
+      "old": "examples/ising_braid_source.py",
+      "new": "examples/circuits/ising_braid_source.py",
+      "compatibility": "none",
+      "symbols": [
+        "main"
+      ],
+      "same_import_path": false
+    },
+    {
+      "group": "examples",
+      "old": "examples/ising_fusion_measurement.py",
+      "new": "examples/simulation/ising_fusion_measurement.py",
+      "compatibility": "none",
+      "symbols": [
+        "fusion_state",
+        "main"
+      ],
+      "same_import_path": false
+    },
+    {
+      "group": "examples",
+      "old": "examples/kaiwu_matrix_boundary.py",
+      "new": "examples/compute/kaiwu_matrix_boundary.py",
+      "compatibility": "none",
+      "symbols": [
+        "main"
+      ],
+      "same_import_path": false
+    },
+    {
+      "group": "examples",
+      "old": "examples/lindblad_evolution.py",
+      "new": "examples/simulation/lindblad_evolution.py",
+      "compatibility": "none",
+      "symbols": [],
+      "same_import_path": false
+    },
+    {
+      "group": "examples",
+      "old": "examples/lindblad_output_names.py",
+      "new": "examples/simulation/lindblad_output_names.py",
+      "compatibility": "none",
+      "symbols": [
+        "main"
+      ],
+      "same_import_path": false
+    },
+    {
+      "group": "examples",
+      "old": "examples/matrix_expectation_dynamics.py",
+      "new": "examples/simulation/matrix_expectation_dynamics.py",
+      "compatibility": "none",
+      "symbols": [
+        "main"
+      ],
+      "same_import_path": false
+    },
+    {
+      "group": "examples",
+      "old": "examples/mixed_dimension_dynamics.py",
+      "new": "examples/simulation/mixed_dimension_dynamics.py",
+      "compatibility": "none",
+      "symbols": [
+        "main"
+      ],
+      "same_import_path": false
+    },
+    {
+      "group": "examples",
+      "old": "examples/neutral_atom_pair_reference.py",
+      "new": "examples/simulation/neutral_atom_pair_reference.py",
+      "compatibility": "none",
+      "symbols": [
+        "reference_plan",
+        "main"
+      ],
+      "same_import_path": false
+    },
+    {
+      "group": "examples",
+      "old": "examples/noisy_simulation_v1.py",
+      "new": "examples/simulation/noisy_simulation_v1.py",
+      "compatibility": "none",
+      "symbols": [],
+      "same_import_path": false
+    },
+    {
+      "group": "examples",
+      "old": "examples/quantum_transformer.py",
+      "new": "examples/training/quantum_transformer.py",
+      "compatibility": "none",
+      "symbols": [
+        "QuantumFeatureLayer",
+        "MultiHeadAttentionBase",
+        "MultiHeadAttentionClassical",
+        "MultiHeadAttentionQuantum",
+        "FeedForwardBase",
+        "FeedForwardClassical",
+        "FeedForwardQuantum",
+        "TransformerBlockBase",
+        "TransformerBlockClassical",
+        "TransformerBlockQuantum",
+        "PositionalEncoder",
+        "TextClassifier",
+        "count_parameters",
+        "setup_distributed",
+        "epoch_time",
+        "get_dataset_loaders",
+        "train",
+        "evaluate",
+        "parse_args",
+        "main"
+      ],
+      "same_import_path": false
+    },
+    {
+      "group": "examples",
+      "old": "examples/quick_start.py",
+      "new": "examples/training/quick_start.py",
+      "compatibility": "none",
+      "symbols": [
+        "main"
+      ],
+      "same_import_path": false
+    },
+    {
+      "group": "examples",
+      "old": "examples/routed_artifact_preflight.py",
+      "new": "examples/circuits/compiler/routed_artifact_preflight.py",
+      "compatibility": "none",
+      "symbols": [
+        "_target_snapshot",
+        "run_example",
+        "main"
+      ],
+      "same_import_path": false
+    },
+    {
+      "group": "examples",
+      "old": "examples/rydberg_native_dynamics.py",
+      "new": "examples/simulation/rydberg_native_dynamics.py",
+      "compatibility": "none",
+      "symbols": [
+        "native_pair_plan",
+        "main"
+      ],
+      "same_import_path": false
+    },
+    {
+      "group": "examples",
+      "old": "examples/rydberg_program_geometry.py",
+      "new": "examples/circuits/rydberg_program_geometry.py",
+      "compatibility": "none",
+      "symbols": [
+        "main"
+      ],
+      "same_import_path": false
+    },
+    {
+      "group": "examples",
+      "old": "examples/save_experiment.py",
+      "new": "examples/training/save_experiment.py",
+      "compatibility": "none",
+      "symbols": [
+        "main"
+      ],
+      "same_import_path": false
+    },
+    {
+      "group": "examples",
+      "old": "examples/shared_dynamics_workflow.py",
+      "new": "examples/simulation/shared_dynamics_workflow.py",
+      "compatibility": "none",
+      "symbols": [
+        "models",
+        "main"
+      ],
+      "same_import_path": false
+    },
+    {
+      "group": "examples",
+      "old": "examples/spin_mode_convergence.py",
+      "new": "examples/simulation/spin_mode_convergence.py",
+      "compatibility": "none",
+      "symbols": [
+        "spin_mode_plan",
+        "reference_density",
+        "thermal_excited_probability",
+        "main"
+      ],
+      "same_import_path": false
+    },
+    {
+      "group": "examples",
+      "old": "examples/spin_mode_thermal_bath.py",
+      "new": "examples/simulation/spin_mode_thermal_bath.py",
+      "compatibility": "none",
+      "symbols": [
+        "thermal_bath_plan",
+        "main"
+      ],
+      "same_import_path": false
+    },
+    {
+      "group": "examples",
+      "old": "examples/stabilizer_sampling.py",
+      "new": "examples/simulation/stabilizer_sampling.py",
+      "compatibility": "none",
+      "symbols": [],
+      "same_import_path": false
+    },
+    {
+      "group": "examples",
+      "old": "examples/superoperator_channel_algebra.py",
+      "new": "examples/simulation/superoperator_channel_algebra.py",
+      "compatibility": "none",
+      "symbols": [],
+      "same_import_path": false
+    },
+    {
+      "group": "examples",
+      "old": "examples/synthesis_offline_deployment.py",
+      "new": "examples/synthesis/synthesis_offline_deployment.py",
+      "compatibility": "none",
+      "symbols": [
+        "bell",
+        "build_artifacts",
+        "main"
+      ],
+      "same_import_path": false
+    },
+    {
+      "group": "examples",
+      "old": "examples/target_aware_compilation.py",
+      "new": "examples/circuits/compiler/target_aware_compilation.py",
+      "compatibility": "none",
+      "symbols": [
+        "main"
+      ],
+      "same_import_path": false
+    },
+    {
+      "group": "examples",
+      "old": "examples/terminal_instrument_reference.py",
+      "new": "examples/simulation/terminal_instrument_reference.py",
+      "compatibility": "none",
+      "symbols": [
+        "presence_reference",
+        "fock_reference",
+        "main"
+      ],
+      "same_import_path": false
+    },
+    {
+      "group": "examples",
+      "old": "examples/terminal_instrument_sampling.py",
+      "new": "examples/simulation/terminal_instrument_sampling.py",
+      "compatibility": "none",
+      "symbols": [
+        "main"
+      ],
+      "same_import_path": false
+    },
+    {
+      "group": "examples",
+      "old": "examples/train_boson_coupling.py",
+      "new": "examples/training/train_boson_coupling.py",
+      "compatibility": "none",
+      "symbols": [
+        "main"
+      ],
+      "same_import_path": false
+    },
+    {
+      "group": "examples",
+      "old": "examples/train_parameterized_circuit_then_deploy.py",
+      "new": "examples/training/train_parameterized_circuit_then_deploy.py",
+      "compatibility": "none",
+      "symbols": [
+        "circuit_template",
+        "ansatz",
+        "main"
+      ],
+      "same_import_path": false
+    },
+    {
+      "group": "examples",
+      "old": "examples/train_piecewise_drive.py",
+      "new": "examples/training/train_piecewise_drive.py",
+      "compatibility": "none",
+      "symbols": [
+        "main"
+      ],
+      "same_import_path": false
+    },
+    {
+      "group": "examples",
+      "old": "examples/train_rydberg_controls.py",
+      "new": "examples/training/train_rydberg_controls.py",
+      "compatibility": "none",
+      "symbols": [
+        "moving_pair_program",
+        "control_plan",
+        "train_controls",
+        "main"
+      ],
+      "same_import_path": false
+    },
+    {
+      "group": "examples",
+      "old": "examples/triton_statevector_local_1q.py",
+      "new": "examples/simulation/triton_statevector_local_1q.py",
+      "compatibility": "none",
+      "symbols": [
+        "main"
+      ],
+      "same_import_path": false
+    },
+    {
+      "group": "examples",
+      "old": "examples/twin_calibration_history.py",
+      "new": "examples/twin/twin_calibration_history.py",
+      "compatibility": "none",
+      "symbols": [
+        "main"
+      ],
+      "same_import_path": false
+    },
+    {
+      "group": "examples",
+      "old": "examples/twin_candidate_fit.py",
+      "new": "examples/twin/twin_candidate_fit.py",
+      "compatibility": "none",
+      "symbols": [
+        "probes",
+        "incumbent_twin",
+        "synthetic_counts",
+        "synthetic_report",
+        "main"
+      ],
+      "same_import_path": false
+    },
+    {
+      "group": "examples",
+      "old": "examples/twin_circuit_support.py",
+      "new": "examples/twin/twin_circuit_support.py",
+      "compatibility": "none",
+      "symbols": [],
+      "same_import_path": false
+    },
+    {
+      "group": "examples",
+      "old": "examples/twin_connected_region.py",
+      "new": "examples/twin/twin_connected_region.py",
+      "compatibility": "none",
+      "symbols": [],
+      "same_import_path": false
+    },
+    {
+      "group": "examples",
+      "old": "examples/twin_evidence_freshness.py",
+      "new": "examples/twin/twin_evidence_freshness.py",
+      "compatibility": "none",
+      "symbols": [
+        "main"
+      ],
+      "same_import_path": false
+    },
+    {
+      "group": "examples",
+      "old": "examples/twin_evolution_cycle.py",
+      "new": "examples/twin/twin_evolution_cycle.py",
+      "compatibility": "none",
+      "symbols": [
+        "_counts",
+        "_holdout_evaluation",
+        "main"
+      ],
+      "same_import_path": false
+    },
+    {
+      "group": "examples",
+      "old": "examples/twin_evolution_history.py",
+      "new": "examples/twin/twin_evolution_history.py",
+      "compatibility": "none",
+      "symbols": [
+        "main"
+      ],
+      "same_import_path": false
+    },
+    {
+      "group": "examples",
+      "old": "examples/twin_parameter_estimation.py",
+      "new": "examples/twin/twin_parameter_estimation.py",
+      "compatibility": "none",
+      "symbols": [
+        "probes",
+        "synthetic_counts",
+        "synthetic_report",
+        "main"
+      ],
+      "same_import_path": false
+    },
+    {
+      "group": "examples",
+      "old": "examples/twin_region_model.py",
+      "new": "examples/twin/twin_region_model.py",
+      "compatibility": "none",
+      "symbols": [],
+      "same_import_path": false
+    },
+    {
+      "group": "examples",
+      "old": "examples/twin_region_model_persistence.py",
+      "new": "examples/twin/twin_region_model_persistence.py",
+      "compatibility": "none",
+      "symbols": [
+        "_cell",
+        "_support"
+      ],
+      "same_import_path": false
+    },
+    {
+      "group": "examples",
+      "old": "examples/twin_region_release_assessment.py",
+      "new": "examples/twin/twin_region_release_assessment.py",
+      "compatibility": "none",
+      "symbols": [],
+      "same_import_path": false
+    },
+    {
+      "group": "examples",
+      "old": "examples/twin_validation_history.py",
+      "new": "examples/twin/twin_validation_history.py",
+      "compatibility": "none",
+      "symbols": [
+        "main"
+      ],
+      "same_import_path": false
+    },
+    {
+      "group": "examples",
+      "old": "examples/visualize_rydberg_transport.py",
+      "new": "examples/simulation/visualize_rydberg_transport.py",
+      "compatibility": "none",
+      "symbols": [
+        "transport_figure",
+        "main"
+      ],
+      "same_import_path": false
+    },
+    {
+      "group": "examples",
+      "old": "examples/vqe_switch_sv_mps_tn.py",
+      "new": "examples/training/vqe_switch_sv_mps_tn.py",
+      "compatibility": "none",
+      "symbols": [
+        "build_ansatz",
+        "execute",
+        "expectation",
+        "vqe_energy",
+        "train_vqe",
+        "plot_results",
+        "main"
+      ],
+      "same_import_path": false
+    },
+    {
+      "group": "examples",
+      "old": "examples/weighted_routing.py",
+      "new": "examples/circuits/compiler/weighted_routing.py",
+      "compatibility": "none",
+      "symbols": [
+        "_opcodes",
+        "main"
+      ],
+      "same_import_path": false
+    },
+    {
+      "group": "matrix-free-numerics",
+      "old": "flagquantum/simulation/matrix_free_autograd.py",
+      "new": "flagquantum/simulation/numerics/matrix_free/autograd.py",
+      "symbols": [
+        "linear_adjoint",
+        "_ClosedSubspaceGradient",
+        "closed_subspace_gradient"
+      ],
+      "same_import_path": false,
+      "compatibility": "none"
+    },
+    {
+      "group": "matrix-free-numerics",
+      "old": "flagquantum/simulation/matrix_free_exponential.py",
+      "new": "flagquantum/simulation/numerics/matrix_free/exponential.py",
+      "symbols": [
+        "exponential_action",
+        "_closed_exponential_gradient"
+      ],
+      "same_import_path": false,
+      "compatibility": "none"
+    },
+    {
+      "group": "matrix-free-numerics",
+      "old": "flagquantum/simulation/matrix_free_hamiltonian.py",
+      "new": "flagquantum/simulation/numerics/matrix_free/hamiltonian.py",
+      "symbols": [
+        "PauliSumTerm",
+        "_sign_vector",
+        "PauliSum"
+      ],
+      "same_import_path": false,
+      "public_compatibility_symbols": [
+        "PauliSum",
+        "PauliSumTerm"
+      ],
+      "retired_private_members": [
+        "_sign_vector"
+      ],
+      "retired_reexports": [
+        "DEFAULT_COMMUTATOR_BLOCK_BYTES"
+      ],
+      "required_private_annotation_or_payload_globals": []
+    },
+    {
+      "group": "matrix-free-numerics",
+      "old": "flagquantum/simulation/matrix_free_linear_solve.py",
+      "new": "flagquantum/simulation/numerics/matrix_free/linear_solve.py",
+      "symbols": [
+        "gmres",
+        "_closed_solve_gradient"
+      ],
+      "same_import_path": false,
+      "compatibility": "none"
+    },
+    {
+      "group": "physical-dynamics",
+      "old": "flagquantum/simulation/rydberg_model.py",
+      "new": "flagquantum/simulation/dynamics/rydberg.py",
+      "symbols": [
+        "native_record",
+        "_invalid",
+        "_grid",
+        "_embed",
+        "native_model"
+      ],
+      "same_import_path": false,
+      "compatibility": "none"
+    },
+    {
+      "group": "physical-dynamics",
+      "old": "flagquantum/simulation/rydberg_presence.py",
+      "new": "flagquantum/simulation/dynamics/rydberg_presence.py",
+      "symbols": [
+        "_presence_model",
+        "_presence_operators",
+        "_presence_segment",
+        "_rydberg_presence_prefix",
+        "_continue_rydberg_presence"
+      ],
+      "same_import_path": false,
+      "compatibility": "none"
+    },
+    {
+      "group": "physical-dynamics",
+      "old": "flagquantum/simulation/ising_braid.py",
+      "new": "flagquantum/simulation/dynamics/ising_braid.py",
+      "symbols": [
+        "_fusion_matrices",
+        "_exchange_unitary",
+        "_ising_actions",
+        "_initial_density",
+        "_charge_projectors",
+        "_apply_ising_actions",
+        "_sampled_boundary",
+        "_ising_sampled_prefix",
+        "_continue_ising_sampled",
+        "evolve_ising_braid"
+      ],
+      "same_import_path": false,
+      "compatibility": "none"
     }
   ],
   "retired_namespace_parents": [

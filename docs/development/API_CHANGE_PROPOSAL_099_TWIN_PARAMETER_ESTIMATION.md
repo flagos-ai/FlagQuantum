@@ -43,10 +43,10 @@ must not mutate a Twin or promote a candidate.
 ## Public API
 
 The complete offline executable is
-[`examples/twin_parameter_estimation.py`](../../examples/twin_parameter_estimation.py):
+[`examples/twin/twin_parameter_estimation.py`](../../examples/twin/twin_parameter_estimation.py):
 
 ```bash
-python examples/twin_parameter_estimation.py
+python examples/twin/twin_parameter_estimation.py
 ```
 
 The core application call is:

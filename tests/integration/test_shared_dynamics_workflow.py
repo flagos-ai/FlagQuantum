@@ -9,7 +9,7 @@ import torch
 
 import flagquantum as fq
 import flagquantum.lindblad as fql
-from examples.shared_dynamics_workflow import main, models
+from examples.simulation.shared_dynamics_workflow import main, models
 
 pytestmark = pytest.mark.integration
 

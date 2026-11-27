@@ -101,7 +101,7 @@ The first M1 slice implements approved
 [proposal 078](../development/API_CHANGE_PROPOSAL_078_MIXED_DIMENSION_STATE_SPACES.md):
 internal product-space semantics under `core/ir/`, explicit `dimensions=` on
 the existing Lindblad namespace, backward-readable unchanged qubit plans, and
-static non-qubit plan schema 1.4. `examples/mixed_dimension_dynamics.py` runs
+static non-qubit plan schema 1.4. `examples/simulation/mixed_dimension_dynamics.py` runs
 three-level leakage and spin-mode exchange through the same existing generator,
 integrators, result, and PyTorch gradient path. The focused acceptance is
 `tests/unit/test_lindblad_mixed_dimensions.py`, including analytic decay and
@@ -117,7 +117,7 @@ same static CPU dynamics input normalization. Explicit `dimensions=` supplies
 mode truncations; Hamiltonians, collapse operators, and the low-level observable
 mapping reuse `to_matrix` and its existing byte ceiling. No algebra, numerical
 engine, public export, or plan schema is added. Run
-`python -m examples.boson_interference`; the focused acceptance is
+`python -m examples.simulation.boson_interference`; the focused acceptance is
 `tests/unit/test_lindblad_boson_consumer.py`: independent two-photon interference
 and loss laws, basis order and spectator modes, the exact two-excitation cutoff,
 unchanged dense-plan identities, batching, gradients/adjoints, and early refusals.
@@ -126,7 +126,7 @@ unchanged canonical boson algebra. Existing `Parameter.bind` and
 `ParameterExpression.bind` resolve named values; the existing normalization,
 plans, generators, and gradients consume the bound request. No second binder,
 new plan schema, or widened algebra coefficient field is required. Run
-`python -m examples.train_boson_coupling`; acceptance in
+`python -m examples.training.train_boson_coupling`; acceptance in
 `tests/unit/test_lindblad_operator_coefficients.py` includes two physical models,
 analytic gradients, actual optimizer updates, complex conjugate terms, batching,
 initial-density adjoints, unchanged dense-plan identities, and retained Pauli
@@ -143,7 +143,7 @@ assertions against both a static-composition fake and the real scheduled public
 entry point. `tests/unit/test_lindblad_piecewise_controls.py` checks numerical
 references, gradients and actual optimizer updates, reverse adjoints, early
 refusals, plan 1.5 replay and unchanged static identities. Run
-`python -m examples.train_piecewise_drive` for the user workflow. The implementation
+`python -m examples.training.train_piecewise_drive` for the user workflow. The implementation
 reuses one trajectory loop and the existing Core binder, Liouvillian and three
 integrators. It adds no Schedule class, route package or numerical engine. This
 closes the piecewise-constant control slice; arbitrary callables/interpolation,
@@ -168,7 +168,7 @@ inventing tensor factors or a wire count; product plans 1.3/1.4/1.5 remain
 unchanged. The request resolver, numeric validation, Core binding, Liouvillian,
 three integrators, shared trajectory, result and initial-density adjoint are
 reused. No state-space registry, solver, namespace or physical-model builder is
-introduced. Run `python -m examples.constrained_basis_reference` for photon-sector
+introduced. Run `python -m examples.simulation.constrained_basis_reference` for photon-sector
 gradients and a declared fixed-charge Ising convention with retained labels.
 
 `tests/unit/test_explicit_basis_contract.py` runs fake/Core and encoded/labelled
@@ -207,14 +207,14 @@ the real implementation, tensor-identity request equality/hash behavior, matrix
 snapshots on plans, exact-plan replay, named results and control gradients.
 Circuit, receipt, resident and QPU front doors must refuse dense outputs before
 execution or submission; Remote-owned preparation is reviewed separately in
-#678. Run `python -m examples.matrix_expectation_dynamics` for a three-level
+#678. Run `python -m examples.simulation.matrix_expectation_dynamics` for a three-level
 leakage expectation and its coupling derivative. The example is a CPU dynamics
 workflow, not circuit/GPU/QPU dense-output support or completion of all M2 gates.
 Each implementation PR still requires its own merge authorization and complete
 applicable verification.
 
 The next bounded M2 acceptance composes these existing APIs across a three-level
-model and a spin-mode model. Run `python -m examples.shared_dynamics_workflow`
+model and a spin-mode model. Run `python -m examples.simulation.shared_dynamics_workflow`
 for named matrix outputs, retained time/batch axes, PyTorch optimizer updates and
 detached numeric JSON replay. The [shared workflow review](../development/M2_SHARED_WORKFLOW_ACCEPTANCE.md)
 records its independent references and refusal/compatibility checks. This is a
@@ -263,7 +263,7 @@ retains independent merge and validation gates for the implementation.
 The native control-training example now composes the delivered primitives:
 analytic PyTorch optimization, detached native plan 1.7 replay, then explicit
 terminal a/b presence-instrument samples. Run
-`python -m examples.train_rydberg_controls --steps 40 --intervals 128 --shots 4096`.
+`python -m examples.training.train_rydberg_controls --steps 40 --intervals 128 --shots 4096`.
 Its observed probabilities are checked against independent exponential loss;
 shot-frequency uncertainty is separate from solver error. Physical survival,
 observed no-flag selection and unconditional RR remain distinct. This closes a
@@ -271,7 +271,7 @@ user-workflow composition gap without a new API or an event/feedback claim.
 
 The existing two-mode boson-interference example also feeds its replayed density
 into the same Runtime number-instrument sampler. Run
-`python -m examples.boson_interference` for balanced two-photon bunching, uniform
+`python -m examples.simulation.boson_interference` for balanced two-photon bunching, uniform
 loss and unconditional QND count outcomes including vacuum and one photon.
 Independent closed-form density matrices and a three-/four-level embedding
 check coherence, loss and truncation closure; finite-shot uncertainty remains a
@@ -294,14 +294,14 @@ The replaceable baseline landed in #761. The Core source delivery adds the
 experimental IsingBraidProgram, immutable four-sigma context/exchanges and
 native-source encoding 1.1 through existing ProgramRecord authorities. It
 preserves Rydberg source 1.0 and old plan bytes. Run
-`python -m examples.ising_braid_source` for source snapshots, fusion coordinates
+`python -m examples.circuits.ising_braid_source` for source snapshots, fusion coordinates
 and shared matrix outputs. The subsequent Simulation and Runtime deliveries add
 finite F/R actions through existing SuperOperator algebra and the same root
 plan/run, ExecutionPlan and ExecutionResult. Native-only plan 1.1 seals Core
 source 1.1 and ordered matrix outputs, with null circuit analysis and unchanged
 old circuit/Lindblad payloads. The four baseline factories now use the real
 source/planner/executor/reader while their independent physical assertions stay
-fixed. `python -m examples.ising_braid_execution` exercises exact JSON replay and
+fixed. `python -m examples.simulation.ising_braid_execution` exercises exact JSON replay and
 explicit terminal pair-charge QND observations. Full applicable remote gates
 remain required before each authorized merge. This is only the fixed four-sigma
 vacuum CPU slice; it does not certify full M3, other anyon sectors, physical

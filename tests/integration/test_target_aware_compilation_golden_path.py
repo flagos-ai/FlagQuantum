@@ -12,7 +12,7 @@ pytestmark = pytest.mark.integration
 def test_target_aware_compilation_user_example_runs_end_to_end() -> None:
     root = Path(__file__).resolve().parents[2]
     completed = subprocess.run(
-        [sys.executable, "-m", "examples.target_aware_compilation"],
+        [sys.executable, "-m", "examples.circuits.compiler.target_aware_compilation"],
         cwd=root,
         check=True,
         capture_output=True,

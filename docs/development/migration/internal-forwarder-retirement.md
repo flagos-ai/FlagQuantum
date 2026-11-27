@@ -2,7 +2,7 @@
 
 Baseline: `5f8e97c771925ebaf0a19f8fca26ab16c328ec4a`. Audited #1084 head: `9b1a8cd196f9d8b8427b382c404f66705cc57840`.
 
-283 tracked files are removed, including 138 root tool command wrappers. 99 public compatibility entries (83 migration entries and 16 pre-existing expert compiler facades) and 3 #1084-dependent internal files are explicitly retained below. The latter are not public promises.
+283 tracked files are removed, including 138 root tool command wrappers. 100 current public compatibility entries (the initial 99 plus one proven public-plan serialization locator) and 3 #1084-dependent internal files are explicitly retained below. The latter are not public promises.
 
 ## Completed removal
 
@@ -16,10 +16,16 @@ Baseline: `5f8e97c771925ebaf0a19f8fca26ab16c328ec4a`. Audited #1084 head: `9b1a8
 
 ## Public compatibility retained, item by item
 
+The matrix-free follow-up adds only a two-type locator. Its pre-move public-plan
+pickle fixture and execution test establish the serialization dependency; all
+internal numerical callers use the canonical owner. The initial 283-file
+retirement count remains the historical result of its baseline batch.
+
 Each row names its actual exports or namespace children, an owner and a policy/fixture. The machine-readable inventory includes complete export lists, public namespace aliases and documentation line references. A maintained extension is not described as a frozen Stable Core API. Public removal requires an explicit API-owner versioned migration, not an automatic target-version cleanup.
 
 | Retained file | Authoritative owner(s) | Exact public names / namespace evidence | Basis |
 | --- | --- | --- | --- |
+| `flagquantum/simulation/matrix_free_hamiltonian.py` | `flagquantum/simulation/numerics/matrix_free/hamiltonian.py` | `PauliSum`, `PauliSumTerm` only; no numerical helpers or constants | Historical public LindbladPlan pickle contains these concrete values; verified against installed pre-move wheel bytes in `tests/fixtures/structure/matrix_free_public_plan_pickle.json`. |
 | `flagquantum/algorithms/amplitude_estimation.py` | `flagquantum/algorithms/estimation/amplitude_estimation.py` | `AmplitudeEstimationResult`, `amplitude_estimation_circuit`, `amplitude_resolution`, `maximum_likelihood_estimate`, `run_amplitude_estimation` | Maintained explicit domain-module entry in shipped examples or domain documentation; preserve its published names under the release migration policy. Evidence: `docs/development/RELEASE_POLICY.md`. |
 | `flagquantum/algorithms/arithmetic.py` | `flagquantum/algorithms/primitives/arithmetic.py` | `flagquantum.algorithms.AdderQubits`, `flagquantum.algorithms.adder_circuit`, `flagquantum.algorithms.adder_qubits` | Published namespace exports below identify the original definition module; preserve object identity and historical public class imports. Evidence: `docs/development/PUBLIC_API_PROTECTION.md`. |
 | `flagquantum/algorithms/cdr.py` | `flagquantum/algorithms/error_mitigation/cdr.py` | `flagquantum.algorithms.CdrResult`, `flagquantum.algorithms.CliffordFit`, `flagquantum.algorithms.CliffordTrainingPoint`, `flagquantum.algorithms.CliffordVariant`, `flagquantum.algorithms.clifford_variants`, `flagquantum.algorithms.run_cdr` | Published namespace exports below identify the original definition module; preserve object identity and historical public class imports. Evidence: `docs/development/PUBLIC_API_PROTECTION.md`. |

@@ -33,7 +33,7 @@ comparison and hashes are unchanged. Circuit and remote paths raise
 `CapabilityError` directing the caller to Lindblad before execution/submission;
 there is no implicit Pauli conversion, embedding or new CircuitIR instruction.
 
-Run `python -m examples.matrix_expectation_dynamics` for the three-level model.
+Run `python -m examples.simulation.matrix_expectation_dynamics` for the three-level model.
 Expected CPU output:
 
 ```text

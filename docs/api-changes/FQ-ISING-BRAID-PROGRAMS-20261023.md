@@ -79,7 +79,7 @@ copying those fixture families or adding another contract registry.
 The existing user workflow remains executable without the proposed frontend:
 
 ```bash
-python -m examples.constrained_basis_reference
+python -m examples.simulation.constrained_basis_reference
 python -m pytest tests/unit/test_ising_braid_contract.py -q
 ```
 
@@ -149,7 +149,7 @@ execution or closes M3.
 Run the public source construction example:
 
 ```bash
-python -m examples.ising_braid_source
+python -m examples.circuits.ising_braid_source
 ```
 
 Expected output:
@@ -311,7 +311,7 @@ and rehashed contradictory plans, pre-allocation decoding bounds, environment
 drift and per-run override refusals. The final focused selection on the initial stacked base passes 194 cases,
 including a real cross-process replay and the runnable example below.
 
-Run `python -m examples.ising_braid_execution`. Expected output:
+Run `python -m examples.simulation.ising_braid_execution`. Expected output:
 
 ```text
 Plan schema: 1.1
