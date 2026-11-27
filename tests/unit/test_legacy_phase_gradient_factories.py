@@ -228,7 +228,7 @@ def test_phase_addition_every_small_raw_history_with_coherent_spectator(
 @pytest.mark.parametrize("gamma", (-0.5, 0.0, 1.5))
 def test_scaled_phase_source_slices_and_full_complex_operator(gamma: float) -> None:
     cirq = pytest.importorskip("cirq")
-    from qualtran import QFxp
+    from qualtran._infra.data_types import QFxp
     from qualtran.bloqs.rotations.phase_gradient import AddScaledValIntoPhaseReg
 
     source = AddScaledValIntoPhaseReg(QFxp(2, 2), 3, gamma, QFxp(3, 2))
@@ -310,7 +310,10 @@ def test_gradient_original_width_boundaries_and_declarations(
             "qualtran.bloqs.rotations.phase_gradient." + kind.__name__
         ]
         result = factory("direct", None, {"bitsize": width})
-        assert isinstance(result, FunctionRecord) and not result.blocks
+        if kind is PhaseGradientUnitary and isinstance(width, sympy.Integer):
+            assert result == factory("direct", None, {"bitsize": int(width)})
+        else:
+            assert isinstance(result, FunctionRecord) and not result.blocks
 
 
 @pytest.mark.parametrize("controlled", (False, True))
@@ -374,7 +377,7 @@ def test_original_examples_and_invalid_constructor_metadata() -> None:
 
 
 def test_scaled_symbolic_coefficients_remain_explicit_boundaries() -> None:
-    from qualtran import QFxp
+    from qualtran._infra.data_types import QFxp
     from qualtran.bloqs.rotations.phase_gradient import AddScaledValIntoPhaseReg
 
     source = AddScaledValIntoPhaseReg(QFxp(2, 2), 3, sympy.Symbol("gamma"), QFxp(3, 2))
@@ -397,7 +400,7 @@ def test_coefficient_formats_exact_source_graph_and_all_small_histories(
 ) -> None:
     from collections import Counter
 
-    from qualtran import QFxp
+    from qualtran._infra.data_types import QFxp
     from qualtran.bloqs.rotations.phase_gradient import AddScaledValIntoPhaseReg
 
     from flagquantum.compiler.registers.phase.scaled_phase_addition import (
@@ -489,7 +492,8 @@ def test_coefficient_formats_exact_source_graph_and_all_small_histories(
 
 
 def test_signed_input_classical_failure_and_full_word_source_dtype_refusal() -> None:
-    from qualtran import BloqError, QFxp
+    from qualtran._infra.composite_bloq import BloqError
+    from qualtran._infra.data_types import QFxp
     from qualtran.bloqs.rotations.phase_gradient import AddScaledValIntoPhaseReg
 
     from flagquantum.errors import SerializationError
@@ -512,7 +516,7 @@ def test_signed_coefficient_complete_small_format_slices_match_original_generato
 ):
     cirq = pytest.importorskip("cirq")
     np = pytest.importorskip("numpy")
-    from qualtran import QFxp
+    from qualtran._infra.data_types import QFxp
     from qualtran.bloqs.rotations.phase_gradient import AddScaledValIntoPhaseReg
 
     from flagquantum.compiler.registers.phase.scaled_phase_addition import (

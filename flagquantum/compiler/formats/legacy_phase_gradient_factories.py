@@ -65,7 +65,15 @@ def _gradient_factory(
     )
     if registers is not None and registers != ports:
         raise SerializationError("Invalid phase gradient register signature")
-    if type(width) is not int or width == 0:
+    # The direct unitary SDK recipe enumerates supplied wires even when a
+    # concrete width is stored as a SymPy Integer. State preparation explicitly
+    # rejects that same metadata; unresolved dimensions remain declarations.
+    physical_width = (
+        int(width)
+        if kind == "PhaseGradientUnitary" and isinstance(width, sympy.Integer)
+        else width
+    )
+    if type(physical_width) is not int or physical_width == 0:
         return FunctionRecord(name, (), registers=ports)
     angle = (
         symbolic_parameter_value(exponent)
@@ -73,9 +81,11 @@ def _gradient_factory(
         else exponent
     )
     program = (
-        phase_gradient_state_program(width, angle)
+        phase_gradient_state_program(physical_width, angle)
         if kind == "PhaseGradientState"
-        else phase_gradient_unitary_program(width, angle, controlled=bool(controlled))
+        else phase_gradient_unitary_program(
+            physical_width, angle, controlled=bool(controlled)
+        )
     )
     return _rename_program(program, name)
 
