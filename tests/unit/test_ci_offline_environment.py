@@ -450,3 +450,72 @@ def test_coverage_aggregation_uses_the_producers_locked_environment() -> None:
     commands = [step.get("run", "") for step in aggregate["steps"]]
     assert "test '${{ needs.coverage-shard.result }}' = success" in commands
     assert "python tools/ci/check_coverage.py" in commands
+
+
+@pytest.mark.skipif(os.name == "nt", reason="Docker identity selection requires bash")
+@pytest.mark.parametrize("security", ["rootless_tail", "rootless", "rootful", "failed"])
+def test_docker_identity_consumes_complete_security_query_before_selection(
+    tmp_path: Path, security: str
+) -> None:
+    """A producer closing after a positive match must not select the host UID."""
+    commands = tmp_path / "commands"
+    commands.mkdir()
+    identity_command = commands / "id"
+    identity_command.write_text(
+        "#!" + sys.executable + "\n"
+        "import sys\n"
+        "print(1003 if sys.argv[1] == '-u' else 1004)\n"
+    )
+    identity_command.chmod(0o755)
+    docker = commands / "docker"
+    docker.write_text(
+        "#!" + sys.executable + "\n"
+        "import os, sys, time\n"
+        "mode = os.environ['TEST_SECURITY']\n"
+        "if mode == 'failed': sys.exit(23)\n"
+        "if mode == 'rootful':\n"
+        "    print('name=seccomp,profile=builtin')\n"
+        "else:\n"
+        "    os.write(1, b'name=rootless\\n')\n"
+        "    if mode == 'rootless_tail':\n"
+        "        time.sleep(0.1)\n"
+        "        try: os.write(1, b'name=cgroupns\\n')\n"
+        "        except BrokenPipeError: os._exit(141)\n"
+    )
+    docker.chmod(0o755)
+    action = yaml.safe_load(
+        (ROOT / ".github/actions/offline-cpu/action.yml").read_text()
+    )
+    attach = next(
+        step["run"]
+        for step in action["runs"]["steps"]
+        if "FQ_CI_PROFILE" in step.get("env", {})
+    )
+    identity = attach.split("# Container UID 0", 1)[1]
+    identity = identity[identity.index("container_user=") :]
+    identity = identity.split('export FQ_CI_CONTAINER_USER="$container_user"', 1)[0]
+    result = subprocess.run(
+        [
+            "bash",
+            "-e",
+            "-o",
+            "pipefail",
+            "-c",
+            identity + '\nprintf "%s" "$container_user"',
+        ],
+        env={
+            **os.environ,
+            "PATH": f"{commands}:{os.environ['PATH']}",
+            "TEST_SECURITY": security,
+        },
+        capture_output=True,
+        text=True,
+        timeout=10,
+    )
+    if security == "failed":
+        assert result.returncode == 23
+        assert not result.stdout
+    else:
+        assert result.returncode == 0, result.stderr
+        expected = "1003:1004" if security == "rootful" else "0:0"
+        assert result.stdout == expected

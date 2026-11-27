@@ -6,13 +6,14 @@ from collections.abc import Sequence
 from typing import Any
 
 from flagquantum.runtime.distributed import placement as _placement
+from flagquantum.simulation.tensor_network.jax.models import JAXTensorNetworkNode
 
 from ....distributed.backend_policy import DistributedBackendPolicy
-from ..array_conversions import _jax_nodes_from_torch_nodes
 from ..backend_dispatch import plan_jax_distributed_quantum_backend
 from ..runtime_environment import (
     _jax_complex_dtype,
     _jnp_device_put,
+    _require_jax,
     _require_torch,
     _resolve_collective_backend,
     _resolve_jax_device,
@@ -191,3 +192,24 @@ def run_jax_sharded_tensor_network(
         collective_backend=resolved_collective_backend,
         collective_execution=collective_execution,
     )
+
+
+def _jax_nodes_from_torch_nodes(
+    nodes: Sequence[Any], *, dtype: Any, device: Any | None
+) -> tuple[JAXTensorNetworkNode, ...]:
+    import numpy as np
+
+    _, jnp = _require_jax()
+    out = []
+    for node in nodes:
+        tensor = jnp.asarray(np.asarray(node.tensor.detach().cpu()).copy(), dtype=dtype)
+        tensor = _jnp_device_put(tensor, device)
+        out.append(
+            JAXTensorNetworkNode(
+                tensor=tensor,
+                labels=tuple(int(label) for label in node.labels),
+                name=str(node.name),
+                metadata=node.metadata,
+            )
+        )
+    return tuple(out)

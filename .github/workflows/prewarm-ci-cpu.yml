@@ -7,6 +7,10 @@ on:
         description: Export a verified offline bundle for runner provisioning
         type: boolean
         default: false
+      runner-labels:
+        description: JSON list of provisioned CPU runner labels to qualify without changing their caches
+        type: string
+        default: '["a800-171","a800-172"]'
   pull_request:
     paths:
       - docker/ci/images.lock
@@ -113,11 +117,11 @@ jobs:
   prewarm:
     needs: export
     if: ${{ !cancelled() && (needs.export.result == 'success' || needs.export.result == 'skipped') && (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository) }}
-    runs-on: [self-hosted, linux, x64, flagquantum-a800-cpu, "${{ matrix.host }}"]
+    runs-on: [self-hosted, linux, x64, flagquantum-cpu, "${{ matrix.host }}"]
     strategy:
       fail-fast: false
       matrix:
-        host: [a800-171, a800-172]
+        host: ${{ fromJSON(inputs.runner-labels || '["a800-171","a800-172"]') }}
     concurrency:
       group: prewarm-ci-cpu-${{ matrix.host }}
       queue: max

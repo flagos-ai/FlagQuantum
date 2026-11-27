@@ -52,9 +52,8 @@ jobs:
   prepare-source:
     outputs:
       artifact-key: ${{ steps.pack-source.outputs.artifact-key }}
-    runs-on: ${{ fromJSON((github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository) && '["self-hosted","linux","x64","flagquantum-cpu"]' || '["ubuntu-latest"]') }}
-    # Cold migration trees can require up to 2,048 verified API objects.
-    # Keep ten minutes for checkout fallback, packing and artifact upload.
+    runs-on: ubuntu-latest
+    # Source publication needs GitHub networking, not scientific CPU resources.
     timeout-minutes: 30
     env:
       # Self-hosted GitHub connections can reset HTTP/2 streams.
@@ -64,7 +63,7 @@ jobs:
     permissions:
       contents: read
     concurrency:
-      group: flagquantum-${{ (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository) && format('self-hosted-{0}-prepare-source-{1}', github.run_id, strategy.job-index || 0) || 'gh' }}-5
+      group: flagquantum-gh-5
       queue: max
     steps:
       - name: Restore verified source through the GitHub API
@@ -428,20 +427,20 @@ jobs:
 
   native-fermion:
     needs: prepare-source
-    runs-on: ${{ (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository) && 'flagquantum-cpu-general' || 'ubuntu-latest' }}
-    # Cold science wheels measured over 16 minutes across shared runners.
+    runs-on: ubuntu-latest
+    # Fresh science wheels use hosted networking, not an offline CPU cache.
     timeout-minutes: 45
     permissions:
       contents: read
     concurrency:
-      group: flagquantum-${{ (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository) && format('a100-cpu-{0}-native-fermion-{1}', github.run_id, strategy.job-index || 0) || 'gh' }}-4
+      group: flagquantum-gh-${{ matrix.hosted-bucket }}
       queue: max
     strategy:
       fail-fast: false
       matrix:
         include:
-          - {python: "3.10", torch: "2.10.0", pyscf: "2.8.0", h5py: "3.11.0"}
-          - {python: "3.12", torch: "2.14.1", pyscf: "2.15.0", h5py: "3.16.0"}
+          - {python: "3.10", torch: "2.10.0", pyscf: "2.8.0", h5py: "3.11.0", hosted-bucket: 3}
+          - {python: "3.12", torch: "2.14.1", pyscf: "2.15.0", h5py: "3.16.0", hosted-bucket: 4}
     env:
       OMP_NUM_THREADS: "1"
       MKL_NUM_THREADS: "1"
@@ -711,6 +710,10 @@ jobs:
       contents: read
       packages: read
     timeout-minutes: 30
+    strategy:
+      fail-fast: false
+      matrix:
+        shard: [0, 1, 2, 3]
     env:
       OMP_NUM_THREADS: "1"
       MKL_NUM_THREADS: "1"
@@ -796,7 +799,7 @@ jobs:
       - name: Run smoke and unit tests with bounded workers
         env:
           PYTEST_ADDOPTS: -n ${{ env.FQ_PYTEST_WORKERS }} --dist=worksteal --durations=50 --junitxml=${{ env.FQ_CI_REPORT_DIR }}/pytest.xml
-        run: python tools/ci/ci_tier.py pr-default
+        run: python tools/ci/ci_tier.py pr-default --shard-count 4 --shard-index ${{ matrix.shard }}
       - name: Prove JAX is absent from the PyTorch-only environment
         run: python -c "import importlib.util; assert importlib.util.find_spec('jax') is None"
       - name: Prove NumPy is absent from the PyTorch-only environment
@@ -819,24 +822,152 @@ jobs:
 
   cpu-runtime:
     needs: prepare-source
-    runs-on: ${{ fromJSON((github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository) && '["self-hosted","linux","x64","flagquantum-cpu","flagquantum-a800-cpu"]' || '["ubuntu-latest"]') }}
+    runs-on: ${{ fromJSON((github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository) && format('["self-hosted","linux","x64","flagquantum-cpu","{0}"]', matrix.runner) || '["ubuntu-latest"]') }}
     permissions:
       contents: read
       packages: read
-    # Run 44503097029 shard 1 passed in 58m59s but exceeded the job limit
-    # after setup and report upload. Keep the full selection in eight partitions.
+    # Preserve the complete integration selection with measured weights and
+    # more slots; mixed cases retain bounded workers and one thread per worker.
     timeout-minutes: 60
     strategy:
       fail-fast: false
       matrix:
-        shard: [0, 1, 2, 3, 4, 5, 6, 7]
+        include:
+          - {shard: 0, hosted-bucket: 0, runner: flagquantum-a800-cpu}
+          - {shard: 1, hosted-bucket: 1, runner: flagquantum-a800-cpu}
+          - {shard: 2, hosted-bucket: 2, runner: flagquantum-a800-cpu}
+          - {shard: 3, hosted-bucket: 3, runner: flagquantum-a800-cpu}
+          - {shard: 4, hosted-bucket: 4, runner: flagquantum-a800-cpu}
+          - {shard: 5, hosted-bucket: 5, runner: flagquantum-a800-cpu}
+          - {shard: 6, hosted-bucket: 6, runner: flagquantum-a800-cpu}
+          - {shard: 7, hosted-bucket: 7, runner: flagquantum-a800-cpu}
+          - {shard: 8, hosted-bucket: 0, runner: flagquantum-a800-cpu}
+          - {shard: 9, hosted-bucket: 1, runner: flagquantum-a800-cpu}
+          - {shard: 10, hosted-bucket: 2, runner: flagquantum-a800-cpu}
+          - {shard: 11, hosted-bucket: 3, runner: flagquantum-a800-cpu}
+          - {shard: 12, hosted-bucket: 4, runner: flagquantum-a800-cpu}
+          - {shard: 13, hosted-bucket: 5, runner: flagquantum-a800-cpu}
+          - {shard: 14, hosted-bucket: 6, runner: flagquantum-a800-cpu}
+          - {shard: 15, hosted-bucket: 7, runner: flagquantum-a800-cpu}
+          - {shard: 16, hosted-bucket: 0, runner: flagquantum-a800-cpu}
+          - {shard: 17, hosted-bucket: 1, runner: flagquantum-a800-cpu}
+          - {shard: 18, hosted-bucket: 2, runner: flagquantum-a800-cpu}
+          - {shard: 19, hosted-bucket: 3, runner: flagquantum-a800-cpu}
+          - {shard: 20, hosted-bucket: 4, runner: flagquantum-a800-cpu}
+          - {shard: 21, hosted-bucket: 5, runner: flagquantum-a800-cpu}
+          - {shard: 22, hosted-bucket: 6, runner: flagquantum-a800-cpu}
+          - {shard: 23, hosted-bucket: 7, runner: flagquantum-a800-cpu}
+          - {shard: 24, hosted-bucket: 0, runner: flagquantum-a800-cpu}
+          - {shard: 25, hosted-bucket: 1, runner: flagquantum-a800-cpu}
+          - {shard: 26, hosted-bucket: 2, runner: flagquantum-a800-cpu}
+          - {shard: 27, hosted-bucket: 3, runner: flagquantum-a800-cpu}
+          - {shard: 28, hosted-bucket: 4, runner: flagquantum-a800-cpu}
+          - {shard: 29, hosted-bucket: 5, runner: flagquantum-a800-cpu}
+          - {shard: 30, hosted-bucket: 6, runner: flagquantum-a800-cpu}
+          - {shard: 31, hosted-bucket: 7, runner: flagquantum-a800-cpu}
+          - {shard: 32, hosted-bucket: 0, runner: fq-bw1100-10-cpu01-validation}
+          - {shard: 33, hosted-bucket: 1, runner: fq-bw1100-11-cpu01-validation}
+          - {shard: 34, hosted-bucket: 2, runner: fq-bw1100-12-cpu01-validation}
+          - {shard: 35, hosted-bucket: 3, runner: fq-bw1100-14-cpu01-validation}
+          - {shard: 36, hosted-bucket: 4, runner: fq-bw1100-15-cpu01-validation}
+          - {shard: 37, hosted-bucket: 5, runner: fq-bw1100-16-cpu01-validation}
+          - {shard: 38, hosted-bucket: 6, runner: fq-bw1100-17-cpu01-validation}
+          - {shard: 39, hosted-bucket: 7, runner: fq-bw1100-2-cpu01-validation}
+          - {shard: 40, hosted-bucket: 0, runner: fq-bw1100-10-cpu02-validation}
+          - {shard: 41, hosted-bucket: 1, runner: fq-bw1100-11-cpu02-validation}
+          - {shard: 42, hosted-bucket: 2, runner: fq-bw1100-12-cpu02-validation}
+          - {shard: 43, hosted-bucket: 3, runner: fq-bw1100-14-cpu02-validation}
+          - {shard: 44, hosted-bucket: 4, runner: fq-bw1100-15-cpu02-validation}
+          - {shard: 45, hosted-bucket: 5, runner: fq-bw1100-16-cpu02-validation}
+          - {shard: 46, hosted-bucket: 6, runner: fq-bw1100-17-cpu02-validation}
+          - {shard: 47, hosted-bucket: 7, runner: fq-bw1100-2-cpu02-validation}
+          - {shard: 48, hosted-bucket: 0, runner: fq-bw1100-10-cpu03-validation}
+          - {shard: 49, hosted-bucket: 1, runner: fq-bw1100-11-cpu03-validation}
+          - {shard: 50, hosted-bucket: 2, runner: fq-bw1100-12-cpu03-validation}
+          - {shard: 51, hosted-bucket: 3, runner: fq-bw1100-14-cpu03-validation}
+          - {shard: 52, hosted-bucket: 4, runner: fq-bw1100-15-cpu03-validation}
+          - {shard: 53, hosted-bucket: 5, runner: fq-bw1100-16-cpu03-validation}
+          - {shard: 54, hosted-bucket: 6, runner: fq-bw1100-17-cpu03-validation}
+          - {shard: 55, hosted-bucket: 7, runner: fq-bw1100-2-cpu03-validation}
+          - {shard: 56, hosted-bucket: 0, runner: fq-bw1100-10-cpu04-validation}
+          - {shard: 57, hosted-bucket: 1, runner: fq-bw1100-11-cpu04-validation}
+          - {shard: 58, hosted-bucket: 2, runner: fq-bw1100-12-cpu04-validation}
+          - {shard: 59, hosted-bucket: 3, runner: fq-bw1100-14-cpu04-validation}
+          - {shard: 60, hosted-bucket: 4, runner: fq-bw1100-15-cpu04-validation}
+          - {shard: 61, hosted-bucket: 5, runner: fq-bw1100-16-cpu04-validation}
+          - {shard: 62, hosted-bucket: 6, runner: fq-bw1100-17-cpu04-validation}
+          - {shard: 63, hosted-bucket: 7, runner: fq-bw1100-2-cpu04-validation}
+          - {shard: 64, hosted-bucket: 0, runner: fq-bw1100-10-cpu05-validation}
+          - {shard: 65, hosted-bucket: 1, runner: fq-bw1100-11-cpu05-validation}
+          - {shard: 66, hosted-bucket: 2, runner: fq-bw1100-12-cpu05-validation}
+          - {shard: 67, hosted-bucket: 3, runner: fq-bw1100-14-cpu05-validation}
+          - {shard: 68, hosted-bucket: 4, runner: fq-bw1100-15-cpu05-validation}
+          - {shard: 69, hosted-bucket: 5, runner: fq-bw1100-16-cpu05-validation}
+          - {shard: 70, hosted-bucket: 6, runner: fq-bw1100-17-cpu05-validation}
+          - {shard: 71, hosted-bucket: 7, runner: fq-bw1100-2-cpu05-validation}
+          - {shard: 72, hosted-bucket: 0, runner: fq-bw1100-10-cpu06-validation}
+          - {shard: 73, hosted-bucket: 1, runner: fq-bw1100-11-cpu06-validation}
+          - {shard: 74, hosted-bucket: 2, runner: fq-bw1100-12-cpu06-validation}
+          - {shard: 75, hosted-bucket: 3, runner: fq-bw1100-14-cpu06-validation}
+          - {shard: 76, hosted-bucket: 4, runner: fq-bw1100-15-cpu06-validation}
+          - {shard: 77, hosted-bucket: 5, runner: fq-bw1100-16-cpu06-validation}
+          - {shard: 78, hosted-bucket: 6, runner: fq-bw1100-17-cpu07-validation}
+          - {shard: 79, hosted-bucket: 7, runner: fq-bw1100-2-cpu06-validation}
+          - {shard: 80, hosted-bucket: 0, runner: fq-bw1100-10-cpu07-validation}
+          - {shard: 81, hosted-bucket: 1, runner: fq-bw1100-11-cpu07-validation}
+          - {shard: 82, hosted-bucket: 2, runner: fq-bw1100-12-cpu07-validation}
+          - {shard: 83, hosted-bucket: 3, runner: fq-bw1100-14-cpu07-validation}
+          - {shard: 84, hosted-bucket: 4, runner: fq-bw1100-15-cpu07-validation}
+          - {shard: 85, hosted-bucket: 5, runner: fq-bw1100-16-cpu07-validation}
+          - {shard: 86, hosted-bucket: 6, runner: fq-bw1100-17-cpu08-validation}
+          - {shard: 87, hosted-bucket: 7, runner: fq-bw1100-2-cpu07-validation}
+          - {shard: 88, hosted-bucket: 0, runner: fq-bw1100-10-cpu08-validation}
+          - {shard: 89, hosted-bucket: 1, runner: fq-bw1100-11-cpu08-validation}
+          - {shard: 90, hosted-bucket: 2, runner: fq-bw1100-12-cpu08-validation}
+          - {shard: 91, hosted-bucket: 3, runner: fq-bw1100-14-cpu08-validation}
+          - {shard: 92, hosted-bucket: 4, runner: fq-bw1100-15-cpu08-validation}
+          - {shard: 93, hosted-bucket: 5, runner: fq-bw1100-16-cpu08-validation}
+          - {shard: 94, hosted-bucket: 6, runner: fq-bw1100-17-cpu09-validation}
+          - {shard: 95, hosted-bucket: 7, runner: fq-bw1100-2-cpu08-validation}
+          - {shard: 96, hosted-bucket: 0, runner: fq-bw1100-10-cpu09-validation}
+          - {shard: 97, hosted-bucket: 1, runner: fq-bw1100-11-cpu09-validation}
+          - {shard: 98, hosted-bucket: 2, runner: fq-bw1100-12-cpu09-validation}
+          - {shard: 99, hosted-bucket: 3, runner: fq-bw1100-14-cpu09-validation}
+          - {shard: 100, hosted-bucket: 4, runner: fq-bw1100-15-cpu09-validation}
+          - {shard: 101, hosted-bucket: 5, runner: fq-bw1100-16-cpu09-validation}
+          - {shard: 102, hosted-bucket: 6, runner: fq-bw1100-17-cpu10-validation}
+          - {shard: 103, hosted-bucket: 7, runner: fq-bw1100-2-cpu09-validation}
+          - {shard: 104, hosted-bucket: 0, runner: fq-bw1100-10-cpu10-validation}
+          - {shard: 105, hosted-bucket: 1, runner: fq-bw1100-11-cpu10-validation}
+          - {shard: 106, hosted-bucket: 2, runner: fq-bw1100-12-cpu10-validation}
+          - {shard: 107, hosted-bucket: 3, runner: fq-bw1100-14-cpu10-validation}
+          - {shard: 108, hosted-bucket: 4, runner: fq-bw1100-15-cpu10-validation}
+          - {shard: 109, hosted-bucket: 5, runner: fq-bw1100-16-cpu10-validation}
+          - {shard: 110, hosted-bucket: 6, runner: fq-bw1100-17-cpu11-validation}
+          - {shard: 111, hosted-bucket: 7, runner: fq-bw1100-2-cpu10-validation}
+          - {shard: 112, hosted-bucket: 0, runner: fq-bw1100-10-cpu11-validation}
+          - {shard: 113, hosted-bucket: 1, runner: fq-bw1100-11-cpu11-validation}
+          - {shard: 114, hosted-bucket: 2, runner: fq-bw1100-12-cpu11-validation}
+          - {shard: 115, hosted-bucket: 3, runner: fq-bw1100-14-cpu11-validation}
+          - {shard: 116, hosted-bucket: 4, runner: fq-bw1100-15-cpu12-validation}
+          - {shard: 117, hosted-bucket: 5, runner: fq-bw1100-16-cpu11-validation}
+          - {shard: 118, hosted-bucket: 6, runner: fq-bw1100-17-cpu12-validation}
+          - {shard: 119, hosted-bucket: 7, runner: fq-bw1100-2-cpu11-validation}
+          - {shard: 120, hosted-bucket: 0, runner: fq-bw1100-10-cpu12-validation}
+          - {shard: 121, hosted-bucket: 1, runner: fq-bw1100-11-cpu12-validation}
+          - {shard: 122, hosted-bucket: 2, runner: fq-bw1100-12-cpu12-validation}
+          - {shard: 123, hosted-bucket: 3, runner: fq-bw1100-14-cpu12-validation}
+          - {shard: 124, hosted-bucket: 4, runner: fq-bw1100-15-cpu13-validation}
+          - {shard: 125, hosted-bucket: 5, runner: fq-bw1100-16-cpu12-validation}
+          - {shard: 126, hosted-bucket: 6, runner: fq-bw1100-17-cpu13-validation}
+          - {shard: 127, hosted-bucket: 7, runner: fq-bw1100-2-cpu12-validation}
     env:
       OMP_NUM_THREADS: "1"
       MKL_NUM_THREADS: "1"
       OPENBLAS_NUM_THREADS: "1"
       CUDA_VISIBLE_DEVICES: ""
     concurrency:
-      group: flagquantum-${{ (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository) && format('self-hosted-{0}-cpu-runtime-{1}', github.run_id, strategy.job-index || 0) || 'gh' }}-3
+      group: flagquantum-${{ (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository) && format('self-hosted-{0}-cpu-runtime-{1}', github.run_id, strategy.job-index || 0) || 'gh' }}-${{ matrix.hosted-bucket }}
       queue: max
     steps:
       - uses: actions/download-artifact@v8.0.2
@@ -915,12 +1046,20 @@ jobs:
       - name: Run integration tests with bounded workers
         env:
           PYTEST_ADDOPTS: -n ${{ env.FQ_PYTEST_WORKERS }} --dist=worksteal --durations=50 --junitxml=${{ env.FQ_CI_REPORT_DIR }}/pytest.xml
-        run: python tools/ci/ci_tier.py pr-runtime --shard-count 8 --shard-index ${{ matrix.shard }}
+        run: python tools/ci/ci_tier.py pr-runtime --shard-count 128 --shard-index ${{ matrix.shard }} --plan-shard
       - name: Prove native distributed runtime does not require JAX
         if: matrix.shard == 0
+        env:
+          OMP_NUM_THREADS: "1"
+          MKL_NUM_THREADS: "1"
+          OPENBLAS_NUM_THREADS: "1"
         run: torchrun --standalone --nproc-per-node=2 tests/distributed/runtime_modes.py
       - name: Run the launched distributed tests under a real launcher
         if: matrix.shard == 0
+        env:
+          OMP_NUM_THREADS: "1"
+          MKL_NUM_THREADS: "1"
+          OPENBLAS_NUM_THREADS: "1"
         run: torchrun --standalone --nproc-per-node=2 -m pytest -m distributed_launch -q
       - name: Retain resource limits and pytest timing reports
         if: ${{ always() && env.FQ_CI_REPORT_DIR != '' }}
@@ -930,7 +1069,6 @@ jobs:
           name: cpu-report-${{ github.job }}-${{ strategy.job-index || '0' }}
           path: ${{ env.FQ_CI_REPORT_DIR }}
           retention-days: 7
-
   cpu-core-3-12:
     name: cpu-core (3.12)
     needs: [cpu-core-3-12-tests, cpu-runtime]
@@ -2289,7 +2427,7 @@ jobs:
       OPENBLAS_NUM_THREADS: "1"
       CUDA_VISIBLE_DEVICES: ""
       JAX_PLATFORMS: cpu
-      FQ_COVERAGE_SHARDS: ${{ (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository) && '192' || '16' }}
+      FQ_COVERAGE_SHARDS: "256"
     concurrency:
       group: flagquantum-${{ (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository) && format('self-hosted-{0}-coverage-plan-{1}', github.run_id, strategy.job-index || 0) || 'gh' }}-0
       queue: max
@@ -2392,7 +2530,9 @@ jobs:
     runs-on: >-
       ${{ fromJSON(
         (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository)
-        && '["self-hosted","linux","x64","flagquantum-cpu"]' || '["ubuntu-latest"]'
+        && (matrix.runner && format('["self-hosted","linux","x64","flagquantum-cpu","{0}"]', matrix.runner)
+          || matrix.a800 && '["self-hosted","linux","x64","flagquantum-cpu","flagquantum-a800-cpu"]'
+          || '["self-hosted","linux","x64","flagquantum-cpu"]') || '["ubuntu-latest"]'
       ) }}
     permissions:
       contents: read
@@ -2485,7 +2625,7 @@ jobs:
           registry-token: ${{ github.token }}
           require-cached: ${{ runner.environment == 'self-hosted' }}
       - name: Measure CPU and memory limits
-        run: python -I tools/ci/ci_cpu_budget.py
+        run: python -I tools/ci/ci_cpu_budget.py ${{ matrix.exclusive && '--exclusive-test' || '' }}
       - name: Verify dependency consistency and CPU frameworks
         run: |
           python -m pip check
@@ -2637,7 +2777,7 @@ jobs:
           import sqlite3
 
           count = int(os.environ["FQ_COVERAGE_SHARDS"])
-          if not 1 <= count <= 192:
+          if not 1 <= count <= 256:
               raise SystemExit("Invalid coverage shard count")
           directory = Path(os.environ["FQ_COVERAGE_INPUTS"])
           expected = {f".coverage.{i}" for i in range(count)}
@@ -2681,9 +2821,9 @@ jobs:
   supply-chain:
     needs: prepare-source
     timeout-minutes: 20
-    runs-on: ${{ (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository) && 'flagquantum-cpu-general' || 'ubuntu-latest' }}
+    runs-on: ubuntu-latest
     concurrency:
-      group: flagquantum-${{ (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository) && format('a100-cpu-{0}-supply-chain-{1}', github.run_id, strategy.job-index || 0) || 'gh' }}-2
+      group: flagquantum-gh-2
       queue: max
     permissions:
       contents: read

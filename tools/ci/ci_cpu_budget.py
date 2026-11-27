@@ -126,7 +126,7 @@ def select_distributed_workers(
     return max(1, min(2, math.floor(cpu_share / 8), memory_share // (8 * 2 * GIB)))
 
 
-def main(*, dedicated: bool = False) -> None:
+def main(*, dedicated: bool = False, exclusive_test: bool = False) -> None:
     affinity = (
         sorted(os.sched_getaffinity(0))
         if hasattr(os, "sched_getaffinity")
@@ -152,6 +152,9 @@ def main(*, dedicated: bool = False) -> None:
         dedicated = dedicated or bool(host["dedicated_service"])
     workers = select_workers(cpu, memory, shared, dedicated)
     distributed_workers = select_distributed_workers(cpu, memory, shared, dedicated)
+    threads_per_worker = workers if exclusive_test else (1 if shared else 2)
+    if exclusive_test:
+        workers = 1
     report = {
         "runner": os.environ.get("RUNNER_NAME"),
         "hostname": os.uname().nodename,
@@ -165,7 +168,8 @@ def main(*, dedicated: bool = False) -> None:
         "load_average": os.getloadavg(),
         "workers": workers,
         "distributed_workers": distributed_workers,
-        "threads_per_worker": 1 if shared else 2,
+        "threads_per_worker": threads_per_worker,
+        "execution_profile": "exclusive_test" if exclusive_test else "parallel_tests",
         "shared_registrations_budgeted": 2 if shared and not dedicated else 1,
         "dedicated_service": dedicated,
         "inherited_rank_environment": {
@@ -188,13 +192,13 @@ def main(*, dedicated: bool = False) -> None:
                 f"FQ_CI_REPORT_DIR={report_directory}\n"
                 f"FQ_CI_HOST_BUDGET={inherited or report_path}\n"
             )
-            if shared:
+            if shared or exclusive_test:
                 for name in [
                     "OMP_NUM_THREADS",
                     "MKL_NUM_THREADS",
                     "OPENBLAS_NUM_THREADS",
                 ]:
-                    stream.write(f"{name}=1\n")
+                    stream.write(f"{name}={threads_per_worker}\n")
     if "GITHUB_STEP_SUMMARY" in os.environ:
         with Path(os.environ["GITHUB_STEP_SUMMARY"]).open("a") as stream:
             stream.write(f"### CPU budget\n\n```json\n{payload}\n```\n")
@@ -203,4 +207,6 @@ def main(*, dedicated: bool = False) -> None:
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--dedicated", action="store_true")
-    main(dedicated=parser.parse_args().dedicated)
+    parser.add_argument("--exclusive-test", action="store_true")
+    args = parser.parse_args()
+    main(dedicated=args.dedicated, exclusive_test=args.exclusive_test)
