@@ -2,7 +2,6 @@
 
 from types import SimpleNamespace
 
-import numpy as np
 import pytest
 
 from flagquantum.runtime.executors.jax.mps import backward, canonicalization
@@ -12,7 +11,13 @@ from flagquantum.simulation.mps.jax import pullbacks as numerics
 pytestmark = pytest.mark.unit
 
 
-def test_cpu_backward_uses_simulation_site_response_without_jax(monkeypatch):
+@pytest.fixture(name="np")
+def _numpy_module():
+    """Load optional NumPy only after a numerical test is selected."""
+    return pytest.importorskip("numpy")
+
+
+def test_cpu_backward_uses_simulation_site_response_without_jax(monkeypatch, np):
     calls = []
 
     def replacement(parameters):
@@ -32,7 +37,7 @@ def test_cpu_backward_uses_simulation_site_response_without_jax(monkeypatch):
     assert summary["claim_evidence_type"] == "development_smoke"
 
 
-def test_cpu_backward_uses_simulation_weighted_gradient(monkeypatch):
+def test_cpu_backward_uses_simulation_weighted_gradient(monkeypatch, np):
     received = []
 
     def replacement(parameters, remote):
@@ -48,7 +53,7 @@ def test_cpu_backward_uses_simulation_weighted_gradient(monkeypatch):
     np.testing.assert_allclose(received[0][1], np.cos([0.4, 0.2]))
 
 
-def test_owner_vjp_uses_simulation_scores_before_cotangent_exchange(monkeypatch):
+def test_owner_vjp_uses_simulation_scores_before_cotangent_exchange(monkeypatch, np):
     pytest.importorskip("jax")
     received = []
     original = runtime_pullbacks.jax_mps_owner_local_vjp
@@ -71,13 +76,13 @@ def test_owner_vjp_uses_simulation_scores_before_cotangent_exchange(monkeypatch)
     assert summary["scalability_claim_allowed"] is False
 
 
-class _ReadyArray(np.ndarray):
-    def block_until_ready(self):
-        return self
-
-
-def _collective_contract_fake():
+def _collective_contract_fake(np):
     """Exercise Runtime collective wiring; this is not an accelerator run."""
+
+    class _ReadyArray(np.ndarray):
+        def block_until_ready(self):
+            return self
+
     events = []
 
     def ppermute(value, axis_name, permutation):
@@ -112,8 +117,8 @@ def _collective_contract_fake():
     return runtime, events
 
 
-def test_backward_collective_consumes_replaced_local_site_response(monkeypatch):
-    runtime, events = _collective_contract_fake()
+def test_backward_collective_consumes_replaced_local_site_response(monkeypatch, np):
+    runtime, events = _collective_contract_fake(np)
     monkeypatch.setattr(backward, "_require_jax", lambda: (runtime, np))
     calls = []
 
@@ -130,8 +135,8 @@ def test_backward_collective_consumes_replaced_local_site_response(monkeypatch):
     assert events == [(5.0, "mps_rank", ((0, 1), (1, 0)))] * 4
 
 
-def test_optimizer_collective_consumes_replaced_z_response(monkeypatch):
-    runtime, events = _collective_contract_fake()
+def test_optimizer_collective_consumes_replaced_z_response(monkeypatch, np):
+    runtime, events = _collective_contract_fake(np)
     summary = backward._execute_minimal_mps_sharded_backward(
         [0.2, 0.4], execution_backend="cpu"
     )

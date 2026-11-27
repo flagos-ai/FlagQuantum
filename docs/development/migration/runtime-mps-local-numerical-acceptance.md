@@ -95,6 +95,31 @@ All 11,916 other parent blobs, including 1,174 frozen contract/fixture blobs
 and 3,046 original test-tree blobs, remain identical in the preview. No old
 assertion or scientific fixture is changed.
 
+## Minimal-dependency collection followup
+
+The complete three-phase source counts above were recorded at migration commit
+`a6d4cc284fe61274fbecc61ba465b0fa0ac48205`. Its Python 3.10 and 3.11
+minimal CPU smoke jobs subsequently failed during collection because this new
+unit module imported optional NumPy before pytest selected its markers.
+Both original failure logs are retained. Product numerical execution had not
+started in those failed collection jobs.
+
+The followup changes only this test's dependency admission and this record.
+NumPy is loaded by an execution-time fixture, and the fake ready-array type is
+constructed inside its collective contract factory. Unit markers, all five
+test cases and every original assertion remain unchanged; no module-level skip,
+test filter, mandatory dependency or scientific threshold is added.
+
+A simulated NumPy import refusal reproduces the original collection error and
+accepts the fixed module with no NumPy import attempt. This probe initializes
+Torch first and is not a clean missing-dependency environment certificate.
+The smoke/base-unit supplement passes eight tests with one optional JAX skip.
+Real CPU/JAX focused acceptance passes 120 tests with six existing hardware
+skips, including all five defining-owner replacement cases. Both Black version
+bounds and Ruff pass. The 1,262 product Python files and qualified native wheel
+remain byte-identical; the exact new-head CI must validate the real minimal
+Python 3.10/3.11 environments.
+
 ## Remaining acceptance
 
 The child still requires its own exact published-head combined CI. Final source
