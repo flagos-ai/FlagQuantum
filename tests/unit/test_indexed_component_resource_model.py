@@ -1,7 +1,10 @@
 """Compose controlled child resources against untouched indexed source graphs."""
 
+from __future__ import annotations
+
 from itertools import product
 from math import prod
+from typing import Any
 
 import pytest
 
@@ -19,6 +22,7 @@ from flagquantum.compiler.registers.control.indexed_component_resource_model imp
     indexed_component_cost,
 )
 from flagquantum.qec.resources.estimation import estimate_ftqc_resources
+from tests._reference_dependencies import unavailable_reference
 from tests.unit.test_first_quantization_resource_model import assert_source_model
 
 pytestmark = pytest.mark.unit
@@ -56,23 +60,27 @@ def test_all_categories_width_and_magic_budgets_match_source(
     adjoint: bool,
     family: str,
 ) -> None:
-    pytest.importorskip("qualtran")
-    import cirq
-    import numpy as np
-    from qualtran import BQUInt, QAny, Register
-    from qualtran.bloqs.basic_gates import (
-        Hadamard,
-        Identity,
-        SGate,
-        TGate,
-        XGate,
-        YGate,
-        ZGate,
-    )
-    from qualtran.bloqs.multiplexers.apply_gate_to_lth_target import ApplyGateToLthQubit
-    from qualtran.bloqs.multiplexers.apply_lth_bloq import ApplyLthBloq
-    from qualtran.cirq_interop import cirq_gate_to_bloq
-    from qualtran.resource_counting import QECGatesCost, get_cost_value
+    try:
+        import cirq
+        import numpy as np
+        from qualtran._infra.data_types import BQUInt, QAny
+        from qualtran._infra.registers import Register
+        from qualtran.bloqs.basic_gates.hadamard import Hadamard
+        from qualtran.bloqs.basic_gates.identity import Identity
+        from qualtran.bloqs.basic_gates.s_gate import SGate
+        from qualtran.bloqs.basic_gates.t_gate import TGate
+        from qualtran.bloqs.basic_gates.x_basis import XGate
+        from qualtran.bloqs.basic_gates.y_gate import YGate
+        from qualtran.bloqs.basic_gates.z_basis import ZGate
+        from qualtran.bloqs.multiplexers.apply_gate_to_lth_target import (
+            ApplyGateToLthQubit,
+        )
+        from qualtran.bloqs.multiplexers.apply_lth_bloq import ApplyLthBloq
+        from qualtran.cirq_interop._cirq_to_bloq import cirq_gate_to_bloq
+        from qualtran.resource_counting._bloq_counts import QECGatesCost
+        from qualtran.resource_counting._costing import get_cost_value
+    except ModuleNotFoundError as error:
+        unavailable_reference(error)
 
     count = prod(shape)
     source_types = (
@@ -111,7 +119,9 @@ def test_all_categories_width_and_magic_budgets_match_source(
         )
         for index in range(count)
     )
-    source_ops = [source_types[index % len(source_types)]() for index in range(count)]
+    source_ops: list[Any] = [
+        source_types[index % len(source_types)]() for index in range(count)
+    ]
     if position:
         source_child_ops = [
             cirq_gate_to_bloq(cirq_types[index % len(cirq_types)].controlled())
@@ -129,6 +139,7 @@ def test_all_categories_width_and_magic_budgets_match_source(
         Register(f"s{index}", BQUInt(width, size))
         for index, (width, size) in enumerate(zip(widths, shape, strict=True))
     )
+    source: Any
     if position:
         cirq_types = (
             (cirq.I, cirq.X, cirq.Y, cirq.Z)
@@ -186,16 +197,18 @@ def _add_model(width: int, constant: int) -> ComponentCost:
 def test_heterogeneous_child_work_is_charged_at_its_actual_prefix(
     width: int, where: int, controlled: bool, adjoint: bool
 ) -> None:
-    pytest.importorskip("qualtran")
-    import numpy as np
-    from qualtran import QUInt
-    from qualtran.bloqs.arithmetic import AddK
-    from qualtran.bloqs.arithmetic.bitwise import XorK
-    from qualtran.bloqs.multiplexers.apply_lth_bloq import ApplyLthBloq
+    try:
+        import numpy as np
+        from qualtran._infra.data_types import QUInt
+        from qualtran.bloqs.arithmetic.addition import AddK
+        from qualtran.bloqs.arithmetic.bitwise import XorK
+        from qualtran.bloqs.multiplexers.apply_lth_bloq import ApplyLthBloq
+    except ModuleNotFoundError as error:
+        unavailable_reference(error)
 
     cheap = ComponentCost("ControlledXorK", width + 1, GateCost(clifford=1))
     expensive = _add_model(width, 1)
-    ops = [XorK(QUInt(width), 1)] * 3
+    ops: list[Any] = [XorK(QUInt(width), 1)] * 3
     models = [cheap] * 3
     ops[where], models[where] = AddK(QUInt(width), 1), expensive
     for child, op in zip(models, ops, strict=True):
@@ -263,7 +276,7 @@ def test_dimension_model_does_not_emit_or_execute(
     ],
 )
 def test_invalid_model_dimensions_fail_closed(kwargs: dict[str, object]) -> None:
-    args = dict(
+    args: dict[str, Any] = dict(
         axis_widths=(1,),
         extents=(2,),
         children=(ComponentCost("CX", 2),) * 2,
@@ -277,10 +290,12 @@ def test_invalid_model_dimensions_fail_closed(kwargs: dict[str, object]) -> None
 @pytest.mark.ftqc_reference
 @pytest.mark.parametrize("adjoint", [False, True])
 def test_phase_only_children_have_no_target_bank(adjoint: bool) -> None:
-    pytest.importorskip("qualtran")
-    import numpy as np
-    from qualtran.bloqs.basic_gates import GlobalPhase
-    from qualtran.bloqs.multiplexers.apply_lth_bloq import ApplyLthBloq
+    try:
+        import numpy as np
+        from qualtran.bloqs.basic_gates.global_phase import GlobalPhase
+        from qualtran.bloqs.multiplexers.apply_lth_bloq import ApplyLthBloq
+    except ModuleNotFoundError as error:
+        unavailable_reference(error)
 
     children = (
         ComponentCost("ControlledMinus", 1, GateCost(clifford=1)),
@@ -345,12 +360,14 @@ def test_resource_example() -> None:
 @pytest.mark.ftqc_reference
 @pytest.mark.parametrize("adjoint", [False, True])
 def test_composed_child_gate_flow_matches_original_source(adjoint: bool) -> None:
-    pytest.importorskip("qualtran")
-    import numpy as np
-    from qualtran import QUInt
-    from qualtran.bloqs.arithmetic import AddK
-    from qualtran.bloqs.arithmetic.bitwise import XorK
-    from qualtran.bloqs.multiplexers.apply_lth_bloq import ApplyLthBloq
+    try:
+        import numpy as np
+        from qualtran._infra.data_types import QUInt
+        from qualtran.bloqs.arithmetic.addition import AddK
+        from qualtran.bloqs.arithmetic.bitwise import XorK
+        from qualtran.bloqs.multiplexers.apply_lth_bloq import ApplyLthBloq
+    except ModuleNotFoundError as error:
+        unavailable_reference(error)
 
     from examples.algorithms.indexed_component_resources import make_gates
     from tests.unit.test_register_constant_addition import reference_arithmetic_gates

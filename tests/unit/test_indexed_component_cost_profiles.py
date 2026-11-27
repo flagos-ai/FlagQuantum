@@ -1,8 +1,11 @@
 """Compare both pinned QEC profiles without changing source or executable IR."""
 
+from __future__ import annotations
+
 from dataclasses import asdict
 from itertools import product
 from math import prod
+from typing import Any
 
 import pytest
 
@@ -18,12 +21,18 @@ from flagquantum.compiler.registers.control.indexed_component_resource_model imp
     indexed_component_cost,
 )
 from flagquantum.qec.resources.estimation import estimate_ftqc_resources
+from tests._reference_dependencies import unavailable_reference
 
 pytestmark = pytest.mark.unit
 
 
-def _assert_model(model, source, legacy):
-    from qualtran.resource_counting import QECGatesCost, QubitCount, get_cost_value
+def _assert_model(model: ComponentCost, source: Any, legacy: bool) -> None:
+    try:
+        from qualtran.resource_counting._bloq_counts import QECGatesCost
+        from qualtran.resource_counting._costing import get_cost_value
+        from qualtran.resource_counting._qubit_counts import QubitCount
+    except ModuleNotFoundError as error:
+        unavailable_reference(error)
 
     actual = estimate_ftqc_resources(model).logical
     original = get_cost_value(source, QECGatesCost(legacy_shims=legacy))
@@ -39,9 +48,14 @@ def _assert_model(model, source, legacy):
     "values", [(0, 0), (0, 1), (1, 0), (1, 1), (0, 1, 0), (1, 0, 1, 0)]
 )
 @pytest.mark.parametrize("uncompute,legacy", tuple(product((False, True), repeat=2)))
-def test_owned_predicate_model_matches_original(values, uncompute, legacy):
-    from qualtran import CtrlSpec
-    from qualtran.bloqs.mcmt.ctrl_spec_and import CtrlSpecAnd
+def test_owned_predicate_model_matches_original(
+    values: tuple[int, ...], uncompute: bool, legacy: bool
+) -> None:
+    try:
+        from qualtran._infra.controlled import CtrlSpec
+        from qualtran.bloqs.mcmt.ctrl_spec_and import CtrlSpecAnd
+    except ModuleNotFoundError as error:
+        unavailable_reference(error)
 
     source = CtrlSpecAnd(CtrlSpec(cvs=values))
     _assert_model(
@@ -67,12 +81,22 @@ def test_owned_predicate_model_matches_original(values, uncompute, legacy):
 )
 @pytest.mark.parametrize("adjoint,legacy", tuple(product((False, True), repeat=2)))
 def test_target_position_profiles_and_nested_parent(
-    shape, widths, controls, adjoint, legacy
-):
-    import cirq
-    import numpy as np
-    from qualtran import BQUInt, QAny, Register
-    from qualtran.bloqs.multiplexers.apply_gate_to_lth_target import ApplyGateToLthQubit
+    shape: tuple[int, ...],
+    widths: tuple[int, ...],
+    controls: int,
+    adjoint: bool,
+    legacy: bool,
+) -> None:
+    try:
+        import cirq
+        import numpy as np
+        from qualtran._infra.data_types import BQUInt, QAny
+        from qualtran._infra.registers import Register
+        from qualtran.bloqs.multiplexers.apply_gate_to_lth_target import (
+            ApplyGateToLthQubit,
+        )
+    except ModuleNotFoundError as error:
+        unavailable_reference(error)
 
     count = prod(shape)
     source = ApplyGateToLthQubit(
@@ -105,11 +129,17 @@ def test_target_position_profiles_and_nested_parent(
 @pytest.mark.parametrize("values", [(0,), (1,), (0, 1), (1, 0, 1)])
 @pytest.mark.parametrize("existing", [None, 0, 1])
 @pytest.mark.parametrize("adjoint,legacy", tuple(product((False, True), repeat=2)))
-def test_control_system_profiles_match_original(values, existing, adjoint, legacy):
-    import numpy as np
-    from qualtran import CtrlSpec
-    from qualtran.bloqs.basic_gates import XGate, ZGate
-    from qualtran.bloqs.multiplexers.apply_lth_bloq import ApplyLthBloq
+def test_control_system_profiles_match_original(
+    values: tuple[int, ...], existing: int | None, adjoint: bool, legacy: bool
+) -> None:
+    try:
+        import numpy as np
+        from qualtran._infra.controlled import CtrlSpec
+        from qualtran.bloqs.basic_gates.x_basis import XGate
+        from qualtran.bloqs.basic_gates.z_basis import ZGate
+        from qualtran.bloqs.multiplexers.apply_lth_bloq import ApplyLthBloq
+    except ModuleNotFoundError as error:
+        unavailable_reference(error)
 
     base = ApplyLthBloq(np.array([XGate(), ZGate()]), control_val=existing)
     source = (base.adjoint() if adjoint else base).controlled(CtrlSpec(cvs=values))
@@ -131,7 +161,7 @@ def test_control_system_profiles_match_original(values, existing, adjoint, legac
 
 
 @pytest.mark.parametrize("legacy", [None, 0, 1, "legacy"])
-def test_nonboolean_profile_rejected(legacy):
+def test_nonboolean_profile_rejected(legacy: Any) -> None:
     with pytest.raises(ValueError, match="boolean"):
         indexed_component_cost(
             (1,),
@@ -144,13 +174,15 @@ def test_nonboolean_profile_rejected(legacy):
         control_predicate_cost((1, 1), legacy_shims=legacy)
 
 
-def test_model_profile_does_not_emit_or_change_execution(monkeypatch):
+def test_model_profile_does_not_emit_or_change_execution(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
     import flagquantum.compiler.registers.control.indexed_component as dispatch
     from tests.unit.test_indexed_component_control import _native
 
     before = _native((0, 1), 0, False)[0]
 
-    def refuse(*args, **kwargs):
+    def refuse(*args: object, **kwargs: bool | int) -> None:
         pytest.fail("A model query attempted circuit construction")
 
     with monkeypatch.context() as patch:
@@ -183,14 +215,23 @@ def test_model_profile_does_not_emit_or_change_execution(monkeypatch):
 @pytest.mark.parametrize(
     "position,adjoint,legacy", tuple(product((False, True), repeat=3))
 )
-def test_phase_children_keep_actual_frontend_identity(position, adjoint, legacy):
-    import cirq
-    import numpy as np
-    from qualtran import BQUInt, QBit, Register
-    from qualtran.bloqs.basic_gates import SGate, TGate
-    from qualtran.bloqs.multiplexers.apply_gate_to_lth_target import ApplyGateToLthQubit
-    from qualtran.bloqs.multiplexers.apply_lth_bloq import ApplyLthBloq
-    from qualtran.cirq_interop import cirq_gate_to_bloq
+def test_phase_children_keep_actual_frontend_identity(
+    position: bool, adjoint: bool, legacy: bool
+) -> None:
+    try:
+        import cirq
+        import numpy as np
+        from qualtran._infra.data_types import BQUInt, QBit
+        from qualtran._infra.registers import Register
+        from qualtran.bloqs.basic_gates.s_gate import SGate
+        from qualtran.bloqs.basic_gates.t_gate import TGate
+        from qualtran.bloqs.multiplexers.apply_gate_to_lth_target import (
+            ApplyGateToLthQubit,
+        )
+        from qualtran.bloqs.multiplexers.apply_lth_bloq import ApplyLthBloq
+        from qualtran.cirq_interop._cirq_to_bloq import cirq_gate_to_bloq
+    except ModuleNotFoundError as error:
+        unavailable_reference(error)
 
     from flagquantum.compiler._component_trace.qec_gate_cost import query_qec_gate_cost
     from flagquantum.compiler._component_trace.resource_generalization import (
@@ -200,6 +241,8 @@ def test_phase_children_keep_actual_frontend_identity(position, adjoint, legacy)
     )
 
     regs = (Register("selection", BQUInt(1, 2)),)
+    source: Any
+    calls: list[ControlledZPowerCall | ControlledRotationCall]
     if position:
         source = ApplyGateToLthQubit(
             regs,
