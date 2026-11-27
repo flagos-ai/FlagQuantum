@@ -8,7 +8,6 @@
 import numpy as np
 
 from ....core.ir.program import ProgramRecord
-from ....core.ir.program.register_verifier import executable_register_width
 from ....core.ir.program.registers import Register, RegisterSide, RegisterType
 from ....core.ir.program.signatures import Signature
 from ..component_builder import ComponentProgramBuilder
@@ -16,29 +15,35 @@ from ..component_classical import discard_word_function, parity_word_function
 from ..component_feedback import classical_cz_word_function
 from ..component_measurement import measure_x_word_function
 from ..component_rebindings import join_word_function, split_word_function
-from .field_multiplication import _remainder, _validate_field
+from .field_multiplication import _remainder
+from .field_word import field_word_width
 
 
-def product_erasure_program(dtype: RegisterType) -> ProgramRecord:
+def product_erasure_program(
+    dtype: RegisterType, *, modulus: int | None = None
+) -> ProgramRecord:
     """Consume a known field product, preserving its two input words.
 
-    The descriptor must carry a concrete binary polynomial identity. Words use
+    The descriptor or explicit modulus supplies the binary polynomial. Words use
     MSB-first physical ordering. Internal polynomial coefficients are reversed
     exactly as in the source. Destructive measurement retains physical projected
     outcomes, while classical owners are consumed by Discard. Caller-owned
     physical clearing remains a separate execution profile.
     """
-    width = executable_register_width(dtype)
     parameters = dict(dtype.parameters)
-    modulus = parameters.get("polynomial")
-    if (
-        dtype.encoding != "finite_field"
-        or type(modulus) is not int
-        or parameters.get("polynomial_field_characteristic") != 2
+    encoded = parameters.get("polynomial")
+    if modulus is None:
+        if type(encoded) is not int:
+            raise ValueError(
+                "product erasure requires a resolved binary polynomial field"
+            )
+        modulus = encoded
+    if encoded is not None and (
+        parameters.get("polynomial_field_characteristic") != 2
         or parameters.get("polynomial_field_degree") != 1
     ):
         raise ValueError("product erasure requires a resolved binary polynomial field")
-    _validate_field(width, modulus)
+    width = field_word_width(dtype, modulus)
     masks = tuple(_remainder(1 << (width + i), modulus) for i in range(width))
     functions = [
         split_word_function("split", dtype),
