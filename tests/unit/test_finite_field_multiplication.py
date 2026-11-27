@@ -5,7 +5,12 @@ from __future__ import annotations
 from importlib.metadata import version
 from typing import Any
 
-import numpy as np
+from tests._reference_dependencies import unavailable_reference
+
+try:
+    import numpy as np
+except ModuleNotFoundError as _reference_import_error:
+    unavailable_reference(_reference_import_error)
 import pytest
 from sympy import Symbol
 
@@ -27,12 +32,12 @@ def locked_reference() -> None:
     import kickmix
 
     assert version("qualtran") == "0.7.0"
-    assert kickmix.__version__ == "0.1" and hasattr(kickmix, "Simulator")
+    assert getattr(kickmix, "__version__") == "0.1" and hasattr(kickmix, "Simulator")
 
 
 @pytest.mark.parametrize("width", [1, 2, 3, 4, 5])
 def test_product_original_value_callbacks_all_pairs(width: int) -> None:
-    from qualtran import QGF
+    from qualtran._infra.data_types import QGF
     from qualtran.bloqs.gf_arithmetic.gf2_multiplication import GF2Multiplication
 
     encoding = binary_field_encoding(width)
@@ -66,7 +71,8 @@ def test_plus_equal_original_value_callbacks_all_triples(width: int) -> None:
 
 @pytest.mark.parametrize("width", [1, 2, 3, 5, 8])
 def test_scale_shift_and_reduction_matrices(width: int) -> None:
-    from qualtran import QGF
+    from qualtran._infra.bloq import Bloq
+    from qualtran._infra.data_types import QGF
     from qualtran.bloqs.gf_arithmetic.gf2_multiplication import (
         GF2MulK,
         GF2MulMBUC,
@@ -74,6 +80,7 @@ def test_scale_shift_and_reduction_matrices(width: int) -> None:
         GF2ShiftRight,
     )
 
+    original: Bloq
     encoding = binary_field_encoding(width)
     field = encoding.gf_type
     qgf = QGF(2, width)
