@@ -163,3 +163,57 @@ the successful run followed HTTP-cache and partial-export cleanup. An additional
 broad integration probe passed 163 cases before local Gloo address resolution
 failed. That environment diagnostic remains separate from the passing relevant
 integration suite.
+
+
+## Complete faithful source-file closure — 2026-11-28
+
+Q-0688 is accepted under the approved G2 faithful-migration rule after reviewing
+the complete source and all direct dependencies. Earlier open statements based
+solely on original refusal/model boundaries are historical. No Z-power emitter
+changes in this batch; accepted complete source evidence is reused.
+
+| Complete source responsibility | Native owner and evidence |
+| --- | --- |
+| Exponent, precision width, signature and gradient dtype | Existing format constructor and fixed-point through ports preserve metadata. |
+| `from_precision` | Existing exact ceil/log2 precision helper, numeric and symbolic factory evidence retain the original width rule. |
+| `_load_bloq` | Existing unsigned truncating/wrapping encoding for concrete widths; symbolic width retains the original unencoded half-exponent. |
+| Composite root | Owned Allocate, controlled load, AddIntoPhaseGrad, repeated unload and Free preserve all five ordered calls. |
+| Call graph and display | Existing model retains two controlled loads plus one atomic addition; catalog/provider owns labels and original drawing refusals. |
+| Three examples and DocSpec | Accepted concrete, symbolic-precision and symbolic-angle factory paths, original tests and notebook are reused. |
+
+New literal-boundary intake verifies that SymPy Integer(3) takes the source
+symbolic-width path: positive and negative numeric exponents produce successful
+five-call roots but leave noninteger XorK constants. Original tensor simulation
+then refuses that loader. Native roots preserve the exact source producer,
+operand and result edges with explicit unresolved children. Four literal and
+free-symbol roots are checked; no invalid loader is silently encoded as a
+concrete integer. Symbolic exponent decomposition is refused, while zero width
+retains the original missing-phase_grad error. A free symbolic width has no
+physical size. These source limits do not require an invented numerical body.
+
+Concrete negative exponents retain original unsigned encoding refusal; the
+accepted exact native inverse preserves the valid nonnegative load constant and
+reverses addition. Original one-bit/negative small-width model anomalies,
+Cast omissions and source title errors remain separate. The 40-bit structural
+and sparse coherent certificates, exact primitive and feedback comparisons,
+small full tensors, all applicable histories and work cleanup remain valid.
+Source ideal-rotation comparisons that allow a global phase remain distinct
+from exact source-operator comparisons; no absolute-phase claim is inferred
+from that looser original assertion. No generic scalar, codec or SDK parent
+is waived. Pending Proposal 131 remains unchanged.
+
+Measured 40-bit inventory remains 156 T/T-dagger, 469 CX and 39 measurements
+on 120 physical wires. The original independent model remains 38 Toffoli,
+four Clifford and peak 81. Shared acceptance/resource/frozen-file receipts use
+`g2-phase-rotations-full-closure-*20261128`.
+
+Batch acceptance passes 134 concentrated source/execution cases, 47 independent
+Cirq 1.6.1 cases and 32 relevant local integration cases. Strict typing of two
+Python files, Black, Ruff, Compiler scope, architecture, multi-level IR, required
+checks, public API baseline, English, links and whitespace pass. Twenty-five
+complete immutable source/asset/dependency blobs and real Qualtran 0.7.0/Kickmix
+0.1 Simulator are verified. Twenty-seven resource rows separate literal
+primitive inventories and source models. Ten actual optional/required dependency
+absence scenarios pass. Global dependency findings remain at 570 in 362 files,
+with none in the new consumer; Q-0009/Q-0011 remain open. No source patch,
+checker waiver, new exclusion or CI-wait dependency was introduced.
