@@ -1,8 +1,11 @@
 """Shared concrete control lifetimes versus pinned declarations and channels."""
 
+from __future__ import annotations
+
 from dataclasses import asdict
 from itertools import product
 from math import sqrt
+from typing import Any, NoReturn
 
 import pytest
 import torch
@@ -24,8 +27,14 @@ from flagquantum.compiler.registers.control.indexed_component_resource_model imp
     indexed_component_cost,
 )
 from flagquantum.core.ir import Instruction
+from tests._reference_dependencies import unavailable_reference
 from tests.unit.measurement_checks import forced_branch
-from tests.unit.test_register_control_predicate import CASES, control_fixture
+from tests.unit.register_source_graph import SourcePorts, SourceResult
+from tests.unit.test_register_control_predicate import (
+    CASES,
+    ControlCase,
+    control_fixture,
+)
 
 pytestmark = pytest.mark.unit
 CONTROL_CASES = (
@@ -35,8 +44,13 @@ CONTROL_CASES = (
 )
 
 
-def assert_source(model, source, legacy):
-    from qualtran.resource_counting import QECGatesCost, QubitCount, get_cost_value
+def assert_source(model: ComponentCost, source: Any, legacy: bool) -> None:
+    try:
+        from qualtran.resource_counting._bloq_counts import QECGatesCost
+        from qualtran.resource_counting._costing import get_cost_value
+        from qualtran.resource_counting._qubit_counts import QubitCount
+    except ModuleNotFoundError as error:
+        unavailable_reference(error)
 
     actual = estimate_component_resources(model)
     expected = get_cost_value(source, QECGatesCost(legacy_shims=legacy))
@@ -49,9 +63,14 @@ def assert_source(model, source, legacy):
 @pytest.mark.ftqc_reference
 @pytest.mark.parametrize("case", CONTROL_CASES)
 @pytest.mark.parametrize("legacy", [False, True])
-def test_generic_control_model_matches_original(case, legacy):
-    from qualtran.bloqs.basic_gates import XGate
-    from qualtran.bloqs.mcmt.controlled_via_and import ControlledViaAnd
+def test_generic_control_model_matches_original(
+    case: ControlCase, legacy: bool
+) -> None:
+    try:
+        from qualtran.bloqs.basic_gates.x_basis import XGate
+        from qualtran.bloqs.mcmt.controlled_via_and import ControlledViaAnd
+    except ModuleNotFoundError as error:
+        unavailable_reference(error)
 
     spec, registers, _ = control_fixture(case)
     original = ControlledViaAnd(XGate(), spec)
@@ -66,11 +85,15 @@ def test_generic_control_model_matches_original(case, legacy):
 @pytest.mark.parametrize("case", CONTROL_CASES)
 @pytest.mark.parametrize("current,legacy", tuple(product((0, 1), (False, True))))
 def test_extended_control_model_keeps_private_peak_out_of_signature(
-    case, current, legacy
-):
-    import numpy as np
-    from qualtran.bloqs.basic_gates import XGate, ZGate
-    from qualtran.bloqs.multiplexers.apply_lth_bloq import ApplyLthBloq
+    case: ControlCase, current: int, legacy: bool
+) -> None:
+    try:
+        import numpy as np
+        from qualtran.bloqs.basic_gates.x_basis import XGate
+        from qualtran.bloqs.basic_gates.z_basis import ZGate
+        from qualtran.bloqs.multiplexers.apply_lth_bloq import ApplyLthBloq
+    except ModuleNotFoundError as error:
+        unavailable_reference(error)
 
     spec, registers, _ = control_fixture(case)
     original = ApplyLthBloq(
@@ -104,7 +127,9 @@ def test_extended_control_model_keeps_private_peak_out_of_signature(
         for current in (0, 1)
     ],
 )
-def test_extension_complete_complex_branches_clear_every_predicate(values, current):
+def test_extension_complete_complex_branches_clear_every_predicate(
+    values: tuple[int, ...], current: int
+) -> None:
     n = len(values)
     old = n
     target = n + 1
@@ -149,11 +174,11 @@ def test_extension_complete_complex_branches_clear_every_predicate(values, curre
         dict(controls=((0,),)),
     ],
 )
-def test_extension_invalid_storage_never_calls_body(change):
-    def fail(predicate):
+def test_extension_invalid_storage_never_calls_body(change: dict[str, Any]) -> None:
+    def fail(predicate: int) -> NoReturn:
         pytest.fail("Invalid storage reached the controlled body")
 
-    options = dict(
+    options: dict[str, Any] = dict(
         controls=((0, 1),),
         registers=(ControlRegister(1, (0, 1)),),
         current_control=(2, 1),
@@ -175,8 +200,8 @@ def test_extension_invalid_storage_never_calls_body(change):
         dict(positive=ComponentCost("missing", 0)),
     ],
 )
-def test_invalid_cost_contract_is_refused(change):
-    options = dict(
+def test_invalid_cost_contract_is_refused(change: dict[str, Any]) -> None:
+    options: dict[str, Any] = dict(
         positive=ComponentCost("CNOT", 2, GateCost(clifford=1)),
         registers=(ControlRegister(1, (1,)),),
         target_width=1,
@@ -188,18 +213,26 @@ def test_invalid_cost_contract_is_refused(change):
 @pytest.mark.ftqc_reference
 @pytest.mark.parametrize("value", [0, 1])
 def test_precontrolled_lcu_returned_root_runs_but_later_adder_retains_source_failure(
-    value,
-):
-    from qualtran import BloqBuilder, CtrlSpec
-    from qualtran.bloqs.basic_gates import XGate, ZGate
-    from qualtran.bloqs.block_encoding.linear_combination import LinearCombination
-    from qualtran.bloqs.block_encoding.unitary import Unitary
-    from qualtran.resource_counting import QECGatesCost, QubitCount, get_cost_value
+    value: int,
+) -> None:
+    try:
+        from qualtran._infra.composite_bloq import BloqBuilder
+        from qualtran._infra.controlled import CtrlSpec
+        from qualtran.bloqs.basic_gates.x_basis import XGate
+        from qualtran.bloqs.basic_gates.z_basis import ZGate
+        from qualtran.bloqs.block_encoding.linear_combination import LinearCombination
+        from qualtran.bloqs.block_encoding.unitary import Unitary
+        from qualtran.resource_counting._bloq_counts import QECGatesCost
+        from qualtran.resource_counting._costing import get_cost_value
+        from qualtran.resource_counting._qubit_counts import QubitCount
+    except ModuleNotFoundError as error:
+        unavailable_reference(error)
 
     precontrolled = LinearCombination(
         (Unitary(XGate()), Unitary(ZGate())), (1.0, -3.0), 1, is_controlled=True
     )
     first = precontrolled.controlled(CtrlSpec(cvs=value))
+    root: Any
     root, adder = first.get_ctrl_system(CtrlSpec(cvs=value))
     assert root.cvs == (value, value, 1)
     assert len(root.decompose_bloq().bloq_instances) == 3
@@ -212,11 +245,17 @@ def test_precontrolled_lcu_returned_root_runs_but_later_adder_retains_source_fai
 
 
 @pytest.mark.ftqc_reference
-def test_precontrolled_lcu_negative_extension_and_adjoint_order_are_distinct_source_paths():
-    from qualtran import CtrlSpec
-    from qualtran.bloqs.basic_gates import XGate, ZGate
-    from qualtran.bloqs.block_encoding.linear_combination import LinearCombination
-    from qualtran.bloqs.block_encoding.unitary import Unitary
+def test_precontrolled_lcu_negative_extension_and_adjoint_order_are_distinct_source_paths() -> (
+    None
+):
+    try:
+        from qualtran._infra.controlled import CtrlSpec
+        from qualtran.bloqs.basic_gates.x_basis import XGate
+        from qualtran.bloqs.basic_gates.z_basis import ZGate
+        from qualtran.bloqs.block_encoding.linear_combination import LinearCombination
+        from qualtran.bloqs.block_encoding.unitary import Unitary
+    except ModuleNotFoundError as error:
+        unavailable_reference(error)
 
     from tests.unit.test_register_constant_addition import reference_arithmetic_gates
 
@@ -250,7 +289,9 @@ def test_precontrolled_lcu_negative_extension_and_adjoint_order_are_distinct_sou
             ports[reg.name] = tuple(range(cursor, cursor + width))
             cursor += width
 
-        def leaf(bloq, inputs, desired, cursor=cursor):
+        def leaf(
+            bloq: Any, inputs: SourcePorts, desired: SourcePorts, cursor: int = cursor
+        ) -> SourceResult | None:
             partition = source_partition_leaf(bloq, inputs, desired)
             if partition is not None:
                 return partition

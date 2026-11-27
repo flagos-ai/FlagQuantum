@@ -1,6 +1,9 @@
 """Check structured control and measured predicate resource composition."""
 
+from __future__ import annotations
+
 from dataclasses import asdict, fields
+from typing import Any
 
 import pytest
 
@@ -15,6 +18,7 @@ from flagquantum.compiler._component_trace.resource_generalization import (
     PredicateControlledCall,
 )
 from flagquantum.compiler.registers.control.control_predicate import ControlRegister
+from tests._reference_dependencies import unavailable_reference
 
 pytestmark = pytest.mark.unit
 
@@ -22,15 +26,19 @@ pytestmark = pytest.mark.unit
 @pytest.mark.ftqc_reference
 @pytest.mark.parametrize("legacy", [False, True])
 def test_controlled_wrapper_and_predicate_costs_match_source(legacy: bool) -> None:
-    pytest.importorskip("qualtran")
-    import numpy as np
-    from qualtran import CtrlSpec, QInt, QUInt
-    from qualtran.bloqs.basic_gates import TGate
-    from qualtran.bloqs.mcmt.controlled_via_and import ControlledViaAnd
-    from qualtran.bloqs.mcmt.ctrl_spec_and import CtrlSpecAnd
-    from qualtran.resource_counting import QECGatesCost, get_cost_value
-    from qualtran.symbolics import Shaped
-    from sympy import Symbol
+    try:
+        import numpy as np
+        from qualtran._infra.controlled import CtrlSpec
+        from qualtran._infra.data_types import QInt, QUInt
+        from qualtran.bloqs.basic_gates.t_gate import TGate
+        from qualtran.bloqs.mcmt.controlled_via_and import ControlledViaAnd
+        from qualtran.bloqs.mcmt.ctrl_spec_and import CtrlSpecAnd
+        from qualtran.resource_counting._bloq_counts import QECGatesCost
+        from qualtran.resource_counting._costing import get_cost_value
+        from qualtran.symbolics.types import Shaped
+        from sympy import Symbol
+    except ModuleNotFoundError as error:
+        unavailable_reference(error)
 
     n = Symbol("n", positive=True, integer=True)
     registers = (
@@ -54,7 +62,7 @@ def test_controlled_wrapper_and_predicate_costs_match_source(legacy: bool) -> No
     model = QECGatesCost(legacy_shims=legacy)
     positive = ControlledRotationCall(PhaseCall("t"), (1,))
 
-    def compare(native: QECGateCost, source: object) -> None:
+    def compare(native: QECGateCost, source: Any) -> None:
         expected = get_cost_value(source, model)
         assert asdict(native) == {
             field.name: getattr(expected, field.name) for field in fields(QECGateCost)
