@@ -1,0 +1,4587 @@
+{
+  "evidence_class": "development",
+  "implementation_commit": "2d78133a1f5a7d234acbb128724ccf2674e2eeb8",
+  "source_commit": "9aa9260920984e2ca05bcb293abb885fccd9c144",
+  "runner_sha256": "bcd91e1e6329b8470c0ae6cc0e8a0c11983a4ccdfbba52d03ffb977a9e62ed22",
+  "python": "3.12.14 (main, Sep  1 2026, 14:09:38) [Clang 22.1.3 ]",
+  "platform": "macOS-27.0-arm64-arm-64bit",
+  "limits": "Inspected development inputs, shared macOS CPU, one numerical thread. Diagnostic wrapper varies only the existing native routing keyword; this is not the registered formal participant workflow. Fixed initial and final identity layouts, unchanged independent evaluator and caps. Default then other deployable strategies; three attempts when default succeeds, four if it fails. Failures are retained and cause nonzero exit after the full inspection. One timed sample each, no warmups, no significance, memory, held-out, stable speedup, hardware, scalability or SDK ranking claim. Six-qubit complete operator; three probes at eight/twelve. Accepted timing includes native artifact verification and serialization, excludes independent evaluation, setup and startup. Portfolio seconds sum only successful intervals; a portfolio with failures is incomplete.",
+  "rows": [
+    {
+      "case": [
+        6,
+        "qaoa",
+        "line"
+      ],
+      "observations": [
+        {
+          "requested_strategy": "auto",
+          "selected_strategy": "sabre",
+          "restored_swap_count": 16,
+          "native_baseline_cz_count": 72,
+          "block_cz_savings": [
+            2
+          ],
+          "metrics": {
+            "max_semantic_error": 1.2591559389004138e-15,
+            "full_cz_count": 70,
+            "two_body_dependency_depth": 41,
+            "verification": "full-operator"
+          },
+          "normalized_output_sha256": "1514081a908f28a22ba225bb0f866b40daa5fdc9f0d943be9a8dd8938c3a1721",
+          "seconds": 0.12844295799732208
+        },
+        {
+          "requested_strategy": "restore_after_each_gate",
+          "selected_strategy": "restore_after_each_gate",
+          "restored_swap_count": 32,
+          "native_baseline_cz_count": 120,
+          "block_cz_savings": [
+            6,
+            2,
+            2,
+            6,
+            2,
+            2
+          ],
+          "metrics": {
+            "max_semantic_error": 1.9421466978790252e-15,
+            "full_cz_count": 100,
+            "two_body_dependency_depth": 89,
+            "verification": "full-operator"
+          },
+          "normalized_output_sha256": "594107b7ac5cf0ed2b676ae74b9546e49438cc0698638ff127270612f70573b5",
+          "seconds": 0.1842705839953851
+        },
+        {
+          "requested_strategy": "persistent_layout",
+          "selected_strategy": "persistent_layout",
+          "restored_swap_count": 30,
+          "native_baseline_cz_count": 114,
+          "block_cz_savings": [
+            2,
+            2,
+            2,
+            6,
+            6,
+            6
+          ],
+          "metrics": {
+            "max_semantic_error": 1.97635790212044e-15,
+            "full_cz_count": 90,
+            "two_body_dependency_depth": 69,
+            "verification": "full-operator"
+          },
+          "normalized_output_sha256": "e73b29ed6a1708ac88be866141b0ceb36c1f35f46fa5141703b4148856f0dee4",
+          "seconds": 0.17167187499580905
+        }
+      ],
+      "selected_index": 0,
+      "portfolio_seconds": 0.4843854169885162,
+      "failures": []
+    },
+    {
+      "case": [
+        6,
+        "qaoa",
+        "ring"
+      ],
+      "observations": [
+        {
+          "requested_strategy": "auto",
+          "selected_strategy": "sabre",
+          "restored_swap_count": 4,
+          "native_baseline_cz_count": 36,
+          "block_cz_savings": [],
+          "metrics": {
+            "max_semantic_error": 7.221785298249065e-16,
+            "full_cz_count": 36,
+            "two_body_dependency_depth": 20,
+            "verification": "full-operator"
+          },
+          "normalized_output_sha256": "890a2ee78e321294496406789dff3cd12210bfa16238b802567360c366d3da7d",
+          "seconds": 0.04979679099051282
+        },
+        {
+          "requested_strategy": "restore_after_each_gate",
+          "selected_strategy": "restore_after_each_gate",
+          "restored_swap_count": 16,
+          "native_baseline_cz_count": 72,
+          "block_cz_savings": [
+            6,
+            2,
+            2
+          ],
+          "metrics": {
+            "max_semantic_error": 1.1792037227924548e-15,
+            "full_cz_count": 62,
+            "two_body_dependency_depth": 42,
+            "verification": "full-operator"
+          },
+          "normalized_output_sha256": "2ed47ccbc82a284866627375cd7df479a334904ad61112fec7a8e0748e95da61",
+          "seconds": 0.1177500830090139
+        },
+        {
+          "requested_strategy": "persistent_layout",
+          "selected_strategy": "persistent_layout",
+          "restored_swap_count": 20,
+          "native_baseline_cz_count": 84,
+          "block_cz_savings": [
+            2,
+            6,
+            6
+          ],
+          "metrics": {
+            "max_semantic_error": 1.3080505198934864e-15,
+            "full_cz_count": 70,
+            "two_body_dependency_depth": 50,
+            "verification": "full-operator"
+          },
+          "normalized_output_sha256": "165ae58a76a49c20c917f4491ad2c418ff38961b1b5ad21aef191593a5a404e4",
+          "seconds": 0.1160968329932075
+        }
+      ],
+      "selected_index": 0,
+      "portfolio_seconds": 0.2836437069927342,
+      "failures": []
+    },
+    {
+      "case": [
+        6,
+        "qaoa",
+        "grid"
+      ],
+      "observations": [
+        {
+          "requested_strategy": "auto",
+          "selected_strategy": "sabre",
+          "restored_swap_count": 6,
+          "native_baseline_cz_count": 42,
+          "block_cz_savings": [
+            2
+          ],
+          "metrics": {
+            "max_semantic_error": 8.005932084973443e-16,
+            "full_cz_count": 40,
+            "two_body_dependency_depth": 22,
+            "verification": "full-operator"
+          },
+          "normalized_output_sha256": "5a751b2a01e6393479a2f32dc5022b2aaf825189ee1aea769b161d775aef1574",
+          "seconds": 0.0635767079947982
+        },
+        {
+          "requested_strategy": "restore_after_each_gate",
+          "selected_strategy": "restore_after_each_gate",
+          "restored_swap_count": 16,
+          "native_baseline_cz_count": 72,
+          "block_cz_savings": [
+            6,
+            2,
+            6,
+            2
+          ],
+          "metrics": {
+            "max_semantic_error": 1.0303790171124488e-15,
+            "full_cz_count": 56,
+            "two_body_dependency_depth": 48,
+            "verification": "full-operator"
+          },
+          "normalized_output_sha256": "ebd7aea92b79089486159e661e608d1db1be08e30d34cc92d6613d44f2e4aaa1",
+          "seconds": 0.10030345898121595
+        },
+        {
+          "requested_strategy": "persistent_layout",
+          "selected_strategy": "persistent_layout",
+          "restored_swap_count": 14,
+          "native_baseline_cz_count": 66,
+          "block_cz_savings": [
+            2,
+            2,
+            2,
+            2,
+            6
+          ],
+          "metrics": {
+            "max_semantic_error": 1.3329179921125024e-15,
+            "full_cz_count": 52,
+            "two_body_dependency_depth": 36,
+            "verification": "full-operator"
+          },
+          "normalized_output_sha256": "14ee8a001f05a1570044f98f6aeabc69b70c1abb23d59f3005ddf2a42204c575",
+          "seconds": 0.10510291598620825
+        }
+      ],
+      "selected_index": 0,
+      "portfolio_seconds": 0.2689830829622224,
+      "failures": []
+    },
+    {
+      "case": [
+        6,
+        "qaoa",
+        "sparse"
+      ],
+      "observations": [
+        {
+          "requested_strategy": "auto",
+          "selected_strategy": "sabre",
+          "restored_swap_count": 4,
+          "native_baseline_cz_count": 36,
+          "block_cz_savings": [
+            2
+          ],
+          "metrics": {
+            "max_semantic_error": 6.984540463862221e-16,
+            "full_cz_count": 34,
+            "two_body_dependency_depth": 24,
+            "verification": "full-operator"
+          },
+          "normalized_output_sha256": "7b6a13fa4996067111fcb53b497bca7fce29427b4ec6ad9cfd1331fec0ed689f",
+          "seconds": 0.05558337501133792
+        },
+        {
+          "requested_strategy": "restore_after_each_gate",
+          "selected_strategy": "restore_after_each_gate",
+          "restored_swap_count": 8,
+          "native_baseline_cz_count": 48,
+          "block_cz_savings": [],
+          "metrics": {
+            "max_semantic_error": 9.813077866773594e-16,
+            "full_cz_count": 48,
+            "two_body_dependency_depth": 42,
+            "verification": "full-operator"
+          },
+          "normalized_output_sha256": "248d7d48c3066d09b57ae28422f1b3086686fbb561541dc979de187cc6fcd264",
+          "seconds": 0.06352241698186845
+        },
+        {
+          "requested_strategy": "persistent_layout",
+          "selected_strategy": "persistent_layout",
+          "restored_swap_count": 16,
+          "native_baseline_cz_count": 72,
+          "block_cz_savings": [
+            8,
+            6
+          ],
+          "metrics": {
+            "max_semantic_error": 1.1818140275312452e-15,
+            "full_cz_count": 58,
+            "two_body_dependency_depth": 33,
+            "verification": "full-operator"
+          },
+          "normalized_output_sha256": "2b239112efceaa927206d2bb003e26c3c8a09eaf89db9b20d54a8c446cb9b2b3",
+          "seconds": 0.11436925001908094
+        }
+      ],
+      "selected_index": 0,
+      "portfolio_seconds": 0.2334750420122873,
+      "failures": []
+    },
+    {
+      "case": [
+        6,
+        "ising",
+        "line"
+      ],
+      "observations": [
+        {
+          "requested_strategy": "auto",
+          "selected_strategy": "sabre",
+          "restored_swap_count": 8,
+          "native_baseline_cz_count": 54,
+          "block_cz_savings": [],
+          "metrics": {
+            "max_semantic_error": 5.828406534472335e-15,
+            "full_cz_count": 54,
+            "two_body_dependency_depth": 32,
+            "verification": "full-operator"
+          },
+          "normalized_output_sha256": "0e41977de780b36c9c13a51d488dfe80038e61c8152609d91434a45bcafa54d9",
+          "seconds": 0.07368150001275353
+        },
+        {
+          "requested_strategy": "restore_after_each_gate",
+          "selected_strategy": "restore_after_each_gate",
+          "restored_swap_count": 24,
+          "native_baseline_cz_count": 102,
+          "block_cz_savings": [
+            2,
+            2,
+            2
+          ],
+          "metrics": {
+            "max_semantic_error": 1.1009975996508265e-14,
+            "full_cz_count": 96,
+            "two_body_dependency_depth": 66,
+            "verification": "full-operator"
+          },
+          "normalized_output_sha256": "3c718717ed3fd6282ae344942db939fbb6026a266369ea2e378c885c7eb7a653",
+          "seconds": 0.16615762500441633
+        },
+        {
+          "requested_strategy": "persistent_layout",
+          "selected_strategy": "persistent_layout",
+          "restored_swap_count": 38,
+          "native_baseline_cz_count": 144,
+          "block_cz_savings": [
+            2,
+            2,
+            2,
+            2,
+            2,
+            2
+          ],
+          "metrics": {
+            "max_semantic_error": 1.3941099575459092e-14,
+            "full_cz_count": 132,
+            "two_body_dependency_depth": 108,
+            "verification": "full-operator"
+          },
+          "normalized_output_sha256": "d8fa9bf8eda1f3a451825c32769cf028dbf7b49abde2c35d8a17e0328a2471cf",
+          "seconds": 0.2267533749982249
+        }
+      ],
+      "selected_index": 0,
+      "portfolio_seconds": 0.46659250001539476,
+      "failures": []
+    },
+    {
+      "case": [
+        6,
+        "ising",
+        "ring"
+      ],
+      "observations": [
+        {
+          "requested_strategy": "auto",
+          "selected_strategy": "sabre",
+          "restored_swap_count": 6,
+          "native_baseline_cz_count": 48,
+          "block_cz_savings": [
+            2,
+            2
+          ],
+          "metrics": {
+            "max_semantic_error": 4.344434768182728e-15,
+            "full_cz_count": 44,
+            "two_body_dependency_depth": 20,
+            "verification": "full-operator"
+          },
+          "normalized_output_sha256": "fa1fbe4fe5791cdb6e10625f95726dc4987857657edd5c2b94e167a9f2d385ac",
+          "seconds": 0.07255174999590963
+        },
+        {
+          "requested_strategy": "restore_after_each_gate",
+          "selected_strategy": "restore_after_each_gate",
+          "restored_swap_count": 24,
+          "native_baseline_cz_count": 102,
+          "block_cz_savings": [
+            2,
+            6,
+            2,
+            6,
+            2,
+            2
+          ],
+          "metrics": {
+            "max_semantic_error": 8.732911559716126e-15,
+            "full_cz_count": 82,
+            "two_body_dependency_depth": 69,
+            "verification": "full-operator"
+          },
+          "normalized_output_sha256": "a044b8d36a9ead3c80fe3ff794f8cdf16b643bbf30908f50f1e1c0d2f4a00cb1",
+          "seconds": 0.15822008301620372
+        },
+        {
+          "requested_strategy": "persistent_layout",
+          "selected_strategy": "persistent_layout",
+          "restored_swap_count": 12,
+          "native_baseline_cz_count": 66,
+          "block_cz_savings": [
+            2,
+            2,
+            2
+          ],
+          "metrics": {
+            "max_semantic_error": 4.951414990996633e-15,
+            "full_cz_count": 60,
+            "two_body_dependency_depth": 41,
+            "verification": "full-operator"
+          },
+          "normalized_output_sha256": "f13e24333bec93af312869cc8c37dfc4956df7cb63b34d6168348a2fa8f4e3b6",
+          "seconds": 0.11059029199532233
+        }
+      ],
+      "selected_index": 0,
+      "portfolio_seconds": 0.3413621250074357,
+      "failures": []
+    },
+    {
+      "case": [
+        6,
+        "ising",
+        "grid"
+      ],
+      "observations": [
+        {
+          "requested_strategy": "auto",
+          "selected_strategy": "sabre",
+          "restored_swap_count": 4,
+          "native_baseline_cz_count": 42,
+          "block_cz_savings": [],
+          "metrics": {
+            "max_semantic_error": 4.574283909837767e-15,
+            "full_cz_count": 42,
+            "two_body_dependency_depth": 32,
+            "verification": "full-operator"
+          },
+          "normalized_output_sha256": "77a651d34eb53aa487801d6e0ca2fafcdb2bd17c88aa04bf607c80b5952bb233",
+          "seconds": 0.05852229197626002
+        },
+        {
+          "requested_strategy": "restore_after_each_gate",
+          "selected_strategy": "restore_after_each_gate",
+          "restored_swap_count": 12,
+          "native_baseline_cz_count": 66,
+          "block_cz_savings": [
+            2,
+            2,
+            2
+          ],
+          "metrics": {
+            "max_semantic_error": 5.70395649847739e-15,
+            "full_cz_count": 60,
+            "two_body_dependency_depth": 52,
+            "verification": "full-operator"
+          },
+          "normalized_output_sha256": "e18efc3bc56b0df49ccabbf461ca54479f9ad8645810dc878c0a54163ca767f4",
+          "seconds": 0.0968978330201935
+        },
+        {
+          "requested_strategy": "persistent_layout",
+          "selected_strategy": "persistent_layout",
+          "restored_swap_count": 12,
+          "native_baseline_cz_count": 66,
+          "block_cz_savings": [
+            2,
+            8
+          ],
+          "metrics": {
+            "max_semantic_error": 5.3302268750589315e-15,
+            "full_cz_count": 56,
+            "two_body_dependency_depth": 52,
+            "verification": "full-operator"
+          },
+          "normalized_output_sha256": "79d745de46f7a37f071f11e4161cdca6f90e91ee8473284e2e2ddf653f286f57",
+          "seconds": 0.11083183399750851
+        }
+      ],
+      "selected_index": 0,
+      "portfolio_seconds": 0.26625195899396203,
+      "failures": []
+    },
+    {
+      "case": [
+        6,
+        "ising",
+        "sparse"
+      ],
+      "observations": [
+        {
+          "requested_strategy": "auto",
+          "selected_strategy": "sabre",
+          "restored_swap_count": 8,
+          "native_baseline_cz_count": 54,
+          "block_cz_savings": [],
+          "metrics": {
+            "max_semantic_error": 5.828406534472335e-15,
+            "full_cz_count": 54,
+            "two_body_dependency_depth": 32,
+            "verification": "full-operator"
+          },
+          "normalized_output_sha256": "0e41977de780b36c9c13a51d488dfe80038e61c8152609d91434a45bcafa54d9",
+          "seconds": 0.07391808400279842
+        },
+        {
+          "requested_strategy": "restore_after_each_gate",
+          "selected_strategy": "restore_after_each_gate",
+          "restored_swap_count": 24,
+          "native_baseline_cz_count": 102,
+          "block_cz_savings": [
+            2,
+            2,
+            2
+          ],
+          "metrics": {
+            "max_semantic_error": 1.1009975996508265e-14,
+            "full_cz_count": 96,
+            "two_body_dependency_depth": 66,
+            "verification": "full-operator"
+          },
+          "normalized_output_sha256": "3c718717ed3fd6282ae344942db939fbb6026a266369ea2e378c885c7eb7a653",
+          "seconds": 0.16939045800245367
+        },
+        {
+          "requested_strategy": "persistent_layout",
+          "selected_strategy": "persistent_layout",
+          "restored_swap_count": 38,
+          "native_baseline_cz_count": 144,
+          "block_cz_savings": [
+            2,
+            2,
+            2,
+            2,
+            2,
+            2
+          ],
+          "metrics": {
+            "max_semantic_error": 1.3941099575459092e-14,
+            "full_cz_count": 132,
+            "two_body_dependency_depth": 108,
+            "verification": "full-operator"
+          },
+          "normalized_output_sha256": "d8fa9bf8eda1f3a451825c32769cf028dbf7b49abde2c35d8a17e0328a2471cf",
+          "seconds": 0.2278175000101328
+        }
+      ],
+      "selected_index": 0,
+      "portfolio_seconds": 0.4711260420153849,
+      "failures": []
+    },
+    {
+      "case": [
+        6,
+        "hopping",
+        "line"
+      ],
+      "observations": [
+        {
+          "requested_strategy": "auto",
+          "selected_strategy": "restore_after_each_gate",
+          "restored_swap_count": 0,
+          "native_baseline_cz_count": 72,
+          "block_cz_savings": [
+            1,
+            1,
+            1,
+            1,
+            1,
+            1
+          ],
+          "metrics": {
+            "max_semantic_error": 8.63506723974103e-15,
+            "full_cz_count": 66,
+            "two_body_dependency_depth": 65,
+            "verification": "full-operator"
+          },
+          "normalized_output_sha256": "60c456cb74bccbdd3077a2753ecc5123015697145a17e498a70e86bc9c349fd3",
+          "seconds": 0.13400512500084005
+        },
+        {
+          "requested_strategy": "persistent_layout",
+          "selected_strategy": "persistent_layout",
+          "restored_swap_count": 0,
+          "native_baseline_cz_count": 72,
+          "block_cz_savings": [
+            1,
+            1,
+            1,
+            1,
+            1,
+            1
+          ],
+          "metrics": {
+            "max_semantic_error": 8.63506723974103e-15,
+            "full_cz_count": 66,
+            "two_body_dependency_depth": 65,
+            "verification": "full-operator"
+          },
+          "normalized_output_sha256": "60c456cb74bccbdd3077a2753ecc5123015697145a17e498a70e86bc9c349fd3",
+          "seconds": 0.14689691699459217
+        },
+        {
+          "requested_strategy": "sabre",
+          "selected_strategy": "sabre",
+          "restored_swap_count": 0,
+          "native_baseline_cz_count": 72,
+          "block_cz_savings": [
+            1,
+            1,
+            1,
+            1,
+            1,
+            1
+          ],
+          "metrics": {
+            "max_semantic_error": 8.794596833689531e-15,
+            "full_cz_count": 66,
+            "two_body_dependency_depth": 65,
+            "verification": "full-operator"
+          },
+          "normalized_output_sha256": "60160d878d7460742121260d57d8570406baf9095550fee098f5b5238d478963",
+          "seconds": 0.14592129201628268
+        }
+      ],
+      "selected_index": 0,
+      "portfolio_seconds": 0.4268233340117149,
+      "failures": []
+    },
+    {
+      "case": [
+        6,
+        "hopping",
+        "ring"
+      ],
+      "observations": [
+        {
+          "requested_strategy": "auto",
+          "selected_strategy": "restore_after_each_gate",
+          "restored_swap_count": 0,
+          "native_baseline_cz_count": 72,
+          "block_cz_savings": [
+            1,
+            1,
+            1,
+            1,
+            1,
+            1
+          ],
+          "metrics": {
+            "max_semantic_error": 8.63506723974103e-15,
+            "full_cz_count": 66,
+            "two_body_dependency_depth": 65,
+            "verification": "full-operator"
+          },
+          "normalized_output_sha256": "60c456cb74bccbdd3077a2753ecc5123015697145a17e498a70e86bc9c349fd3",
+          "seconds": 0.14818308301619254
+        },
+        {
+          "requested_strategy": "persistent_layout",
+          "selected_strategy": "persistent_layout",
+          "restored_swap_count": 0,
+          "native_baseline_cz_count": 72,
+          "block_cz_savings": [
+            1,
+            1,
+            1,
+            1,
+            1,
+            1
+          ],
+          "metrics": {
+            "max_semantic_error": 8.63506723974103e-15,
+            "full_cz_count": 66,
+            "two_body_dependency_depth": 65,
+            "verification": "full-operator"
+          },
+          "normalized_output_sha256": "60c456cb74bccbdd3077a2753ecc5123015697145a17e498a70e86bc9c349fd3",
+          "seconds": 0.1316252090036869
+        },
+        {
+          "requested_strategy": "sabre",
+          "selected_strategy": "sabre",
+          "restored_swap_count": 0,
+          "native_baseline_cz_count": 72,
+          "block_cz_savings": [
+            1,
+            1,
+            1,
+            1,
+            1,
+            1
+          ],
+          "metrics": {
+            "max_semantic_error": 8.794596833689531e-15,
+            "full_cz_count": 66,
+            "two_body_dependency_depth": 65,
+            "verification": "full-operator"
+          },
+          "normalized_output_sha256": "60160d878d7460742121260d57d8570406baf9095550fee098f5b5238d478963",
+          "seconds": 0.14636920901830308
+        }
+      ],
+      "selected_index": 0,
+      "portfolio_seconds": 0.4261775010381825,
+      "failures": []
+    },
+    {
+      "case": [
+        6,
+        "hopping",
+        "grid"
+      ],
+      "observations": [
+        {
+          "requested_strategy": "auto",
+          "selected_strategy": "persistent_layout",
+          "restored_swap_count": 6,
+          "native_baseline_cz_count": 90,
+          "block_cz_savings": [
+            1,
+            1,
+            1,
+            1,
+            1,
+            1,
+            2
+          ],
+          "metrics": {
+            "max_semantic_error": 1.182845611224301e-14,
+            "full_cz_count": 82,
+            "two_body_dependency_depth": 78,
+            "verification": "full-operator"
+          },
+          "normalized_output_sha256": "96a18526e108b0d7fda95123b1c826375e0293782c22fa23da98ff90a1ee77ad",
+          "seconds": 0.17366291698999703
+        },
+        {
+          "requested_strategy": "restore_after_each_gate",
+          "selected_strategy": "restore_after_each_gate",
+          "restored_swap_count": 96,
+          "native_baseline_cz_count": 360,
+          "block_cz_savings": [
+            6,
+            6,
+            6,
+            6,
+            6,
+            7,
+            6,
+            2,
+            2,
+            6,
+            2,
+            1,
+            2,
+            6,
+            2,
+            6,
+            6,
+            6,
+            6,
+            6,
+            7,
+            6,
+            2,
+            2,
+            6,
+            2,
+            1,
+            2,
+            6,
+            2
+          ],
+          "metrics": {
+            "max_semantic_error": 2.371559211874694e-14,
+            "full_cz_count": 228,
+            "two_body_dependency_depth": 204,
+            "verification": "full-operator"
+          },
+          "normalized_output_sha256": "d887ec9484290bf97c48c7726e6d6d24d429ba33b65e09705f2a27931d1e6207",
+          "seconds": 0.579693874984514
+        },
+        {
+          "requested_strategy": "sabre",
+          "selected_strategy": "sabre",
+          "restored_swap_count": 16,
+          "native_baseline_cz_count": 120,
+          "block_cz_savings": [
+            1,
+            2,
+            2,
+            1,
+            2,
+            2,
+            2,
+            1,
+            1,
+            1,
+            1
+          ],
+          "metrics": {
+            "max_semantic_error": 1.6550987163908315e-14,
+            "full_cz_count": 104,
+            "two_body_dependency_depth": 93,
+            "verification": "full-operator"
+          },
+          "normalized_output_sha256": "834977c854b20c2d37ec03338a96fd9ea9a1e1e28664549dce33f7e3c56cf533",
+          "seconds": 0.21643141598906368
+        }
+      ],
+      "selected_index": 0,
+      "portfolio_seconds": 0.9697882079635747,
+      "failures": []
+    },
+    {
+      "case": [
+        6,
+        "hopping",
+        "sparse"
+      ],
+      "observations": [
+        {
+          "requested_strategy": "auto",
+          "selected_strategy": "restore_after_each_gate",
+          "restored_swap_count": 0,
+          "native_baseline_cz_count": 72,
+          "block_cz_savings": [
+            1,
+            1,
+            1,
+            1,
+            1,
+            1
+          ],
+          "metrics": {
+            "max_semantic_error": 8.63506723974103e-15,
+            "full_cz_count": 66,
+            "two_body_dependency_depth": 65,
+            "verification": "full-operator"
+          },
+          "normalized_output_sha256": "60c456cb74bccbdd3077a2753ecc5123015697145a17e498a70e86bc9c349fd3",
+          "seconds": 0.14917741701356135
+        },
+        {
+          "requested_strategy": "persistent_layout",
+          "selected_strategy": "persistent_layout",
+          "restored_swap_count": 0,
+          "native_baseline_cz_count": 72,
+          "block_cz_savings": [
+            1,
+            1,
+            1,
+            1,
+            1,
+            1
+          ],
+          "metrics": {
+            "max_semantic_error": 8.63506723974103e-15,
+            "full_cz_count": 66,
+            "two_body_dependency_depth": 65,
+            "verification": "full-operator"
+          },
+          "normalized_output_sha256": "60c456cb74bccbdd3077a2753ecc5123015697145a17e498a70e86bc9c349fd3",
+          "seconds": 0.13228195800911635
+        },
+        {
+          "requested_strategy": "sabre",
+          "selected_strategy": "sabre",
+          "restored_swap_count": 0,
+          "native_baseline_cz_count": 72,
+          "block_cz_savings": [
+            1,
+            1,
+            1,
+            1,
+            1,
+            1
+          ],
+          "metrics": {
+            "max_semantic_error": 8.794596833689531e-15,
+            "full_cz_count": 66,
+            "two_body_dependency_depth": 65,
+            "verification": "full-operator"
+          },
+          "normalized_output_sha256": "60160d878d7460742121260d57d8570406baf9095550fee098f5b5238d478963",
+          "seconds": 0.1463167500041891
+        }
+      ],
+      "selected_index": 0,
+      "portfolio_seconds": 0.4277761250268668,
+      "failures": []
+    },
+    {
+      "case": [
+        6,
+        "qft",
+        "line"
+      ],
+      "observations": [
+        {
+          "requested_strategy": "auto",
+          "selected_strategy": "sabre",
+          "restored_swap_count": 24,
+          "native_baseline_cz_count": 111,
+          "block_cz_savings": [
+            2,
+            2,
+            2,
+            2,
+            2,
+            2,
+            2,
+            2,
+            2,
+            2,
+            2,
+            2,
+            6,
+            6
+          ],
+          "metrics": {
+            "max_semantic_error": 1.987626749397768e-15,
+            "full_cz_count": 75,
+            "two_body_dependency_depth": 52,
+            "verification": "full-operator"
+          },
+          "normalized_output_sha256": "2d7b6349e0b21ee2a97e71297e274352bc612dc63a43b25cc543ada539a458ab",
+          "seconds": 0.171477167023113
+        },
+        {
+          "requested_strategy": "restore_after_each_gate",
+          "selected_strategy": "restore_after_each_gate",
+          "restored_swap_count": 76,
+          "native_baseline_cz_count": 267,
+          "block_cz_savings": [
+            6
+          ],
+          "metrics": {
+            "max_semantic_error": 7.966911961983416e-15,
+            "full_cz_count": 261,
+            "two_body_dependency_depth": 230,
+            "verification": "full-operator"
+          },
+          "normalized_output_sha256": "5b0783572076c3ddc4dcb4cd8f3b6440a8f36f8778a867accda512b49d68efea",
+          "seconds": 0.45803666702704504
+        },
+        {
+          "requested_strategy": "persistent_layout",
+          "selected_strategy": "persistent_layout",
+          "restored_swap_count": 46,
+          "native_baseline_cz_count": 177,
+          "block_cz_savings": [
+            2,
+            6
+          ],
+          "metrics": {
+            "max_semantic_error": 4.096332894872579e-15,
+            "full_cz_count": 169,
+            "two_body_dependency_depth": 105,
+            "verification": "full-operator"
+          },
+          "normalized_output_sha256": "18f4c5ab4e1f4b898eec2f17d3c06c2f18c89d7c64aafe3b14258d0ea9ed8839",
+          "seconds": 0.30933554100920446
+        }
+      ],
+      "selected_index": 0,
+      "portfolio_seconds": 0.9388493750593625,
+      "failures": []
+    },
+    {
+      "case": [
+        6,
+        "qft",
+        "ring"
+      ],
+      "observations": [
+        {
+          "requested_strategy": "auto",
+          "selected_strategy": "sabre",
+          "restored_swap_count": 18,
+          "native_baseline_cz_count": 93,
+          "block_cz_savings": [
+            2,
+            2,
+            2,
+            2,
+            6
+          ],
+          "metrics": {
+            "max_semantic_error": 1.5798750608595155e-15,
+            "full_cz_count": 79,
+            "two_body_dependency_depth": 52,
+            "verification": "full-operator"
+          },
+          "normalized_output_sha256": "a95563f6073c99e8b7407880d246b1b90ed9ec292ae3e14c75629edb3b56e5b0",
+          "seconds": 0.13918741699308157
+        },
+        {
+          "requested_strategy": "restore_after_each_gate",
+          "selected_strategy": "restore_after_each_gate",
+          "restored_swap_count": 36,
+          "native_baseline_cz_count": 147,
+          "block_cz_savings": [
+            2,
+            2,
+            2
+          ],
+          "metrics": {
+            "max_semantic_error": 3.717408388913133e-15,
+            "full_cz_count": 141,
+            "two_body_dependency_depth": 107,
+            "verification": "full-operator"
+          },
+          "normalized_output_sha256": "de308d6d8637da14effe9632e57cd2b4a075d871f2321c8718580ff5a3c6434e",
+          "seconds": 0.25270116701722145
+        },
+        {
+          "requested_strategy": "persistent_layout",
+          "selected_strategy": "persistent_layout",
+          "restored_swap_count": 38,
+          "native_baseline_cz_count": 153,
+          "block_cz_savings": [
+            2,
+            2,
+            6,
+            6
+          ],
+          "metrics": {
+            "max_semantic_error": 3.704748439720772e-15,
+            "full_cz_count": 137,
+            "two_body_dependency_depth": 90,
+            "verification": "full-operator"
+          },
+          "normalized_output_sha256": "715df03bdf313cf7bf8b514b78dd4bc70c3d2164983753afdc7bccd7bd76d51d",
+          "seconds": 0.23850329098058864
+        }
+      ],
+      "selected_index": 0,
+      "portfolio_seconds": 0.6303918749908917,
+      "failures": []
+    },
+    {
+      "case": [
+        6,
+        "qft",
+        "grid"
+      ],
+      "observations": [
+        {
+          "requested_strategy": "auto",
+          "selected_strategy": "sabre",
+          "restored_swap_count": 16,
+          "native_baseline_cz_count": 87,
+          "block_cz_savings": [
+            2,
+            2,
+            6,
+            6,
+            6
+          ],
+          "metrics": {
+            "max_semantic_error": 1.3536401981886357e-15,
+            "full_cz_count": 65,
+            "two_body_dependency_depth": 48,
+            "verification": "full-operator"
+          },
+          "normalized_output_sha256": "8f3c8e9e78e0b40867e5e6169cb478b48808a0348991587fea17636eea671b5e",
+          "seconds": 0.13777954198303632
+        },
+        {
+          "requested_strategy": "restore_after_each_gate",
+          "selected_strategy": "restore_after_each_gate",
+          "restored_swap_count": 44,
+          "native_baseline_cz_count": 171,
+          "block_cz_savings": [
+            2,
+            6
+          ],
+          "metrics": {
+            "max_semantic_error": 4.612014879073572e-15,
+            "full_cz_count": 163,
+            "two_body_dependency_depth": 146,
+            "verification": "full-operator"
+          },
+          "normalized_output_sha256": "a10fe7fdd28d8cf4e170ae520b9ed1d06d2f06af1e5d6f06bf6b369e28c46cc3",
+          "seconds": 0.2869117080117576
+        },
+        {
+          "requested_strategy": "persistent_layout",
+          "selected_strategy": "persistent_layout",
+          "restored_swap_count": 26,
+          "native_baseline_cz_count": 117,
+          "block_cz_savings": [
+            6,
+            6
+          ],
+          "metrics": {
+            "max_semantic_error": 2.790815882156403e-15,
+            "full_cz_count": 105,
+            "two_body_dependency_depth": 84,
+            "verification": "full-operator"
+          },
+          "normalized_output_sha256": "86aeef8980cec3556d24fc13ff2ba789902457282f164c93673b81b32183728d",
+          "seconds": 0.1861269579967484
+        }
+      ],
+      "selected_index": 0,
+      "portfolio_seconds": 0.6108182079915423,
+      "failures": []
+    },
+    {
+      "case": [
+        6,
+        "qft",
+        "sparse"
+      ],
+      "observations": [
+        {
+          "requested_strategy": "auto",
+          "selected_strategy": "sabre",
+          "restored_swap_count": 18,
+          "native_baseline_cz_count": 93,
+          "block_cz_savings": [
+            2,
+            2,
+            2,
+            2,
+            6
+          ],
+          "metrics": {
+            "max_semantic_error": 1.5798750608595155e-15,
+            "full_cz_count": 79,
+            "two_body_dependency_depth": 52,
+            "verification": "full-operator"
+          },
+          "normalized_output_sha256": "a95563f6073c99e8b7407880d246b1b90ed9ec292ae3e14c75629edb3b56e5b0",
+          "seconds": 0.15518175001488999
+        },
+        {
+          "requested_strategy": "restore_after_each_gate",
+          "selected_strategy": "restore_after_each_gate",
+          "restored_swap_count": 36,
+          "native_baseline_cz_count": 147,
+          "block_cz_savings": [
+            2,
+            2,
+            2
+          ],
+          "metrics": {
+            "max_semantic_error": 3.717408388913133e-15,
+            "full_cz_count": 141,
+            "two_body_dependency_depth": 107,
+            "verification": "full-operator"
+          },
+          "normalized_output_sha256": "de308d6d8637da14effe9632e57cd2b4a075d871f2321c8718580ff5a3c6434e",
+          "seconds": 0.2349898749962449
+        },
+        {
+          "requested_strategy": "persistent_layout",
+          "selected_strategy": "persistent_layout",
+          "restored_swap_count": 38,
+          "native_baseline_cz_count": 153,
+          "block_cz_savings": [
+            2,
+            2,
+            6,
+            6
+          ],
+          "metrics": {
+            "max_semantic_error": 3.704748439720772e-15,
+            "full_cz_count": 137,
+            "two_body_dependency_depth": 90,
+            "verification": "full-operator"
+          },
+          "normalized_output_sha256": "715df03bdf313cf7bf8b514b78dd4bc70c3d2164983753afdc7bccd7bd76d51d",
+          "seconds": 0.25304512499133125
+        }
+      ],
+      "selected_index": 0,
+      "portfolio_seconds": 0.6432167500024661,
+      "failures": []
+    },
+    {
+      "case": [
+        6,
+        "repetition",
+        "line"
+      ],
+      "observations": [
+        {
+          "requested_strategy": "auto",
+          "selected_strategy": "sabre",
+          "restored_swap_count": 18,
+          "native_baseline_cz_count": 78,
+          "block_cz_savings": [
+            2,
+            2,
+            2,
+            2
+          ],
+          "metrics": {
+            "max_semantic_error": 6.141450319825085e-15,
+            "full_cz_count": 70,
+            "two_body_dependency_depth": 58,
+            "verification": "full-operator"
+          },
+          "normalized_output_sha256": "bb7109b89cbfb93706606b7240d0a00722f70f9715d6b8aee4b0fa2462ee5f8e",
+          "seconds": 0.13394170798710547
+        },
+        {
+          "requested_strategy": "restore_after_each_gate",
+          "selected_strategy": "restore_after_each_gate",
+          "restored_swap_count": 52,
+          "native_baseline_cz_count": 180,
+          "block_cz_savings": [
+            2,
+            6,
+            2,
+            2,
+            2
+          ],
+          "metrics": {
+            "max_semantic_error": 9.474210329103386e-15,
+            "full_cz_count": 166,
+            "two_body_dependency_depth": 163,
+            "verification": "full-operator"
+          },
+          "normalized_output_sha256": "b8fab1124fab8566bfaf31c034e0362bb17fa9279b53b0d56e24cf503afc1b56",
+          "seconds": 0.3306837909913156
+        },
+        {
+          "requested_strategy": "persistent_layout",
+          "selected_strategy": "persistent_layout",
+          "restored_swap_count": 40,
+          "native_baseline_cz_count": 144,
+          "block_cz_savings": [
+            2,
+            2,
+            2,
+            8,
+            6,
+            6,
+            6
+          ],
+          "metrics": {
+            "max_semantic_error": 1.0151865010137289e-14,
+            "full_cz_count": 112,
+            "two_body_dependency_depth": 97,
+            "verification": "full-operator"
+          },
+          "normalized_output_sha256": "ec2dcc9ed911e07e22b8d954e5529d557773fdd18c371339770778f13ac28f75",
+          "seconds": 0.23950154200429097
+        }
+      ],
+      "selected_index": 0,
+      "portfolio_seconds": 0.7041270409827121,
+      "failures": []
+    },
+    {
+      "case": [
+        6,
+        "repetition",
+        "ring"
+      ],
+      "observations": [
+        {
+          "requested_strategy": "auto",
+          "selected_strategy": "sabre",
+          "restored_swap_count": 20,
+          "native_baseline_cz_count": 84,
+          "block_cz_savings": [
+            2
+          ],
+          "metrics": {
+            "max_semantic_error": 6.761659273861517e-15,
+            "full_cz_count": 82,
+            "two_body_dependency_depth": 57,
+            "verification": "full-operator"
+          },
+          "normalized_output_sha256": "3d23d19711842c859fd7080e678ff0d46f98ef5d986dc109810b51789c073156",
+          "seconds": 0.16522341599920765
+        },
+        {
+          "requested_strategy": "restore_after_each_gate",
+          "selected_strategy": "restore_after_each_gate",
+          "restored_swap_count": 40,
+          "native_baseline_cz_count": 144,
+          "block_cz_savings": [
+            2,
+            6,
+            2,
+            6,
+            6
+          ],
+          "metrics": {
+            "max_semantic_error": 9.209875493767688e-15,
+            "full_cz_count": 122,
+            "two_body_dependency_depth": 98,
+            "verification": "full-operator"
+          },
+          "normalized_output_sha256": "032482e3cedc6a187b088981af47bfaa806f743f9ebdc6b2e6a6167f1ea849b4",
+          "seconds": 0.33730937499785796
+        },
+        {
+          "requested_strategy": "persistent_layout",
+          "selected_strategy": "persistent_layout",
+          "restored_swap_count": 34,
+          "native_baseline_cz_count": 126,
+          "block_cz_savings": [
+            2,
+            2,
+            2,
+            2,
+            6,
+            6
+          ],
+          "metrics": {
+            "max_semantic_error": 1.0853849695396385e-14,
+            "full_cz_count": 106,
+            "two_body_dependency_depth": 94,
+            "verification": "full-operator"
+          },
+          "normalized_output_sha256": "a0973f8bf8cf7c10da7987612d6724ce025978c288b7cab8baada45ad1a4090f",
+          "seconds": 0.2072942079976201
+        }
+      ],
+      "selected_index": 0,
+      "portfolio_seconds": 0.7098269989946857,
+      "failures": []
+    },
+    {
+      "case": [
+        6,
+        "repetition",
+        "grid"
+      ],
+      "observations": [
+        {
+          "requested_strategy": "auto",
+          "selected_strategy": "sabre",
+          "restored_swap_count": 16,
+          "native_baseline_cz_count": 72,
+          "block_cz_savings": [
+            2,
+            2,
+            2,
+            2,
+            2
+          ],
+          "metrics": {
+            "max_semantic_error": 4.901354889651292e-15,
+            "full_cz_count": 62,
+            "two_body_dependency_depth": 51,
+            "verification": "full-operator"
+          },
+          "normalized_output_sha256": "1883dd3c7a7733dc504612c1da62c68469b1668f3a76454cbba25c8524f2d0da",
+          "seconds": 0.13468316700891592
+        },
+        {
+          "requested_strategy": "restore_after_each_gate",
+          "selected_strategy": "restore_after_each_gate",
+          "restored_swap_count": 24,
+          "native_baseline_cz_count": 96,
+          "block_cz_savings": [
+            6,
+            6,
+            2,
+            6
+          ],
+          "metrics": {
+            "max_semantic_error": 5.2898952465969285e-15,
+            "full_cz_count": 76,
+            "two_body_dependency_depth": 68,
+            "verification": "full-operator"
+          },
+          "normalized_output_sha256": "14172d760e38aa6b9b749e6abc8437008a629c0015ea64ca0c85cbc525de20a7",
+          "seconds": 0.1634816250007134
+        },
+        {
+          "requested_strategy": "persistent_layout",
+          "selected_strategy": "persistent_layout",
+          "restored_swap_count": 36,
+          "native_baseline_cz_count": 132,
+          "block_cz_savings": [
+            2,
+            2,
+            2,
+            8,
+            8,
+            8,
+            6
+          ],
+          "metrics": {
+            "max_semantic_error": 1.0081083358320345e-14,
+            "full_cz_count": 96,
+            "two_body_dependency_depth": 89,
+            "verification": "full-operator"
+          },
+          "normalized_output_sha256": "7a49c3c48b2ac18a510a070bc5dcd3ba06d7d900204b18183fe9f487bffbcae4",
+          "seconds": 0.21422624998376705
+        }
+      ],
+      "selected_index": 0,
+      "portfolio_seconds": 0.5123910419933964,
+      "failures": []
+    },
+    {
+      "case": [
+        6,
+        "repetition",
+        "sparse"
+      ],
+      "observations": [
+        {
+          "requested_strategy": "auto",
+          "selected_strategy": "sabre",
+          "restored_swap_count": 4,
+          "native_baseline_cz_count": 36,
+          "block_cz_savings": [],
+          "metrics": {
+            "max_semantic_error": 4.490574227168739e-15,
+            "full_cz_count": 36,
+            "two_body_dependency_depth": 32,
+            "verification": "full-operator"
+          },
+          "normalized_output_sha256": "930a84bc5b5d09550012b8836fe3589bf19d1f7d27fa68ab22fb8329313658fc",
+          "seconds": 0.062021874997299165
+        },
+        {
+          "requested_strategy": "restore_after_each_gate",
+          "selected_strategy": "restore_after_each_gate",
+          "restored_swap_count": 18,
+          "native_baseline_cz_count": 78,
+          "block_cz_savings": [
+            2,
+            2,
+            2,
+            6,
+            6
+          ],
+          "metrics": {
+            "max_semantic_error": 4.206045898128478e-15,
+            "full_cz_count": 60,
+            "two_body_dependency_depth": 51,
+            "verification": "full-operator"
+          },
+          "normalized_output_sha256": "35956c4491c1210475f224ac75289f15edb56f81cab1f05be0273093a73c864f",
+          "seconds": 0.13638066599378362
+        },
+        {
+          "requested_strategy": "persistent_layout",
+          "selected_strategy": "persistent_layout",
+          "restored_swap_count": 20,
+          "native_baseline_cz_count": 84,
+          "block_cz_savings": [
+            2,
+            2,
+            2,
+            8,
+            4,
+            6
+          ],
+          "metrics": {
+            "max_semantic_error": 7.033067890166158e-15,
+            "full_cz_count": 60,
+            "two_body_dependency_depth": 54,
+            "verification": "full-operator"
+          },
+          "normalized_output_sha256": "76cea984e4be8321c55b924014515151ffd51b3935e7b04bd4b936c4d5cbad73",
+          "seconds": 0.14509404098498635
+        }
+      ],
+      "selected_index": 0,
+      "portfolio_seconds": 0.34349658197606914,
+      "failures": []
+    },
+    {
+      "case": [
+        8,
+        "qaoa",
+        "line"
+      ],
+      "observations": [
+        {
+          "requested_strategy": "auto",
+          "selected_strategy": "sabre",
+          "restored_swap_count": 30,
+          "native_baseline_cz_count": 122,
+          "block_cz_savings": [
+            2
+          ],
+          "metrics": {
+            "max_semantic_error": 6.072657351995283e-14,
+            "full_cz_count": 120,
+            "two_body_dependency_depth": 64,
+            "verification": "three-probes-only"
+          },
+          "normalized_output_sha256": "7d2a59ed23a7253b1e8c8a6bdce94dd37166f8cca72c6b9eb64436b4721c2692",
+          "seconds": 0.20898079199832864
+        },
+        {
+          "requested_strategy": "restore_after_each_gate",
+          "selected_strategy": "restore_after_each_gate",
+          "restored_swap_count": 72,
+          "native_baseline_cz_count": 248,
+          "block_cz_savings": [
+            2,
+            6,
+            2,
+            2,
+            6,
+            2
+          ],
+          "metrics": {
+            "max_semantic_error": 4.5537241299602574e-15,
+            "full_cz_count": 228,
+            "two_body_dependency_depth": 219,
+            "verification": "three-probes-only"
+          },
+          "normalized_output_sha256": "73087ee4d157aff26e9057c9907933b50f5d677513ccfa604d38c29695bb1fde",
+          "seconds": 0.41486795799573883
+        },
+        {
+          "requested_strategy": "persistent_layout",
+          "selected_strategy": "persistent_layout",
+          "restored_swap_count": 66,
+          "native_baseline_cz_count": 230,
+          "block_cz_savings": [
+            2,
+            2,
+            2,
+            6,
+            6,
+            6
+          ],
+          "metrics": {
+            "max_semantic_error": 3.602482328930065e-15,
+            "full_cz_count": 206,
+            "two_body_dependency_depth": 114,
+            "verification": "three-probes-only"
+          },
+          "normalized_output_sha256": "1a4a70f3bc16d84523493b39df16e4c54916ca03958a233df762ab78953a7064",
+          "seconds": 0.38029116700636223
+        }
+      ],
+      "selected_index": 0,
+      "portfolio_seconds": 1.0041399170004297,
+      "failures": []
+    },
+    {
+      "case": [
+        8,
+        "qaoa",
+        "ring"
+      ],
+      "observations": [
+        {
+          "requested_strategy": "auto",
+          "selected_strategy": "sabre",
+          "restored_swap_count": 12,
+          "native_baseline_cz_count": 68,
+          "block_cz_savings": [
+            2,
+            2
+          ],
+          "metrics": {
+            "max_semantic_error": 1.1983210615419905e-15,
+            "full_cz_count": 64,
+            "two_body_dependency_depth": 26,
+            "verification": "three-probes-only"
+          },
+          "normalized_output_sha256": "0342e4937e7c2c59f4d47d3b7df07df708685959a764ce73d63d1b229a25d04c",
+          "seconds": 0.10304687501047738
+        },
+        {
+          "requested_strategy": "restore_after_each_gate",
+          "selected_strategy": "restore_after_each_gate",
+          "restored_swap_count": 40,
+          "native_baseline_cz_count": 152,
+          "block_cz_savings": [
+            2,
+            2
+          ],
+          "metrics": {
+            "max_semantic_error": 2.487378126932854e-15,
+            "full_cz_count": 148,
+            "two_body_dependency_depth": 78,
+            "verification": "three-probes-only"
+          },
+          "normalized_output_sha256": "e8f24eab71323379112ee5d03bafc60d92e53c137f949c97ee8460896fcc761f",
+          "seconds": 0.2537015000125393
+        },
+        {
+          "requested_strategy": "persistent_layout",
+          "selected_strategy": "persistent_layout",
+          "restored_swap_count": 24,
+          "native_baseline_cz_count": 104,
+          "block_cz_savings": [
+            2,
+            2,
+            6,
+            6,
+            6
+          ],
+          "metrics": {
+            "max_semantic_error": 1.2867684837234143e-15,
+            "full_cz_count": 82,
+            "two_body_dependency_depth": 47,
+            "verification": "three-probes-only"
+          },
+          "normalized_output_sha256": "d424936297b40e98531b003b946dabb9d32200ce327b5d1697f46f682e8adb57",
+          "seconds": 0.1568227499956265
+        }
+      ],
+      "selected_index": 0,
+      "portfolio_seconds": 0.5135711250186432,
+      "failures": []
+    },
+    {
+      "case": [
+        8,
+        "qaoa",
+        "grid"
+      ],
+      "observations": [
+        {
+          "requested_strategy": "auto",
+          "selected_strategy": "sabre",
+          "restored_swap_count": 16,
+          "native_baseline_cz_count": 80,
+          "block_cz_savings": [
+            2
+          ],
+          "metrics": {
+            "max_semantic_error": 2.3030438699344067e-15,
+            "full_cz_count": 78,
+            "two_body_dependency_depth": 31,
+            "verification": "three-probes-only"
+          },
+          "normalized_output_sha256": "569b39a764fc4ff6bcd1abf6e70a7cb6b0e32c581fec7b38d6b50459e0ef491c",
+          "seconds": 0.12110941699938849
+        },
+        {
+          "requested_strategy": "restore_after_each_gate",
+          "selected_strategy": "restore_after_each_gate",
+          "restored_swap_count": 48,
+          "native_baseline_cz_count": 176,
+          "block_cz_savings": [
+            2,
+            6,
+            6,
+            2,
+            6,
+            6
+          ],
+          "metrics": {
+            "max_semantic_error": 2.8313599442806282e-15,
+            "full_cz_count": 148,
+            "two_body_dependency_depth": 123,
+            "verification": "three-probes-only"
+          },
+          "normalized_output_sha256": "2afe37f5cd6c9901b602f457f83122c8a1ea9f3a7d84133adba3bf75cffb5df3",
+          "seconds": 0.2787547500047367
+        },
+        {
+          "requested_strategy": "persistent_layout",
+          "selected_strategy": "persistent_layout",
+          "restored_swap_count": 42,
+          "native_baseline_cz_count": 158,
+          "block_cz_savings": [
+            2,
+            6,
+            6,
+            6,
+            6
+          ],
+          "metrics": {
+            "max_semantic_error": 2.029196447143526e-15,
+            "full_cz_count": 132,
+            "two_body_dependency_depth": 102,
+            "verification": "three-probes-only"
+          },
+          "normalized_output_sha256": "1e1d943594c0dab151c04d4746f25d50e4649f56e369d5c9a53fdc5a6c7c88fe",
+          "seconds": 0.23526724998373538
+        }
+      ],
+      "selected_index": 0,
+      "portfolio_seconds": 0.6351314169878606,
+      "failures": []
+    },
+    {
+      "case": [
+        8,
+        "qaoa",
+        "sparse"
+      ],
+      "observations": [
+        {
+          "requested_strategy": "auto",
+          "selected_strategy": "sabre",
+          "restored_swap_count": 16,
+          "native_baseline_cz_count": 80,
+          "block_cz_savings": [
+            2,
+            2,
+            2
+          ],
+          "metrics": {
+            "max_semantic_error": 1.4851826706862361e-15,
+            "full_cz_count": 74,
+            "two_body_dependency_depth": 37,
+            "verification": "three-probes-only"
+          },
+          "normalized_output_sha256": "3311ceaebff24897476bfc19fedb79303b8464fe408eeb6626d8b37abe1508df",
+          "seconds": 0.13503629199112765
+        },
+        {
+          "requested_strategy": "restore_after_each_gate",
+          "selected_strategy": "restore_after_each_gate",
+          "restored_swap_count": 28,
+          "native_baseline_cz_count": 116,
+          "block_cz_savings": [
+            2,
+            2,
+            2,
+            2,
+            2,
+            2
+          ],
+          "metrics": {
+            "max_semantic_error": 1.9537954165322846e-15,
+            "full_cz_count": 104,
+            "two_body_dependency_depth": 79,
+            "verification": "three-probes-only"
+          },
+          "normalized_output_sha256": "b1b330a9851c93fbd06f3cb114cd594170a666fcee27954ee875666848e076e3",
+          "seconds": 0.18506170800537802
+        },
+        {
+          "requested_strategy": "persistent_layout",
+          "selected_strategy": "persistent_layout",
+          "restored_swap_count": 40,
+          "native_baseline_cz_count": 152,
+          "block_cz_savings": [
+            2,
+            2,
+            6,
+            6,
+            6
+          ],
+          "metrics": {
+            "max_semantic_error": 2.2360471212887493e-15,
+            "full_cz_count": 130,
+            "two_body_dependency_depth": 86,
+            "verification": "three-probes-only"
+          },
+          "normalized_output_sha256": "620d428fda1ba8f547847a6cce480893263d15759199dea13b881c2a06be69c7",
+          "seconds": 0.23012295801891014
+        }
+      ],
+      "selected_index": 0,
+      "portfolio_seconds": 0.5502209580154158,
+      "failures": []
+    },
+    {
+      "case": [
+        8,
+        "ising",
+        "line"
+      ],
+      "observations": [
+        {
+          "requested_strategy": "auto",
+          "selected_strategy": "sabre",
+          "restored_swap_count": 28,
+          "native_baseline_cz_count": 126,
+          "block_cz_savings": [
+            2,
+            2
+          ],
+          "metrics": {
+            "max_semantic_error": 2.1674243517016566e-15,
+            "full_cz_count": 122,
+            "two_body_dependency_depth": 78,
+            "verification": "three-probes-only"
+          },
+          "normalized_output_sha256": "7b96e88585b23c3a9cd6b36a7cd494c503655d42168cb2fcded0083f4e7912d8",
+          "seconds": 0.20362241700058803
+        },
+        {
+          "requested_strategy": "restore_after_each_gate",
+          "selected_strategy": "restore_after_each_gate",
+          "restored_swap_count": 90,
+          "native_baseline_cz_count": 312,
+          "block_cz_savings": [
+            2,
+            2,
+            2
+          ],
+          "metrics": {
+            "max_semantic_error": 6.434450197859168e-15,
+            "full_cz_count": 306,
+            "two_body_dependency_depth": 230,
+            "verification": "three-probes-only"
+          },
+          "normalized_output_sha256": "c0fcd7cc30041940f3c35556f48ae9fc824be6dd64f870d01104ab958a3baf2b",
+          "seconds": 0.5540402919868939
+        },
+        {
+          "requested_strategy": "persistent_layout",
+          "selected_strategy": "persistent_layout",
+          "restored_swap_count": 70,
+          "native_baseline_cz_count": 252,
+          "block_cz_savings": [
+            2,
+            2,
+            2,
+            2,
+            2,
+            2,
+            2,
+            2
+          ],
+          "metrics": {
+            "max_semantic_error": 4.341707557710324e-15,
+            "full_cz_count": 236,
+            "two_body_dependency_depth": 184,
+            "verification": "three-probes-only"
+          },
+          "normalized_output_sha256": "06f69344c492d91fe53ea76649a0af127a702d63333da8fc9a5f641b7bd81e46",
+          "seconds": 0.42184729099972174
+        }
+      ],
+      "selected_index": 0,
+      "portfolio_seconds": 1.1795099999872036,
+      "failures": []
+    },
+    {
+      "case": [
+        8,
+        "ising",
+        "ring"
+      ],
+      "observations": [
+        {
+          "requested_strategy": "auto",
+          "selected_strategy": "sabre",
+          "restored_swap_count": 14,
+          "native_baseline_cz_count": 84,
+          "block_cz_savings": [
+            2
+          ],
+          "metrics": {
+            "max_semantic_error": 1.5449287945012552e-15,
+            "full_cz_count": 82,
+            "two_body_dependency_depth": 45,
+            "verification": "three-probes-only"
+          },
+          "normalized_output_sha256": "099641f79fb58db4b1bf9292147e46cd490990a562aac07c556b171d3536b53c",
+          "seconds": 0.14400591599405743
+        },
+        {
+          "requested_strategy": "restore_after_each_gate",
+          "selected_strategy": "restore_after_each_gate",
+          "restored_swap_count": 42,
+          "native_baseline_cz_count": 168,
+          "block_cz_savings": [
+            2,
+            2,
+            2
+          ],
+          "metrics": {
+            "max_semantic_error": 3.2336436796687442e-15,
+            "full_cz_count": 162,
+            "two_body_dependency_depth": 108,
+            "verification": "three-probes-only"
+          },
+          "normalized_output_sha256": "1af234a6656e5a044d9ff9ef1574ee3a0f3f2e9da4ebac41d6bcc6d77ff8afdd",
+          "seconds": 0.26906616700580344
+        },
+        {
+          "requested_strategy": "persistent_layout",
+          "selected_strategy": "persistent_layout",
+          "restored_swap_count": 34,
+          "native_baseline_cz_count": 144,
+          "block_cz_savings": [
+            2,
+            2,
+            2,
+            6
+          ],
+          "metrics": {
+            "max_semantic_error": 2.211102250875567e-15,
+            "full_cz_count": 132,
+            "two_body_dependency_depth": 118,
+            "verification": "three-probes-only"
+          },
+          "normalized_output_sha256": "b2282cc0a473d0c4d02bb8f72f65b705374971d0acc348906936114388ada4c8",
+          "seconds": 0.2275803330121562
+        }
+      ],
+      "selected_index": 0,
+      "portfolio_seconds": 0.6406524160120171,
+      "failures": []
+    },
+    {
+      "case": [
+        8,
+        "ising",
+        "grid"
+      ],
+      "observations": [
+        {
+          "requested_strategy": "auto",
+          "selected_strategy": "sabre",
+          "restored_swap_count": 14,
+          "native_baseline_cz_count": 84,
+          "block_cz_savings": [
+            2
+          ],
+          "metrics": {
+            "max_semantic_error": 1.4046076445151095e-15,
+            "full_cz_count": 82,
+            "two_body_dependency_depth": 68,
+            "verification": "three-probes-only"
+          },
+          "normalized_output_sha256": "7ebecabbbbea75027e2d1f83eb740b6dbce89c2e35e822f592b91c7b531b1f0d",
+          "seconds": 0.14275241701398045
+        },
+        {
+          "requested_strategy": "restore_after_each_gate",
+          "selected_strategy": "restore_after_each_gate",
+          "restored_swap_count": 30,
+          "native_baseline_cz_count": 132,
+          "block_cz_savings": [
+            2,
+            2,
+            2
+          ],
+          "metrics": {
+            "max_semantic_error": 2.917538787267149e-15,
+            "full_cz_count": 126,
+            "two_body_dependency_depth": 99,
+            "verification": "three-probes-only"
+          },
+          "normalized_output_sha256": "69ad90e55adace6867a034854d16eae18dd1eb544a917d2a8eb619d5bf51ecc6",
+          "seconds": 0.21309558299253695
+        },
+        {
+          "requested_strategy": "persistent_layout",
+          "selected_strategy": "persistent_layout",
+          "restored_swap_count": 18,
+          "native_baseline_cz_count": 96,
+          "block_cz_savings": [
+            2,
+            2,
+            6
+          ],
+          "metrics": {
+            "max_semantic_error": 1.6544860924037948e-15,
+            "full_cz_count": 86,
+            "two_body_dependency_depth": 73,
+            "verification": "three-probes-only"
+          },
+          "normalized_output_sha256": "e83172476c79781c1a33a08906877ffe865a7d2dcf9085b9b4c78d83fd4e044f",
+          "seconds": 0.1550782499834895
+        }
+      ],
+      "selected_index": 0,
+      "portfolio_seconds": 0.5109262499900069,
+      "failures": []
+    },
+    {
+      "case": [
+        8,
+        "ising",
+        "sparse"
+      ],
+      "observations": [
+        {
+          "requested_strategy": "auto",
+          "selected_strategy": "sabre",
+          "restored_swap_count": 10,
+          "native_baseline_cz_count": 72,
+          "block_cz_savings": [
+            6
+          ],
+          "metrics": {
+            "max_semantic_error": 1.466587386380936e-15,
+            "full_cz_count": 66,
+            "two_body_dependency_depth": 41,
+            "verification": "three-probes-only"
+          },
+          "normalized_output_sha256": "333e4ed741649111229666866314ca98c7464b9db85994ce5775c7aaf62cc881",
+          "seconds": 0.1079722499998752
+        },
+        {
+          "requested_strategy": "restore_after_each_gate",
+          "selected_strategy": "restore_after_each_gate",
+          "restored_swap_count": 24,
+          "native_baseline_cz_count": 114,
+          "block_cz_savings": [
+            2,
+            2,
+            2
+          ],
+          "metrics": {
+            "max_semantic_error": 2.44580015685394e-15,
+            "full_cz_count": 108,
+            "two_body_dependency_depth": 68,
+            "verification": "three-probes-only"
+          },
+          "normalized_output_sha256": "e0bb4edcd57d46813d638c83766abfc6170a6ab579ba9274abea9684ca319e49",
+          "seconds": 0.17063358300947584
+        },
+        {
+          "requested_strategy": "persistent_layout",
+          "selected_strategy": "persistent_layout",
+          "restored_swap_count": 18,
+          "native_baseline_cz_count": 96,
+          "block_cz_savings": [
+            2,
+            2,
+            2,
+            2
+          ],
+          "metrics": {
+            "max_semantic_error": 1.6627883293318834e-15,
+            "full_cz_count": 88,
+            "two_body_dependency_depth": 66,
+            "verification": "three-probes-only"
+          },
+          "normalized_output_sha256": "5cb9bdd974bdc3e8a3bb40fc215e6380dceb52b0999b56ec9548390500e0c740",
+          "seconds": 0.14154866698663682
+        }
+      ],
+      "selected_index": 0,
+      "portfolio_seconds": 0.42015449999598786,
+      "failures": []
+    },
+    {
+      "case": [
+        8,
+        "hopping",
+        "line"
+      ],
+      "observations": [
+        {
+          "requested_strategy": "auto",
+          "selected_strategy": "restore_after_each_gate",
+          "restored_swap_count": 0,
+          "native_baseline_cz_count": 96,
+          "block_cz_savings": [
+            1,
+            1,
+            1,
+            1,
+            1,
+            1,
+            1,
+            1
+          ],
+          "metrics": {
+            "max_semantic_error": 2.5537486418856237e-15,
+            "full_cz_count": 88,
+            "two_body_dependency_depth": 78,
+            "verification": "three-probes-only"
+          },
+          "normalized_output_sha256": "b79a328c653c4fe47e79301f673b9b8325f28d6abbb1af0a2b67d8b44bc2e248",
+          "seconds": 0.19333716700202785
+        },
+        {
+          "requested_strategy": "persistent_layout",
+          "selected_strategy": "persistent_layout",
+          "restored_swap_count": 0,
+          "native_baseline_cz_count": 96,
+          "block_cz_savings": [
+            1,
+            1,
+            1,
+            1,
+            1,
+            1,
+            1,
+            1
+          ],
+          "metrics": {
+            "max_semantic_error": 2.5537486418856237e-15,
+            "full_cz_count": 88,
+            "two_body_dependency_depth": 78,
+            "verification": "three-probes-only"
+          },
+          "normalized_output_sha256": "b79a328c653c4fe47e79301f673b9b8325f28d6abbb1af0a2b67d8b44bc2e248",
+          "seconds": 0.22326075000455603
+        },
+        {
+          "requested_strategy": "sabre",
+          "selected_strategy": "sabre",
+          "restored_swap_count": 0,
+          "native_baseline_cz_count": 96,
+          "block_cz_savings": [
+            1,
+            1,
+            1,
+            1,
+            1,
+            1,
+            1,
+            1
+          ],
+          "metrics": {
+            "max_semantic_error": 2.0546626093100596e-15,
+            "full_cz_count": 88,
+            "two_body_dependency_depth": 78,
+            "verification": "three-probes-only"
+          },
+          "normalized_output_sha256": "dba78769a20367565656e972b7e2ad4ef76dc63b65d1edc960b7bc90a638790c",
+          "seconds": 0.21410270800697617
+        }
+      ],
+      "selected_index": 0,
+      "portfolio_seconds": 0.6307006250135601,
+      "failures": []
+    },
+    {
+      "case": [
+        8,
+        "hopping",
+        "ring"
+      ],
+      "observations": [
+        {
+          "requested_strategy": "auto",
+          "selected_strategy": "restore_after_each_gate",
+          "restored_swap_count": 0,
+          "native_baseline_cz_count": 96,
+          "block_cz_savings": [
+            1,
+            1,
+            1,
+            1,
+            1,
+            1,
+            1,
+            1
+          ],
+          "metrics": {
+            "max_semantic_error": 2.5537486418856237e-15,
+            "full_cz_count": 88,
+            "two_body_dependency_depth": 78,
+            "verification": "three-probes-only"
+          },
+          "normalized_output_sha256": "b79a328c653c4fe47e79301f673b9b8325f28d6abbb1af0a2b67d8b44bc2e248",
+          "seconds": 0.20021158398594707
+        },
+        {
+          "requested_strategy": "persistent_layout",
+          "selected_strategy": "persistent_layout",
+          "restored_swap_count": 0,
+          "native_baseline_cz_count": 96,
+          "block_cz_savings": [
+            1,
+            1,
+            1,
+            1,
+            1,
+            1,
+            1,
+            1
+          ],
+          "metrics": {
+            "max_semantic_error": 2.5537486418856237e-15,
+            "full_cz_count": 88,
+            "two_body_dependency_depth": 78,
+            "verification": "three-probes-only"
+          },
+          "normalized_output_sha256": "b79a328c653c4fe47e79301f673b9b8325f28d6abbb1af0a2b67d8b44bc2e248",
+          "seconds": 0.20666791600524448
+        },
+        {
+          "requested_strategy": "sabre",
+          "selected_strategy": "sabre",
+          "restored_swap_count": 0,
+          "native_baseline_cz_count": 96,
+          "block_cz_savings": [
+            1,
+            1,
+            1,
+            1,
+            1,
+            1,
+            1,
+            1
+          ],
+          "metrics": {
+            "max_semantic_error": 2.0546626093100596e-15,
+            "full_cz_count": 88,
+            "two_body_dependency_depth": 78,
+            "verification": "three-probes-only"
+          },
+          "normalized_output_sha256": "dba78769a20367565656e972b7e2ad4ef76dc63b65d1edc960b7bc90a638790c",
+          "seconds": 0.2025529170059599
+        }
+      ],
+      "selected_index": 0,
+      "portfolio_seconds": 0.6094324169971514,
+      "failures": []
+    },
+    {
+      "case": [
+        8,
+        "hopping",
+        "grid"
+      ],
+      "observations": [
+        {
+          "requested_strategy": "auto",
+          "selected_strategy": "persistent_layout",
+          "restored_swap_count": 12,
+          "native_baseline_cz_count": 132,
+          "block_cz_savings": [
+            1,
+            2,
+            1,
+            1,
+            1,
+            1,
+            1,
+            1,
+            1,
+            2
+          ],
+          "metrics": {
+            "max_semantic_error": 3.413935800722356e-15,
+            "full_cz_count": 120,
+            "two_body_dependency_depth": 93,
+            "verification": "three-probes-only"
+          },
+          "normalized_output_sha256": "9ea40253c35b984ec4c2a1770b9855b06aafb13e2a45bab145a70d939a4a22b7",
+          "seconds": 0.2756306250230409
+        },
+        {
+          "requested_strategy": "restore_after_each_gate",
+          "selected_strategy": "restore_after_each_gate",
+          "restored_swap_count": 96,
+          "native_baseline_cz_count": 384,
+          "block_cz_savings": [
+            1,
+            2,
+            6,
+            7,
+            6,
+            2,
+            2,
+            6,
+            2,
+            1,
+            2,
+            6,
+            2,
+            1,
+            1,
+            2,
+            6,
+            7,
+            6,
+            2,
+            2,
+            6,
+            2,
+            1,
+            2,
+            6,
+            2,
+            1
+          ],
+          "metrics": {
+            "max_semantic_error": 5.728165139862057e-15,
+            "full_cz_count": 292,
+            "two_body_dependency_depth": 261,
+            "verification": "three-probes-only"
+          },
+          "normalized_output_sha256": "fb3d7a5e2f318e701a71e21b38d0244d4d110035b1eeb1faf7886794ce70c8e1",
+          "seconds": 0.6898242919996846
+        },
+        {
+          "requested_strategy": "sabre",
+          "selected_strategy": "sabre",
+          "restored_swap_count": 12,
+          "native_baseline_cz_count": 132,
+          "block_cz_savings": [
+            2,
+            1,
+            1,
+            1,
+            1,
+            1,
+            1,
+            1,
+            1,
+            2
+          ],
+          "metrics": {
+            "max_semantic_error": 3.130971641029511e-15,
+            "full_cz_count": 120,
+            "two_body_dependency_depth": 93,
+            "verification": "three-probes-only"
+          },
+          "normalized_output_sha256": "44b5dca869b60366a44347abfa8e2d002c054c691d96d9d484606df22b073057",
+          "seconds": 0.2743039590131957
+        }
+      ],
+      "selected_index": 0,
+      "portfolio_seconds": 1.2397588760359213,
+      "failures": []
+    },
+    {
+      "case": [
+        8,
+        "hopping",
+        "sparse"
+      ],
+      "observations": [
+        {
+          "requested_strategy": "auto",
+          "selected_strategy": "restore_after_each_gate",
+          "restored_swap_count": 0,
+          "native_baseline_cz_count": 96,
+          "block_cz_savings": [
+            1,
+            1,
+            1,
+            1,
+            1,
+            1,
+            1,
+            1
+          ],
+          "metrics": {
+            "max_semantic_error": 2.5537486418856237e-15,
+            "full_cz_count": 88,
+            "two_body_dependency_depth": 78,
+            "verification": "three-probes-only"
+          },
+          "normalized_output_sha256": "b79a328c653c4fe47e79301f673b9b8325f28d6abbb1af0a2b67d8b44bc2e248",
+          "seconds": 0.20058133400743827
+        },
+        {
+          "requested_strategy": "persistent_layout",
+          "selected_strategy": "persistent_layout",
+          "restored_swap_count": 0,
+          "native_baseline_cz_count": 96,
+          "block_cz_savings": [
+            1,
+            1,
+            1,
+            1,
+            1,
+            1,
+            1,
+            1
+          ],
+          "metrics": {
+            "max_semantic_error": 2.5537486418856237e-15,
+            "full_cz_count": 88,
+            "two_body_dependency_depth": 78,
+            "verification": "three-probes-only"
+          },
+          "normalized_output_sha256": "b79a328c653c4fe47e79301f673b9b8325f28d6abbb1af0a2b67d8b44bc2e248",
+          "seconds": 0.2021538330009207
+        },
+        {
+          "requested_strategy": "sabre",
+          "selected_strategy": "sabre",
+          "restored_swap_count": 0,
+          "native_baseline_cz_count": 96,
+          "block_cz_savings": [
+            1,
+            1,
+            1,
+            1,
+            1,
+            1,
+            1,
+            1
+          ],
+          "metrics": {
+            "max_semantic_error": 2.0546626093100596e-15,
+            "full_cz_count": 88,
+            "two_body_dependency_depth": 78,
+            "verification": "three-probes-only"
+          },
+          "normalized_output_sha256": "dba78769a20367565656e972b7e2ad4ef76dc63b65d1edc960b7bc90a638790c",
+          "seconds": 0.20083858299767599
+        }
+      ],
+      "selected_index": 0,
+      "portfolio_seconds": 0.603573750006035,
+      "failures": []
+    },
+    {
+      "case": [
+        8,
+        "qft",
+        "line"
+      ],
+      "observations": [
+        {
+          "requested_strategy": "auto",
+          "selected_strategy": "sabre",
+          "restored_swap_count": 50,
+          "native_baseline_cz_count": 218,
+          "block_cz_savings": [
+            2,
+            2,
+            2,
+            2,
+            2,
+            2,
+            2,
+            2,
+            2,
+            2,
+            2,
+            2,
+            2,
+            2,
+            2,
+            2,
+            2,
+            2,
+            2,
+            2,
+            2,
+            2,
+            2,
+            2,
+            2,
+            6,
+            6
+          ],
+          "metrics": {
+            "max_semantic_error": 4.313514714559936e-15,
+            "full_cz_count": 156,
+            "two_body_dependency_depth": 77,
+            "verification": "three-probes-only"
+          },
+          "normalized_output_sha256": "550354af2b5f0f0e18554ce918dad38ee683633b81022b1dcd6906130db3d342",
+          "seconds": 0.34548000001814216
+        },
+        {
+          "requested_strategy": "persistent_layout",
+          "selected_strategy": "persistent_layout",
+          "restored_swap_count": 124,
+          "native_baseline_cz_count": 440,
+          "block_cz_savings": [
+            2,
+            6
+          ],
+          "metrics": {
+            "max_semantic_error": 8.472829874607408e-15,
+            "full_cz_count": 432,
+            "two_body_dependency_depth": 201,
+            "verification": "three-probes-only"
+          },
+          "normalized_output_sha256": "68acc104a0ecb1e18cddb09c3aec616636dee59864f213fef2790f29777ce277",
+          "seconds": 0.8347029580036178
+        }
+      ],
+      "selected_index": 0,
+      "portfolio_seconds": 1.18018295802176,
+      "failures": [
+        {
+          "strategy": "restore_after_each_gate",
+          "error_type": "ValueError",
+          "error": "instructions exceeds record limit 4096",
+          "traceback": "Traceback (most recent call last):\n  File \"/private/tmp/fq-target-routing-objective-20261122/benchmarks/compiler_target_routing_objective.py\", line 191, in main\n    observation = _observe(case, harness, strategy)\n                  ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/private/tmp/fq-target-routing-objective-20261122/benchmarks/compiler_target_routing_objective.py\", line 107, in _observe\n    payload = adapter.execute(\"route\", selected, seed)\n              ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/private/tmp/sdkbench-product-conformance-20261121/src/sdkbench/candidates/adapters.py\", line 270, in execute\n    payload = _target_artifact_route(self.native, fixture, seed)\n              ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/private/tmp/sdkbench-product-conformance-20261121/src/sdkbench/candidates/adapters.py\", line 231, in _target_artifact_route\n    result = compile_circuit_artifact_for_target(\n             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/private/tmp/fq-target-routing-objective-20261122/benchmarks/compiler_target_routing_objective.py\", line 95, in compile_with_strategy\n    result = _COMPILE(*args, **kwargs, routing_strategy=strategy)\n             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/private/tmp/fq-target-routing-objective-20261122/flagquantum/compiler/artifacts/artifact_compilation.py\", line 268, in compile_circuit_artifact_for_target\n    physical_plan = build_physical_circuit_plan(\n                    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/private/tmp/fq-target-routing-objective-20261122/flagquantum/compiler/artifacts/physical_plan.py\", line 1116, in build_physical_circuit_plan\n    return PhysicalCircuitPlan(\n           ^^^^^^^^^^^^^^^^^^^^\n  File \"<string>\", line 37, in __init__\n  File \"/private/tmp/fq-target-routing-objective-20261122/flagquantum/compiler/artifacts/physical_plan.py\", line 279, in __post_init__\n    collective_evidence = self._v4_evidence() if self.version == \"4.0\" else None\n                          ^^^^^^^^^^^^^^^^^^^\n  File \"/private/tmp/fq-target-routing-objective-20261122/flagquantum/compiler/artifacts/physical_plan.py\", line 323, in _v4_evidence\n    return PhysicalPlanEvidenceV4(\n           ^^^^^^^^^^^^^^^^^^^^^^^\n  File \"<string>\", line 25, in __init__\n  File \"/private/tmp/fq-target-routing-objective-20261122/flagquantum/core/_compilation_evidence_v4.py\", line 341, in __post_init__\n    records = _array(getattr(self, name), name)\n              ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/private/tmp/fq-target-routing-objective-20261122/flagquantum/core/_compilation_evidence_v4.py\", line 82, in _array\n    raise ValueError(f\"{owner} exceeds record limit {limit}\")\nValueError: instructions exceeds record limit 4096\n"
+        }
+      ]
+    },
+    {
+      "case": [
+        8,
+        "qft",
+        "ring"
+      ],
+      "observations": [
+        {
+          "requested_strategy": "auto",
+          "selected_strategy": "sabre",
+          "restored_swap_count": 42,
+          "native_baseline_cz_count": 194,
+          "block_cz_savings": [
+            2,
+            2,
+            2,
+            2,
+            2,
+            2,
+            2,
+            2,
+            2,
+            2,
+            2,
+            2,
+            2,
+            2,
+            2,
+            2,
+            2,
+            2,
+            2,
+            2,
+            6,
+            6
+          ],
+          "metrics": {
+            "max_semantic_error": 3.806892464795862e-15,
+            "full_cz_count": 142,
+            "two_body_dependency_depth": 78,
+            "verification": "three-probes-only"
+          },
+          "normalized_output_sha256": "d8ce9cb303f15f41a4e19e9108c7b93170816b68acc6c33c18b3a3bdc6b083c3",
+          "seconds": 0.3404611249861773
+        },
+        {
+          "requested_strategy": "restore_after_each_gate",
+          "selected_strategy": "restore_after_each_gate",
+          "restored_swap_count": 96,
+          "native_baseline_cz_count": 356,
+          "block_cz_savings": [
+            2
+          ],
+          "metrics": {
+            "max_semantic_error": 6.7386199217479926e-15,
+            "full_cz_count": 354,
+            "two_body_dependency_depth": 215,
+            "verification": "three-probes-only"
+          },
+          "normalized_output_sha256": "99c028e1d690410c0756144e203f45275b04d9e014fec66a7082ae03bae959b1",
+          "seconds": 0.6645289589941967
+        },
+        {
+          "requested_strategy": "persistent_layout",
+          "selected_strategy": "persistent_layout",
+          "restored_swap_count": 102,
+          "native_baseline_cz_count": 374,
+          "block_cz_savings": [
+            2,
+            2,
+            2,
+            6,
+            6,
+            6
+          ],
+          "metrics": {
+            "max_semantic_error": 6.93067338409286e-15,
+            "full_cz_count": 350,
+            "two_body_dependency_depth": 177,
+            "verification": "three-probes-only"
+          },
+          "normalized_output_sha256": "db25d7235d2a35217a006f404ab84edc860172eea04d196a9a03fe4e2a594795",
+          "seconds": 0.6848919999902137
+        }
+      ],
+      "selected_index": 0,
+      "portfolio_seconds": 1.6898820839705877,
+      "failures": []
+    },
+    {
+      "case": [
+        8,
+        "qft",
+        "grid"
+      ],
+      "observations": [
+        {
+          "requested_strategy": "auto",
+          "selected_strategy": "sabre",
+          "restored_swap_count": 34,
+          "native_baseline_cz_count": 170,
+          "block_cz_savings": [
+            2,
+            2,
+            2,
+            2
+          ],
+          "metrics": {
+            "max_semantic_error": 3.12653962484595e-15,
+            "full_cz_count": 162,
+            "two_body_dependency_depth": 97,
+            "verification": "three-probes-only"
+          },
+          "normalized_output_sha256": "a4e96efdc91b12924bbf887af7417e3860ff5e42709bcb07824408d86249533e",
+          "seconds": 0.28417270799400285
+        },
+        {
+          "requested_strategy": "restore_after_each_gate",
+          "selected_strategy": "restore_after_each_gate",
+          "restored_swap_count": 104,
+          "native_baseline_cz_count": 380,
+          "block_cz_savings": [
+            2,
+            6,
+            6
+          ],
+          "metrics": {
+            "max_semantic_error": 6.806966503079464e-15,
+            "full_cz_count": 366,
+            "two_body_dependency_depth": 312,
+            "verification": "three-probes-only"
+          },
+          "normalized_output_sha256": "6fe45acbe4bd20ccd1052892cb2df51a45ed6e80231de87c71736b9629596030",
+          "seconds": 0.6996700000017881
+        },
+        {
+          "requested_strategy": "persistent_layout",
+          "selected_strategy": "persistent_layout",
+          "restored_swap_count": 72,
+          "native_baseline_cz_count": 284,
+          "block_cz_savings": [
+            6,
+            6,
+            6
+          ],
+          "metrics": {
+            "max_semantic_error": 4.767661436767077e-15,
+            "full_cz_count": 266,
+            "two_body_dependency_depth": 187,
+            "verification": "three-probes-only"
+          },
+          "normalized_output_sha256": "f72de9b5e8755157e721ca99fe1aff5e9a05f51853f2d16133fe8dbd2559b7a8",
+          "seconds": 0.4958727499761153
+        }
+      ],
+      "selected_index": 0,
+      "portfolio_seconds": 1.4797154579719063,
+      "failures": []
+    },
+    {
+      "case": [
+        8,
+        "qft",
+        "sparse"
+      ],
+      "observations": [
+        {
+          "requested_strategy": "auto",
+          "selected_strategy": "sabre",
+          "restored_swap_count": 38,
+          "native_baseline_cz_count": 182,
+          "block_cz_savings": [
+            2,
+            2,
+            2,
+            2,
+            2,
+            2
+          ],
+          "metrics": {
+            "max_semantic_error": 5.246464596772037e-15,
+            "full_cz_count": 170,
+            "two_body_dependency_depth": 96,
+            "verification": "three-probes-only"
+          },
+          "normalized_output_sha256": "de469ad82e7273f2f27ae4f1191a6060912661dc021ee1d8a2dd6cd123fa9374",
+          "seconds": 0.31992954199085943
+        },
+        {
+          "requested_strategy": "restore_after_each_gate",
+          "selected_strategy": "restore_after_each_gate",
+          "restored_swap_count": 72,
+          "native_baseline_cz_count": 284,
+          "block_cz_savings": [
+            6,
+            6,
+            2
+          ],
+          "metrics": {
+            "max_semantic_error": 5.16943870247044e-15,
+            "full_cz_count": 270,
+            "two_body_dependency_depth": 172,
+            "verification": "three-probes-only"
+          },
+          "normalized_output_sha256": "8ebd75fca5caa9b714735b4f519e20f726072ac4412e7649efe8cb68845736b1",
+          "seconds": 0.49996658400050364
+        },
+        {
+          "requested_strategy": "persistent_layout",
+          "selected_strategy": "persistent_layout",
+          "restored_swap_count": 78,
+          "native_baseline_cz_count": 302,
+          "block_cz_savings": [
+            2,
+            6,
+            6,
+            6,
+            6
+          ],
+          "metrics": {
+            "max_semantic_error": 5.175354376521686e-15,
+            "full_cz_count": 276,
+            "two_body_dependency_depth": 158,
+            "verification": "three-probes-only"
+          },
+          "normalized_output_sha256": "6a8507b05e2739239b2c726dddbe24f1622fb95c6e4275454b09e7d0335edfe1",
+          "seconds": 0.5367332499881741
+        }
+      ],
+      "selected_index": 0,
+      "portfolio_seconds": 1.3566293759795371,
+      "failures": []
+    },
+    {
+      "case": [
+        8,
+        "repetition",
+        "line"
+      ],
+      "observations": [
+        {
+          "requested_strategy": "auto",
+          "selected_strategy": "sabre",
+          "restored_swap_count": 22,
+          "native_baseline_cz_count": 90,
+          "block_cz_savings": [
+            2,
+            2,
+            2
+          ],
+          "metrics": {
+            "max_semantic_error": 2.237726045655905e-15,
+            "full_cz_count": 84,
+            "two_body_dependency_depth": 64,
+            "verification": "three-probes-only"
+          },
+          "normalized_output_sha256": "7695b00b6a82edb238d19842454f213203679194ca87dd1af035b65d13e2d605",
+          "seconds": 0.15567229202133603
+        },
+        {
+          "requested_strategy": "restore_after_each_gate",
+          "selected_strategy": "restore_after_each_gate",
+          "restored_swap_count": 88,
+          "native_baseline_cz_count": 288,
+          "block_cz_savings": [
+            6,
+            2,
+            6,
+            6,
+            6,
+            6,
+            6,
+            6,
+            6,
+            6,
+            2,
+            6
+          ],
+          "metrics": {
+            "max_semantic_error": 7.150387920919873e-15,
+            "full_cz_count": 224,
+            "two_body_dependency_depth": 200,
+            "verification": "three-probes-only"
+          },
+          "normalized_output_sha256": "8d73a5c6a5e1cc04ced3936242e1430ecd482303c1145e3f6456ae8af9948560",
+          "seconds": 0.5088120000145864
+        },
+        {
+          "requested_strategy": "persistent_layout",
+          "selected_strategy": "persistent_layout",
+          "restored_swap_count": 64,
+          "native_baseline_cz_count": 216,
+          "block_cz_savings": [
+            2,
+            2,
+            2,
+            2,
+            8,
+            6,
+            6,
+            6
+          ],
+          "metrics": {
+            "max_semantic_error": 5.069672894388382e-15,
+            "full_cz_count": 182,
+            "two_body_dependency_depth": 140,
+            "verification": "three-probes-only"
+          },
+          "normalized_output_sha256": "bc798ee57345ebe3fc86b29df90ca2f7c3560513921a234e0e88dcb7d6d682a4",
+          "seconds": 0.3785873750166502
+        }
+      ],
+      "selected_index": 0,
+      "portfolio_seconds": 1.0430716670525726,
+      "failures": []
+    },
+    {
+      "case": [
+        8,
+        "repetition",
+        "ring"
+      ],
+      "observations": [
+        {
+          "requested_strategy": "auto",
+          "selected_strategy": "sabre",
+          "restored_swap_count": 22,
+          "native_baseline_cz_count": 90,
+          "block_cz_savings": [
+            2,
+            2,
+            2
+          ],
+          "metrics": {
+            "max_semantic_error": 3.2278911070751667e-15,
+            "full_cz_count": 84,
+            "two_body_dependency_depth": 66,
+            "verification": "three-probes-only"
+          },
+          "normalized_output_sha256": "5b10d5cfbcc66b3ec3cb41a4ebcf98dac2dc03fbc7a6a3547282d634471098c3",
+          "seconds": 0.1722576660104096
+        },
+        {
+          "requested_strategy": "restore_after_each_gate",
+          "selected_strategy": "restore_after_each_gate",
+          "restored_swap_count": 76,
+          "native_baseline_cz_count": 252,
+          "block_cz_savings": [
+            6,
+            6,
+            6,
+            6,
+            6,
+            6,
+            6,
+            6
+          ],
+          "metrics": {
+            "max_semantic_error": 5.097858533916088e-15,
+            "full_cz_count": 204,
+            "two_body_dependency_depth": 159,
+            "verification": "three-probes-only"
+          },
+          "normalized_output_sha256": "3c2cfd05866ef456482fbf0d3f55698fe44a08099f3315af82c803c57adeb0ee",
+          "seconds": 0.4452442500041798
+        },
+        {
+          "requested_strategy": "persistent_layout",
+          "selected_strategy": "persistent_layout",
+          "restored_swap_count": 48,
+          "native_baseline_cz_count": 168,
+          "block_cz_savings": [
+            2,
+            2,
+            8,
+            6,
+            6,
+            6
+          ],
+          "metrics": {
+            "max_semantic_error": 3.621039029668521e-15,
+            "full_cz_count": 138,
+            "two_body_dependency_depth": 100,
+            "verification": "three-probes-only"
+          },
+          "normalized_output_sha256": "e685d61214b9874d0284cb8579b834d82261e9cf093ff83d753c8872b9a7ef5b",
+          "seconds": 0.2747531669738237
+        }
+      ],
+      "selected_index": 0,
+      "portfolio_seconds": 0.892255082988413,
+      "failures": []
+    },
+    {
+      "case": [
+        8,
+        "repetition",
+        "grid"
+      ],
+      "observations": [
+        {
+          "requested_strategy": "auto",
+          "selected_strategy": "sabre",
+          "restored_swap_count": 10,
+          "native_baseline_cz_count": 54,
+          "block_cz_savings": [
+            2,
+            2,
+            2,
+            2
+          ],
+          "metrics": {
+            "max_semantic_error": 2.4330101267912156e-15,
+            "full_cz_count": 46,
+            "two_body_dependency_depth": 45,
+            "verification": "three-probes-only"
+          },
+          "normalized_output_sha256": "25d250fad2586d3a9603ccc2c38fb20b79bdbd73b3d96ce26489ac1b81bb51db",
+          "seconds": 0.11476583301555365
+        },
+        {
+          "requested_strategy": "restore_after_each_gate",
+          "selected_strategy": "restore_after_each_gate",
+          "restored_swap_count": 24,
+          "native_baseline_cz_count": 96,
+          "block_cz_savings": [
+            6,
+            6,
+            2,
+            2,
+            2,
+            6
+          ],
+          "metrics": {
+            "max_semantic_error": 2.4184011361052488e-15,
+            "full_cz_count": 72,
+            "two_body_dependency_depth": 71,
+            "verification": "three-probes-only"
+          },
+          "normalized_output_sha256": "ea07e61c7f21920dd9fc5b66a2120dcda618f2bcef27da12d504c65b80a64ee9",
+          "seconds": 0.16895979101536795
+        },
+        {
+          "requested_strategy": "persistent_layout",
+          "selected_strategy": "persistent_layout",
+          "restored_swap_count": 32,
+          "native_baseline_cz_count": 120,
+          "block_cz_savings": [
+            2,
+            2,
+            2,
+            8,
+            4,
+            6,
+            6,
+            6
+          ],
+          "metrics": {
+            "max_semantic_error": 2.2282386309886773e-15,
+            "full_cz_count": 84,
+            "two_body_dependency_depth": 81,
+            "verification": "three-probes-only"
+          },
+          "normalized_output_sha256": "c5aff38851517bbdbbf7475ce3277ea7b1c72dcaa4d82df70826399adf0d3d90",
+          "seconds": 0.20056195900542662
+        }
+      ],
+      "selected_index": 0,
+      "portfolio_seconds": 0.4842875830363482,
+      "failures": []
+    },
+    {
+      "case": [
+        8,
+        "repetition",
+        "sparse"
+      ],
+      "observations": [
+        {
+          "requested_strategy": "auto",
+          "selected_strategy": "sabre",
+          "restored_swap_count": 12,
+          "native_baseline_cz_count": 60,
+          "block_cz_savings": [],
+          "metrics": {
+            "max_semantic_error": 2.2415205078620253e-15,
+            "full_cz_count": 60,
+            "two_body_dependency_depth": 54,
+            "verification": "three-probes-only"
+          },
+          "normalized_output_sha256": "50c820ea8abd3ed48d6784082d8c7fa29bb7017ee96602f0b0de2c7c38984c04",
+          "seconds": 0.10051279197796248
+        },
+        {
+          "requested_strategy": "restore_after_each_gate",
+          "selected_strategy": "restore_after_each_gate",
+          "restored_swap_count": 62,
+          "native_baseline_cz_count": 210,
+          "block_cz_savings": [
+            6,
+            2,
+            6,
+            6,
+            6,
+            6,
+            6,
+            6,
+            6,
+            6,
+            2,
+            6
+          ],
+          "metrics": {
+            "max_semantic_error": 6.31374146787501e-15,
+            "full_cz_count": 146,
+            "two_body_dependency_depth": 132,
+            "verification": "three-probes-only"
+          },
+          "normalized_output_sha256": "16cb228658e243cf74e0f0170ab0720615dd36c16b8086a2bf8d18f8084afc7f",
+          "seconds": 0.37173754200921394
+        },
+        {
+          "requested_strategy": "persistent_layout",
+          "selected_strategy": "persistent_layout",
+          "restored_swap_count": 44,
+          "native_baseline_cz_count": 156,
+          "block_cz_savings": [
+            2,
+            2,
+            2,
+            2,
+            8,
+            6,
+            6,
+            6
+          ],
+          "metrics": {
+            "max_semantic_error": 3.3587758767877443e-15,
+            "full_cz_count": 122,
+            "two_body_dependency_depth": 104,
+            "verification": "three-probes-only"
+          },
+          "normalized_output_sha256": "d7cfa8eca10c1804c1e0f4aa605667aeff3a812acc21d8ddaa050218b5c0667b",
+          "seconds": 0.2564877920085564
+        }
+      ],
+      "selected_index": 0,
+      "portfolio_seconds": 0.7287381259957328,
+      "failures": []
+    },
+    {
+      "case": [
+        12,
+        "qaoa",
+        "line"
+      ],
+      "observations": [
+        {
+          "requested_strategy": "auto",
+          "selected_strategy": "sabre",
+          "restored_swap_count": 74,
+          "native_baseline_cz_count": 270,
+          "block_cz_savings": [],
+          "metrics": {
+            "max_semantic_error": 2.005952500137591e-15,
+            "full_cz_count": 270,
+            "two_body_dependency_depth": 101,
+            "verification": "three-probes-only"
+          },
+          "normalized_output_sha256": "a94db80e652282fe1cb6b4317452699474fb30b7fe2c07938e5e360ef607ac85",
+          "seconds": 0.4305244579736609
+        },
+        {
+          "requested_strategy": "persistent_layout",
+          "selected_strategy": "persistent_layout",
+          "restored_swap_count": 138,
+          "native_baseline_cz_count": 462,
+          "block_cz_savings": [
+            2,
+            2,
+            2,
+            2,
+            2,
+            6,
+            6,
+            6,
+            6
+          ],
+          "metrics": {
+            "max_semantic_error": 4.040468526649039e-15,
+            "full_cz_count": 428,
+            "two_body_dependency_depth": 165,
+            "verification": "three-probes-only"
+          },
+          "normalized_output_sha256": "65a05adc8963e2b182d81988bdaa1fffe532ac1f69c91f2d251b737a88e0ac75",
+          "seconds": 0.8225760420027655
+        }
+      ],
+      "selected_index": 0,
+      "portfolio_seconds": 1.2531004999764264,
+      "failures": [
+        {
+          "strategy": "restore_after_each_gate",
+          "error_type": "ValueError",
+          "error": "instructions exceeds record limit 4096",
+          "traceback": "Traceback (most recent call last):\n  File \"/private/tmp/fq-target-routing-objective-20261122/benchmarks/compiler_target_routing_objective.py\", line 191, in main\n    observation = _observe(case, harness, strategy)\n                  ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/private/tmp/fq-target-routing-objective-20261122/benchmarks/compiler_target_routing_objective.py\", line 107, in _observe\n    payload = adapter.execute(\"route\", selected, seed)\n              ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/private/tmp/sdkbench-product-conformance-20261121/src/sdkbench/candidates/adapters.py\", line 270, in execute\n    payload = _target_artifact_route(self.native, fixture, seed)\n              ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/private/tmp/sdkbench-product-conformance-20261121/src/sdkbench/candidates/adapters.py\", line 231, in _target_artifact_route\n    result = compile_circuit_artifact_for_target(\n             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/private/tmp/fq-target-routing-objective-20261122/benchmarks/compiler_target_routing_objective.py\", line 95, in compile_with_strategy\n    result = _COMPILE(*args, **kwargs, routing_strategy=strategy)\n             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/private/tmp/fq-target-routing-objective-20261122/flagquantum/compiler/artifacts/artifact_compilation.py\", line 268, in compile_circuit_artifact_for_target\n    physical_plan = build_physical_circuit_plan(\n                    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/private/tmp/fq-target-routing-objective-20261122/flagquantum/compiler/artifacts/physical_plan.py\", line 1116, in build_physical_circuit_plan\n    return PhysicalCircuitPlan(\n           ^^^^^^^^^^^^^^^^^^^^\n  File \"<string>\", line 37, in __init__\n  File \"/private/tmp/fq-target-routing-objective-20261122/flagquantum/compiler/artifacts/physical_plan.py\", line 279, in __post_init__\n    collective_evidence = self._v4_evidence() if self.version == \"4.0\" else None\n                          ^^^^^^^^^^^^^^^^^^^\n  File \"/private/tmp/fq-target-routing-objective-20261122/flagquantum/compiler/artifacts/physical_plan.py\", line 323, in _v4_evidence\n    return PhysicalPlanEvidenceV4(\n           ^^^^^^^^^^^^^^^^^^^^^^^\n  File \"<string>\", line 25, in __init__\n  File \"/private/tmp/fq-target-routing-objective-20261122/flagquantum/core/_compilation_evidence_v4.py\", line 341, in __post_init__\n    records = _array(getattr(self, name), name)\n              ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/private/tmp/fq-target-routing-objective-20261122/flagquantum/core/_compilation_evidence_v4.py\", line 82, in _array\n    raise ValueError(f\"{owner} exceeds record limit {limit}\")\nValueError: instructions exceeds record limit 4096\n"
+        }
+      ]
+    },
+    {
+      "case": [
+        12,
+        "qaoa",
+        "ring"
+      ],
+      "observations": [
+        {
+          "requested_strategy": "auto",
+          "selected_strategy": "sabre",
+          "restored_swap_count": 30,
+          "native_baseline_cz_count": 138,
+          "block_cz_savings": [
+            2
+          ],
+          "metrics": {
+            "max_semantic_error": 1.1302146135477929e-15,
+            "full_cz_count": 136,
+            "two_body_dependency_depth": 46,
+            "verification": "three-probes-only"
+          },
+          "normalized_output_sha256": "290faa38e669fa411bc5f34d51b4268baf8fc466a843a147b382950c88efd743",
+          "seconds": 0.23721129199839197
+        },
+        {
+          "requested_strategy": "restore_after_each_gate",
+          "selected_strategy": "restore_after_each_gate",
+          "restored_swap_count": 152,
+          "native_baseline_cz_count": 504,
+          "block_cz_savings": [
+            6,
+            6,
+            6,
+            6,
+            6,
+            6,
+            6,
+            6
+          ],
+          "metrics": {
+            "max_semantic_error": 4.718857282655132e-15,
+            "full_cz_count": 456,
+            "two_body_dependency_depth": 346,
+            "verification": "three-probes-only"
+          },
+          "normalized_output_sha256": "ca1553565cd43e3d6d4a933269c595ce84131acb718e3bf88ee39161f76d4039",
+          "seconds": 0.9394818329892587
+        },
+        {
+          "requested_strategy": "persistent_layout",
+          "selected_strategy": "persistent_layout",
+          "restored_swap_count": 68,
+          "native_baseline_cz_count": 252,
+          "block_cz_savings": [
+            2,
+            2,
+            6,
+            6,
+            6,
+            6,
+            6,
+            6
+          ],
+          "metrics": {
+            "max_semantic_error": 2.1474727592766422e-15,
+            "full_cz_count": 212,
+            "two_body_dependency_depth": 105,
+            "verification": "three-probes-only"
+          },
+          "normalized_output_sha256": "f1c7462e0202cdb7e2d931c953413afc85d4c53a90d5e01788bf5ea8915c8286",
+          "seconds": 0.4283008750062436
+        }
+      ],
+      "selected_index": 0,
+      "portfolio_seconds": 1.6049939999938942,
+      "failures": []
+    },
+    {
+      "case": [
+        12,
+        "qaoa",
+        "grid"
+      ],
+      "observations": [
+        {
+          "requested_strategy": "auto",
+          "selected_strategy": "sabre",
+          "restored_swap_count": 38,
+          "native_baseline_cz_count": 162,
+          "block_cz_savings": [
+            2,
+            2,
+            2,
+            6
+          ],
+          "metrics": {
+            "max_semantic_error": 1.1387399314838863e-15,
+            "full_cz_count": 150,
+            "two_body_dependency_depth": 76,
+            "verification": "three-probes-only"
+          },
+          "normalized_output_sha256": "0321cbd788fd7ccae52f97a12cd880f7410688b5341f4603559b93939a5be8a2",
+          "seconds": 0.29181320799398236
+        },
+        {
+          "requested_strategy": "restore_after_each_gate",
+          "selected_strategy": "restore_after_each_gate",
+          "restored_swap_count": 104,
+          "native_baseline_cz_count": 360,
+          "block_cz_savings": [
+            6,
+            6,
+            6,
+            6,
+            6,
+            6,
+            6,
+            6,
+            6,
+            6
+          ],
+          "metrics": {
+            "max_semantic_error": 2.864679300206921e-15,
+            "full_cz_count": 300,
+            "two_body_dependency_depth": 239,
+            "verification": "three-probes-only"
+          },
+          "normalized_output_sha256": "a1e9fe1224af6fd03b09ddda55f5f5e907bb5fa2a742d7fac2919050f40a842c",
+          "seconds": 0.6362781659991015
+        },
+        {
+          "requested_strategy": "persistent_layout",
+          "selected_strategy": "persistent_layout",
+          "restored_swap_count": 92,
+          "native_baseline_cz_count": 324,
+          "block_cz_savings": [
+            2,
+            6,
+            6,
+            6,
+            6,
+            6,
+            6
+          ],
+          "metrics": {
+            "max_semantic_error": 2.684340949095803e-15,
+            "full_cz_count": 286,
+            "two_body_dependency_depth": 200,
+            "verification": "three-probes-only"
+          },
+          "normalized_output_sha256": "4de7959af8abab2d3a4d7b76987fa0fd1bb5d4e5da064bc241c5475fee99579b",
+          "seconds": 0.5660983330162708
+        }
+      ],
+      "selected_index": 0,
+      "portfolio_seconds": 1.4941897070093546,
+      "failures": []
+    },
+    {
+      "case": [
+        12,
+        "qaoa",
+        "sparse"
+      ],
+      "observations": [
+        {
+          "requested_strategy": "auto",
+          "selected_strategy": "sabre",
+          "restored_swap_count": 26,
+          "native_baseline_cz_count": 126,
+          "block_cz_savings": [
+            2,
+            2
+          ],
+          "metrics": {
+            "max_semantic_error": 1.0166130809736812e-15,
+            "full_cz_count": 122,
+            "two_body_dependency_depth": 51,
+            "verification": "three-probes-only"
+          },
+          "normalized_output_sha256": "aac2f535b1f7823d3113c926c22b9c1dc828a452b08a290e399c3410303f184c",
+          "seconds": 0.2120020830188878
+        },
+        {
+          "requested_strategy": "restore_after_each_gate",
+          "selected_strategy": "restore_after_each_gate",
+          "restored_swap_count": 96,
+          "native_baseline_cz_count": 336,
+          "block_cz_savings": [
+            6,
+            6,
+            6,
+            6
+          ],
+          "metrics": {
+            "max_semantic_error": 2.832292958781227e-15,
+            "full_cz_count": 312,
+            "two_body_dependency_depth": 252,
+            "verification": "three-probes-only"
+          },
+          "normalized_output_sha256": "d1aaaffd69b494468fd4a4997c034a0a1e41fd8e8bbaddac98184ae18ec78bbd",
+          "seconds": 0.5880094999738503
+        },
+        {
+          "requested_strategy": "persistent_layout",
+          "selected_strategy": "persistent_layout",
+          "restored_swap_count": 68,
+          "native_baseline_cz_count": 252,
+          "block_cz_savings": [
+            2,
+            2,
+            8,
+            6,
+            6
+          ],
+          "metrics": {
+            "max_semantic_error": 2.090994547293238e-15,
+            "full_cz_count": 228,
+            "two_body_dependency_depth": 120,
+            "verification": "three-probes-only"
+          },
+          "normalized_output_sha256": "268d7201d024b5bf173479845fc67927aa595eaf5110fcf6e8b55143de4b885e",
+          "seconds": 0.4478206249768846
+        }
+      ],
+      "selected_index": 0,
+      "portfolio_seconds": 1.2478322079696227,
+      "failures": []
+    },
+    {
+      "case": [
+        12,
+        "ising",
+        "line"
+      ],
+      "observations": [
+        {
+          "requested_strategy": "auto",
+          "selected_strategy": "sabre",
+          "restored_swap_count": 76,
+          "native_baseline_cz_count": 294,
+          "block_cz_savings": [
+            2,
+            2,
+            2,
+            2,
+            2
+          ],
+          "metrics": {
+            "max_semantic_error": 2.0731970492786265e-15,
+            "full_cz_count": 284,
+            "two_body_dependency_depth": 146,
+            "verification": "three-probes-only"
+          },
+          "normalized_output_sha256": "13bf8bf4a204f7812da4a09773bef4d5cbcbd676fe7e856d2e7757e01a4ecefa",
+          "seconds": 0.5362381660088431
+        }
+      ],
+      "selected_index": 0,
+      "portfolio_seconds": 0.5362381660088431,
+      "failures": [
+        {
+          "strategy": "restore_after_each_gate",
+          "error_type": "ValueError",
+          "error": "instructions exceeds record limit 4096",
+          "traceback": "Traceback (most recent call last):\n  File \"/private/tmp/fq-target-routing-objective-20261122/benchmarks/compiler_target_routing_objective.py\", line 191, in main\n    observation = _observe(case, harness, strategy)\n                  ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/private/tmp/fq-target-routing-objective-20261122/benchmarks/compiler_target_routing_objective.py\", line 107, in _observe\n    payload = adapter.execute(\"route\", selected, seed)\n              ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/private/tmp/sdkbench-product-conformance-20261121/src/sdkbench/candidates/adapters.py\", line 270, in execute\n    payload = _target_artifact_route(self.native, fixture, seed)\n              ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/private/tmp/sdkbench-product-conformance-20261121/src/sdkbench/candidates/adapters.py\", line 231, in _target_artifact_route\n    result = compile_circuit_artifact_for_target(\n             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/private/tmp/fq-target-routing-objective-20261122/benchmarks/compiler_target_routing_objective.py\", line 95, in compile_with_strategy\n    result = _COMPILE(*args, **kwargs, routing_strategy=strategy)\n             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/private/tmp/fq-target-routing-objective-20261122/flagquantum/compiler/artifacts/artifact_compilation.py\", line 268, in compile_circuit_artifact_for_target\n    physical_plan = build_physical_circuit_plan(\n                    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/private/tmp/fq-target-routing-objective-20261122/flagquantum/compiler/artifacts/physical_plan.py\", line 1116, in build_physical_circuit_plan\n    return PhysicalCircuitPlan(\n           ^^^^^^^^^^^^^^^^^^^^\n  File \"<string>\", line 37, in __init__\n  File \"/private/tmp/fq-target-routing-objective-20261122/flagquantum/compiler/artifacts/physical_plan.py\", line 279, in __post_init__\n    collective_evidence = self._v4_evidence() if self.version == \"4.0\" else None\n                          ^^^^^^^^^^^^^^^^^^^\n  File \"/private/tmp/fq-target-routing-objective-20261122/flagquantum/compiler/artifacts/physical_plan.py\", line 323, in _v4_evidence\n    return PhysicalPlanEvidenceV4(\n           ^^^^^^^^^^^^^^^^^^^^^^^\n  File \"<string>\", line 25, in __init__\n  File \"/private/tmp/fq-target-routing-objective-20261122/flagquantum/core/_compilation_evidence_v4.py\", line 341, in __post_init__\n    records = _array(getattr(self, name), name)\n              ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/private/tmp/fq-target-routing-objective-20261122/flagquantum/core/_compilation_evidence_v4.py\", line 82, in _array\n    raise ValueError(f\"{owner} exceeds record limit {limit}\")\nValueError: instructions exceeds record limit 4096\n"
+        },
+        {
+          "strategy": "persistent_layout",
+          "error_type": "ValueError",
+          "error": "instructions exceeds record limit 4096",
+          "traceback": "Traceback (most recent call last):\n  File \"/private/tmp/fq-target-routing-objective-20261122/benchmarks/compiler_target_routing_objective.py\", line 191, in main\n    observation = _observe(case, harness, strategy)\n                  ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/private/tmp/fq-target-routing-objective-20261122/benchmarks/compiler_target_routing_objective.py\", line 107, in _observe\n    payload = adapter.execute(\"route\", selected, seed)\n              ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/private/tmp/sdkbench-product-conformance-20261121/src/sdkbench/candidates/adapters.py\", line 270, in execute\n    payload = _target_artifact_route(self.native, fixture, seed)\n              ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/private/tmp/sdkbench-product-conformance-20261121/src/sdkbench/candidates/adapters.py\", line 231, in _target_artifact_route\n    result = compile_circuit_artifact_for_target(\n             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/private/tmp/fq-target-routing-objective-20261122/benchmarks/compiler_target_routing_objective.py\", line 95, in compile_with_strategy\n    result = _COMPILE(*args, **kwargs, routing_strategy=strategy)\n             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/private/tmp/fq-target-routing-objective-20261122/flagquantum/compiler/artifacts/artifact_compilation.py\", line 268, in compile_circuit_artifact_for_target\n    physical_plan = build_physical_circuit_plan(\n                    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/private/tmp/fq-target-routing-objective-20261122/flagquantum/compiler/artifacts/physical_plan.py\", line 1116, in build_physical_circuit_plan\n    return PhysicalCircuitPlan(\n           ^^^^^^^^^^^^^^^^^^^^\n  File \"<string>\", line 37, in __init__\n  File \"/private/tmp/fq-target-routing-objective-20261122/flagquantum/compiler/artifacts/physical_plan.py\", line 279, in __post_init__\n    collective_evidence = self._v4_evidence() if self.version == \"4.0\" else None\n                          ^^^^^^^^^^^^^^^^^^^\n  File \"/private/tmp/fq-target-routing-objective-20261122/flagquantum/compiler/artifacts/physical_plan.py\", line 323, in _v4_evidence\n    return PhysicalPlanEvidenceV4(\n           ^^^^^^^^^^^^^^^^^^^^^^^\n  File \"<string>\", line 25, in __init__\n  File \"/private/tmp/fq-target-routing-objective-20261122/flagquantum/core/_compilation_evidence_v4.py\", line 341, in __post_init__\n    records = _array(getattr(self, name), name)\n              ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/private/tmp/fq-target-routing-objective-20261122/flagquantum/core/_compilation_evidence_v4.py\", line 82, in _array\n    raise ValueError(f\"{owner} exceeds record limit {limit}\")\nValueError: instructions exceeds record limit 4096\n"
+        }
+      ]
+    },
+    {
+      "case": [
+        12,
+        "ising",
+        "ring"
+      ],
+      "observations": [
+        {
+          "requested_strategy": "auto",
+          "selected_strategy": "sabre",
+          "restored_swap_count": 38,
+          "native_baseline_cz_count": 180,
+          "block_cz_savings": [
+            2
+          ],
+          "metrics": {
+            "max_semantic_error": 1.1938124470981842e-15,
+            "full_cz_count": 178,
+            "two_body_dependency_depth": 75,
+            "verification": "three-probes-only"
+          },
+          "normalized_output_sha256": "3ef18ec30d50bc5b42b77b35e737e49de5ddc20593092f5373a409fb94128df3",
+          "seconds": 0.3240296670119278
+        }
+      ],
+      "selected_index": 0,
+      "portfolio_seconds": 0.3240296670119278,
+      "failures": [
+        {
+          "strategy": "restore_after_each_gate",
+          "error_type": "ValueError",
+          "error": "instructions exceeds record limit 4096",
+          "traceback": "Traceback (most recent call last):\n  File \"/private/tmp/fq-target-routing-objective-20261122/benchmarks/compiler_target_routing_objective.py\", line 191, in main\n    observation = _observe(case, harness, strategy)\n                  ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/private/tmp/fq-target-routing-objective-20261122/benchmarks/compiler_target_routing_objective.py\", line 107, in _observe\n    payload = adapter.execute(\"route\", selected, seed)\n              ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/private/tmp/sdkbench-product-conformance-20261121/src/sdkbench/candidates/adapters.py\", line 270, in execute\n    payload = _target_artifact_route(self.native, fixture, seed)\n              ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/private/tmp/sdkbench-product-conformance-20261121/src/sdkbench/candidates/adapters.py\", line 231, in _target_artifact_route\n    result = compile_circuit_artifact_for_target(\n             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/private/tmp/fq-target-routing-objective-20261122/benchmarks/compiler_target_routing_objective.py\", line 95, in compile_with_strategy\n    result = _COMPILE(*args, **kwargs, routing_strategy=strategy)\n             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/private/tmp/fq-target-routing-objective-20261122/flagquantum/compiler/artifacts/artifact_compilation.py\", line 268, in compile_circuit_artifact_for_target\n    physical_plan = build_physical_circuit_plan(\n                    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/private/tmp/fq-target-routing-objective-20261122/flagquantum/compiler/artifacts/physical_plan.py\", line 1116, in build_physical_circuit_plan\n    return PhysicalCircuitPlan(\n           ^^^^^^^^^^^^^^^^^^^^\n  File \"<string>\", line 37, in __init__\n  File \"/private/tmp/fq-target-routing-objective-20261122/flagquantum/compiler/artifacts/physical_plan.py\", line 279, in __post_init__\n    collective_evidence = self._v4_evidence() if self.version == \"4.0\" else None\n                          ^^^^^^^^^^^^^^^^^^^\n  File \"/private/tmp/fq-target-routing-objective-20261122/flagquantum/compiler/artifacts/physical_plan.py\", line 323, in _v4_evidence\n    return PhysicalPlanEvidenceV4(\n           ^^^^^^^^^^^^^^^^^^^^^^^\n  File \"<string>\", line 25, in __init__\n  File \"/private/tmp/fq-target-routing-objective-20261122/flagquantum/core/_compilation_evidence_v4.py\", line 341, in __post_init__\n    records = _array(getattr(self, name), name)\n              ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/private/tmp/fq-target-routing-objective-20261122/flagquantum/core/_compilation_evidence_v4.py\", line 82, in _array\n    raise ValueError(f\"{owner} exceeds record limit {limit}\")\nValueError: instructions exceeds record limit 4096\n"
+        },
+        {
+          "strategy": "persistent_layout",
+          "error_type": "ValueError",
+          "error": "native_input_instructions exceeds record limit 4096",
+          "traceback": "Traceback (most recent call last):\n  File \"/private/tmp/fq-target-routing-objective-20261122/benchmarks/compiler_target_routing_objective.py\", line 191, in main\n    observation = _observe(case, harness, strategy)\n                  ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/private/tmp/fq-target-routing-objective-20261122/benchmarks/compiler_target_routing_objective.py\", line 107, in _observe\n    payload = adapter.execute(\"route\", selected, seed)\n              ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/private/tmp/sdkbench-product-conformance-20261121/src/sdkbench/candidates/adapters.py\", line 270, in execute\n    payload = _target_artifact_route(self.native, fixture, seed)\n              ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/private/tmp/sdkbench-product-conformance-20261121/src/sdkbench/candidates/adapters.py\", line 231, in _target_artifact_route\n    result = compile_circuit_artifact_for_target(\n             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/private/tmp/fq-target-routing-objective-20261122/benchmarks/compiler_target_routing_objective.py\", line 95, in compile_with_strategy\n    result = _COMPILE(*args, **kwargs, routing_strategy=strategy)\n             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/private/tmp/fq-target-routing-objective-20261122/flagquantum/compiler/artifacts/artifact_compilation.py\", line 268, in compile_circuit_artifact_for_target\n    physical_plan = build_physical_circuit_plan(\n                    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/private/tmp/fq-target-routing-objective-20261122/flagquantum/compiler/artifacts/physical_plan.py\", line 1116, in build_physical_circuit_plan\n    return PhysicalCircuitPlan(\n           ^^^^^^^^^^^^^^^^^^^^\n  File \"<string>\", line 37, in __init__\n  File \"/private/tmp/fq-target-routing-objective-20261122/flagquantum/compiler/artifacts/physical_plan.py\", line 279, in __post_init__\n    collective_evidence = self._v4_evidence() if self.version == \"4.0\" else None\n                          ^^^^^^^^^^^^^^^^^^^\n  File \"/private/tmp/fq-target-routing-objective-20261122/flagquantum/compiler/artifacts/physical_plan.py\", line 323, in _v4_evidence\n    return PhysicalPlanEvidenceV4(\n           ^^^^^^^^^^^^^^^^^^^^^^^\n  File \"<string>\", line 25, in __init__\n  File \"/private/tmp/fq-target-routing-objective-20261122/flagquantum/core/_compilation_evidence_v4.py\", line 341, in __post_init__\n    records = _array(getattr(self, name), name)\n              ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/private/tmp/fq-target-routing-objective-20261122/flagquantum/core/_compilation_evidence_v4.py\", line 82, in _array\n    raise ValueError(f\"{owner} exceeds record limit {limit}\")\nValueError: native_input_instructions exceeds record limit 4096\n"
+        }
+      ]
+    },
+    {
+      "case": [
+        12,
+        "ising",
+        "grid"
+      ],
+      "observations": [
+        {
+          "requested_strategy": "auto",
+          "selected_strategy": "sabre",
+          "restored_swap_count": 24,
+          "native_baseline_cz_count": 138,
+          "block_cz_savings": [
+            2
+          ],
+          "metrics": {
+            "max_semantic_error": 9.708443902280867e-16,
+            "full_cz_count": 136,
+            "two_body_dependency_depth": 52,
+            "verification": "three-probes-only"
+          },
+          "normalized_output_sha256": "435efc028512e1b578a811d3f262c2612cab2763064eb2a6c75dd6958c5bd3a6",
+          "seconds": 0.23415274999570101
+        },
+        {
+          "requested_strategy": "restore_after_each_gate",
+          "selected_strategy": "restore_after_each_gate",
+          "restored_swap_count": 108,
+          "native_baseline_cz_count": 390,
+          "block_cz_savings": [
+            2,
+            2,
+            2
+          ],
+          "metrics": {
+            "max_semantic_error": 3.002954651609192e-15,
+            "full_cz_count": 384,
+            "two_body_dependency_depth": 276,
+            "verification": "three-probes-only"
+          },
+          "normalized_output_sha256": "e698db56ec83369e15149bf6836c0c84ea0f1a158a1c2fbd0389becca1e00685",
+          "seconds": 0.7172659999923781
+        },
+        {
+          "requested_strategy": "persistent_layout",
+          "selected_strategy": "persistent_layout",
+          "restored_swap_count": 100,
+          "native_baseline_cz_count": 366,
+          "block_cz_savings": [
+            2,
+            2,
+            2,
+            2,
+            2,
+            2,
+            2,
+            2,
+            2,
+            2,
+            2,
+            2,
+            2,
+            2
+          ],
+          "metrics": {
+            "max_semantic_error": 3.0309625505729566e-15,
+            "full_cz_count": 338,
+            "two_body_dependency_depth": 274,
+            "verification": "three-probes-only"
+          },
+          "normalized_output_sha256": "8ca72d25be361835c5572651c89aee06fa9c447ff563b0575f464c5941a175f7",
+          "seconds": 0.6183832079987042
+        }
+      ],
+      "selected_index": 0,
+      "portfolio_seconds": 1.5698019579867832,
+      "failures": []
+    },
+    {
+      "case": [
+        12,
+        "ising",
+        "sparse"
+      ],
+      "observations": [
+        {
+          "requested_strategy": "auto",
+          "selected_strategy": "sabre",
+          "restored_swap_count": 26,
+          "native_baseline_cz_count": 144,
+          "block_cz_savings": [
+            2,
+            2,
+            2,
+            6,
+            6
+          ],
+          "metrics": {
+            "max_semantic_error": 9.074842391027969e-16,
+            "full_cz_count": 126,
+            "two_body_dependency_depth": 54,
+            "verification": "three-probes-only"
+          },
+          "normalized_output_sha256": "d32290ffa446525672f7692445a85375ab0032f6c5462461b1d2735a14b5dc2b",
+          "seconds": 0.22609974999795668
+        },
+        {
+          "requested_strategy": "restore_after_each_gate",
+          "selected_strategy": "restore_after_each_gate",
+          "restored_swap_count": 78,
+          "native_baseline_cz_count": 300,
+          "block_cz_savings": [],
+          "metrics": {
+            "max_semantic_error": 2.1743469972715807e-15,
+            "full_cz_count": 300,
+            "two_body_dependency_depth": 232,
+            "verification": "three-probes-only"
+          },
+          "normalized_output_sha256": "44f88a5c5b40eebbaffde682df11f6bf6563d12c77d00d5cbd2ebcb0d2ccbf8b",
+          "seconds": 0.4620512909896206
+        },
+        {
+          "requested_strategy": "persistent_layout",
+          "selected_strategy": "persistent_layout",
+          "restored_swap_count": 64,
+          "native_baseline_cz_count": 258,
+          "block_cz_savings": [
+            2,
+            2,
+            2,
+            2,
+            2,
+            2,
+            2,
+            2,
+            2,
+            2,
+            2,
+            6,
+            6
+          ],
+          "metrics": {
+            "max_semantic_error": 1.6612819177691995e-15,
+            "full_cz_count": 224,
+            "two_body_dependency_depth": 166,
+            "verification": "three-probes-only"
+          },
+          "normalized_output_sha256": "b0c584a60f76dcbbda709359a78dfa4fea101a0fa4ffa71ee8a5cca3d58f84b2",
+          "seconds": 0.4367532920150552
+        }
+      ],
+      "selected_index": 0,
+      "portfolio_seconds": 1.1249043330026325,
+      "failures": []
+    },
+    {
+      "case": [
+        12,
+        "hopping",
+        "line"
+      ],
+      "observations": [
+        {
+          "requested_strategy": "auto",
+          "selected_strategy": "restore_after_each_gate",
+          "restored_swap_count": 0,
+          "native_baseline_cz_count": 288,
+          "block_cz_savings": [
+            1,
+            1,
+            1,
+            1,
+            1,
+            1,
+            1,
+            1,
+            1,
+            1,
+            1,
+            1
+          ],
+          "metrics": {
+            "max_semantic_error": 3.3121136700345437e-15,
+            "full_cz_count": 276,
+            "two_body_dependency_depth": 256,
+            "verification": "three-probes-only"
+          },
+          "normalized_output_sha256": "d40eb7969b3413522a7c98f6fbb2f88323bcbb4edfb2fd24898072f28d05f34b",
+          "seconds": 0.5423134999873582
+        },
+        {
+          "requested_strategy": "persistent_layout",
+          "selected_strategy": "persistent_layout",
+          "restored_swap_count": 0,
+          "native_baseline_cz_count": 288,
+          "block_cz_savings": [
+            1,
+            1,
+            1,
+            1,
+            1,
+            1,
+            1,
+            1,
+            1,
+            1,
+            1,
+            1
+          ],
+          "metrics": {
+            "max_semantic_error": 3.3121136700345437e-15,
+            "full_cz_count": 276,
+            "two_body_dependency_depth": 256,
+            "verification": "three-probes-only"
+          },
+          "normalized_output_sha256": "d40eb7969b3413522a7c98f6fbb2f88323bcbb4edfb2fd24898072f28d05f34b",
+          "seconds": 0.5407051249931101
+        },
+        {
+          "requested_strategy": "sabre",
+          "selected_strategy": "sabre",
+          "restored_swap_count": 0,
+          "native_baseline_cz_count": 288,
+          "block_cz_savings": [
+            1,
+            1,
+            1,
+            1,
+            1,
+            1,
+            1,
+            1,
+            1,
+            1,
+            1,
+            1
+          ],
+          "metrics": {
+            "max_semantic_error": 3.372616528980283e-15,
+            "full_cz_count": 276,
+            "two_body_dependency_depth": 256,
+            "verification": "three-probes-only"
+          },
+          "normalized_output_sha256": "65fa8c78f2d36f077408bea834b8b46aa5897ecf75e2473f8df6639eb6584c2c",
+          "seconds": 0.5555841250170488
+        }
+      ],
+      "selected_index": 0,
+      "portfolio_seconds": 1.638602749997517,
+      "failures": []
+    },
+    {
+      "case": [
+        12,
+        "hopping",
+        "ring"
+      ],
+      "observations": [
+        {
+          "requested_strategy": "auto",
+          "selected_strategy": "restore_after_each_gate",
+          "restored_swap_count": 0,
+          "native_baseline_cz_count": 288,
+          "block_cz_savings": [
+            1,
+            1,
+            1,
+            1,
+            1,
+            1,
+            1,
+            1,
+            1,
+            1,
+            1,
+            1
+          ],
+          "metrics": {
+            "max_semantic_error": 3.3121136700345437e-15,
+            "full_cz_count": 276,
+            "two_body_dependency_depth": 256,
+            "verification": "three-probes-only"
+          },
+          "normalized_output_sha256": "d40eb7969b3413522a7c98f6fbb2f88323bcbb4edfb2fd24898072f28d05f34b",
+          "seconds": 0.5442036669992376
+        },
+        {
+          "requested_strategy": "persistent_layout",
+          "selected_strategy": "persistent_layout",
+          "restored_swap_count": 0,
+          "native_baseline_cz_count": 288,
+          "block_cz_savings": [
+            1,
+            1,
+            1,
+            1,
+            1,
+            1,
+            1,
+            1,
+            1,
+            1,
+            1,
+            1
+          ],
+          "metrics": {
+            "max_semantic_error": 3.3121136700345437e-15,
+            "full_cz_count": 276,
+            "two_body_dependency_depth": 256,
+            "verification": "three-probes-only"
+          },
+          "normalized_output_sha256": "d40eb7969b3413522a7c98f6fbb2f88323bcbb4edfb2fd24898072f28d05f34b",
+          "seconds": 0.5591781249968335
+        },
+        {
+          "requested_strategy": "sabre",
+          "selected_strategy": "sabre",
+          "restored_swap_count": 0,
+          "native_baseline_cz_count": 288,
+          "block_cz_savings": [
+            1,
+            1,
+            1,
+            1,
+            1,
+            1,
+            1,
+            1,
+            1,
+            1,
+            1,
+            1
+          ],
+          "metrics": {
+            "max_semantic_error": 3.372616528980283e-15,
+            "full_cz_count": 276,
+            "two_body_dependency_depth": 256,
+            "verification": "three-probes-only"
+          },
+          "normalized_output_sha256": "65fa8c78f2d36f077408bea834b8b46aa5897ecf75e2473f8df6639eb6584c2c",
+          "seconds": 0.5529455420037266
+        }
+      ],
+      "selected_index": 0,
+      "portfolio_seconds": 1.6563273339997977,
+      "failures": []
+    },
+    {
+      "case": [
+        12,
+        "hopping",
+        "grid"
+      ],
+      "observations": [
+        {
+          "requested_strategy": "auto",
+          "selected_strategy": "persistent_layout",
+          "restored_swap_count": 30,
+          "native_baseline_cz_count": 378,
+          "block_cz_savings": [
+            1,
+            2,
+            1,
+            1,
+            1,
+            1,
+            1,
+            1,
+            1,
+            1,
+            1,
+            1,
+            1,
+            2
+          ],
+          "metrics": {
+            "max_semantic_error": 5.4291956315693945e-15,
+            "full_cz_count": 362,
+            "two_body_dependency_depth": 296,
+            "verification": "three-probes-only"
+          },
+          "normalized_output_sha256": "db4cf02508d1803929579af31bae263e2c6315abe12a313ff3f4d6ab3b7e6a85",
+          "seconds": 0.7333499999949709
+        },
+        {
+          "requested_strategy": "sabre",
+          "selected_strategy": "sabre",
+          "restored_swap_count": 42,
+          "native_baseline_cz_count": 414,
+          "block_cz_savings": [
+            1,
+            1,
+            2,
+            2,
+            1,
+            2,
+            2,
+            2,
+            2,
+            1,
+            2,
+            2,
+            2,
+            1,
+            2,
+            1,
+            1,
+            1,
+            1,
+            1,
+            1,
+            1,
+            2
+          ],
+          "metrics": {
+            "max_semantic_error": 5.883658317101184e-15,
+            "full_cz_count": 380,
+            "two_body_dependency_depth": 310,
+            "verification": "three-probes-only"
+          },
+          "normalized_output_sha256": "7b3db22105835afee1020f7d88d456ddc85ee2664ecfd680eceafe2d246473dd",
+          "seconds": 0.824187999998685
+        }
+      ],
+      "selected_index": 0,
+      "portfolio_seconds": 1.5575379999936558,
+      "failures": [
+        {
+          "strategy": "restore_after_each_gate",
+          "error_type": "ValueError",
+          "error": "instructions exceeds record limit 4096",
+          "traceback": "Traceback (most recent call last):\n  File \"/private/tmp/fq-target-routing-objective-20261122/benchmarks/compiler_target_routing_objective.py\", line 191, in main\n    observation = _observe(case, harness, strategy)\n                  ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/private/tmp/fq-target-routing-objective-20261122/benchmarks/compiler_target_routing_objective.py\", line 107, in _observe\n    payload = adapter.execute(\"route\", selected, seed)\n              ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/private/tmp/sdkbench-product-conformance-20261121/src/sdkbench/candidates/adapters.py\", line 270, in execute\n    payload = _target_artifact_route(self.native, fixture, seed)\n              ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/private/tmp/sdkbench-product-conformance-20261121/src/sdkbench/candidates/adapters.py\", line 231, in _target_artifact_route\n    result = compile_circuit_artifact_for_target(\n             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/private/tmp/fq-target-routing-objective-20261122/benchmarks/compiler_target_routing_objective.py\", line 95, in compile_with_strategy\n    result = _COMPILE(*args, **kwargs, routing_strategy=strategy)\n             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/private/tmp/fq-target-routing-objective-20261122/flagquantum/compiler/artifacts/artifact_compilation.py\", line 268, in compile_circuit_artifact_for_target\n    physical_plan = build_physical_circuit_plan(\n                    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/private/tmp/fq-target-routing-objective-20261122/flagquantum/compiler/artifacts/physical_plan.py\", line 1116, in build_physical_circuit_plan\n    return PhysicalCircuitPlan(\n           ^^^^^^^^^^^^^^^^^^^^\n  File \"<string>\", line 37, in __init__\n  File \"/private/tmp/fq-target-routing-objective-20261122/flagquantum/compiler/artifacts/physical_plan.py\", line 279, in __post_init__\n    collective_evidence = self._v4_evidence() if self.version == \"4.0\" else None\n                          ^^^^^^^^^^^^^^^^^^^\n  File \"/private/tmp/fq-target-routing-objective-20261122/flagquantum/compiler/artifacts/physical_plan.py\", line 323, in _v4_evidence\n    return PhysicalPlanEvidenceV4(\n           ^^^^^^^^^^^^^^^^^^^^^^^\n  File \"<string>\", line 25, in __init__\n  File \"/private/tmp/fq-target-routing-objective-20261122/flagquantum/core/_compilation_evidence_v4.py\", line 341, in __post_init__\n    records = _array(getattr(self, name), name)\n              ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/private/tmp/fq-target-routing-objective-20261122/flagquantum/core/_compilation_evidence_v4.py\", line 82, in _array\n    raise ValueError(f\"{owner} exceeds record limit {limit}\")\nValueError: instructions exceeds record limit 4096\n"
+        }
+      ]
+    },
+    {
+      "case": [
+        12,
+        "hopping",
+        "sparse"
+      ],
+      "observations": [
+        {
+          "requested_strategy": "auto",
+          "selected_strategy": "restore_after_each_gate",
+          "restored_swap_count": 0,
+          "native_baseline_cz_count": 288,
+          "block_cz_savings": [
+            1,
+            1,
+            1,
+            1,
+            1,
+            1,
+            1,
+            1,
+            1,
+            1,
+            1,
+            1
+          ],
+          "metrics": {
+            "max_semantic_error": 3.3121136700345437e-15,
+            "full_cz_count": 276,
+            "two_body_dependency_depth": 256,
+            "verification": "three-probes-only"
+          },
+          "normalized_output_sha256": "d40eb7969b3413522a7c98f6fbb2f88323bcbb4edfb2fd24898072f28d05f34b",
+          "seconds": 0.5828591250174213
+        },
+        {
+          "requested_strategy": "persistent_layout",
+          "selected_strategy": "persistent_layout",
+          "restored_swap_count": 0,
+          "native_baseline_cz_count": 288,
+          "block_cz_savings": [
+            1,
+            1,
+            1,
+            1,
+            1,
+            1,
+            1,
+            1,
+            1,
+            1,
+            1,
+            1
+          ],
+          "metrics": {
+            "max_semantic_error": 3.3121136700345437e-15,
+            "full_cz_count": 276,
+            "two_body_dependency_depth": 256,
+            "verification": "three-probes-only"
+          },
+          "normalized_output_sha256": "d40eb7969b3413522a7c98f6fbb2f88323bcbb4edfb2fd24898072f28d05f34b",
+          "seconds": 0.5882825420121662
+        },
+        {
+          "requested_strategy": "sabre",
+          "selected_strategy": "sabre",
+          "restored_swap_count": 0,
+          "native_baseline_cz_count": 288,
+          "block_cz_savings": [
+            1,
+            1,
+            1,
+            1,
+            1,
+            1,
+            1,
+            1,
+            1,
+            1,
+            1,
+            1
+          ],
+          "metrics": {
+            "max_semantic_error": 3.372616528980283e-15,
+            "full_cz_count": 276,
+            "two_body_dependency_depth": 256,
+            "verification": "three-probes-only"
+          },
+          "normalized_output_sha256": "65fa8c78f2d36f077408bea834b8b46aa5897ecf75e2473f8df6639eb6584c2c",
+          "seconds": 0.564969041995937
+        }
+      ],
+      "selected_index": 0,
+      "portfolio_seconds": 1.7361107090255246,
+      "failures": []
+    },
+    {
+      "case": [
+        12,
+        "qft",
+        "line"
+      ],
+      "observations": [
+        {
+          "requested_strategy": "auto",
+          "selected_strategy": "sabre",
+          "restored_swap_count": 126,
+          "native_baseline_cz_count": 528,
+          "block_cz_savings": [
+            2,
+            2,
+            2,
+            2,
+            2,
+            2,
+            2,
+            2,
+            2,
+            2,
+            2,
+            2,
+            2,
+            2,
+            2,
+            2,
+            2,
+            2,
+            2,
+            2,
+            2,
+            2,
+            2,
+            2,
+            2,
+            2,
+            2,
+            2,
+            2,
+            2,
+            2,
+            2,
+            2,
+            2,
+            2,
+            2,
+            2,
+            2,
+            2,
+            2,
+            2,
+            2,
+            2,
+            2,
+            2,
+            2,
+            2,
+            2,
+            2,
+            2,
+            2,
+            2,
+            2,
+            2,
+            2,
+            2,
+            2,
+            2,
+            2,
+            2,
+            6,
+            6
+          ],
+          "metrics": {
+            "max_semantic_error": 2.508910598853109e-14,
+            "full_cz_count": 396,
+            "two_body_dependency_depth": 137,
+            "verification": "three-probes-only"
+          },
+          "normalized_output_sha256": "bad2969490d0446a527b28ef7457f281a2396ea3b1f4a82fab1040d39c6c27b9",
+          "seconds": 0.8802107089722995
+        }
+      ],
+      "selected_index": 0,
+      "portfolio_seconds": 0.8802107089722995,
+      "failures": [
+        {
+          "strategy": "restore_after_each_gate",
+          "error_type": "ValueError",
+          "error": "instructions exceeds record limit 4096",
+          "traceback": "Traceback (most recent call last):\n  File \"/private/tmp/fq-target-routing-objective-20261122/benchmarks/compiler_target_routing_objective.py\", line 191, in main\n    observation = _observe(case, harness, strategy)\n                  ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/private/tmp/fq-target-routing-objective-20261122/benchmarks/compiler_target_routing_objective.py\", line 107, in _observe\n    payload = adapter.execute(\"route\", selected, seed)\n              ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/private/tmp/sdkbench-product-conformance-20261121/src/sdkbench/candidates/adapters.py\", line 270, in execute\n    payload = _target_artifact_route(self.native, fixture, seed)\n              ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/private/tmp/sdkbench-product-conformance-20261121/src/sdkbench/candidates/adapters.py\", line 231, in _target_artifact_route\n    result = compile_circuit_artifact_for_target(\n             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/private/tmp/fq-target-routing-objective-20261122/benchmarks/compiler_target_routing_objective.py\", line 95, in compile_with_strategy\n    result = _COMPILE(*args, **kwargs, routing_strategy=strategy)\n             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/private/tmp/fq-target-routing-objective-20261122/flagquantum/compiler/artifacts/artifact_compilation.py\", line 268, in compile_circuit_artifact_for_target\n    physical_plan = build_physical_circuit_plan(\n                    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/private/tmp/fq-target-routing-objective-20261122/flagquantum/compiler/artifacts/physical_plan.py\", line 1116, in build_physical_circuit_plan\n    return PhysicalCircuitPlan(\n           ^^^^^^^^^^^^^^^^^^^^\n  File \"<string>\", line 37, in __init__\n  File \"/private/tmp/fq-target-routing-objective-20261122/flagquantum/compiler/artifacts/physical_plan.py\", line 279, in __post_init__\n    collective_evidence = self._v4_evidence() if self.version == \"4.0\" else None\n                          ^^^^^^^^^^^^^^^^^^^\n  File \"/private/tmp/fq-target-routing-objective-20261122/flagquantum/compiler/artifacts/physical_plan.py\", line 323, in _v4_evidence\n    return PhysicalPlanEvidenceV4(\n           ^^^^^^^^^^^^^^^^^^^^^^^\n  File \"<string>\", line 25, in __init__\n  File \"/private/tmp/fq-target-routing-objective-20261122/flagquantum/core/_compilation_evidence_v4.py\", line 341, in __post_init__\n    records = _array(getattr(self, name), name)\n              ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/private/tmp/fq-target-routing-objective-20261122/flagquantum/core/_compilation_evidence_v4.py\", line 82, in _array\n    raise ValueError(f\"{owner} exceeds record limit {limit}\")\nValueError: instructions exceeds record limit 4096\n"
+        },
+        {
+          "strategy": "persistent_layout",
+          "error_type": "ValueError",
+          "error": "instructions exceeds record limit 4096",
+          "traceback": "Traceback (most recent call last):\n  File \"/private/tmp/fq-target-routing-objective-20261122/benchmarks/compiler_target_routing_objective.py\", line 191, in main\n    observation = _observe(case, harness, strategy)\n                  ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/private/tmp/fq-target-routing-objective-20261122/benchmarks/compiler_target_routing_objective.py\", line 107, in _observe\n    payload = adapter.execute(\"route\", selected, seed)\n              ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/private/tmp/sdkbench-product-conformance-20261121/src/sdkbench/candidates/adapters.py\", line 270, in execute\n    payload = _target_artifact_route(self.native, fixture, seed)\n              ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/private/tmp/sdkbench-product-conformance-20261121/src/sdkbench/candidates/adapters.py\", line 231, in _target_artifact_route\n    result = compile_circuit_artifact_for_target(\n             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/private/tmp/fq-target-routing-objective-20261122/benchmarks/compiler_target_routing_objective.py\", line 95, in compile_with_strategy\n    result = _COMPILE(*args, **kwargs, routing_strategy=strategy)\n             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/private/tmp/fq-target-routing-objective-20261122/flagquantum/compiler/artifacts/artifact_compilation.py\", line 268, in compile_circuit_artifact_for_target\n    physical_plan = build_physical_circuit_plan(\n                    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/private/tmp/fq-target-routing-objective-20261122/flagquantum/compiler/artifacts/physical_plan.py\", line 1116, in build_physical_circuit_plan\n    return PhysicalCircuitPlan(\n           ^^^^^^^^^^^^^^^^^^^^\n  File \"<string>\", line 37, in __init__\n  File \"/private/tmp/fq-target-routing-objective-20261122/flagquantum/compiler/artifacts/physical_plan.py\", line 279, in __post_init__\n    collective_evidence = self._v4_evidence() if self.version == \"4.0\" else None\n                          ^^^^^^^^^^^^^^^^^^^\n  File \"/private/tmp/fq-target-routing-objective-20261122/flagquantum/compiler/artifacts/physical_plan.py\", line 323, in _v4_evidence\n    return PhysicalPlanEvidenceV4(\n           ^^^^^^^^^^^^^^^^^^^^^^^\n  File \"<string>\", line 25, in __init__\n  File \"/private/tmp/fq-target-routing-objective-20261122/flagquantum/core/_compilation_evidence_v4.py\", line 341, in __post_init__\n    records = _array(getattr(self, name), name)\n              ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/private/tmp/fq-target-routing-objective-20261122/flagquantum/core/_compilation_evidence_v4.py\", line 82, in _array\n    raise ValueError(f\"{owner} exceeds record limit {limit}\")\nValueError: instructions exceeds record limit 4096\n"
+        }
+      ]
+    },
+    {
+      "case": [
+        12,
+        "qft",
+        "ring"
+      ],
+      "observations": [
+        {
+          "requested_strategy": "auto",
+          "selected_strategy": "sabre",
+          "restored_swap_count": 98,
+          "native_baseline_cz_count": 444,
+          "block_cz_savings": [
+            2,
+            2,
+            2,
+            2,
+            2,
+            2,
+            2,
+            2,
+            2,
+            2,
+            2,
+            2,
+            2,
+            2,
+            2,
+            2,
+            2,
+            2,
+            2,
+            2,
+            2,
+            2,
+            2,
+            2,
+            2,
+            2,
+            2,
+            2,
+            2,
+            2,
+            2,
+            2,
+            2,
+            2,
+            2,
+            2,
+            2,
+            2,
+            2,
+            2,
+            2,
+            2,
+            2,
+            2,
+            2,
+            2,
+            2,
+            2,
+            2,
+            2,
+            2,
+            2,
+            2,
+            2,
+            2,
+            2,
+            2,
+            2,
+            6
+          ],
+          "metrics": {
+            "max_semantic_error": 3.460944228876607e-14,
+            "full_cz_count": 322,
+            "two_body_dependency_depth": 131,
+            "verification": "three-probes-only"
+          },
+          "normalized_output_sha256": "9171739a9ebcb6315aa01294c73e0a55131a3cfe103fb324f54f6714ab32562a",
+          "seconds": 0.7428554579964839
+        }
+      ],
+      "selected_index": 0,
+      "portfolio_seconds": 0.7428554579964839,
+      "failures": [
+        {
+          "strategy": "restore_after_each_gate",
+          "error_type": "ValueError",
+          "error": "instructions exceeds record limit 4096",
+          "traceback": "Traceback (most recent call last):\n  File \"/private/tmp/fq-target-routing-objective-20261122/benchmarks/compiler_target_routing_objective.py\", line 191, in main\n    observation = _observe(case, harness, strategy)\n                  ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/private/tmp/fq-target-routing-objective-20261122/benchmarks/compiler_target_routing_objective.py\", line 107, in _observe\n    payload = adapter.execute(\"route\", selected, seed)\n              ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/private/tmp/sdkbench-product-conformance-20261121/src/sdkbench/candidates/adapters.py\", line 270, in execute\n    payload = _target_artifact_route(self.native, fixture, seed)\n              ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/private/tmp/sdkbench-product-conformance-20261121/src/sdkbench/candidates/adapters.py\", line 231, in _target_artifact_route\n    result = compile_circuit_artifact_for_target(\n             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/private/tmp/fq-target-routing-objective-20261122/benchmarks/compiler_target_routing_objective.py\", line 95, in compile_with_strategy\n    result = _COMPILE(*args, **kwargs, routing_strategy=strategy)\n             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/private/tmp/fq-target-routing-objective-20261122/flagquantum/compiler/artifacts/artifact_compilation.py\", line 268, in compile_circuit_artifact_for_target\n    physical_plan = build_physical_circuit_plan(\n                    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/private/tmp/fq-target-routing-objective-20261122/flagquantum/compiler/artifacts/physical_plan.py\", line 1116, in build_physical_circuit_plan\n    return PhysicalCircuitPlan(\n           ^^^^^^^^^^^^^^^^^^^^\n  File \"<string>\", line 37, in __init__\n  File \"/private/tmp/fq-target-routing-objective-20261122/flagquantum/compiler/artifacts/physical_plan.py\", line 279, in __post_init__\n    collective_evidence = self._v4_evidence() if self.version == \"4.0\" else None\n                          ^^^^^^^^^^^^^^^^^^^\n  File \"/private/tmp/fq-target-routing-objective-20261122/flagquantum/compiler/artifacts/physical_plan.py\", line 323, in _v4_evidence\n    return PhysicalPlanEvidenceV4(\n           ^^^^^^^^^^^^^^^^^^^^^^^\n  File \"<string>\", line 25, in __init__\n  File \"/private/tmp/fq-target-routing-objective-20261122/flagquantum/core/_compilation_evidence_v4.py\", line 341, in __post_init__\n    records = _array(getattr(self, name), name)\n              ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/private/tmp/fq-target-routing-objective-20261122/flagquantum/core/_compilation_evidence_v4.py\", line 82, in _array\n    raise ValueError(f\"{owner} exceeds record limit {limit}\")\nValueError: instructions exceeds record limit 4096\n"
+        },
+        {
+          "strategy": "persistent_layout",
+          "error_type": "ValueError",
+          "error": "instructions exceeds record limit 4096",
+          "traceback": "Traceback (most recent call last):\n  File \"/private/tmp/fq-target-routing-objective-20261122/benchmarks/compiler_target_routing_objective.py\", line 191, in main\n    observation = _observe(case, harness, strategy)\n                  ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/private/tmp/fq-target-routing-objective-20261122/benchmarks/compiler_target_routing_objective.py\", line 107, in _observe\n    payload = adapter.execute(\"route\", selected, seed)\n              ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/private/tmp/sdkbench-product-conformance-20261121/src/sdkbench/candidates/adapters.py\", line 270, in execute\n    payload = _target_artifact_route(self.native, fixture, seed)\n              ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/private/tmp/sdkbench-product-conformance-20261121/src/sdkbench/candidates/adapters.py\", line 231, in _target_artifact_route\n    result = compile_circuit_artifact_for_target(\n             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/private/tmp/fq-target-routing-objective-20261122/benchmarks/compiler_target_routing_objective.py\", line 95, in compile_with_strategy\n    result = _COMPILE(*args, **kwargs, routing_strategy=strategy)\n             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/private/tmp/fq-target-routing-objective-20261122/flagquantum/compiler/artifacts/artifact_compilation.py\", line 268, in compile_circuit_artifact_for_target\n    physical_plan = build_physical_circuit_plan(\n                    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/private/tmp/fq-target-routing-objective-20261122/flagquantum/compiler/artifacts/physical_plan.py\", line 1116, in build_physical_circuit_plan\n    return PhysicalCircuitPlan(\n           ^^^^^^^^^^^^^^^^^^^^\n  File \"<string>\", line 37, in __init__\n  File \"/private/tmp/fq-target-routing-objective-20261122/flagquantum/compiler/artifacts/physical_plan.py\", line 279, in __post_init__\n    collective_evidence = self._v4_evidence() if self.version == \"4.0\" else None\n                          ^^^^^^^^^^^^^^^^^^^\n  File \"/private/tmp/fq-target-routing-objective-20261122/flagquantum/compiler/artifacts/physical_plan.py\", line 323, in _v4_evidence\n    return PhysicalPlanEvidenceV4(\n           ^^^^^^^^^^^^^^^^^^^^^^^\n  File \"<string>\", line 25, in __init__\n  File \"/private/tmp/fq-target-routing-objective-20261122/flagquantum/core/_compilation_evidence_v4.py\", line 341, in __post_init__\n    records = _array(getattr(self, name), name)\n              ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/private/tmp/fq-target-routing-objective-20261122/flagquantum/core/_compilation_evidence_v4.py\", line 82, in _array\n    raise ValueError(f\"{owner} exceeds record limit {limit}\")\nValueError: instructions exceeds record limit 4096\n"
+        }
+      ]
+    },
+    {
+      "case": [
+        12,
+        "qft",
+        "grid"
+      ],
+      "observations": [
+        {
+          "requested_strategy": "auto",
+          "selected_strategy": "sabre",
+          "restored_swap_count": 94,
+          "native_baseline_cz_count": 432,
+          "block_cz_savings": [
+            2,
+            2,
+            2,
+            2,
+            2,
+            2,
+            2,
+            2,
+            2,
+            2,
+            2,
+            2,
+            2,
+            2,
+            2,
+            2,
+            2,
+            2,
+            2,
+            2,
+            2,
+            2,
+            2,
+            2,
+            2,
+            2,
+            2,
+            2,
+            2,
+            2,
+            2,
+            2,
+            2,
+            2,
+            2,
+            6,
+            2,
+            2
+          ],
+          "metrics": {
+            "max_semantic_error": 1.3843020324286894e-14,
+            "full_cz_count": 352,
+            "two_body_dependency_depth": 150,
+            "verification": "three-probes-only"
+          },
+          "normalized_output_sha256": "22e364d2a4a143e6ef3246a29e4f4f53d3e6570a297a123344559454c97d59f6",
+          "seconds": 0.7562766250048298
+        }
+      ],
+      "selected_index": 0,
+      "portfolio_seconds": 0.7562766250048298,
+      "failures": [
+        {
+          "strategy": "restore_after_each_gate",
+          "error_type": "ValueError",
+          "error": "instructions exceeds record limit 4096",
+          "traceback": "Traceback (most recent call last):\n  File \"/private/tmp/fq-target-routing-objective-20261122/benchmarks/compiler_target_routing_objective.py\", line 191, in main\n    observation = _observe(case, harness, strategy)\n                  ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/private/tmp/fq-target-routing-objective-20261122/benchmarks/compiler_target_routing_objective.py\", line 107, in _observe\n    payload = adapter.execute(\"route\", selected, seed)\n              ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/private/tmp/sdkbench-product-conformance-20261121/src/sdkbench/candidates/adapters.py\", line 270, in execute\n    payload = _target_artifact_route(self.native, fixture, seed)\n              ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/private/tmp/sdkbench-product-conformance-20261121/src/sdkbench/candidates/adapters.py\", line 231, in _target_artifact_route\n    result = compile_circuit_artifact_for_target(\n             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/private/tmp/fq-target-routing-objective-20261122/benchmarks/compiler_target_routing_objective.py\", line 95, in compile_with_strategy\n    result = _COMPILE(*args, **kwargs, routing_strategy=strategy)\n             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/private/tmp/fq-target-routing-objective-20261122/flagquantum/compiler/artifacts/artifact_compilation.py\", line 268, in compile_circuit_artifact_for_target\n    physical_plan = build_physical_circuit_plan(\n                    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/private/tmp/fq-target-routing-objective-20261122/flagquantum/compiler/artifacts/physical_plan.py\", line 1116, in build_physical_circuit_plan\n    return PhysicalCircuitPlan(\n           ^^^^^^^^^^^^^^^^^^^^\n  File \"<string>\", line 37, in __init__\n  File \"/private/tmp/fq-target-routing-objective-20261122/flagquantum/compiler/artifacts/physical_plan.py\", line 279, in __post_init__\n    collective_evidence = self._v4_evidence() if self.version == \"4.0\" else None\n                          ^^^^^^^^^^^^^^^^^^^\n  File \"/private/tmp/fq-target-routing-objective-20261122/flagquantum/compiler/artifacts/physical_plan.py\", line 323, in _v4_evidence\n    return PhysicalPlanEvidenceV4(\n           ^^^^^^^^^^^^^^^^^^^^^^^\n  File \"<string>\", line 25, in __init__\n  File \"/private/tmp/fq-target-routing-objective-20261122/flagquantum/core/_compilation_evidence_v4.py\", line 341, in __post_init__\n    records = _array(getattr(self, name), name)\n              ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/private/tmp/fq-target-routing-objective-20261122/flagquantum/core/_compilation_evidence_v4.py\", line 82, in _array\n    raise ValueError(f\"{owner} exceeds record limit {limit}\")\nValueError: instructions exceeds record limit 4096\n"
+        },
+        {
+          "strategy": "persistent_layout",
+          "error_type": "ValueError",
+          "error": "instructions exceeds record limit 4096",
+          "traceback": "Traceback (most recent call last):\n  File \"/private/tmp/fq-target-routing-objective-20261122/benchmarks/compiler_target_routing_objective.py\", line 191, in main\n    observation = _observe(case, harness, strategy)\n                  ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/private/tmp/fq-target-routing-objective-20261122/benchmarks/compiler_target_routing_objective.py\", line 107, in _observe\n    payload = adapter.execute(\"route\", selected, seed)\n              ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/private/tmp/sdkbench-product-conformance-20261121/src/sdkbench/candidates/adapters.py\", line 270, in execute\n    payload = _target_artifact_route(self.native, fixture, seed)\n              ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/private/tmp/sdkbench-product-conformance-20261121/src/sdkbench/candidates/adapters.py\", line 231, in _target_artifact_route\n    result = compile_circuit_artifact_for_target(\n             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/private/tmp/fq-target-routing-objective-20261122/benchmarks/compiler_target_routing_objective.py\", line 95, in compile_with_strategy\n    result = _COMPILE(*args, **kwargs, routing_strategy=strategy)\n             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/private/tmp/fq-target-routing-objective-20261122/flagquantum/compiler/artifacts/artifact_compilation.py\", line 268, in compile_circuit_artifact_for_target\n    physical_plan = build_physical_circuit_plan(\n                    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/private/tmp/fq-target-routing-objective-20261122/flagquantum/compiler/artifacts/physical_plan.py\", line 1116, in build_physical_circuit_plan\n    return PhysicalCircuitPlan(\n           ^^^^^^^^^^^^^^^^^^^^\n  File \"<string>\", line 37, in __init__\n  File \"/private/tmp/fq-target-routing-objective-20261122/flagquantum/compiler/artifacts/physical_plan.py\", line 279, in __post_init__\n    collective_evidence = self._v4_evidence() if self.version == \"4.0\" else None\n                          ^^^^^^^^^^^^^^^^^^^\n  File \"/private/tmp/fq-target-routing-objective-20261122/flagquantum/compiler/artifacts/physical_plan.py\", line 323, in _v4_evidence\n    return PhysicalPlanEvidenceV4(\n           ^^^^^^^^^^^^^^^^^^^^^^^\n  File \"<string>\", line 25, in __init__\n  File \"/private/tmp/fq-target-routing-objective-20261122/flagquantum/core/_compilation_evidence_v4.py\", line 341, in __post_init__\n    records = _array(getattr(self, name), name)\n              ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/private/tmp/fq-target-routing-objective-20261122/flagquantum/core/_compilation_evidence_v4.py\", line 82, in _array\n    raise ValueError(f\"{owner} exceeds record limit {limit}\")\nValueError: instructions exceeds record limit 4096\n"
+        }
+      ]
+    },
+    {
+      "case": [
+        12,
+        "qft",
+        "sparse"
+      ],
+      "observations": [
+        {
+          "requested_strategy": "auto",
+          "selected_strategy": "sabre",
+          "restored_swap_count": 74,
+          "native_baseline_cz_count": 372,
+          "block_cz_savings": [
+            2,
+            2,
+            2,
+            2,
+            2,
+            2,
+            2,
+            2,
+            2,
+            2,
+            2,
+            6,
+            6
+          ],
+          "metrics": {
+            "max_semantic_error": 1.868227728968996e-14,
+            "full_cz_count": 338,
+            "two_body_dependency_depth": 158,
+            "verification": "three-probes-only"
+          },
+          "normalized_output_sha256": "959d44977e90f745125e797e7793ddc1b7b13e700f420e2d6ea5493fea61103e",
+          "seconds": 0.6766035000036936
+        }
+      ],
+      "selected_index": 0,
+      "portfolio_seconds": 0.6766035000036936,
+      "failures": [
+        {
+          "strategy": "restore_after_each_gate",
+          "error_type": "ValueError",
+          "error": "instructions exceeds record limit 4096",
+          "traceback": "Traceback (most recent call last):\n  File \"/private/tmp/fq-target-routing-objective-20261122/benchmarks/compiler_target_routing_objective.py\", line 191, in main\n    observation = _observe(case, harness, strategy)\n                  ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/private/tmp/fq-target-routing-objective-20261122/benchmarks/compiler_target_routing_objective.py\", line 107, in _observe\n    payload = adapter.execute(\"route\", selected, seed)\n              ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/private/tmp/sdkbench-product-conformance-20261121/src/sdkbench/candidates/adapters.py\", line 270, in execute\n    payload = _target_artifact_route(self.native, fixture, seed)\n              ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/private/tmp/sdkbench-product-conformance-20261121/src/sdkbench/candidates/adapters.py\", line 231, in _target_artifact_route\n    result = compile_circuit_artifact_for_target(\n             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/private/tmp/fq-target-routing-objective-20261122/benchmarks/compiler_target_routing_objective.py\", line 95, in compile_with_strategy\n    result = _COMPILE(*args, **kwargs, routing_strategy=strategy)\n             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/private/tmp/fq-target-routing-objective-20261122/flagquantum/compiler/artifacts/artifact_compilation.py\", line 268, in compile_circuit_artifact_for_target\n    physical_plan = build_physical_circuit_plan(\n                    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/private/tmp/fq-target-routing-objective-20261122/flagquantum/compiler/artifacts/physical_plan.py\", line 1116, in build_physical_circuit_plan\n    return PhysicalCircuitPlan(\n           ^^^^^^^^^^^^^^^^^^^^\n  File \"<string>\", line 37, in __init__\n  File \"/private/tmp/fq-target-routing-objective-20261122/flagquantum/compiler/artifacts/physical_plan.py\", line 279, in __post_init__\n    collective_evidence = self._v4_evidence() if self.version == \"4.0\" else None\n                          ^^^^^^^^^^^^^^^^^^^\n  File \"/private/tmp/fq-target-routing-objective-20261122/flagquantum/compiler/artifacts/physical_plan.py\", line 323, in _v4_evidence\n    return PhysicalPlanEvidenceV4(\n           ^^^^^^^^^^^^^^^^^^^^^^^\n  File \"<string>\", line 25, in __init__\n  File \"/private/tmp/fq-target-routing-objective-20261122/flagquantum/core/_compilation_evidence_v4.py\", line 341, in __post_init__\n    records = _array(getattr(self, name), name)\n              ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/private/tmp/fq-target-routing-objective-20261122/flagquantum/core/_compilation_evidence_v4.py\", line 82, in _array\n    raise ValueError(f\"{owner} exceeds record limit {limit}\")\nValueError: instructions exceeds record limit 4096\n"
+        },
+        {
+          "strategy": "persistent_layout",
+          "error_type": "ValueError",
+          "error": "instructions exceeds record limit 4096",
+          "traceback": "Traceback (most recent call last):\n  File \"/private/tmp/fq-target-routing-objective-20261122/benchmarks/compiler_target_routing_objective.py\", line 191, in main\n    observation = _observe(case, harness, strategy)\n                  ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/private/tmp/fq-target-routing-objective-20261122/benchmarks/compiler_target_routing_objective.py\", line 107, in _observe\n    payload = adapter.execute(\"route\", selected, seed)\n              ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/private/tmp/sdkbench-product-conformance-20261121/src/sdkbench/candidates/adapters.py\", line 270, in execute\n    payload = _target_artifact_route(self.native, fixture, seed)\n              ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/private/tmp/sdkbench-product-conformance-20261121/src/sdkbench/candidates/adapters.py\", line 231, in _target_artifact_route\n    result = compile_circuit_artifact_for_target(\n             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/private/tmp/fq-target-routing-objective-20261122/benchmarks/compiler_target_routing_objective.py\", line 95, in compile_with_strategy\n    result = _COMPILE(*args, **kwargs, routing_strategy=strategy)\n             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/private/tmp/fq-target-routing-objective-20261122/flagquantum/compiler/artifacts/artifact_compilation.py\", line 268, in compile_circuit_artifact_for_target\n    physical_plan = build_physical_circuit_plan(\n                    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/private/tmp/fq-target-routing-objective-20261122/flagquantum/compiler/artifacts/physical_plan.py\", line 1116, in build_physical_circuit_plan\n    return PhysicalCircuitPlan(\n           ^^^^^^^^^^^^^^^^^^^^\n  File \"<string>\", line 37, in __init__\n  File \"/private/tmp/fq-target-routing-objective-20261122/flagquantum/compiler/artifacts/physical_plan.py\", line 279, in __post_init__\n    collective_evidence = self._v4_evidence() if self.version == \"4.0\" else None\n                          ^^^^^^^^^^^^^^^^^^^\n  File \"/private/tmp/fq-target-routing-objective-20261122/flagquantum/compiler/artifacts/physical_plan.py\", line 323, in _v4_evidence\n    return PhysicalPlanEvidenceV4(\n           ^^^^^^^^^^^^^^^^^^^^^^^\n  File \"<string>\", line 25, in __init__\n  File \"/private/tmp/fq-target-routing-objective-20261122/flagquantum/core/_compilation_evidence_v4.py\", line 341, in __post_init__\n    records = _array(getattr(self, name), name)\n              ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/private/tmp/fq-target-routing-objective-20261122/flagquantum/core/_compilation_evidence_v4.py\", line 82, in _array\n    raise ValueError(f\"{owner} exceeds record limit {limit}\")\nValueError: instructions exceeds record limit 4096\n"
+        }
+      ]
+    },
+    {
+      "case": [
+        12,
+        "repetition",
+        "line"
+      ],
+      "observations": [
+        {
+          "requested_strategy": "auto",
+          "selected_strategy": "sabre",
+          "restored_swap_count": 30,
+          "native_baseline_cz_count": 114,
+          "block_cz_savings": [
+            2,
+            2,
+            2,
+            2,
+            2
+          ],
+          "metrics": {
+            "max_semantic_error": 3.215456781461763e-15,
+            "full_cz_count": 104,
+            "two_body_dependency_depth": 67,
+            "verification": "three-probes-only"
+          },
+          "normalized_output_sha256": "df4904f69e8b7a676f304e1a6b81ebc8c4b48dab60d5c8d3217603efa882e0b2",
+          "seconds": 0.20666862500365824
+        },
+        {
+          "requested_strategy": "restore_after_each_gate",
+          "selected_strategy": "restore_after_each_gate",
+          "restored_swap_count": 114,
+          "native_baseline_cz_count": 366,
+          "block_cz_savings": [
+            6,
+            6,
+            2,
+            6,
+            2
+          ],
+          "metrics": {
+            "max_semantic_error": 9.142376522024936e-15,
+            "full_cz_count": 344,
+            "two_body_dependency_depth": 317,
+            "verification": "three-probes-only"
+          },
+          "normalized_output_sha256": "f6e3f49d4fe825d860c14a8ac143e4ffc5236ed2e48910757a7725778da04314",
+          "seconds": 0.6613039170042612
+        },
+        {
+          "requested_strategy": "persistent_layout",
+          "selected_strategy": "persistent_layout",
+          "restored_swap_count": 62,
+          "native_baseline_cz_count": 210,
+          "block_cz_savings": [
+            2,
+            2,
+            2,
+            8,
+            6,
+            6,
+            6
+          ],
+          "metrics": {
+            "max_semantic_error": 4.545902364027964e-15,
+            "full_cz_count": 178,
+            "two_body_dependency_depth": 157,
+            "verification": "three-probes-only"
+          },
+          "normalized_output_sha256": "1e53501c9ca2508e1bf0de48f04f946718f27590d82557f4ce00b661e22bf20a",
+          "seconds": 0.36052954199840315
+        }
+      ],
+      "selected_index": 0,
+      "portfolio_seconds": 1.2285020840063225,
+      "failures": []
+    },
+    {
+      "case": [
+        12,
+        "repetition",
+        "ring"
+      ],
+      "observations": [
+        {
+          "requested_strategy": "auto",
+          "selected_strategy": "sabre",
+          "restored_swap_count": 30,
+          "native_baseline_cz_count": 114,
+          "block_cz_savings": [
+            2,
+            2,
+            2
+          ],
+          "metrics": {
+            "max_semantic_error": 1.8041124150158794e-15,
+            "full_cz_count": 108,
+            "two_body_dependency_depth": 75,
+            "verification": "three-probes-only"
+          },
+          "normalized_output_sha256": "20a66592b75613e2dbc4d2ddcf97b419fbcd129f4b8758127d6a125a5825d1b0",
+          "seconds": 0.20531308301724494
+        },
+        {
+          "requested_strategy": "restore_after_each_gate",
+          "selected_strategy": "restore_after_each_gate",
+          "restored_swap_count": 94,
+          "native_baseline_cz_count": 306,
+          "block_cz_savings": [
+            6,
+            2,
+            2,
+            6,
+            6,
+            2
+          ],
+          "metrics": {
+            "max_semantic_error": 6.609557785096107e-15,
+            "full_cz_count": 282,
+            "two_body_dependency_depth": 211,
+            "verification": "three-probes-only"
+          },
+          "normalized_output_sha256": "67f745c3cb029420ad35aeddb3048bc020f662f7356def1d025ccc16ac6729fb",
+          "seconds": 0.5596693329862319
+        },
+        {
+          "requested_strategy": "persistent_layout",
+          "selected_strategy": "persistent_layout",
+          "restored_swap_count": 56,
+          "native_baseline_cz_count": 192,
+          "block_cz_savings": [
+            2,
+            2,
+            8,
+            6,
+            6,
+            6,
+            6
+          ],
+          "metrics": {
+            "max_semantic_error": 3.17009502220558e-15,
+            "full_cz_count": 156,
+            "two_body_dependency_depth": 135,
+            "verification": "three-probes-only"
+          },
+          "normalized_output_sha256": "8c88ac4252af606639716d13d9810070c7714336a7774f1b06c38ed0a8ee23f1",
+          "seconds": 0.3454067499842495
+        }
+      ],
+      "selected_index": 0,
+      "portfolio_seconds": 1.1103891659877263,
+      "failures": []
+    },
+    {
+      "case": [
+        12,
+        "repetition",
+        "grid"
+      ],
+      "observations": [
+        {
+          "requested_strategy": "auto",
+          "selected_strategy": "sabre",
+          "restored_swap_count": 32,
+          "native_baseline_cz_count": 120,
+          "block_cz_savings": [
+            8,
+            8
+          ],
+          "metrics": {
+            "max_semantic_error": 3.038696846572584e-15,
+            "full_cz_count": 104,
+            "two_body_dependency_depth": 68,
+            "verification": "three-probes-only"
+          },
+          "normalized_output_sha256": "ea0f80da4365e5ec99699f20f979993d06f542c82b471f3642e33fbe0573e8dd",
+          "seconds": 0.2122664999915287
+        },
+        {
+          "requested_strategy": "restore_after_each_gate",
+          "selected_strategy": "restore_after_each_gate",
+          "restored_swap_count": 140,
+          "native_baseline_cz_count": 444,
+          "block_cz_savings": [
+            6,
+            6,
+            6,
+            6,
+            6,
+            6,
+            6,
+            6,
+            6,
+            6,
+            6
+          ],
+          "metrics": {
+            "max_semantic_error": 7.18933704200249e-15,
+            "full_cz_count": 378,
+            "two_body_dependency_depth": 324,
+            "verification": "three-probes-only"
+          },
+          "normalized_output_sha256": "5ae89e491df089c380cf2b1e340dfe1d97b0ec57fddf8edb21017dca14b33dd8",
+          "seconds": 0.798800416989252
+        },
+        {
+          "requested_strategy": "persistent_layout",
+          "selected_strategy": "persistent_layout",
+          "restored_swap_count": 96,
+          "native_baseline_cz_count": 312,
+          "block_cz_savings": [
+            2,
+            2,
+            2,
+            2,
+            2,
+            8,
+            6,
+            6
+          ],
+          "metrics": {
+            "max_semantic_error": 5.3030584616749624e-15,
+            "full_cz_count": 282,
+            "two_body_dependency_depth": 192,
+            "verification": "three-probes-only"
+          },
+          "normalized_output_sha256": "592ad762e6bc69b09a2c3a12ee15cef400f15f2794152919a7a31a7ef1924bd1",
+          "seconds": 0.5736877909803297
+        }
+      ],
+      "selected_index": 0,
+      "portfolio_seconds": 1.5847547079611104,
+      "failures": []
+    },
+    {
+      "case": [
+        12,
+        "repetition",
+        "sparse"
+      ],
+      "observations": [
+        {
+          "requested_strategy": "auto",
+          "selected_strategy": "sabre",
+          "restored_swap_count": 22,
+          "native_baseline_cz_count": 90,
+          "block_cz_savings": [
+            2,
+            2,
+            2,
+            2,
+            6,
+            6
+          ],
+          "metrics": {
+            "max_semantic_error": 1.9351429362883096e-15,
+            "full_cz_count": 70,
+            "two_body_dependency_depth": 58,
+            "verification": "three-probes-only"
+          },
+          "normalized_output_sha256": "790b8c505a78e080466374458c98181a4c0e0305024f737788d151ba6fea178f",
+          "seconds": 0.16614874999504536
+        },
+        {
+          "requested_strategy": "restore_after_each_gate",
+          "selected_strategy": "restore_after_each_gate",
+          "restored_swap_count": 24,
+          "native_baseline_cz_count": 96,
+          "block_cz_savings": [
+            6,
+            6,
+            2,
+            2,
+            6
+          ],
+          "metrics": {
+            "max_semantic_error": 1.7228590279792505e-15,
+            "full_cz_count": 74,
+            "two_body_dependency_depth": 71,
+            "verification": "three-probes-only"
+          },
+          "normalized_output_sha256": "1c63bf69bd9b9c8966a3c37c53831d242251d424cfed2f7380f1ab48f35ad30e",
+          "seconds": 0.1725354589871131
+        },
+        {
+          "requested_strategy": "persistent_layout",
+          "selected_strategy": "persistent_layout",
+          "restored_swap_count": 42,
+          "native_baseline_cz_count": 150,
+          "block_cz_savings": [
+            2,
+            2,
+            2,
+            2,
+            8,
+            6
+          ],
+          "metrics": {
+            "max_semantic_error": 2.8288909673081856e-15,
+            "full_cz_count": 128,
+            "two_body_dependency_depth": 106,
+            "verification": "three-probes-only"
+          },
+          "normalized_output_sha256": "daf0917068c14dc406bc336d71bd70cddcc062f80c2e282ff4fa373786e56fc7",
+          "seconds": 0.25459887500619516
+        }
+      ],
+      "selected_index": 0,
+      "portfolio_seconds": 0.5932830839883536,
+      "failures": []
+    }
+  ],
+  "completed": true
+}

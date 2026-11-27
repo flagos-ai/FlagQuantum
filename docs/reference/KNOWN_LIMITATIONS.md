@@ -144,6 +144,23 @@ requires all evidence for the target level to pass
 `python tools/check_capability_maturity.py`.
 <!-- END GENERATED KNOWN_LIMITATIONS -->
 
+## Target compilation evidence record limits
+
+The v4 physical evidence schema bounds each instruction array, including
+`instructions` and `native_input_instructions`, to 4096 records. A larger native
+or routing operation-growth allowance does not override this independent
+serialization bound. Target compilation can therefore finish routing and native
+optimization but still raise `ValueError` when building its v4 physical evidence.
+No larger-capacity v4 compilation or automatic evidence-version fallback is
+supported by that allowance.
+
+The [restored-route objective inspection](../development/COMPILER_TARGET_ROUTING_OBJECTIVE.md)
+retains 15 such failed explicit-strategy controls across nine of 60 inspected
+applications, with all 60 default controls accepted. Those development inputs do
+not prove a general default-workflow capacity bound or qualified performance.
+Changing the v4 record limits or failure contract requires the existing public
+API and serialized-schema review process; this record does not change them.
+
 ## SABRE search recovery
 
 The native SABRE planner now adapts Qiskit's speculative-SWAP rollback and
