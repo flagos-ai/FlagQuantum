@@ -16,9 +16,15 @@ if __package__ in (None, ""):
 
 
 import argparse
+import hashlib
+import json
+import os
+import shutil
 import subprocess
 import sys
-from collections.abc import Sequence
+import tempfile
+from collections.abc import Iterator, Sequence
+from contextlib import contextmanager
 from dataclasses import dataclass
 from pathlib import Path
 
@@ -231,6 +237,147 @@ def run_commands(commands: Sequence[Command], *, cwd: Path, dry_run: bool) -> in
     return 0
 
 
+@contextmanager
+def _collection_directory() -> Iterator[Path]:
+    if report := os.environ.get("FQ_CI_REPORT_DIR"):
+        # CI retains collection evidence alongside the execution report.
+        yield Path(tempfile.mkdtemp(prefix="collection-", dir=report))
+    else:
+        with tempfile.TemporaryDirectory(prefix="fq-pytest-selection-") as directory:
+            yield Path(directory)
+
+
+def _verified_selection(directory: Path) -> tuple[Path, bool]:
+    payload = json.loads((directory / "selection.json").read_text())
+    if not isinstance(payload, dict):
+        raise ValueError("Selected pytest manifest must be an object")
+    raw = (directory / "nodes.txt").read_bytes()
+    nodes = raw.decode().splitlines()
+    if (
+        payload.get("schema") != "flagquantum_pytest_selection_v1"
+        or payload.get("source_sha") != os.environ.get("GITHUB_SHA")
+        or type(payload.get("tests")) is not int
+        or payload["tests"] != len(nodes)
+        or type(payload.get("collected_tests")) is not int
+        or payload["collected_tests"] < len(nodes)
+        or not isinstance(payload.get("collected_sha256"), str)
+        or len(payload["collected_sha256"]) != 64
+        or type(payload.get("shard_count")) is not int
+        or payload["shard_count"] < 1
+        or type(payload.get("shard_index")) is not int
+        or not 0 <= payload["shard_index"] < payload["shard_count"]
+        or not nodes
+        or len(nodes) != len(set(nodes))
+        or payload.get("sha256") != hashlib.sha256(raw).hexdigest()
+        or type(payload.get("exclusive")) is not bool
+        or (payload["exclusive"] and len(nodes) != 1)
+    ):
+        raise ValueError(
+            "Selected pytest manifest does not match this source or content"
+        )
+    return directory / "nodes.txt", payload["exclusive"]
+
+
+def _exclusive_environment(
+    python: str, directory: Path, cwd: Path
+) -> tuple[dict[str, str], int]:
+    """Use the existing admission owner, retaining its original resource evidence."""
+    environment = dict(os.environ)
+    env_file = directory / "exclusive.env"
+    result = subprocess.run(
+        [python, "-I", str(cwd / "tools/ci/ci_cpu_budget.py"), "--exclusive-test"],
+        cwd=cwd,
+        env={**environment, "GITHUB_ENV": str(env_file)},
+    )
+    if result.returncode:
+        return environment, result.returncode
+    admitted = dict(line.split("=", 1) for line in env_file.read_text().splitlines())
+    allowed = {
+        "FQ_PYTEST_WORKERS",
+        "FQ_DISTRIBUTED_WORKERS",
+        "FQ_CI_REPORT_DIR",
+        "FQ_CI_HOST_BUDGET",
+        "OMP_NUM_THREADS",
+        "MKL_NUM_THREADS",
+        "OPENBLAS_NUM_THREADS",
+    }
+    if set(admitted) != allowed or admitted["FQ_PYTEST_WORKERS"] != "1":
+        raise ValueError("Exclusive CPU admission returned an unexpected environment")
+    environment.update(admitted)
+    # Preserve serial collection, its initial admission and refusal evidence.
+    destination_report = Path(admitted["FQ_CI_REPORT_DIR"])
+    if destination_report.resolve().is_relative_to(directory.resolve()):
+        raise ValueError("Exclusive resource report must have independent storage")
+    shutil.copytree(directory, destination_report / "collection")
+    if destination := os.environ.get("GITHUB_ENV"):
+        with Path(destination).open("a") as target:
+            target.write(env_file.read_text())
+    return environment, 0
+
+
+def run_planned_partition(
+    command: Command, *, cwd: Path, count: int, index: int, dry_run: bool
+) -> int:
+    """Collect a Runtime shard once, then execute exactly its verified node IDs."""
+    if dry_run:
+        print(
+            "Collect this shard serially, then execute its verified node IDs:",
+            flush=True,
+        )
+        return run_commands((command,), cwd=cwd, dry_run=True)
+    with _collection_directory() as directory:
+        environment = dict(os.environ)
+        if report := environment.get("FQ_CI_REPORT_DIR"):
+            resource = Path(report) / "resources.json"
+            if not resource.is_file():
+                raise ValueError("The admitted CPU resource report is missing")
+            shutil.copyfile(resource, directory / "resources.json")
+            environment["FQ_CI_REPORT_DIR"] = str(directory)
+        selection = directory / "selection"
+        collect = (
+            *command,
+            "--collect-only",
+            "-n",
+            "0",
+            "-p",
+            "tools.ci.pytest_shard",
+            "--fq-shard-count",
+            str(count),
+            "--fq-shard-index",
+            str(index),
+            "--fq-write-selected-tests",
+            str(selection),
+            "--junitxml",
+            str(directory / "collection.xml"),
+        )
+        print("+ " + " ".join(collect), flush=True)
+        result = subprocess.run(collect, cwd=cwd, env=environment)
+        if result.returncode:
+            return result.returncode
+        nodes, exclusive = _verified_selection(selection)
+        environment = dict(os.environ)
+        if exclusive and int(environment.get("FQ_PYTEST_WORKERS", "1")) > 1:
+            environment, code = _exclusive_environment(command[0], directory, cwd)
+            if code:
+                return code
+        execute = (
+            *command,
+            "@" + str(nodes),
+            "-p",
+            "tools.ci.pytest_shard",
+            "--fq-shard-count",
+            "1",
+            "--fq-shard-index",
+            "0",
+        )
+        if report := environment.get("FQ_CI_REPORT_DIR"):
+            execute += ("--junitxml", str(Path(report) / "pytest.xml"))
+        if exclusive:
+            execute += ("-n", "1")
+        print("+ " + " ".join(execute), flush=True)
+        return subprocess.run(execute, cwd=cwd, env=environment).returncode
+
+
 def print_tiers() -> None:
     for tier in CI_TIERS.values():
         blocking = "default-pr" if tier.blocks_default_pr else "on-demand"
@@ -257,6 +404,11 @@ def parse_args(argv: Sequence[str]) -> argparse.Namespace:
         help="Python executable used when running tier commands; defaults to the current interpreter",
     )
     parser.add_argument("--command-index", type=int, help="Run one command of the tier")
+    parser.add_argument(
+        "--plan-shard",
+        action="store_true",
+        help="Collect a Runtime shard once before starting its test workers",
+    )
     parser.add_argument("--shard-count", type=int, default=1)
     parser.add_argument("--shard-index", type=int, default=0)
     return parser.parse_args(argv)
@@ -284,6 +436,20 @@ def main(argv: Sequence[str] | None = None) -> int:
             "error: shard-index must be within a positive shard-count", file=sys.stderr
         )
         return 2
+    if args.plan_shard:
+        if args.tier != "pr-runtime" or len(commands) != 1:
+            print(
+                "error: planned collection is supported only for pr-runtime",
+                file=sys.stderr,
+            )
+            return 2
+        return run_planned_partition(
+            commands[0],
+            cwd=root,
+            count=args.shard_count,
+            index=args.shard_index,
+            dry_run=args.dry_run,
+        )
     if args.shard_count > 1:
         if any(command[1:3] != ("-m", "pytest") for command in commands):
             print("error: only pytest commands can be sharded", file=sys.stderr)

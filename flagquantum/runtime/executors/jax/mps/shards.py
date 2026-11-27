@@ -5,6 +5,8 @@ from __future__ import annotations
 from collections.abc import Mapping, Sequence
 from typing import Any
 
+from flagquantum.simulation.mps.jax import batched as _mps_numerics
+
 from ..runtime_environment import (
     _jnp_device_put,
     _require_jax,
@@ -22,13 +24,12 @@ def _initialize_jax_mps_rank_tensors(
     dtype: Any,
     device: Any | None,
 ) -> dict[int, dict[int, Any]]:
-    _, jnp = _require_jax()
+    _require_jax()
     rank_tensors: dict[int, dict[int, Any]] = {}
     for shard in shard_plans:
         local: dict[int, Any] = {}
         for qubit in shard.qubits:
-            tensor = jnp.zeros((int(bsz), 1, 2, 1), dtype=dtype)
-            tensor = tensor.at[:, 0, 0, 0].set(jnp.asarray(1.0 + 0.0j, dtype=dtype))
+            tensor = _mps_numerics.jax_mps_initial_batched_site(bsz, dtype)
             local[int(qubit)] = _jnp_device_put(tensor, device)
         rank_tensors[int(shard.rank)] = local
     return rank_tensors
