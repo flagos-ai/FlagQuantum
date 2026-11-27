@@ -21,7 +21,11 @@ from flagquantum.compiler.registers.bits.hamming_weight_component import (
     hamming_weight_program,
 )
 from flagquantum.compiler.registers.register_binding import bind_register_program
-from flagquantum.core.ir.program import FunctionRecord, verify_program_record
+from flagquantum.core.ir.program import (
+    FunctionRecord,
+    ProgramRecord,
+    verify_program_record,
+)
 from flagquantum.core.ir.program.registers import Register
 from flagquantum.errors import SerializationError
 from tests.unit.test_legacy_arithmetic_factories import _library
@@ -34,7 +38,8 @@ def test_original_constructor_matches_certified_program_bound_stream_and_resourc
     width: int,
 ) -> None:
     from qualtran.bloqs.arithmetic.hamming_weight import HammingWeightCompute
-    from qualtran.resource_counting import QECGatesCost, get_cost_value
+    from qualtran.resource_counting._bloq_counts import QECGatesCost
+    from qualtran.resource_counting._costing import get_cost_value
 
     source = HammingWeightCompute(width)
     program = resolve_component_program(
@@ -116,6 +121,7 @@ def test_original_integer_expression_wire_loses_population_count_semantics() -> 
     width = sympy.Integer(5)
     source = HammingWeightCompute(width)
     restored = bloqs_from_proto(bloqs_to_proto(source, max_depth=0))[0]
+    assert isinstance(restored, HammingWeightCompute)
     assert type(restored.bitsize) is int
     assert source.junk_bitsize == 4 and restored.junk_bitsize == 3
     with pytest.raises(SerializationError, match="signature"):
@@ -123,9 +129,10 @@ def test_original_integer_expression_wire_loses_population_count_semantics() -> 
     direct = next(iter(hamming_weight_factories().values()))(
         "main", None, {"bitsize": width}
     )
-    assert isinstance(direct, FunctionRecord)
-    assert not direct.blocks
-    assert direct.registers is not None and direct.registers[1].bitsize == 4
+    assert isinstance(direct, ProgramRecord)
+    root = direct.functions[0]
+    assert root.blocks
+    assert root.registers is not None and root.registers[1].bitsize == 4
 
 
 # The original width-one generic decomposition fails at depth one; existing
@@ -137,7 +144,8 @@ def test_actual_inverse_constructor_uses_exact_owner_and_preserves_resources(
     width: int, depth: int
 ) -> None:
     from qualtran.bloqs.arithmetic.hamming_weight import HammingWeightCompute
-    from qualtran.resource_counting import QECGatesCost, get_cost_value
+    from qualtran.resource_counting._bloq_counts import QECGatesCost
+    from qualtran.resource_counting._costing import get_cost_value
 
     original = HammingWeightCompute(width).adjoint()
     library = _library(original, depth)
@@ -236,7 +244,7 @@ def test_inverse_symbolic_and_zero_widths_preserve_declarations(width: Any) -> N
 
 
 def test_double_inverse_and_compilation_scoped_unknown_context() -> None:
-    from qualtran import Adjoint
+    from qualtran._infra.adjoint import Adjoint
     from qualtran.bloqs.arithmetic.hamming_weight import HammingWeightCompute
 
     source = Adjoint(Adjoint(HammingWeightCompute(1)))

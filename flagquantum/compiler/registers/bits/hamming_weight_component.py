@@ -8,6 +8,7 @@
 from dataclasses import replace
 
 import numpy as np
+import sympy
 
 from ....core.ir import CircuitIR, Instruction
 from ....core.ir.program import ProgramRecord
@@ -15,6 +16,7 @@ from ....core.ir.program.register_bindings import RegisterBinding
 from ....core.ir.program.register_types import quantum_bit_type
 from ....core.ir.program.registers import Register, RegisterSide, RegisterType
 from ....core.ir.program.signatures import Signature
+from ....core.value_math import SymbolicInt
 from ..component_adjoint import adjoint_component_program
 from ..component_builder import BindingCollection, ComponentProgramBuilder
 from ..component_gate_function import bit_gate_function
@@ -39,11 +41,32 @@ def hamming_weight_program(width: int, *, adjoint: bool = False) -> ProgramRecor
     Width one retains an explicit empty opaque junk word. Invalid widths and
     nonboolean directions raise ValueError through existing validation.
     """
-    junk_width, output_width = hamming_weight_requirements(width)
+    junk_width, _ = hamming_weight_requirements(width)
+    return _hamming_tree_program(width, junk_width, adjoint)
+
+
+def source_hamming_weight_program(
+    width: SymbolicInt, *, adjoint: bool = False
+) -> ProgramRecord:
+    """Retain the source SDK's excess junk for concrete symbolic integers.
+
+    SymPy integer literals use the source lower bound of one set bit. Their
+    trailing unused junk is still an owned zero output, consumed by the inverse.
+    Nonliteral symbolic widths have no finite physical program.
+    """
+    if type(width) is int:
+        return hamming_weight_program(width, adjoint=adjoint)
+    if not isinstance(width, sympy.Integer) or width < 1:
+        raise ValueError("Hamming SDK execution requires a positive integer literal")
+    return _hamming_tree_program(int(width), int(width) - 1, adjoint)
+
+
+def _hamming_tree_program(width: int, junk_width: int, adjoint: bool) -> ProgramRecord:
+    _, output_width = hamming_weight_requirements(width)
     if type(adjoint) is not bool:
         raise ValueError("Hamming adjoint must be boolean")
     if adjoint:
-        return _hamming_adjoint(hamming_weight_program(width))
+        return _hamming_adjoint(_hamming_tree_program(width, junk_width, False))
     x_dtype = RegisterType("uint", width)
     junk_dtype = RegisterType("opaque", junk_width)
     out_dtype = RegisterType("uint", output_width)
@@ -110,6 +133,9 @@ def hamming_weight_program(width: int, *, adjoint: bool = False) -> ProgramRecor
     outputs: dict[str, RegisterBinding] = {}
     for register in signature.rights():
         wires = positions[register.name]
+        for wire in wires:
+            if not any(wire in word for word in words):
+                bit_at(wire)
         outputs[register.name] = (
             gather_word_binding(builder, words, wires, register.dtype)
             if wires

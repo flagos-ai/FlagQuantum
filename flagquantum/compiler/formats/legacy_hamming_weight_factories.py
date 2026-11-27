@@ -15,7 +15,7 @@ from ...core.ir.program.signatures import Signature
 from ...core.value_math import SymbolicInt
 from ...errors import SerializationError
 from ..registers.bits.hamming_weight import hamming_weight_resource_widths
-from ..registers.bits.hamming_weight_component import hamming_weight_program
+from ..registers.bits.hamming_weight_component import source_hamming_weight_program
 from .legacy_component_resolution import ComponentFactory, ResolvedArgument
 from .legacy_modular_addition_factories import _integer
 from .legacy_word_factories import _rename_program
@@ -51,9 +51,9 @@ def _hamming_weight_factory(
         if registers not in (ports, integer_ports):
             raise SerializationError("Invalid HammingWeightCompute register signature")
         ports = registers
-    if type(width) is not int or width == 0:
+    if not isinstance(width, (int, sympy.Integer)) or width <= 0:
         return FunctionRecord(name, (), registers=ports)
-    return _rename_program(hamming_weight_program(width), name)
+    return _rename_program(source_hamming_weight_program(width), name)
 
 
 def hamming_weight_factories(
@@ -63,7 +63,7 @@ def hamming_weight_factories(
 
     Keep one table per compilation. Only complete resolved functions produced
     by this owner qualify for its inverse; unrelated children require an
-    explicitly supplied owner. Symbolic/zero widths remain declaration-only.
+    explicitly supplied owner. Nonliteral symbolic/zero widths remain declarations.
     """
     recipes: dict[FunctionRecord, tuple[SymbolicInt, bool]] = {}
 
@@ -104,9 +104,9 @@ def hamming_weight_factories(
         if registers is not None and registers != expected:
             raise SerializationError("Invalid Hamming adjoint register signature")
         result: FunctionRecord | ProgramRecord
-        if type(width) is int and width > 0:
+        if isinstance(width, (int, sympy.Integer)) and width > 0:
             result = _rename_program(
-                hamming_weight_program(width, adjoint=not inverse), name
+                source_hamming_weight_program(width, adjoint=not inverse), name
             )
         else:
             result = FunctionRecord(name, (), registers=expected)
