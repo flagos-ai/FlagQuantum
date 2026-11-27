@@ -1022,3 +1022,14 @@ counts stay here. Ecosystem `_physical_basis_session.PhysicalBasisSession`
 resolves Python identifiers, register aliases and NumPy layouts. The complete
 binding mapping and source boundaries are recorded in
 [the physical session audit](../../docs/development/PHYSICAL_BASIS_SESSION_AUDIT.md).
+
+`_clean_releases.py` owns exact zero-work analysis for unconditional X/CX/CCX
+circuits. It consumes only Core CircuitIR, input wires and timed clean-release
+points; it imports no Compiler or backend. Boolean algebraic normal forms prove
+all input branches, with backward slicing to avoid expanding irrelevant retained
+outputs. No basis sampling admits a release. Unsupported instructions or bounded
+symbolic expansion fail explicitly. Compiler still owns source graphs and wire
+leases. The field inverse example composes these owners before literal append;
+literal product padding exercises the same analysis. Run
+`tests/unit/test_clean_release_analysis.py` and
+`tests/unit/test_field_inverse_literal.py` for the shortest change-and-test path.
