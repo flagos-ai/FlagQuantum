@@ -828,7 +828,7 @@ jobs:
       contents: read
       packages: read
     # Preserve the complete integration selection with measured weights and
-    # more slots; one active test uses the same bounded service CPU share.
+    # more slots; mixed cases retain bounded workers and one thread per worker.
     timeout-minutes: 60
     strategy:
       fail-fast: false
@@ -898,6 +898,70 @@ jobs:
           - {shard: 61, hosted-bucket: 5}
           - {shard: 62, hosted-bucket: 6}
           - {shard: 63, hosted-bucket: 7}
+          - {shard: 64, hosted-bucket: 0}
+          - {shard: 65, hosted-bucket: 1}
+          - {shard: 66, hosted-bucket: 2}
+          - {shard: 67, hosted-bucket: 3}
+          - {shard: 68, hosted-bucket: 4}
+          - {shard: 69, hosted-bucket: 5}
+          - {shard: 70, hosted-bucket: 6}
+          - {shard: 71, hosted-bucket: 7}
+          - {shard: 72, hosted-bucket: 0}
+          - {shard: 73, hosted-bucket: 1}
+          - {shard: 74, hosted-bucket: 2}
+          - {shard: 75, hosted-bucket: 3}
+          - {shard: 76, hosted-bucket: 4}
+          - {shard: 77, hosted-bucket: 5}
+          - {shard: 78, hosted-bucket: 6}
+          - {shard: 79, hosted-bucket: 7}
+          - {shard: 80, hosted-bucket: 0}
+          - {shard: 81, hosted-bucket: 1}
+          - {shard: 82, hosted-bucket: 2}
+          - {shard: 83, hosted-bucket: 3}
+          - {shard: 84, hosted-bucket: 4}
+          - {shard: 85, hosted-bucket: 5}
+          - {shard: 86, hosted-bucket: 6}
+          - {shard: 87, hosted-bucket: 7}
+          - {shard: 88, hosted-bucket: 0}
+          - {shard: 89, hosted-bucket: 1}
+          - {shard: 90, hosted-bucket: 2}
+          - {shard: 91, hosted-bucket: 3}
+          - {shard: 92, hosted-bucket: 4}
+          - {shard: 93, hosted-bucket: 5}
+          - {shard: 94, hosted-bucket: 6}
+          - {shard: 95, hosted-bucket: 7}
+          - {shard: 96, hosted-bucket: 0}
+          - {shard: 97, hosted-bucket: 1}
+          - {shard: 98, hosted-bucket: 2}
+          - {shard: 99, hosted-bucket: 3}
+          - {shard: 100, hosted-bucket: 4}
+          - {shard: 101, hosted-bucket: 5}
+          - {shard: 102, hosted-bucket: 6}
+          - {shard: 103, hosted-bucket: 7}
+          - {shard: 104, hosted-bucket: 0}
+          - {shard: 105, hosted-bucket: 1}
+          - {shard: 106, hosted-bucket: 2}
+          - {shard: 107, hosted-bucket: 3}
+          - {shard: 108, hosted-bucket: 4}
+          - {shard: 109, hosted-bucket: 5}
+          - {shard: 110, hosted-bucket: 6}
+          - {shard: 111, hosted-bucket: 7}
+          - {shard: 112, hosted-bucket: 0}
+          - {shard: 113, hosted-bucket: 1}
+          - {shard: 114, hosted-bucket: 2}
+          - {shard: 115, hosted-bucket: 3}
+          - {shard: 116, hosted-bucket: 4}
+          - {shard: 117, hosted-bucket: 5}
+          - {shard: 118, hosted-bucket: 6}
+          - {shard: 119, hosted-bucket: 7}
+          - {shard: 120, hosted-bucket: 0}
+          - {shard: 121, hosted-bucket: 1}
+          - {shard: 122, hosted-bucket: 2}
+          - {shard: 123, hosted-bucket: 3}
+          - {shard: 124, hosted-bucket: 4}
+          - {shard: 125, hosted-bucket: 5}
+          - {shard: 126, hosted-bucket: 6}
+          - {shard: 127, hosted-bucket: 7}
     env:
       OMP_NUM_THREADS: "1"
       MKL_NUM_THREADS: "1"
@@ -975,7 +1039,7 @@ jobs:
           registry-token: ${{ github.token }}
           require-cached: ${{ runner.environment == 'self-hosted' }}
       - name: Measure CPU and memory limits
-        run: python -I tools/ci/ci_cpu_budget.py --exclusive-test
+        run: python -I tools/ci/ci_cpu_budget.py
       - name: Verify dependency consistency and the CPU-only PyTorch build
         run: |
           python -m pip check
@@ -983,7 +1047,7 @@ jobs:
       - name: Run integration tests with bounded workers
         env:
           PYTEST_ADDOPTS: -n ${{ env.FQ_PYTEST_WORKERS }} --dist=worksteal --durations=50 --junitxml=${{ env.FQ_CI_REPORT_DIR }}/pytest.xml
-        run: python tools/ci/ci_tier.py pr-runtime --shard-count 64 --shard-index ${{ matrix.shard }}
+        run: python tools/ci/ci_tier.py pr-runtime --shard-count 128 --shard-index ${{ matrix.shard }}
       - name: Prove native distributed runtime does not require JAX
         if: matrix.shard == 0
         env:

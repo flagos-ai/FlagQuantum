@@ -74,7 +74,7 @@ def _groups(job: dict[str, object]) -> set[str]:
     strategy = job.get("strategy")
     matrix = strategy.get("matrix") if isinstance(strategy, dict) else None
     if matrix == "${{ fromJSON(needs.coverage-plan.outputs.matrix) }}":
-        matrix = {"include": [{"shard": i, "hosted-bucket": i % 8} for i in range(192)]}
+        matrix = {"include": [{"shard": i, "hosted-bucket": i % 8} for i in range(256)]}
     assert isinstance(matrix, dict), f"{group}: job declares no matrix"
     values = matrix.get(reference.group(1))
     if values is None and isinstance(matrix.get("include"), list):
@@ -334,9 +334,17 @@ def test_expensive_cpu_runtime_proofs_run_once_on_the_newest_python() -> None:
     assert job["strategy"] == {
         "fail-fast": False,
         "matrix": {
-            "include": [{"shard": i, "hosted-bucket": i % 8} for i in range(64)]
+            "include": [{"shard": i, "hosted-bucket": i % 8} for i in range(128)]
         },
     }
+    budget = next(
+        step
+        for step in _steps("ci.yml", "cpu-runtime")
+        if step.get("name") == "Measure CPU and memory limits"
+    )
+    assert budget["run"] == "python -I tools/ci/ci_cpu_budget.py"
+    for variable in ("OMP_NUM_THREADS", "MKL_NUM_THREADS", "OPENBLAS_NUM_THREADS"):
+        assert job["env"][variable] == "1"
     expensive_steps = [
         step
         for step in _steps("ci.yml", "cpu-runtime")
@@ -348,7 +356,7 @@ def test_expensive_cpu_runtime_proofs_run_once_on_the_newest_python() -> None:
         step for step in expensive_steps if "ci_tier.py pr-runtime" in step["run"]
     )
     assert runtime["run"] == (
-        "python tools/ci/ci_tier.py pr-runtime --shard-count 64 "
+        "python tools/ci/ci_tier.py pr-runtime --shard-count 128 "
         "--shard-index ${{ matrix.shard }}"
     )
     for step in expensive_steps:

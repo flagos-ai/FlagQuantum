@@ -141,3 +141,12 @@ The parent 586-row and active 589-row ledgers retain all seventeen unfiltered
 changed-incoming import diagnoses. This does not close the integrated G0 audit.
 The new exact-head CI remains independently required; parent CI and local
 acceptance do not qualify an unpublished commit.
+
+
+The first published CI also found a QEC thread-context regression in the new
+exclusive Runtime allocation. The critical-path document records the correction:
+QEC retains its original one-thread scientific contract and restores other
+suites' admitted allocation after each case. No product mathematical source,
+public contract, scientific assertion or wheel content changes for that repair.
+The final wheel remains bound to all current product bytes; source and CI
+qualification are tracked separately for each published commit.

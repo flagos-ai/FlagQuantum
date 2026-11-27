@@ -49,8 +49,8 @@ cannot shorten an indivisible computation.
   incomplete or failed runs; the telemetry never changes report outcomes.
   This avoids relying only on the printed slowest-50 sample for later updates.
   Reports record the actual execution profile, worker and thread counts.
-- Runtime integration uses 64 measured partitions and one active test worker
-  per partition. Python 3.12 smoke/unit uses four partitions. Marker filters,
+- Runtime integration uses 128 measured partitions with the original bounded
+  parallel-worker, single-thread configuration for mixed cases. Python 3.12 smoke/unit uses four partitions. Marker filters,
   command selections and all applicable checks remain unchanged. Runtime
   launchers retain one thread per rank. Hosted concurrency remains spread
   across eight bounded buckets. Existing distributed contract partitions are
@@ -150,3 +150,33 @@ offline builder and flags were used. The final wheel independently passes binary
 loading and the fresh walk; the complete Maxwell case was not rerun for that
 documentation-only product difference. Original scientific inputs and assertions
 remain untouched. The final exact-source Linux CI is still required.
+
+
+## Preserve the QEC scientific thread contract
+
+The first published run exposed a real CI context regression: the exclusive
+Runtime profile admitted twelve Torch threads, while the existing matched QEC
+initialization, training and validation workflows require exactly one. Their
+original guards and refusal assertions stay unchanged. The QEC test context now
+sets one Torch thread before each case and restores the caller's allocation in
+`finally`, including after failures. Other suites retain their admitted thread
+budget. No workload, scientific fixture, refusal or numerical threshold changes.
+
+The original failed Runtime job logs are retained. An actual subprocess
+starts at three threads, executes the real QEC fixture around successful and
+intentionally failing cases, and verifies restoration in a sibling suite. Its
+real exit status remains one with the deliberate failure. The initially failing
+matched families and the context regression pass 89 cases under a twelve-thread
+parent allocation. The full QEC suite passes 2,801/329 under that allocation (passed/skipped).
+New exact-head CI and full-job timing still require qualification.
+
+
+The first run also showed mixed Runtime partitions exceeding 600 seconds under
+one-worker threading. Runtime therefore increases again from 64 to 128 slots
+and restores its original bounded parallel workers with one thread per worker.
+The exclusive threaded profile is reserved for measured sole-node coverage
+cases. The new fan-out preserves the exact tier and marker selector, hosted
+buckets, once-only real launchers and safety limits. The capacity policy tests
+verify all 128 rows and the original mixed-worker admission command. Completed
+successful shards from the first run are useful measurements, not qualification
+of its failed head or proof that every final job meets the target.

@@ -317,7 +317,7 @@ Preview acceptance is not formal source, wheel or published-head qualification.
 
 The same change addresses the measured CI bottleneck with source-bound timing
 weights, complete heavy-case isolation, bounded one-worker resource profiles,
-256 coverage partitions, 64 Runtime partitions and four Python3.12 unit
+256 coverage partitions, 128 Runtime partitions and four Python3.12 unit
 partitions. Exact CPU Toffoli permutation reuses the existing implementation
 and complete tests from PR1253 without merging its branch. See the
 [implementation and pending elapsed-job acceptance](migration/ci-partition-critical-path.md).
