@@ -10301,6 +10301,69 @@
         "_jax_parameterized_tn_expectation_nodes"
       ],
       "retirement": "Numerical implementation is jax_parameterized_tn_expectation_nodes in the existing Simulation owner. All consumers call that owner directly; Runtime retains precision admission and execution orchestration. No compatibility forwarding."
+    },
+    {
+      "group": "runtime-direct-seam-retirement",
+      "old": "flagquantum/runtime/executors/jax/release_policy.py",
+      "new": "flagquantum/runtime/audit/statistics.py",
+      "symbols": [],
+      "partial": true,
+      "source_kind": "Retired internal argument delegation; the existing authoritative implementation is unchanged.",
+      "retired_private_members": [
+        "attach_evidence_contract"
+      ],
+      "retirement": "All operational callers use the existing defining owner directly, at the original lazy invocation stage. No replacement wrapper or compatibility added."
+    },
+    {
+      "group": "runtime-direct-seam-retirement",
+      "old": "flagquantum/runtime/executors/jax/release_policy.py",
+      "new": "flagquantum/runtime/audit/mps_readiness.py",
+      "symbols": [],
+      "partial": true,
+      "source_kind": "Retired internal argument delegation; the existing authoritative implementation is unchanged.",
+      "retired_private_members": [
+        "attach_mps_backward_readiness"
+      ],
+      "retirement": "All operational callers use the existing defining owner directly, at the original lazy invocation stage. No replacement wrapper or compatibility added."
+    },
+    {
+      "group": "runtime-direct-seam-retirement",
+      "old": "flagquantum/runtime/planner_adapter.py",
+      "new": "flagquantum/runtime/configuration.py",
+      "symbols": [],
+      "partial": true,
+      "source_kind": "Retired internal argument delegation; the existing authoritative implementation is unchanged.",
+      "retired_private_members": [
+        "backend_execution_options"
+      ],
+      "retirement": "All operational callers use the existing defining owner directly, at the original lazy invocation stage. No replacement wrapper or compatibility added.",
+      "compatibility": "none"
+    },
+    {
+      "group": "runtime-direct-seam-retirement",
+      "old": "flagquantum/runtime/planner_adapter.py",
+      "new": "flagquantum/runtime/executors/jax/statevector/training.py",
+      "symbols": [],
+      "partial": true,
+      "source_kind": "Retired internal argument delegation; the existing authoritative implementation is unchanged.",
+      "retired_private_members": [
+        "plan_jax_statevector_training"
+      ],
+      "retirement": "All operational callers use the existing defining owner directly, at the original lazy invocation stage. No replacement wrapper or compatibility added.",
+      "compatibility": "none"
+    },
+    {
+      "group": "runtime-direct-seam-retirement",
+      "old": "flagquantum/runtime/planner_adapter.py",
+      "new": "flagquantum/runtime/executors/jax/mps/planning.py",
+      "symbols": [],
+      "partial": true,
+      "source_kind": "Retired internal argument delegation; the existing authoritative implementation is unchanged.",
+      "retired_private_members": [
+        "plan_jax_mps_training"
+      ],
+      "retirement": "All operational callers use the existing defining owner directly, at the original lazy invocation stage. No replacement wrapper or compatibility added.",
+      "compatibility": "none"
     }
   ],
   "retired_namespace_parents": [

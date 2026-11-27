@@ -588,3 +588,30 @@ widths, amplitudes, phases, optimizer budgets, draws, clocks, markers, tolerance
 assertions, safety limits and coverage thresholds remain unchanged. Native
 source and ABI remain unchanged; no definition relocation is recorded. Rust
 remains deferred until the incoming branch and architecture migration close.
+
+## Completed CPU layout qualification
+
+PR #1350 head `864605d88a8d9658f0838edbcb2d06ac5442929a` passes all three
+workflows at attempt 1: 432 successful checks and four existing conditional
+skips. Actual test merge `462e410374565f5a27dbee1828aec542cf175cbe` has the
+identical source and packaged tree. All 384 original CPU reports are retained
+and digest-verified. Runtime preserves 14,260 nodes across 128 partitions;
+coverage preserves 38,564 across 256 partitions, adding only the 24 reviewed
+references to the previous 38,540. All 83 previous scientific singletons retain
+their original isolation and existing call phases. All 24 new references and
+the preceding thirteen ownership cases have actual CI call phases.
+
+Whole executed job maxima, including setup/upload and excluding queue, are
+Runtime 508 seconds, unit 458 seconds, distributed CPU 413 seconds and coverage
+592 seconds. The unchanged complete Maxwell node is 568 seconds, versus the
+previous 705; its scientific call is 478.321 seconds, versus 619.122. These are
+observations from the named runs, not universal performance or scalability
+claims. Queueing remains separate. The serial quality and package jobs take
+1,120 and 638 seconds; the test-partition result does not imply every job or the
+entire workflow is below ten minutes. No runner services, labels, quotas or
+scientific workloads were changed.
+
+The follow-up Runtime direct-seam retirement is recorded in
+[its migration record](runtime-direct-seam-retirement.md). It must qualify its
+own source, installed artifact and exact-head CI independently. Incoming G0,
+the remaining ownership review and Rust retain their existing closeout gates.

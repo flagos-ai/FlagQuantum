@@ -1157,7 +1157,7 @@ def plan_for_backend(
 ) -> ExecutionPlan:
     """Build an execution plan after normalizing backend policy."""
 
-    from ..planner_adapter import backend_execution_options
+    from ..configuration import backend_execution_options
 
     backend_options = backend_execution_options(
         mode=mode,
