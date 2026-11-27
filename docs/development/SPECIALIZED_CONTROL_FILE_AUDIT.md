@@ -4,9 +4,9 @@ The reference is unchanged Qualtran v0.7.0 at
 `bcb17bb25360ed68ce3bc084645db3e929799389`. The native audit verifies all
 three original Git blobs before compiling the source notebook fixture cells.
 
-Current status, 2026-11-25: approved Proposal 116 target storage and Proposal 125
-nonbinary target storage are now validated through the actual public callbacks.
-The latest scope and remaining boundaries are recorded in the final section.
+Current review, 2026-11-27: approved target-storage and logical declaration
+dependencies are validated through the actual public callbacks. The complete
+closure review and retained source limits are recorded in the final section.
 Earlier pending-116/117 statements below describe the dated 2026-11-21 batches;
 116 is implemented, and approved Proposal 122 covers the old static-CH gap.
 
@@ -254,3 +254,116 @@ original symbolic-shape construction failure, nonleading-control permutations,
 repeated-control np.concatenate TypeError and invalid generic tutorial callbacks
 keep their existing dispositions. No failed reference implementation is edited
 or substituted, and no whole-file or catalogue acceptance count is inflated.
+
+## Complete-file closure after approved storage dependencies
+
+Q-0561 is eligible for whole-file acceptance under the explicitly approved
+[faithful-migration rule](G2_FAITHFUL_MIGRATION_CLOSURE_PROPOSAL.md), after
+publication and final local checks. The complete definition-to-owner table above
+remains authoritative. The named control wrapper, private selector, both public
+helpers, specialization flags, specialized adjoint, returned callbacks and
+AutoPartition unwrapping all have native owners. Existing generic control,
+predicate, exact-adjoint and directional-call owners supply their dependencies.
+No duplicate framework or public wrapper is added to match foreign names.
+
+The old pending 118/124/126/130 storage/declaration conditions have now been
+resolved within their separately approved contracts. The additional callback
+evidence covers these exact boundaries:
+
+| Profile | Actual evidence and limit |
+| --- | --- |
+| Signed QFxp(0,-1) and QFxp(0,-2) | Actual source callback, scalar and all existing shaped cases, every old/new polarity, primitive feedback, complex branches and private-zero restoration; empty array versus zero-width elements remain distinct |
+| QMontgomeryUInt(3,p), BQUInt(3,p), QFxp(3,p) | Actual typed AutoPartition handoff at one/two layers, both selected polarities and exact directions; complete source stream, complex spectator and both unnormalized erase branches |
+| QMontgomeryUInt(3,p) shaped raw targets | Every finite shape and old/new polarity through the original callback and actual source-supported Split/Join path |
+| Symbolic QGF(2,n) and degree-two QGFPoly over that field | Scalar and shaped logical calls retain nominal field parameters, source operands and returned identities; unresolved widths and unknown terminal bodies never gain physical admission |
+| Classical CInt(3) data words | Actual source/native typed declaration and callback graph with distinct classical storage metadata; correctly supplied classical inputs still refuse the unknown terminal body |
+
+The final two rows deliberately use declaration-only caller-provided children.
+They establish generic typed callback behavior, not the numerical action of an
+unspecified child. The physical cases above use the already-defined controlled
+Hadamard/phase body, including its ordinary DynamicCircuit.append(op) path and
+JSON round trip. Typed quantum storage does not admit numerical arithmetic with
+unknown parameters, classical-to-quantum reinterpretation, or unresolved array
+dimensions. The original symbolic fixed-point/bounded Split constructor refusals
+remain separate from their valid raw AutoPartition SDK views.
+
+Every actual mutually executable comparison preserves calls, operands, feedback,
+absolute complex amplitudes and private-zero work. The existing wide-target
+factorization proof still covers all untouched bystanders without claiming an
+impossible dense Runtime experiment. Root QEC categories and peak models remain
+separate from emitted CH/T/CX/H/measurement/reset inventories; raw views emit no
+extra gates or work. Empty targets keep the original predicate compute/erase.
+
+### Source limitations retained at whole-file acceptance
+
+The untouched helper's further-control callback uses np.concatenate with the
+wrong second argument and raises TypeError. Its returned control declaration and
+the failing callback input remain recorded. Native generic extension is a
+separately validated path; it is not called literal parity with that failure.
+Original nonleading-output permutations and the invalid generic tutorial X
+callback retain their existing witnesses. Native corrected examples are labeled
+separately. No source file is edited or reference result patched.
+
+Unresolved physical widths, symbolic array construction refusal, unavailable
+terminal prices/bodies and the numerical obligations of arbitrary user children
+remain explicit limits. They do not require inventing a source algorithm before
+accepting this generic control-composition file. The original complete
+non-notebook suite freshly passes all 30 cases; its complete notebook and native
+tutorial assets are reused at unchanged blobs. No protected API is expanded by
+this closure review, and no missing valid-source path is waived.
+
+### Default dispatch repair found during complete-file review
+
+The source selector tests quantum-qubit count before choosing a single-qubit
+specialization. Native selection previously called the physical quantum-port
+validator first. Consequently it rejected classical controls and unknown
+activations before their existing fallback owner could handle them. The same
+premature admission occurred in specialized-adjoint selection.
+
+Both selectors now preserve source dispatch order: non-single-qubit requests
+delegate with the original descriptors and activation object, while selected
+single-qubit branches retain their existing physical validation. Default
+dispatch preserves the existing patterns=None representation for unknown
+activations. No new Core type, instruction, codec or execution capability is
+introduced; the selected owner still admits or refuses its actual body.
+
+Actual source helpers and native callbacks now agree for classical bit/word,
+unknown finite, symbolic-shaped and zero-element control declarations in both
+forward and adjoint dispatch. Declaration tests do not invent a terminal circuit.
+Classical feedback separately executes its real returned callback and ordinary
+append with coherent data and a spectator; source classical action, both
+activation polarities and classical slot identity agree. Unknown two-bit
+activation retains the original atomic Bloq And declaration, with correctly
+sized native physical inputs still refused. The source symbolic And has
+incompatible tensor/classical and SDK Clifford+T actions, as already recorded
+in [the accepted predicate audit](CONTROL_PREDICATE_FILE_AUDIT.md). Its SDK
+recipe exists and silently uses positive controls; it is not described as an
+unavailable SDK implementation or selected as a resolved activation. Unknown three-bit activation follows the locked
+MultiAnd HasLength-to-all-ones behavior: every source call and operand matches,
+the emitted primitive/feedback stream matches, all eight raw histories agree in
+absolute complex phase, and all three private work bits return to zero.
+
+An additional eleven-case control-side intake checks QFxp(2,2), GF(8) and GF(3)
+activation values. Each original multi-bit fallback fails because CtrlSpecAnd
+only supports integer control types; the existing native control refusals remain
+appropriate. These are separate from the newly verified raw data targets.
+Signed/field/fixed-point target storage does not grant a new control predicate.
+
+The final batch passes 1220 concentrated cases and 32 local integration cases.
+The independent Cirq 1.6.1 profile passes 825 direct consumers. All ten checked
+production/consumer Python files pass strict typing, Black and Ruff; Compiler
+scope, repository language, local links, architecture, multi-level IR,
+required-check mapping, public API baseline and whitespace checks pass. Nine
+source/direct-dependency blobs remain identical to the locked inventory. The
+Qualtran 0.7.0 and real Kickmix 0.1 Simulator preflight is mandatory. The two
+warnings come from unchanged original notebook strings.
+
+| Three-control fallback | Actual emitted inventory | Independent source model |
+| --- | --- | --- |
+| Unknown finite activation, source HasLength behavior | 53 instructions: H 9, T 6, T-dagger 6, CX 18, S 3, CH 1, phase 1, measured CZ 3, measurement 3, reset 3; 8 bound wires and 3 private work bits | T 1, And 3, Clifford 7, rotation 2, measurement 3; peak 8 |
+
+The coherent branch check adds one external spectator beyond that peak. All
+eight histories have the same absolute complex output with factor 1/sqrt(8)
+and zero private work. CH stays atomic and phase stays a parameterized phase
+instruction in the emitted inventory; no synthetic T-equivalent primitive is
+silently added to make its scan equal the source composite model.
