@@ -362,3 +362,34 @@ generalized to this successful degree-one physical path.
 The shared raw-field batch keeps Core/public contracts unchanged and uses normal
 `circuit.append(op)` through the existing append adapter. Source/model evidence
 is recorded in `g2-raw-field-resources-20261127.json` and the multiplication audit.
+
+
+## Untouched-source clean-free violation intake — 2026-11-27
+
+Before composing a literal binary inverse, an independent source-graph observer
+now checks every original free point on all input basis words. It walks the
+unchanged recursive decomposition down to CNOT/Toffoli leaves, assigns explicit
+source allocation leases, and propagates exact Boolean masks for every input.
+Since these leaves are phase-free permutations, a nonzero mask proves that the
+released wire is not zero on those basis states and cannot be clean on arbitrary
+coherent inputs. No numerical field callback or repaired source inverse is used.
+
+| Source degree / polynomial | First violating primitive offset | Inputs with nonzero released work | Original measured primitive inventory |
+|---|---:|---:|---|
+| 4 / 0x13 | 65 | 12 / 16 | CX104, CCX18 |
+| 8 / 0x11B | 552 | 250 / 256 | CX943, CCX108 |
+
+The source reuses dirty released wires later in both examples. The probe does
+not silently reset them at allocation or treat such reuse as valid clean work.
+Degrees1/2/3 have no free points in the observed root; degree5's four recursive
+padding frees are zero for every input. These results do not assert that the
+source mathematical inverse value is correct merely because a release is clean.
+
+`g2-original-inverse-free-intake-20261127.json` retains every offset, wire and
+failing input word. The existing native mathematical inverse keeps its correct
+square/constant adjoints and prior zero-work acceptance. Its literal-source
+counterpart must explicitly preserve the static call evidence and refuse or
+separately diagnose source-invalid clean releases; no clean-free contract may
+be weakened to make it execute. Valid-source literal calls still need native
+implementation. Q-0516 remains open pending that implementation and the complete
+approved defect disposition. Count equality is not amplitude or cleanup evidence.
