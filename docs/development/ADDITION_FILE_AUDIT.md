@@ -277,11 +277,14 @@ classical execution. Production numerical and quantum owners remain unchanged.
 The existing `import_cirq_register_gate` accepts original OutOfPlaceAdder
 operations with an explicit typed sided signature. Widths one, two, three and
 five, both carry flags and both directions retain reversed SDK Qid placement,
-complete primitive instruction order, operand indices, measurement slots,
-feedback, returned aliases and JSON. Every instruction equals the existing
-native component's instruction. Widths one and two additionally verify every
-applicable raw erasure history, complete complex sum amplitudes, entangled
-spectators and zero consumed output bits. Transport produces zero matrix atoms.
+primitive instruction order against the corresponding source execution path,
+operand indices, measurement slots, feedback, returned aliases and JSON.
+The former universal SDK/component instruction equality claim is superseded by
+the source-route correction below: source graph scheduling and the literal SDK
+generator differ. Both native paths retain their own exact source stream.
+Widths one through three verify every applicable coherent erasure history;
+widths one and two additionally verify every basis column with an entangled
+spectator. All preserve absolute complex amplitudes and zero consumed bits. Transport produces zero matrix atoms.
 Normal append, larger domains and source tensor/isometry checks retain their
 accepted owners in the concentrated regression.
 
@@ -416,3 +419,45 @@ files, Black, Ruff, integration scope, architecture, IR, public API and whitespa
 checks pass. The earlier 788 execution and 26 Kickmix checks remain the physical
 acceptance evidence. Primitive counts and analytical resource estimates remain
 reported by their original owners.
+
+## Exact SDK and graph source-route correction (2026-11-27)
+
+The complete shared-fixture regression exposed six failing adjoint cases in the
+old SDK/component equality assertion: widths 2, 3 and 5 with either output flag.
+The unchanged source itself has distinct linear schedules. For the two-bit
+truncated adjoint on wires 0 through 5, the literal SDK generator's second
+operation is CX(0,4), while Cirq's graph schedule places CX(3,5) second. A new
+source-only witness calls the original generator and original Cirq scheduler;
+it uses no FlagQuantum transformation or reordered comparison result.
+
+Three owners are checked independently over widths 1, 2, 3, 5 and 8, both output
+flags and both directions in the diagnostic evidence:
+
+| Existing native owner | Exact unchanged source counterpart |
+| --- | --- |
+| `out_of_place_add_ir` | Literal `decompose_from_registers` sequence |
+| `out_of_place_addition_program` | CompositeBloq graph/export sequence |
+| Pure SDK Program import | Source graph schedule |
+| Measured SDK Program import | Literal source feedback sequence, kept as one body |
+
+The original comparison incorrectly required the last two transport modes to
+equal the component graph's instruction tuple in every direction. The corrected
+complete test retains exact instruction equality for each matching source path,
+including all operands and feedback slots. It also checks identical primitive
+counts, original source model totals, output ownership, extent, JSON and absence
+of matrix fallback. No instruction sorting, canonicalization, tolerance widening,
+reference patch or expected-failure waiver is used.
+
+Both native paths now run each small measurement history on the same full
+complex coherent input with a spectator through three bits. Every basis column
+and history is also checked through two bits. Both must match the independent
+addition/isometry oracle with its unnormalized branch amplitude and clean
+consumed sum; agreement only up to global phase is insufficient. Larger widths
+have exact stream/model checks, not dense-state execution claims. Primitive
+T/TDG, measurement and reset counts remain separate from the unchanged model's
+And/Clifford categories, total T estimate and logical-qubit estimate.
+
+This corrects a test's execution-path assumption after the existing earliest-layer
+wire-graph integration. No arithmetic, scheduler, SDK import implementation or
+upstream source is changed by the correction. The source truncation-loss power
+case and other retained source defects stay open under their existing scopes.

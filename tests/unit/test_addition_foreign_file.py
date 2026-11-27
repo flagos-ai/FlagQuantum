@@ -25,6 +25,9 @@ from flagquantum.compiler.formats.legacy_registers import deserialize_registers
 from flagquantum.compiler.registers.arithmetic.addition_component import (
     addition_component_program,
 )
+from flagquantum.compiler.registers.arithmetic.out_of_place_addition import (
+    out_of_place_add_ir,
+)
 from flagquantum.compiler.registers.arithmetic.out_of_place_addition_component import (
     out_of_place_addition_program,
 )
@@ -157,6 +160,28 @@ def test_all_concrete_add_factories_use_existing_five_checks(
     assert result.status is CheckStatus.PASS, result.message
 
 
+def test_original_out_of_place_routes_have_distinct_linear_order() -> None:
+    from qualtran.bloqs.arithmetic.addition import OutOfPlaceAdder
+
+    source = OutOfPlaceAdder(2, is_adjoint=True, include_most_significant_bit=False)
+    qubits = cirq.LineQubit.range(6)
+    literal = tuple(
+        cirq.flatten_op_tree(
+            source.decompose_from_registers(
+                context=cirq.DecompositionContext(cirq.SimpleQubitManager()),
+                a=np.array(qubits[:2]),
+                b=np.array(qubits[2:4]),
+                c=np.array(qubits[4:]),
+            )
+        )
+    )
+    scheduled = tuple(cirq.Circuit(literal).all_operations())
+    # Both sequences come directly from the locked SDK, without native code.
+    assert literal[1] == cirq.CNOT(qubits[0], qubits[4])
+    assert scheduled[1] == cirq.CNOT(qubits[3], qubits[5])
+    assert Counter(literal) == Counter(scheduled)
+
+
 @pytest.mark.parametrize("width", (1, 2, 3, 5))
 @pytest.mark.parametrize("include_msb", (False, True))
 @pytest.mark.parametrize("adjoint", (False, True))
@@ -166,6 +191,8 @@ def test_original_sdk_sided_decomposition_matches_native_stream(
     adjoint: bool,
 ) -> None:
     from qualtran.bloqs.arithmetic.addition import OutOfPlaceAdder
+    from qualtran.resource_counting._bloq_counts import QECGatesCost
+    from qualtran.resource_counting._costing import get_cost_value
 
     source = OutOfPlaceAdder(
         width, is_adjoint=adjoint, include_most_significant_bit=include_msb
@@ -188,12 +215,52 @@ def test_original_sdk_sided_decomposition_matches_native_stream(
         operands,
         **kwargs,
     )
-    assert actual.circuit.instructions == expected.circuit.instructions
+    ports = {"a": words[0], "b": words[1], "c": c}
+    outputs = {"a": words[0], "b": words[1]} if adjoint else ports
+    slots = {
+        gate.wires[0]: gate.metadata["classical_bit"]
+        for gate in actual.circuit.instructions
+        if gate.name == "measure"
+    }
+    graph_slots = {
+        gate.wires[0]: gate.metadata["classical_bit"]
+        for gate in expected.circuit.instructions
+        if gate.name == "measure"
+    }
+    assert slots == graph_slots
+    literal_source = reference_arithmetic_gates(
+        source, ports, (), slots, cirq_style=True
+    )
+    graph_source = reference_arithmetic_gates(
+        source,
+        ports if adjoint else {"a": words[0], "b": words[1]},
+        () if adjoint else c[::-1],
+        graph_slots,
+        expected_outputs=outputs,
+    )
+    raw_native = out_of_place_add_ir(
+        *words,
+        c,
+        include_msb=include_msb,
+        adjoint=adjoint,
+        classical_bits=tuple(slots[wire] for wire in c[::-1][1:]) if adjoint else (),
+    )
+    assert raw_native == literal_source
+    assert expected.circuit.instructions == graph_source
+    model = get_cost_value(source, QECGatesCost())
+    # The importer keeps measured bodies atomic; pure bodies use typed graph order.
+    # The locked SDK generator and graph exporter have different linear schedules.
+    sdk_source = literal_source if model.measurement else graph_source
+    assert actual.circuit.instructions == sdk_source
+    actual_counts = Counter(gate.name for gate in actual.circuit.instructions)
+    assert actual_counts == Counter(gate.name for gate in graph_source)
+    assert actual_counts["t"] + actual_counts["tdg"] == model.total_t_count()
+    assert actual_counts["measure"] == actual_counts["reset"] == model.measurement
     assert actual.outputs == expected.outputs
     assert actual.circuit.n_wires == expected.circuit.n_wires
     assert CircuitIR.from_json(actual.circuit.to_json()) == actual.circuit
     assert not any(gate.name == "any" for gate in actual.circuit.instructions)
-    if width <= 2:
+    if width <= 3:
         count = len(c)
         coefficients = torch.arange(1, (1 << (2 * width + 1)) + 1, dtype=torch.float64)
         amplitudes = torch.complex(coefficients, 3 - 2 * coefficients)
@@ -208,20 +275,42 @@ def test_original_sdk_sided_decomposition_matches_native_stream(
             occupied = empty | (((a + b) % (1 << count)) << 1)
             initial[empty] = amplitudes[index]
             correct[occupied] = amplitudes[index]
-        histories = product((0, 1), repeat=count - 1) if adjoint else ((),)
-        for history in histories:
-            result = forced_branch(
-                correct if adjoint else initial, actual.circuit.instructions, history
+        histories = tuple(product((0, 1), repeat=count - 1)) if adjoint else ((),)
+
+        def compare_branch(
+            empty_state: torch.Tensor, sum_state: torch.Tensor, history: tuple[int, ...]
+        ) -> None:
+            incoming = sum_state if adjoint else empty_state
+            result = forced_branch(incoming, actual.circuit.instructions, history)
+            graph_result = forced_branch(
+                incoming, expected.circuit.instructions, history
             )
-            target = initial if adjoint else correct
+            target = empty_state if adjoint else sum_state
             torch.testing.assert_close(
                 result, target / 2 ** (len(history) / 2), rtol=0, atol=3e-12
             )
+            torch.testing.assert_close(graph_result, result, rtol=0, atol=3e-12)
             if adjoint:
                 assert (
                     torch.count_nonzero(result.reshape(-1, 1 << (count + 1))[:, 2:])
                     == 0
                 )
+
+        for history in histories:
+            compare_branch(initial, correct, history)
+        if width <= 2:
+            # Check the complete small isometry, not only one coherent input.
+            for a, b, spectator in product(
+                range(1 << width), range(1 << width), (0, 1)
+            ):
+                empty = (((a << width) | b) << (count + 1)) | spectator
+                occupied = empty | (((a + b) % (1 << count)) << 1)
+                basis_empty, basis_sum = torch.zeros_like(initial), torch.zeros_like(
+                    correct
+                )
+                basis_empty[empty] = basis_sum[occupied] = 1
+                for history in histories:
+                    compare_branch(basis_empty, basis_sum, history)
 
 
 @pytest.mark.parametrize(
@@ -244,7 +333,8 @@ def test_complete_original_controlled_constant_callbacks(
     signed: bool,
     result: int,
 ) -> None:
-    from qualtran import CtrlSpec, QInt, QUInt
+    from qualtran._infra.controlled import CtrlSpec
+    from qualtran._infra.data_types import QInt, QUInt
     from qualtran.bloqs.arithmetic.addition import AddK
 
     source: Any = AddK((QInt if signed else QUInt)(width), k)
