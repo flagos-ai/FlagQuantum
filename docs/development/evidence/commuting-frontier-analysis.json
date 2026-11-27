@@ -1,0 +1,593 @@
+{
+  "scope": "Paired inspected-case quality counts only; no independent-seed, timing, RSS, held-out or SDK-ranking claim",
+  "counts": {
+    "flagquantum-ordinary-restored": {
+      "candidate_dominates": 18,
+      "equal": 38,
+      "tradeoff": 4
+    },
+    "flagquantum-target-artifact": {
+      "candidate_dominates": 17,
+      "equal": 38,
+      "tradeoff": 5
+    }
+  },
+  "changed": [
+    {
+      "case": "06/qaoa/line",
+      "workflow": "flagquantum-ordinary-restored",
+      "baseline": [
+        72,
+        43
+      ],
+      "candidate": [
+        60,
+        42
+      ],
+      "category": "candidate_dominates"
+    },
+    {
+      "case": "06/qaoa/line",
+      "workflow": "flagquantum-target-artifact",
+      "baseline": [
+        70,
+        41
+      ],
+      "candidate": [
+        54,
+        38
+      ],
+      "category": "candidate_dominates"
+    },
+    {
+      "case": "06/qft/line",
+      "workflow": "flagquantum-ordinary-restored",
+      "baseline": [
+        117,
+        74
+      ],
+      "candidate": [
+        99,
+        62
+      ],
+      "category": "candidate_dominates"
+    },
+    {
+      "case": "06/qft/line",
+      "workflow": "flagquantum-target-artifact",
+      "baseline": [
+        75,
+        52
+      ],
+      "candidate": [
+        77,
+        50
+      ],
+      "category": "tradeoff"
+    },
+    {
+      "case": "06/qft/ring",
+      "workflow": "flagquantum-ordinary-restored",
+      "baseline": [
+        93,
+        60
+      ],
+      "candidate": [
+        69,
+        46
+      ],
+      "category": "candidate_dominates"
+    },
+    {
+      "case": "06/qft/ring",
+      "workflow": "flagquantum-target-artifact",
+      "baseline": [
+        79,
+        52
+      ],
+      "candidate": [
+        65,
+        42
+      ],
+      "category": "candidate_dominates"
+    },
+    {
+      "case": "06/qft/grid",
+      "workflow": "flagquantum-ordinary-restored",
+      "baseline": [
+        75,
+        52
+      ],
+      "candidate": [
+        69,
+        39
+      ],
+      "category": "candidate_dominates"
+    },
+    {
+      "case": "06/qft/grid",
+      "workflow": "flagquantum-target-artifact",
+      "baseline": [
+        65,
+        48
+      ],
+      "candidate": [
+        53,
+        31
+      ],
+      "category": "candidate_dominates"
+    },
+    {
+      "case": "06/qft/sparse",
+      "workflow": "flagquantum-ordinary-restored",
+      "baseline": [
+        93,
+        60
+      ],
+      "candidate": [
+        69,
+        46
+      ],
+      "category": "candidate_dominates"
+    },
+    {
+      "case": "06/qft/sparse",
+      "workflow": "flagquantum-target-artifact",
+      "baseline": [
+        79,
+        52
+      ],
+      "candidate": [
+        65,
+        42
+      ],
+      "category": "candidate_dominates"
+    },
+    {
+      "case": "08/qaoa/line",
+      "workflow": "flagquantum-ordinary-restored",
+      "baseline": [
+        122,
+        66
+      ],
+      "candidate": [
+        110,
+        63
+      ],
+      "category": "candidate_dominates"
+    },
+    {
+      "case": "08/qaoa/line",
+      "workflow": "flagquantum-target-artifact",
+      "baseline": [
+        120,
+        64
+      ],
+      "candidate": [
+        100,
+        58
+      ],
+      "category": "candidate_dominates"
+    },
+    {
+      "case": "08/qaoa/sparse",
+      "workflow": "flagquantum-ordinary-restored",
+      "baseline": [
+        80,
+        40
+      ],
+      "candidate": [
+        74,
+        36
+      ],
+      "category": "candidate_dominates"
+    },
+    {
+      "case": "08/qaoa/sparse",
+      "workflow": "flagquantum-target-artifact",
+      "baseline": [
+        74,
+        37
+      ],
+      "candidate": [
+        64,
+        31
+      ],
+      "category": "candidate_dominates"
+    },
+    {
+      "case": "08/ising/ring",
+      "workflow": "flagquantum-ordinary-restored",
+      "baseline": [
+        84,
+        42
+      ],
+      "candidate": [
+        78,
+        39
+      ],
+      "category": "candidate_dominates"
+    },
+    {
+      "case": "08/ising/ring",
+      "workflow": "flagquantum-target-artifact",
+      "baseline": [
+        82,
+        45
+      ],
+      "candidate": [
+        64,
+        34
+      ],
+      "category": "candidate_dominates"
+    },
+    {
+      "case": "08/ising/grid",
+      "workflow": "flagquantum-ordinary-restored",
+      "baseline": [
+        84,
+        68
+      ],
+      "candidate": [
+        78,
+        35
+      ],
+      "category": "candidate_dominates"
+    },
+    {
+      "case": "08/ising/grid",
+      "workflow": "flagquantum-target-artifact",
+      "baseline": [
+        82,
+        68
+      ],
+      "candidate": [
+        72,
+        33
+      ],
+      "category": "candidate_dominates"
+    },
+    {
+      "case": "08/ising/sparse",
+      "workflow": "flagquantum-ordinary-restored",
+      "baseline": [
+        66,
+        41
+      ],
+      "candidate": [
+        66,
+        37
+      ],
+      "category": "candidate_dominates"
+    },
+    {
+      "case": "08/ising/sparse",
+      "workflow": "flagquantum-target-artifact",
+      "baseline": [
+        66,
+        41
+      ],
+      "candidate": [
+        60,
+        35
+      ],
+      "category": "candidate_dominates"
+    },
+    {
+      "case": "08/qft/line",
+      "workflow": "flagquantum-ordinary-restored",
+      "baseline": [
+        224,
+        120
+      ],
+      "candidate": [
+        194,
+        95
+      ],
+      "category": "candidate_dominates"
+    },
+    {
+      "case": "08/qft/line",
+      "workflow": "flagquantum-target-artifact",
+      "baseline": [
+        156,
+        77
+      ],
+      "candidate": [
+        150,
+        77
+      ],
+      "category": "candidate_dominates"
+    },
+    {
+      "case": "08/qft/grid",
+      "workflow": "flagquantum-ordinary-restored",
+      "baseline": [
+        176,
+        110
+      ],
+      "candidate": [
+        152,
+        108
+      ],
+      "category": "candidate_dominates"
+    },
+    {
+      "case": "08/qft/grid",
+      "workflow": "flagquantum-target-artifact",
+      "baseline": [
+        162,
+        97
+      ],
+      "candidate": [
+        142,
+        104
+      ],
+      "category": "tradeoff"
+    },
+    {
+      "case": "08/qft/sparse",
+      "workflow": "flagquantum-ordinary-restored",
+      "baseline": [
+        182,
+        105
+      ],
+      "candidate": [
+        164,
+        114
+      ],
+      "category": "tradeoff"
+    },
+    {
+      "case": "08/qft/sparse",
+      "workflow": "flagquantum-target-artifact",
+      "baseline": [
+        170,
+        96
+      ],
+      "candidate": [
+        154,
+        106
+      ],
+      "category": "tradeoff"
+    },
+    {
+      "case": "12/qaoa/line",
+      "workflow": "flagquantum-ordinary-restored",
+      "baseline": [
+        270,
+        101
+      ],
+      "candidate": [
+        252,
+        114
+      ],
+      "category": "tradeoff"
+    },
+    {
+      "case": "12/qaoa/line",
+      "workflow": "flagquantum-target-artifact",
+      "baseline": [
+        270,
+        101
+      ],
+      "candidate": [
+        230,
+        101
+      ],
+      "category": "candidate_dominates"
+    },
+    {
+      "case": "12/qaoa/grid",
+      "workflow": "flagquantum-ordinary-restored",
+      "baseline": [
+        156,
+        78
+      ],
+      "candidate": [
+        150,
+        72
+      ],
+      "category": "candidate_dominates"
+    },
+    {
+      "case": "12/qaoa/grid",
+      "workflow": "flagquantum-target-artifact",
+      "baseline": [
+        150,
+        76
+      ],
+      "candidate": [
+        144,
+        71
+      ],
+      "category": "candidate_dominates"
+    },
+    {
+      "case": "12/qaoa/sparse",
+      "workflow": "flagquantum-ordinary-restored",
+      "baseline": [
+        126,
+        53
+      ],
+      "candidate": [
+        114,
+        48
+      ],
+      "category": "candidate_dominates"
+    },
+    {
+      "case": "12/qaoa/sparse",
+      "workflow": "flagquantum-target-artifact",
+      "baseline": [
+        122,
+        51
+      ],
+      "candidate": [
+        104,
+        46
+      ],
+      "category": "candidate_dominates"
+    },
+    {
+      "case": "12/ising/line",
+      "workflow": "flagquantum-ordinary-restored",
+      "baseline": [
+        294,
+        156
+      ],
+      "candidate": [
+        246,
+        111
+      ],
+      "category": "candidate_dominates"
+    },
+    {
+      "case": "12/ising/line",
+      "workflow": "flagquantum-target-artifact",
+      "baseline": [
+        284,
+        146
+      ],
+      "candidate": [
+        230,
+        105
+      ],
+      "category": "candidate_dominates"
+    },
+    {
+      "case": "12/ising/grid",
+      "workflow": "flagquantum-ordinary-restored",
+      "baseline": [
+        138,
+        54
+      ],
+      "candidate": [
+        126,
+        44
+      ],
+      "category": "candidate_dominates"
+    },
+    {
+      "case": "12/ising/grid",
+      "workflow": "flagquantum-target-artifact",
+      "baseline": [
+        136,
+        52
+      ],
+      "candidate": [
+        120,
+        42
+      ],
+      "category": "candidate_dominates"
+    },
+    {
+      "case": "12/ising/sparse",
+      "workflow": "flagquantum-ordinary-restored",
+      "baseline": [
+        132,
+        58
+      ],
+      "candidate": [
+        114,
+        45
+      ],
+      "category": "candidate_dominates"
+    },
+    {
+      "case": "12/ising/sparse",
+      "workflow": "flagquantum-target-artifact",
+      "baseline": [
+        126,
+        54
+      ],
+      "candidate": [
+        102,
+        41
+      ],
+      "category": "candidate_dominates"
+    },
+    {
+      "case": "12/qft/line",
+      "workflow": "flagquantum-ordinary-restored",
+      "baseline": [
+        534,
+        206
+      ],
+      "candidate": [
+        480,
+        161
+      ],
+      "category": "candidate_dominates"
+    },
+    {
+      "case": "12/qft/line",
+      "workflow": "flagquantum-target-artifact",
+      "baseline": [
+        396,
+        137
+      ],
+      "candidate": [
+        372,
+        131
+      ],
+      "category": "candidate_dominates"
+    },
+    {
+      "case": "12/qft/grid",
+      "workflow": "flagquantum-ordinary-restored",
+      "baseline": [
+        408,
+        191
+      ],
+      "candidate": [
+        330,
+        206
+      ],
+      "category": "tradeoff"
+    },
+    {
+      "case": "12/qft/grid",
+      "workflow": "flagquantum-target-artifact",
+      "baseline": [
+        352,
+        150
+      ],
+      "candidate": [
+        328,
+        170
+      ],
+      "category": "tradeoff"
+    },
+    {
+      "case": "12/qft/sparse",
+      "workflow": "flagquantum-ordinary-restored",
+      "baseline": [
+        372,
+        167
+      ],
+      "candidate": [
+        336,
+        206
+      ],
+      "category": "tradeoff"
+    },
+    {
+      "case": "12/qft/sparse",
+      "workflow": "flagquantum-target-artifact",
+      "baseline": [
+        338,
+        158
+      ],
+      "candidate": [
+        330,
+        190
+      ],
+      "category": "tradeoff"
+    }
+  ],
+  "accepted": 240,
+  "attempted": 240,
+  "distinct_payloads": 146,
+  "script": "import collections,json\nfrom pathlib import Path\np=json.loads(Path('/private/tmp/fq-commuting-frontier-screen-20261122.json').read_text())\nassert p['completed'] and len(p['rows'])==240\nrows={(r['case'],r['workflow'],r['variant']):r for r in p['rows']}\ncounts=collections.defaultdict(collections.Counter);changed=[]\nfor case in [r['case'] for r in p['inputs']]:\n for workflow in ('flagquantum-ordinary-restored','flagquantum-target-artifact'):\n  before=rows[case,workflow,'baseline'];after=rows[case,workflow,'candidate']\n  if before['status']!='accepted' or after['status']!='accepted':\n   counts[workflow]['failed_or_unsupported']+=1;continue\n  a=tuple(before['metrics'][k] for k in ('full_cz_count','two_body_dependency_depth'));b=tuple(after['metrics'][k] for k in ('full_cz_count','two_body_dependency_depth'))\n  if a==b:label='equal'\n  elif all(x<=y for x,y in zip(b,a)):label='candidate_dominates'\n  elif all(x>=y for x,y in zip(b,a)):label='candidate_dominated'\n  else:label='tradeoff'\n  counts[workflow][label]+=1\n  if a!=b:changed.append({'case':case,'workflow':workflow,'baseline':a,'candidate':b,'category':label})\nreport={'scope':'Paired inspected-case quality counts only; no independent-seed, timing, RSS, held-out or SDK-ranking claim','counts':{k:dict(v) for k,v in counts.items()},'changed':changed,'accepted':sum(r['status']=='accepted' for r in p['rows']),'attempted':len(p['rows']),'distinct_payloads':len(p['payloads']),'script':Path(__file__).read_text()}\nPath('/private/tmp/fq-commuting-frontier-analysis-20261122.json').write_text(json.dumps(report,indent=2)+'\\n')\nprint(json.dumps({k:v for k,v in report.items() if k!='script'},indent=2))\n"
+}
