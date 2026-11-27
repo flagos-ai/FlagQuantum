@@ -72,7 +72,30 @@ PACKED_PROFILES = (
 
 def packed_dtype(profile: str) -> tuple[RegisterType, Any]:
     """Pair independently constructed native and frozen-source descriptors."""
-    from qualtran import QGF, BQUInt, QAny, QFxp, QGFPoly, QMontgomeryUInt, QUInt
+    from qualtran._infra.data_types import (
+        QGF,
+        BQUInt,
+        QAny,
+        QFxp,
+        QGFPoly,
+        QMontgomeryUInt,
+        QUInt,
+    )
+
+    if profile in {"montgomery_symbolic", "bounded_symbolic", "fixed_symbolic"}:
+        from sympy import Symbol
+
+        parameter = Symbol("p", positive=True, integer=True)
+        if profile == "montgomery_symbolic":
+            return montgomery_register_type(3, parameter), QMontgomeryUInt(3, parameter)
+        if profile == "bounded_symbolic":
+            return bounded_unsigned_register_type(3, parameter), BQUInt(3, parameter)
+        return fixed_point_register_type(3, parameter), QFxp(3, parameter)
+    if profile.startswith("empty_signed"):
+        fraction = int(profile.removeprefix("empty_signed"))
+        return fixed_point_register_type(0, fraction, signed=True), QFxp(
+            0, fraction, signed=True
+        )
 
     if profile == "opaque":
         return RegisterType("opaque", 3), QAny(3)
@@ -123,7 +146,10 @@ def packed_dtype(profile: str) -> tuple[RegisterType, Any]:
     return fixed_point_register_type(3, fraction), QFxp(3, fraction)
 
 
-@pytest.mark.parametrize("profile", PACKED_PROFILES)
+@pytest.mark.parametrize(
+    "profile",
+    (*PACKED_PROFILES, "montgomery_symbolic", "bounded_symbolic", "fixed_symbolic"),
+)
 @pytest.mark.parametrize(
     "layers,value,inverse", tuple(product((1, 2), (0, 1), (False, True)))
 )
@@ -131,11 +157,15 @@ def test_complete_typed_packed_return_protocol_and_exact_direction(
     profile: str, layers: int, value: int, inverse: bool
 ) -> None:
     from attrs import evolve
-    from qualtran import BloqBuilder, CtrlSpec, QBit
-    from qualtran import Register as OriginalRegister
-    from qualtran import Signature as OriginalSignature
+    from qualtran._infra.composite_bloq import BloqBuilder
+    from qualtran._infra.controlled import CtrlSpec
+    from qualtran._infra.data_types import QBit
+    from qualtran._infra.registers import Register as OriginalRegister
+    from qualtran._infra.registers import Signature as OriginalSignature
     from qualtran.bloqs.mcmt.specialized_ctrl import get_ctrl_system_1bit_cv
-    from qualtran.resource_counting import QECGatesCost, QubitCount, get_cost_value
+    from qualtran.resource_counting._bloq_counts import QECGatesCost
+    from qualtran.resource_counting._costing import get_cost_value
+    from qualtran.resource_counting._qubit_counts import QubitCount
 
     dtype, original_dtype = packed_dtype(profile)
     module, wrapper, child = packed_fixture(1, True, False, activation=value)

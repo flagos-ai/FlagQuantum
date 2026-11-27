@@ -57,6 +57,9 @@ SHAPED_PROFILES = (
     "polynomial3_linear",
     "polynomial5_linear",
     "polynomial9_linear",
+    "empty_signed-1",
+    "empty_signed-2",
+    "montgomery_symbolic",
 )
 
 
@@ -65,10 +68,12 @@ def shaped_positive(
 ) -> tuple[ProgramRecord, Any]:
     """Independently construct typed native calls and a source CH fixture."""
     import attrs
-    from qualtran import Bloq, BloqBuilder, QBit
-    from qualtran import Register as OriginalRegister
-    from qualtran import Signature as OriginalSignature
-    from qualtran.bloqs.basic_gates import CHadamard
+    from qualtran._infra.bloq import Bloq
+    from qualtran._infra.composite_bloq import BloqBuilder
+    from qualtran._infra.data_types import QBit
+    from qualtran._infra.registers import Register as OriginalRegister
+    from qualtran._infra.registers import Signature as OriginalSignature
+    from qualtran.bloqs.basic_gates.hadamard import CHadamard
 
     @attrs.frozen
     class ArrayHadamards:
@@ -120,8 +125,8 @@ def shaped_positive(
 def shaped_source_gates(
     source: Any, ports: SourcePorts, work: tuple[int, ...], slots: dict[int, int]
 ) -> tuple[Instruction, ...]:
-    from qualtran import Adjoint
-    from qualtran.bloqs.basic_gates import CHadamard
+    from qualtran._infra.adjoint import Adjoint
+    from qualtran.bloqs.basic_gates.hadamard import CHadamard
     from qualtran.bloqs.mcmt.and_bloq import And, MultiAnd
 
     def leaf(
@@ -200,11 +205,15 @@ def assert_hadamard_channel_factorization(
 def test_shaped_actual_callback_streams_complex_histories_and_output_aliases(
     profile: str, shape: tuple[int, ...], old: int, new: int
 ) -> None:
-    from qualtran import BloqBuilder, CtrlSpec, QBit
-    from qualtran import Register as OriginalRegister
-    from qualtran import Signature as OriginalSignature
+    from qualtran._infra.composite_bloq import BloqBuilder
+    from qualtran._infra.controlled import CtrlSpec
+    from qualtran._infra.data_types import QBit
+    from qualtran._infra.registers import Register as OriginalRegister
+    from qualtran._infra.registers import Signature as OriginalSignature
     from qualtran.bloqs.mcmt.specialized_ctrl import get_ctrl_system_1bit_cv
-    from qualtran.resource_counting import QECGatesCost, QubitCount, get_cost_value
+    from qualtran.resource_counting._bloq_counts import QECGatesCost
+    from qualtran.resource_counting._costing import get_cost_value
+    from qualtran.resource_counting._qubit_counts import QubitCount
 
     dtype, source_dtype = packed_dtype(profile)
     positive, source_positive = shaped_positive(dtype, source_dtype, shape)
@@ -325,25 +334,55 @@ def test_shaped_actual_callback_streams_complex_histories_and_output_aliases(
         torch.testing.assert_close(restored, initial / 2, atol=2e-12, rtol=0)
 
 
-@pytest.mark.parametrize("width_case", ("n", "2*n+1"))
+@pytest.mark.parametrize(
+    "width_case", ("n", "2*n+1", "field", "polynomial", "classical")
+)
 @pytest.mark.parametrize("shape", ((), (2,), (1, 2)))
 def test_symbolic_target_declarations_retain_source_graph_and_explicit_binding_refusal(
     width_case: str, shape: tuple[int, ...]
 ) -> None:
     import attrs
     import sympy
-    from qualtran import Bloq, QAny, QBit
-    from qualtran import Register as OriginalRegister
-    from qualtran import Signature as OriginalSignature
+    from qualtran._infra.bloq import Bloq
+    from qualtran._infra.data_types import QAny, QBit
+    from qualtran._infra.registers import Register as OriginalRegister
+    from qualtran._infra.registers import Signature as OriginalSignature
     from qualtran.bloqs.mcmt.specialized_ctrl import (
         _MultiControlledFromSinglyControlled,
     )
 
     n = sympy.Symbol("n", integer=True, positive=True)
     width = n if width_case == "n" else 2 * n + 1
+    dtype = RegisterType("opaque", width)
+    from qualtran._infra.data_types import QCDType
+
+    source_dtype: QCDType[Any] = QAny(width)
+    if width_case in ("field", "polynomial"):
+        from qualtran._infra.data_types import QGF, QGFPoly
+
+        from flagquantum.simulation.finite_field_encoding import FiniteFieldEncoding
+        from flagquantum.simulation.finite_field_polynomial_encoding import (
+            FiniteFieldPolynomialEncoding,
+        )
+
+        field = FiniteFieldEncoding(2, n)
+        dtype = field.register_type()
+        source_field = QGF(2, n)
+        source_dtype = source_field
+        if width_case == "polynomial":
+            dtype = FiniteFieldPolynomialEncoding(2, field).register_type()
+            source_dtype = QGFPoly(2, source_field)
+    elif width_case == "classical":
+        from qualtran._infra.data_types import CInt
+
+        from flagquantum.core.ir.program.register_types import (
+            classical_signed_register_type,
+        )
+
+        dtype, source_dtype = classical_signed_register_type(3), CInt(3)
     registers = (
         Register("ctrl", quantum_bit_type()),
-        Register("word", RegisterType("opaque", width), shape),
+        Register("word", dtype, shape),
     )
     leaf = FunctionRecord("declared", (), registers=registers)
     builder = ComponentProgramBuilder(Signature(registers), (leaf,), name="positive")
@@ -356,7 +395,7 @@ def test_symbolic_target_declarations_retain_source_graph_and_explicit_binding_r
             return OriginalSignature(
                 (
                     OriginalRegister("ctrl", QBit()),
-                    OriginalRegister("word", QAny(width), shape),
+                    OriginalRegister("word", source_dtype, shape),
                 )
             )
 
@@ -368,14 +407,18 @@ def test_symbolic_target_declarations_retain_source_graph_and_explicit_binding_r
     assert normalize_trace(_native_trace(module, "positive")) == normalize_trace(
         _source_trace(SourceCalls, source.decompose_bloq())
     )
+    words = tuple(tuple(range(2 + 3 * i, 5 + 3 * i)) for i in range(prod(shape)))
+    if width_case == "classical":
+        words = ((),) * prod(shape)
     with pytest.raises(ValueError, match="concrete|bodies"):
         bind_register_program(
             module,
             (
                 (0,),
                 (1,),
-                *(tuple(range(2 + 3 * i, 5 + 3 * i)) for i in range(prod(shape))),
+                *words,
             ),
+            classical_inputs=(0,) * prod(shape) if width_case == "classical" else (),
             clean=(20,),
             entry="positive",
         )
@@ -385,11 +428,12 @@ def test_symbolic_target_declarations_retain_source_graph_and_explicit_binding_r
 def test_signed_fixed_target_executes_approved_storage_and_all_erasure_branches(
     shape: tuple[int, ...],
 ) -> None:
-    from qualtran import QFxp
+    from qualtran._infra.data_types import QFxp
     from qualtran.bloqs.mcmt.specialized_ctrl import (
         _MultiControlledFromSinglyControlled,
     )
-    from qualtran.resource_counting import QECGatesCost, get_cost_value
+    from qualtran.resource_counting._bloq_counts import QECGatesCost
+    from qualtran.resource_counting._costing import get_cost_value
 
     from flagquantum.core.ir.program.register_types import fixed_point_register_type
 
@@ -447,9 +491,10 @@ def test_signed_fixed_target_executes_approved_storage_and_all_erasure_branches(
 def test_symbolic_target_shape_keeps_original_construction_failure() -> None:
     import attrs
     import sympy
-    from qualtran import Bloq, DecomposeTypeError, QAny, QBit
-    from qualtran import Register as OriginalRegister
-    from qualtran import Signature as OriginalSignature
+    from qualtran._infra.bloq import Bloq, DecomposeTypeError
+    from qualtran._infra.data_types import QAny, QBit
+    from qualtran._infra.registers import Register as OriginalRegister
+    from qualtran._infra.registers import Signature as OriginalSignature
     from qualtran.bloqs.mcmt.specialized_ctrl import (
         _MultiControlledFromSinglyControlled,
     )
@@ -513,7 +558,10 @@ def test_full_array_partition_dependency_original_stream_and_logical_aliases(
     shape: tuple[int, ...],
     left_only: bool,
 ) -> None:
-    from qualtran.resource_counting import QECGatesCost, QubitCount, get_cost_value
+    from qualtran._infra.data_types import QCDType
+    from qualtran.resource_counting._bloq_counts import QECGatesCost
+    from qualtran.resource_counting._costing import get_cost_value
+    from qualtran.resource_counting._qubit_counts import QubitCount
 
     from flagquantum.compiler.registers.layout.auto_partition import AutoPartition
     from flagquantum.compiler.registers.layout.component_auto_partition import (
@@ -524,8 +572,9 @@ def test_full_array_partition_dependency_original_stream_and_logical_aliases(
         source_partition,
     )
 
+    original_dtype: QCDType[Any]
     if profile.startswith("nonbinary"):
-        from qualtran import QGF
+        from qualtran._infra.data_types import QGF
 
         from flagquantum.simulation.finite_field_encoding import FiniteFieldEncoding
 
@@ -537,7 +586,7 @@ def test_full_array_partition_dependency_original_stream_and_logical_aliases(
         dtype = FiniteFieldEncoding(characteristic, degree).register_type()
         original_dtype = QGF(characteristic, degree)
     elif profile.startswith(("signed_fixed", "empty_fixed")):
-        from qualtran import QFxp
+        from qualtran._infra.data_types import QFxp
 
         from flagquantum.core.ir.program.register_types import fixed_point_register_type
 
