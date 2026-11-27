@@ -64,3 +64,30 @@ one expected source failure. Strict checking covers both changed Python files.
 Black, Ruff, Compiler scope, language, architecture, multilevel IR and public
 API checks pass. Dependency checking retains the existing 720 findings.
 Receipts use prefix g2-gradient-constructor and date 20261123.
+
+## Faithful whole-file disposition, November 28
+
+Q-0640 is eligible for migration acceptance under the approved
+[G2 closure rule](G2_FAITHFUL_MIGRATION_CLOSURE_PROPOSAL.md). Complete source
+recursion, stored constructors and catalog dependencies already have native
+owners; the current factory delegates to the same typed component. Published
+`d3ec41d32` and existing full operator certificates are reused.
+
+Equal-child key collapse and incorrect modeled child reversal remain upstream
+model-correction follow-ups owned by the gradient-QFT resource model. The
+executed recursive graph, aggregate declaration and actual primitive inventory
+remain checked separately. PlusEqualProduct has no original primitive
+decomposition: its arithmetic operator certifies the joint channel, rather
+than a nonexistent source primitive recipe. Neither defect is a missing native
+execution path. Separate QPE and THC consumer responsibilities remain open.
+
+Final verification for this disposition: 336 concentrated cases, 217 independent
+Cirq 1.6 cases and 248 local integration cases pass. The three unchanged original
+test files report 61 passes and four original expected failures. Six unchanged
+Compiler owners pass strict typing, format and lint checks. Architecture, IR,
+public API, required checks, Cirq contract, scope, English, links and whitespace
+checks pass. The existing 570 dependency findings remain; none belongs to the
+changed audit paths. Eight source/test blobs are verified by the mandatory
+source-acceptance fixture, which also verifies Qualtran 0.7.0 and the real
+Kickmix 0.1 Simulator. No source file, implementation or test was changed by
+this acceptance batch. Receipts use prefix g2-fourier-source-closure.
