@@ -329,3 +329,59 @@ The ArcTan estimate retains the original fresh unknown multiplicity `_c0`;
 it is not a prediction of this table-based implementation. The scalar callback
 has no measured quantum inventory. Receipts include the complete primitive
 comparison and `g2-trigonometric-scalar-resources-20261126.json`.
+
+
+## Complete ArcSin source migration disposition — 2026-11-28
+
+The complete frozen `arcsin.py` was reread, including all six definitions,
+imports, the example decorator and `_ARCSIN_DOC`. Its authoritative native
+responsibilities remain the table above: immutable declaration fields and
+defaults, exact fraction/width validation and unsigned fixed-point THRU ports,
+the Simulation scalar XOR callback, independent Compiler Toffoli polynomial,
+actual factory/library transports and the accepted complete teaching asset.
+There is no polynomial coefficient array, Newton iteration body, gate
+decomposition or SDK unitary in this source file. No supported source-defined
+physical algorithm is waiting to be moved.
+
+Under the explicitly approved faithful-migration closure rule, Q-0224 accepts
+this complete source responsibility. This does not recover the paper's original
+minimax coefficients. That independent numerical-reproduction obligation remains
+with `fixed_point/arcsine_coefficients.py` and the Appendix D arithmetic owner,
+whose reproducible Chebyshev coefficients, error bounds and exact quantum
+cleanup retain their separate evidence. It is not an upstream gate stream.
+The signed arithmetic wrapper and its reduced-allocation path also remain
+independent implementations rather than a purported literal ArcSin recipe.
+
+The source's width-four input 15 still produces output 19 at fractional widths
+2, 3 and 4, outside its result register. The native scalar callback deliberately
+retains that unmasked XOR and the binary64 domain assertion. Symbolic dimensions
+remain logical declarations; unresolved physical binding refuses. Original
+decomposition refusal and unsupported SDK tensor import are verified, rather
+than replacing the source declaration with the independent paper circuit.
+
+The fresh concentrated regression passes 180 cases with 12 existing original
+protobuf deprecation warnings. It covers the complete original factory, all
+small scalar words and occupied targets, general declarations and exact models,
+actual foreign depth-0/1/2 libraries, preserved source refusal, and the separate
+Appendix D reduction, coefficients, signed/unsigned coherent states, applicable
+measurement histories and private-zero certificates. Frozen source hashes and
+the real Kickmix Simulator are verified by the complete-file test. The unchanged
+original 10-pass/3-skip family and independently executed original/native
+notebooks are reused at their recorded scope; the three original atomic-mode
+skips are not native implementation successes.
+
+Resource accounts remain separate: the source ten-bit factory declares 13,425
+Toffoli and has no measurable primitive body. The independent 2/2/5/2/1 paper
+circuit emits 6,856 T-family, 16,918 CX, 88 CCX and 1,714 measurements with 196
+work wires. Its signed wrapper emits 13,768 T-family, 34,044 CX, 176 CCX and
+3,442 measurements with 205 work wires. These existing measurements are
+revalidated, not equated to the source model. No Python algorithm or reference
+source is changed by this disposition.
+
+The independent Cirq 1.6 lane passes 128 source/declaration/foreign cases with
+24 existing source protocol warnings. The prior strict checks for unchanged
+Python owners and the immediately preceding comparison batch's architecture,
+IR, API, required-check and local integration certificates are reused. Current
+Compiler scope, English, local links and whitespace checks pass. Publication
+and final parent status are recorded by the verified batch ledger. Receipts
+use `g2-arcsin-source-closure-*20261128`.
