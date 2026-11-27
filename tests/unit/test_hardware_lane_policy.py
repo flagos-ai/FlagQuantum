@@ -59,6 +59,14 @@ COVERAGE_CPU_ROUTE = (
     ") }}"
 )
 
+HEAVY_COVERAGE_CPU_ROUTE = (
+    "${{ fromJSON(\n"
+    "  (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository)\n"
+    '  && (matrix.a800 && \'["self-hosted","linux","x64","flagquantum-cpu","flagquantum-a800-cpu"]\'\n'
+    '    || \'["self-hosted","linux","x64","flagquantum-cpu"]\') || \'["ubuntu-latest"]\'\n'
+    ") }}"
+)
+
 TRUSTED_CPU_ROUTE = (
     "${{ (github.event_name != 'pull_request' || "
     "github.event.pull_request.head.repo.full_name == github.repository) "
@@ -208,6 +216,7 @@ def _allows_untrusted_code(job: dict[str, object], reaching: frozenset[str]) -> 
             PREINSTALLED_A800_CPU_ROUTE,
             MC550_CPU_ROUTE,
             COVERAGE_CPU_ROUTE,
+            HEAVY_COVERAGE_CPU_ROUTE,
         )
     )
 
@@ -430,6 +439,7 @@ def test_trigger_parsing_reads_both_ways_a_workflow_can_spell_on(
         MC550_CPU_ROUTE,
         PREINSTALLED_A800_CPU_ROUTE,
         COVERAGE_CPU_ROUTE,
+        HEAVY_COVERAGE_CPU_ROUTE,
     ],
 )
 def test_cpu_route_rejects_missing_guards_and_other_untrusted_events(
@@ -460,7 +470,7 @@ def test_dedicated_cpu_lanes_keep_fork_code_on_hosted_runners() -> None:
         assert _is_self_hosted(jobs[name])
         assert not _allows_untrusted_code(jobs[name], frozenset({"pull_request"}))
     coverage = jobs["coverage-shard"]
-    assert coverage["runs-on"] == COVERAGE_CPU_ROUTE
+    assert coverage["runs-on"] == HEAVY_COVERAGE_CPU_ROUTE
     assert _is_self_hosted(coverage)
     assert not _allows_untrusted_code(coverage, frozenset({"pull_request"}))
     triton = jobs["triton-optional"]
