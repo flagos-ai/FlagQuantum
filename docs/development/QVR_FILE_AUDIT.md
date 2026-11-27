@@ -1,5 +1,79 @@
 # Quantum variable rotation source-file audit
 
+## Current complete-file disposition (2026-11-28)
+
+This review applies the approved
+[faithful-migration closure rule](G2_FAITHFUL_MIGRATION_CLOSURE_PROPOSAL.md).
+The definition map below covers all 31 inventory identifiers, the nested
+phase-size predicate, six concrete constructor fields, two examples and two
+documentation specifications. Existing owners retain interfaces, dtype and
+signature properties, sizing formulas and the 1..100 binary search, coefficient
+quantization, numerical/symbolic models, both bodies and actual constructor,
+SDK, catalog and notebook consumers.
+
+A real direct-QVR execution gap was implemented before acceptance. The original
+`QvrZPow` can build finite graphs with SymPy integer, rational and floating
+coefficients or symbolic precision that yields finite indices. The former
+native constructor returned declarations for all those inputs.
+`symbolic_qvr_zpow_schedule` now preserves scalar dispatch, fractional count,
+offset, sign operation, phase exponents and tolerances. The source iterates its
+complete cost width whenever its derived count is a SymPy expression, even a
+constant. Converting it to the Python-float schedule changes that decision and
+can replace a successful signed body with the numeric route's indexing failure.
+
+Formats translates finite expressions into existing owned parameter nodes.
+Numerical and expression schedules share `qvr_phase_power_program`, the
+existing typed phase-storage implementation. Named MSB-first cost words retain
+their nominal descriptor and remain caller-owned THRU ports. Direct QVR owns
+zero work, measurements and feedback. Gradient, scaled-add and measured carry
+owners remain unchanged; users still use `circuit.append(op)`.
+
+Forty-five literal profiles cover five unsigned/signed formats, both coefficient
+signs and numerical or symbolic constant precision. Actual unmodified source
+calls, producer/operand/result edges, exponents and per-gate epsilon match.
+Full spectator-entangled complex states, source-derived inverse contracts,
+output aliases and JSON pass. Positive symbolic gamma with `eps=pi*gamma/8`
+also has finite source indices; the owned parameterized Program binds to the
+original phase contracts. Unresolved or out-of-range indices remain declarations
+with original refusal witnesses. Symbolic fixed-point metadata, including a
+constant SymPy fraction, fails the original Split before scheduling. Proposal
+130 raw-storage admission does not replace that source arithmetic refusal.
+
+The original SDK retains constant SymPy Z powers as parameterized and supplies
+no unitary for those raw operations, even after its empty parameter resolver.
+Tests compare the unchanged source graph and scalar gate contracts, then
+independently evaluate those literal Z eigenphases. They do not claim a source
+primitive decomposition or SDK unitary that did not run. The first reference
+attempt exposed this failure; neither source nor SDK was patched. Native
+execution also passes with source SDK imports blocked. Direct metadata retains
+scalar identity; generic lossy transport is not advertised as lossless.
+
+Q-0682 is eligible for complete-file acceptance after local checks and
+publication. Original precision overruns, signed numeric indexing, zero or
+quantized-zero sizing, fixed-point search overflow, mixed-type recursive width,
+symbolic indexing and SDK/transport failures remain source follow-ups. Extra
+native arithmetic and corrected inverses stay separately specified. Historical
+open decisions below remain evidence; they no longer require repairing the
+frozen source or declaring a false epsilon success. Generic SDK, transport and
+resource-workflow parents are not closed here.
+
+Physical inventories stay separate from models. New direct bodies emit
+`width + int(signed)` phase instructions, zero synthesized T gates and zero
+work. The representative source Z-power classification is not the individual
+emitted angle schedule. Existing gradient/T/measurement/peak tables and every
+precision counterexample below remain unchanged.
+
+Local acceptance: 518 concentrated QVR/Hamming/cost-phase/scaled-add cases and
+32 integration cases pass. The final constructor run passes 99 cases, including
+actual rational-source libraries at depths zero and one. Independent Cirq
+1.6.1 verification passes 278 affected cases and the final expression suite.
+Four changed Python files pass strict mypy, Black and Ruff. Compiler scope,
+architecture, IR, required-check mapping, English, links, public API baseline
+and whitespace pass. Eleven complete frozen source/asset/dependency blobs,
+Qualtran 0.7.0 and Kickmix 0.1 Simulator are verified. Receipts use
+`g2-hamming-qvr-full-closure-*20261128` in the reference workspace. Earlier
+complete grids and notebook receipts retain their original scope and limits.
+
 The reference is unchanged Qualtran v0.7.0 at commit
 `bcb17bb25360ed68ce3bc084645db3e929799389`.
 

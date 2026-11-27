@@ -1,5 +1,11 @@
 # Stored quantum variable rotation constructor audit
 
+The [2026-11-28 complete-file review](QVR_FILE_AUDIT.md#current-complete-file-disposition-2026-11-28)
+supersedes the historical declaration-only decision for symbolic scalar inputs
+with finite source rotation indices. It preserves the literal source type
+dispatch and ordinary typed phase owner. Unknown indices, symbolic storage
+Split failures and original SDK/codec failures retain explicit limitations.
+
 ## Scope and ownership
 
 The complete frozen `rotations/quantum_variable_rotation.py` constructor family
