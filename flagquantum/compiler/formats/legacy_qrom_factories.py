@@ -33,11 +33,10 @@ def _dimensions(value: object) -> tuple[SymbolicInt, ...]:
     return tuple(values)
 
 
-def _qrom_factory(
-    name: str,
-    registers: tuple[Register, ...] | None,
+def read_qrom_declaration(
     arguments: Mapping[str, ResolvedArgument],
-) -> FunctionRecord | ProgramRecord:
+) -> QromDeclaration:
+    """Read original array metadata for QROM and its blocked source consumers."""
     required = {"data_or_shape", "selection_bitsizes", "target_bitsizes"}
     if not required <= arguments.keys() or arguments.keys() - required - {
         "target_shapes",
@@ -70,25 +69,25 @@ def _qrom_factory(
         if isinstance(raw_controls, bool)
         else _integer({"num_controls": raw_controls}, "num_controls")
     )
-    header = QromDeclaration(
-        tuple(row.shape for row in arrays),
-        (None,) * len(arrays),
-        selection,
-        widths,
-        targets,
-        controls,
+    return QromDeclaration.from_arrays(
+        *arrays,
+        selection_bitsizes=selection,
+        target_bitsizes=widths,
+        target_shapes=targets,
+        num_controls=controls,
     )
-    ports = tuple(header.signature)
+
+
+def _qrom_factory(
+    name: str,
+    registers: tuple[Register, ...] | None,
+    arguments: Mapping[str, ResolvedArgument],
+) -> FunctionRecord | ProgramRecord:
+    declaration = read_qrom_declaration(arguments)
+    ports = tuple(declaration.signature)
     if registers is not None and ports != registers:
         raise SerializationError("Invalid QROM register signature")
     try:
-        declaration = QromDeclaration.from_arrays(
-            *arrays,
-            selection_bitsizes=selection,
-            target_bitsizes=widths,
-            target_shapes=targets,
-            num_controls=controls,
-        )
         program = qrom_program(declaration)
     except (ValueError, TypeError, OverflowError, IndexError):
         # The original library retains literal arrays even if its layout or
@@ -101,6 +100,6 @@ def qrom_factories() -> dict[str, ComponentFactory]:
     """Supply the complete concrete-data constructor without duplicating lookup.
 
     Locked source serialization cannot encode Shaped or symbolic object arrays.
-    The existing shape-only QromTable declaration remains their native owner.
+    Native QromDeclaration owns their separate shape-only metadata.
     """
     return {"qualtran.bloqs.data_loading.qrom.QROM": _qrom_factory}

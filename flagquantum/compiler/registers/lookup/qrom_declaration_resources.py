@@ -52,6 +52,10 @@ def declaration_qrom_calls(declaration: QromDeclaration) -> dict[QromCall, int]:
             raise ValueError(
                 "Source zero-selection graph cannot decompose parameterized metadata"
             )
+        if any(isinstance(width, bool) for width in declaration.target_bitsizes):
+            raise TypeError(
+                "Source zero-selection bridge cannot bind boolean target widths"
+            )
         if controls < 0:
             raise ValueError(
                 "Source zero-selection bridge cannot bind negative controls"
@@ -64,6 +68,10 @@ def declaration_qrom_calls(declaration: QromDeclaration) -> dict[QromCall, int]:
         for dataset, _, value in qrom_load_words(
             data, targets, (0,) * len(declaration.data_shape)
         ):
+            if declaration.target_bitsizes[dataset] == 0 and targets[dataset]:
+                raise IndexError(
+                    "Source zero-width array load indexes an absent target"
+                )
             calls[
                 (
                     "XorK",
@@ -113,8 +121,12 @@ def declaration_qrom_calls(declaration: QromDeclaration) -> dict[QromCall, int]:
     return dict(calls)
 
 
-def declaration_qrom_gate_cost(declaration: QromDeclaration) -> QECGateCost:
+def declaration_qrom_gate_cost(
+    declaration: QromDeclaration, *, legacy_shims: bool = False
+) -> QECGateCost:
     """Aggregate existing typed child models, separately from primitive counts."""
+    if type(legacy_shims) is not bool:
+        raise ValueError("QROM cost profile must be boolean")
     total = QECGateCost()
     for (name, parameters, adjoint), repetitions in declaration_qrom_calls(
         declaration
@@ -127,17 +139,21 @@ def declaration_qrom_gate_cost(declaration: QromDeclaration) -> QECGateCost:
                 constant=constant,
             )
             cost = query_qec_gate_cost(
-                child, declared_calls=arithmetic_call_graph(child)
+                child,
+                declared_calls=arithmetic_call_graph(child),
+                legacy_shims=legacy_shims,
             )
         elif name in {"And", "MultiAnd"}:
             cost = query_qec_gate_cost(
                 ControlPredicateCall(
                     tuple(index(value) for value in parameters), adjoint
-                )
+                ),
+                legacy_shims=legacy_shims,
             )
         else:
             cost = query_qec_gate_cost(
-                CliffordCall("x", 1) if name == "X" else CliffordCall("cx", 2)
+                CliffordCall("x", 1) if name == "X" else CliffordCall("cx", 2),
+                legacy_shims=legacy_shims,
             )
         total = total.plus(cost, repetitions)
     return total

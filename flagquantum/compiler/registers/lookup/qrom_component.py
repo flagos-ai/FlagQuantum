@@ -109,6 +109,10 @@ def qrom_program(
             data, cast(tuple[tuple[int, ...], ...], declaration.target_shapes), row
         ):
             width = widths[i]
+            if isinstance(width, bool):
+                raise TypeError(
+                    "Source QROM boolean target width cannot bind an XOR load"
+                )
             if not width:
                 raise ValueError("Source QROM cannot bind a zero-width scalar load")
             words = target_values[i]
