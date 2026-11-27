@@ -299,3 +299,38 @@ regression cases in 13.22 seconds. Strict mypy on the new test, Black, Ruff,
 Algorithms scope, architecture, multilevel IR and protected API checks passed.
 Existing notebook and CPU acceptance is reused because production code and
 public contracts are unchanged.
+
+
+## MultiplexedCSwap complete source acceptance (2026-11-28)
+
+The approved faithful-migration closure rule supersedes historical open status
+for Q-0709. Complete source review covers scalar/tuple register converters,
+constructor defaults, control/selection/target properties, row-major layout,
+diagram, nth_operation, original example and DocSpec plus inherited unary
+signature/decomposition/model dependencies. Existing source-ordered typed calls
+and specialized exact Adjoint provide the implementation; this is acceptance
+of those existing owners, not a new multiplexing algorithm.
+
+All caller control, selection, targets and output words remain live THRU ports.
+Unary predicate work is private and clean; logical output is arbitrary, not a
+zero-work assumption. Complete small complex operators, all-history channel
+certificates, separate final-zero checks, padded addresses, multi-axis selectors,
+shaped controls, forward/inverse and native replacement evidence are reused.
+
+Source uncontrolled singleton/zero-width-axis failures and generic control of
+undecomposable non-through And leaves remain explicit. Declared control_regs
+and generic outer controls have different source call chains. Native bounded
+Join descriptors differ nominally from source generic QAny at a recorded return
+boundary; physical bit ordering and complex action are checked independently.
+The exact Fredkin primitive inventory uses seven T-family gates per bit; source
+CSwap model equivalences are separately reported. Large fixture samples are
+not relabeled exhaustive measurement-branch simulations.
+
+
+The complete three-file closure passes 335 concentrated source/primitive/
+complex-execution cases and 51 independent Cirq 1.6 constructor cases. All 54
+frozen source/dependency/asset blobs are unchanged. Algorithms scope, language,
+links, architecture, IR, protected API baseline and whitespace pass. Existing
+strict Python, 32 local integration and real Kickmix Simulator evidence from
+the accepted preceding batches is reused: no Python code changes here. Original
+source tests/notebook outcomes and separately recorded defects remain intact.
