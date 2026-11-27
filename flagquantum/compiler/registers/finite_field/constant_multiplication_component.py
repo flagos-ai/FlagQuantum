@@ -13,7 +13,7 @@ from ....core.ir.program.registers import RegisterType
 from ....core.ir.program.signatures import Signature
 from ..component_builder import ComponentProgramBuilder
 from .field_multiplication import _constant_matrix
-from .field_word import field_word_width
+from .field_word import field_word_width, raw_field_word_width
 from .linear_component import binary_linear_decomposition_program, binary_linear_program
 
 
@@ -46,8 +46,22 @@ def constant_multiplication_decomposition_program(
     if type(constant) not in (int, bool) or not 0 <= constant < 1 << width:
         raise ValueError("Literal field multiplier must be a fitting integer")
     matrix = tuple(tuple(row) for row in _constant_matrix(width, constant, modulus))
-    linear = binary_linear_decomposition_program(matrix, adjoint=adjoint)
-    return _constant_word_program(dtype, linear)
+    return constant_matrix_decomposition_program(dtype, matrix, adjoint=adjoint)
+
+
+def constant_matrix_decomposition_program(
+    dtype: RegisterType, matrix: tuple[tuple[int, ...], ...], *, adjoint: bool = False
+) -> ProgramRecord:
+    """Wrap an already constructed source constant matrix in raw field storage.
+
+    Numerical field matrices belong to Simulation. This wrapper preserves the
+    source coefficient order and its ignored physical linear inverse flag.
+    """
+    if raw_field_word_width(dtype) != len(matrix):
+        raise ValueError("Constant matrix must match raw field word width")
+    return _constant_word_program(
+        dtype, binary_linear_decomposition_program(matrix, adjoint=adjoint)
+    )
 
 
 def _constant_word_program(dtype: RegisterType, linear: ProgramRecord) -> ProgramRecord:

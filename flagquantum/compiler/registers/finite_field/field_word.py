@@ -22,3 +22,10 @@ def field_word_width(dtype: RegisterType, modulus: int) -> int:
     if dict(dtype.parameters).get("polynomial", modulus) != modulus:
         raise ValueError("Field modulus must match the field descriptor")
     return width
+
+
+def raw_field_word_width(dtype: RegisterType) -> int:
+    """Validate existing quantum field storage without numerical arithmetic admission."""
+    if dtype.encoding != "finite_field" or dtype.classical_bits != 0:
+        raise ValueError("Raw field components require a quantum field descriptor")
+    return executable_register_width(dtype)
