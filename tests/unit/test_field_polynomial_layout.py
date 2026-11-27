@@ -1,5 +1,12 @@
 """Check polynomial wire views against locked split, join and field encodings."""
 
+from tests._reference_dependencies import unavailable_reference
+
+try:
+    import numpy as numpy
+except ModuleNotFoundError as _reference_import_error:
+    unavailable_reference(_reference_import_error)
+
 import pytest
 import torch
 
@@ -9,6 +16,7 @@ from flagquantum.compiler.registers.finite_field.coefficients import gf2_add_con
 from flagquantum.compiler.registers.finite_field.field_polynomial_layout import (
     FieldPolynomialLayout,
 )
+from tests.unit.register_source_graph import source_line_qubit_index
 
 pytestmark = pytest.mark.unit
 
@@ -19,11 +27,19 @@ def test_polynomial_split_join_matches_locked_wire_reshape(
     degree: int, p: int, m: int
 ) -> None:
     pytest.importorskip("qualtran")
-    import cirq
-    import numpy as np
-    from qualtran import QGF, QGFPoly
+    try:
+        import cirq
+    except ModuleNotFoundError as _reference_import_error:
+        unavailable_reference(_reference_import_error)
+    try:
+        import numpy as np
+    except ModuleNotFoundError as _reference_import_error:
+        unavailable_reference(_reference_import_error)
+    from qualtran._infra.data_types import QGF, QGFPoly
     from qualtran.bloqs.gf_poly_arithmetic.gf_poly_split_and_join import GFPolySplit
-    from qualtran.resource_counting import QECGatesCost, QubitCount, get_cost_value
+    from qualtran.resource_counting._bloq_counts import QECGatesCost
+    from qualtran.resource_counting._costing import get_cost_value
+    from qualtran.resource_counting._qubit_counts import QubitCount
 
     dtype = QGFPoly(degree, QGF(p, m))
     source_split = GFPolySplit(dtype)
@@ -34,11 +50,17 @@ def test_polynomial_split_join_matches_locked_wire_reshape(
     manager = cirq.SimpleQubitManager()
     operation, split = source_split.as_cirq_op(manager, reg=quregs)
     assert operation is None
-    expected = tuple(tuple(qubit.x for qubit in word) for word in split["reg"])
+    expected = tuple(
+        tuple(source_line_qubit_index(qubit) for qubit in word) for word in split["reg"]
+    )
     assert layout.split(wires) == expected
     operation, joined = source_join.as_cirq_op(manager, reg=split["reg"])
     assert operation is None
-    assert layout.join(expected) == tuple(qubit.x for qubit in joined["reg"]) == wires
+    assert (
+        layout.join(expected)
+        == tuple(source_line_qubit_index(qubit) for qubit in joined["reg"])
+        == wires
+    )
     for source in (source_split, source_join):
         assert (
             get_cost_value(source, QubitCount()) == layout.logical_width == len(wires)
@@ -52,8 +74,12 @@ def test_polynomial_basis_keeps_source_padding_and_coefficient_order(
     p: int, m: int
 ) -> None:
     pytest.importorskip("qualtran")
+    try:
+        import numpy as np
+    except ModuleNotFoundError as _reference_import_error:
+        unavailable_reference(_reference_import_error)
     from galois import Poly
-    from qualtran import QGF, QGFPoly
+    from qualtran._infra.data_types import QGF, QGFPoly
     from qualtran.bloqs.gf_poly_arithmetic.gf_poly_split_and_join import GFPolySplit
 
     dtype = QGFPoly(4, QGF(p, m))
@@ -63,6 +89,7 @@ def test_polynomial_basis_keeps_source_padding_and_coefficient_order(
         polynomial = Poly(dtype.qgf.gf_type(words))
         (reference,) = source.call_classically(reg=polynomial)
         packed = int("".join(map(str, dtype.to_bits(polynomial))), 2)
+        assert isinstance(reference, np.ndarray)
         coefficients = layout.unpack_basis(packed)
         assert coefficients == tuple(map(int, reference))
         assert layout.pack_basis(coefficients) == packed
