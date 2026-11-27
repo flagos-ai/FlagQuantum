@@ -29,6 +29,7 @@ from examples.algorithms.comparison_cost_tutorial import (
     two_bit_comparison,
 )
 from flagquantum.core.ir import Instruction
+from tests._reference_dependencies import unavailable_reference
 from tests.unit.measurement_checks import forced_branch
 from tests.unit.test_register_subtraction import assert_source
 
@@ -40,10 +41,14 @@ SOURCE = Path(__file__).resolve().parents[3] / (
 
 @pytest.fixture(scope="module")
 def tutorial() -> dict[str, Any]:
-    import kickmix
+    try:
+        import kickmix
+        import qualtran
+    except ModuleNotFoundError as error:
+        unavailable_reference(error)
 
-    assert version("qualtran") == "0.7.0"
-    assert kickmix.__version__ == "0.1" and hasattr(kickmix, "Simulator")
+    assert version(qualtran.__name__) == "0.7.0"
+    assert getattr(kickmix, "__version__") == "0.1" and hasattr(kickmix, "Simulator")
     data = SOURCE.read_bytes()
     assert (
         sha1(f"blob {len(data)}\0".encode() + data).hexdigest()
@@ -58,14 +63,20 @@ def tutorial() -> dict[str, Any]:
             for node in code.body
             if isinstance(node, (ast.Import, ast.ImportFrom, ast.FunctionDef))
         ]
-        exec(compile(code, str(SOURCE), "exec"), namespace)
+        try:
+            exec(compile(code, str(SOURCE), "exec"), namespace)
+        except ModuleNotFoundError as error:
+            unavailable_reference(error)
     return namespace
 
 
 def _reference_gates(
     operations: Any, qubits: dict[Any, int], slots: dict[int, int]
 ) -> tuple[Instruction, ...]:
-    import cirq
+    try:
+        import cirq
+    except ModuleNotFoundError as error:
+        unavailable_reference(error)
 
     names = {
         cirq.X: "x",
@@ -114,7 +125,10 @@ def _reference_gates(
 def test_literal_source_operations_and_legacy_estimates(
     tutorial: dict[str, Any], case: str
 ) -> None:
-    import cirq
+    try:
+        import cirq
+    except ModuleNotFoundError as error:
+        unavailable_reference(error)
 
     line = cirq.LineQubit.range(17)
     binding: dict[cirq.Qid, int] = {q: q.x for q in line}
@@ -172,7 +186,10 @@ def test_literal_source_operations_and_legacy_estimates(
 def test_classical_mixer_and_comparator_source(
     tutorial: dict[str, Any], value: int
 ) -> None:
-    import cirq
+    try:
+        import cirq
+    except ModuleNotFoundError as error:
+        unavailable_reference(error)
 
     line = cirq.LineQubit.range(10)
     binding: dict[cirq.Qid, int] = {q: q.x for q in line}
@@ -191,7 +208,10 @@ def test_classical_mixer_and_comparator_source(
 
 
 def test_simple_mixer_source(tutorial: dict[str, Any]) -> None:
-    import cirq
+    try:
+        import cirq
+    except ModuleNotFoundError as error:
+        unavailable_reference(error)
 
     line = cirq.LineQubit.range(4)
     binding: dict[cirq.Qid, int] = {q: q.x for q in line}
