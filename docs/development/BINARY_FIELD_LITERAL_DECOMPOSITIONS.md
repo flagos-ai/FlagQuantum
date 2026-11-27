@@ -134,3 +134,24 @@ source direction from a function-name suffix or equivalent primitive body.
 Incorrect bodies, ambiguous sharing or an unmatched owning schedule do not gain
 a source label. Existing mathematical inverse catalog graphs keep their explicit
 separate scope until the full inverse owner is closed.
+
+
+## Measured root dispatch and declared shift classes
+
+The existing product-erasure Program may receive an explicit binary modulus when
+its otherwise concrete field descriptor omits a polynomial. Keep the descriptor
+and signature unchanged, validate the supplied polynomial and preserve all
+existing explicit-polynomial refusals. Numerical default resolution stays in
+Examples/Simulation. Compiler owns only the static provided polynomial.
+
+The existing FieldProduct example's Karatsuba adjoint flag dispatches to measured
+product erasure, consumes the owned result and retires its physical wires. Normal
+append reserves private classical scratch after the caller's existing storage
+using the existing scratch binder. It must not overwrite caller snapshots or
+change Circuit.compose semantics. Through Karatsuba remains unsupported.
+
+If literal left/right shift definitions have identical bodies, quadratic
+composition retains distinct existing named entries for those declared classes.
+Internal word calls bind the child's actual entry. Examples qualify their labels
+only from a complete matching quadratic caller and its ordered shift calls.
+Standalone mathematical operations and public Core defaults remain unchanged.
