@@ -17,6 +17,7 @@ from ...compiler.registers.preparation.uniform_preparation import (
     source_uniform_preparation_cost,
 )
 from ...core.ir.program.signatures import Signature
+from ...core.value_math import SymbolicInt
 from .chemistry_qroam_model import source_chemistry_qroam_cost
 
 _TOFFOLI = ComponentCost("Toffoli", 3, GateCost(toffoli=1))
@@ -49,8 +50,17 @@ def source_double_factorization_inner_prepare_signature(
     spin_orbitals: int, eigenvalues: int, rotation_bits: int
 ) -> Signature:
     """Describe the source rank, offset, rotation, success and address ports."""
-    _, rank, offset = _df_address_widths(spin_orbitals, eigenvalues)
+    _df_address_widths(spin_orbitals, eigenvalues)
     _require_nonnegative_precision(rotation_bits)
+    return _double_factorization_inner_declaration(
+        spin_orbitals, eigenvalues, rotation_bits
+    )
+
+
+def _double_factorization_inner_declaration(
+    spin_orbitals: int, eigenvalues: int, rotation_bits: SymbolicInt
+) -> Signature:
+    _, rank, offset = _df_address_widths(spin_orbitals, eigenvalues)
     return Signature.build(xi=rank, offset=offset, rot=rotation_bits, succ_p=1, p=rank)
 
 
@@ -63,8 +73,17 @@ def source_double_factorization_indexed_data_signature(
     auxiliaries: int, spin_orbitals: int, eigenvalues: int, rotation_bits: int = 8
 ) -> Signature:
     """Describe the source indexed metadata words in declared order."""
-    _, rank, offset = _df_address_widths(spin_orbitals, eigenvalues)
+    _df_address_widths(spin_orbitals, eigenvalues)
     _require_nonnegative_precision(rotation_bits)
+    return _double_factorization_indexed_declaration(
+        auxiliaries, spin_orbitals, eigenvalues, rotation_bits
+    )
+
+
+def _double_factorization_indexed_declaration(
+    auxiliaries: int, spin_orbitals: int, eigenvalues: int, rotation_bits: SymbolicInt
+) -> Signature:
+    _, rank, offset = _df_address_widths(spin_orbitals, eigenvalues)
     return Signature.build(
         l=_auxiliary_width(auxiliaries),
         l_ne_zero=1,

@@ -16,6 +16,7 @@ from ...compiler.registers.preparation.prepare_reflection import (
 from ...core.ir.program.register_types import opaque_register_type, quantum_bit_type
 from ...core.ir.program.registers import Register
 from ...core.ir.program.signatures import Signature
+from ...core.value_math import SymbolicInt
 from .chemistry_number_phase import ChemistryNumberPhase
 from .double_factorization_prepare_model import (
     _auxiliary_width,
@@ -38,6 +39,17 @@ def source_double_factorization_one_body_signature(
     inner_rotation_bits: int = 8,
 ) -> Signature:
     """Declare the original one-body selectors, retained junk and two spin banks."""
+    return _double_factorization_one_body_declaration(
+        spin_orbitals, eigenvalues, basis_rotation_bits, inner_rotation_bits
+    )
+
+
+def _double_factorization_one_body_declaration(
+    spin_orbitals: int,
+    eigenvalues: int,
+    basis_rotation_bits: SymbolicInt,
+    inner_rotation_bits: SymbolicInt,
+) -> Signature:
     spatial, rank_width, offset_width = _df_address_widths(spin_orbitals, eigenvalues)
     rank = opaque_register_type(rank_width)
     bit = quantum_bit_type()
@@ -64,6 +76,22 @@ def source_double_factorization_block_signature(
     inner_rotation_bits: int,
 ) -> Signature:
     """Declare the full original block, including the unchanged theta control."""
+    return _double_factorization_block_declaration(
+        auxiliaries,
+        spin_orbitals,
+        eigenvalues,
+        basis_rotation_bits,
+        inner_rotation_bits,
+    )
+
+
+def _double_factorization_block_declaration(
+    auxiliaries: int,
+    spin_orbitals: int,
+    eigenvalues: int,
+    basis_rotation_bits: SymbolicInt,
+    inner_rotation_bits: SymbolicInt,
+) -> Signature:
     spatial = spin_orbitals // 2
     rank = opaque_register_type((spatial - 1).bit_length())
     bit = quantum_bit_type()

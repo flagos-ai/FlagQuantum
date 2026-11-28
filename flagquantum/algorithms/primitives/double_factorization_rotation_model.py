@@ -11,6 +11,7 @@ from ...compiler._component_trace.resource_model import ComponentCost, CostCall
 from ...core.ir.program.register_types import opaque_register_type, quantum_bit_type
 from ...core.ir.program.registers import Register
 from ...core.ir.program.signatures import Signature
+from ...core.value_math import SymbolicInt
 from .chemistry_qroam_model import source_chemistry_qroam_cost
 from .double_factorization_prepare_model import (
     _TOFFOLI,
@@ -23,8 +24,17 @@ def source_double_factorization_programmed_rotation_signature(
     spin_orbitals: int, eigenvalues: int, rotation_bits: int
 ) -> Signature:
     """Preserve the explicit opaque words and pair of spin-system words."""
-    spatial, rank, offset = _df_address_widths(spin_orbitals, eigenvalues)
+    _df_address_widths(spin_orbitals, eigenvalues)
     _require_nonnegative_precision(rotation_bits)
+    return _double_factorization_rotation_declaration(
+        spin_orbitals, eigenvalues, rotation_bits
+    )
+
+
+def _double_factorization_rotation_declaration(
+    spin_orbitals: int, eigenvalues: int, rotation_bits: SymbolicInt
+) -> Signature:
+    spatial, rank, offset = _df_address_widths(spin_orbitals, eigenvalues)
     return Signature(
         (
             Register("offset", opaque_register_type(offset)),
