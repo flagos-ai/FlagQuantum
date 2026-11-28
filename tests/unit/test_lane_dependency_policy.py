@@ -57,6 +57,7 @@ from typing import NamedTuple
 
 import pytest
 
+from tests.unit.test_test_reachability_policy import _test_files
 from tools.architecture.check_dependency_policy import distribution_name, load_toml
 from tools.ci.ci_tier import CI_TIERS
 
@@ -604,7 +605,7 @@ class Row(NamedTuple):
 
 def _audit() -> list[Row]:
     rows: list[Row] = []
-    for path in sorted((ROOT / "tests").rglob("test_*.py")):
+    for path in _test_files():
         source = path.read_text(encoding="utf-8")
         tree = ast.parse(source, filename=str(path))
         relative = path.relative_to(ROOT).as_posix()
