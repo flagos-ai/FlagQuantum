@@ -340,3 +340,40 @@ owner scopes; language/links, architecture, IR, API and diff checks pass.
 Dependency policy retains 724 repository findings with none on touched paths.
 Original logs include the failed setup/probe paths and the final accepted
 flattened reference; only final receipts support these acceptance statements.
+
+## Faithful whole-file disposition, November 28
+
+The preceding three-parent-only disposition restriction is historical. The user
+approved the broader [G2 closure rule](G2_FAITHFUL_MIGRATION_CLOSURE_PROPOSAL.md).
+Q-0592 can close after complete source and direct-dependency review: row tuple
+conversion, target/capacity validation, all register groups, control wrappers,
+zero-control conjugation, nth-operation sign conversion, self-adjoint declaration,
+unitary protocol, example and documentation all have existing native owners.
+Approved Proposal129 supplies empty targets. Symbolic declaration/materialization
+and literal controlled-leaf inverse order were completed before this review.
+
+Retain original nonunitary zero/NaN-real rows, object-array codec failures,
+empty-array decoded row failures, concrete-SymPy graph/model failures and the
+specialized nested-control concatenate callback failure as source/dependency
+follow-ups. They do not certify successful native unitary or codec behavior.
+The original fully flattened typed graph remains the reference for lifetime and
+feedback comparisons; failed deferred SDK probes are not parity evidence.
+All successful concrete, symbolic-materialized and control-wrapper paths reuse
+the existing full complex operator, raw measurement branch, exact call/operand
+and clean-work checks. Logical unused-address identity remains distinct from
+the literal bounded source traversal's padded-address folding.
+
+Final batch evidence: 213 concentrated cases and 213 independent Cirq 1.6
+cases pass, including the empty-system packed consumer. The two unchanged
+original files report 14 passes, one original skip and two original expected
+failures; their notebook case is deselected here and reuses the existing complete
+notebook receipt above. The unchanged integration boundary reuses this head's
+248 passing cases. Seven Python owners/tests pass strict typing, Black and Ruff;
+architecture, IR, API, required/Cirq contracts, scope, English and links pass.
+The changed test's actual missing Cirq, NumPy, Qualtran and Kickmix imports are
+checked in both optional and mandatory modes (eight cases). Optional runs skip
+explicitly; mandatory runs preserve the original missing-dependency exception.
+Two preexisting unguarded imports are repaired, reducing dependency findings
+from 570 to 568, with none on the changed test. Source fixtures retain frozen
+blobs and actual Qualtran 0.7.0 / Kickmix 0.1 Simulator assertions. Receipts use
+prefix g2-select-source-closure; implementation owners remain unchanged.
