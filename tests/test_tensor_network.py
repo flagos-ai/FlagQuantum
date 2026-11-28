@@ -29,12 +29,7 @@ from flagquantum.simulation.tensor_network.contraction import (
     _internal_slice_candidates,
     _parallel_slice_labels,
 )
-from flagquantum.simulation.tensor_network.entrypoints import (
-    build_tensor_network,
-    build_tensor_network_expectation,
-    build_tensor_network_hamiltonian_expectation,
-    build_tensor_network_hamiltonian_expectations,
-)
+from flagquantum.simulation.tensor_network.local import build_local_tensor_network
 from flagquantum.simulation.tensor_network.models import (
     CompiledTNObservableProgram,
     CompiledTNProgram,
@@ -45,6 +40,12 @@ from flagquantum.simulation.tensor_network.models import (
     TensorNetworkNode,
     TensorNetworkSlicingPlan,
 )
+from flagquantum.simulation.tensor_network.observables import (
+    build_tensor_network_expectation,
+    build_tensor_network_hamiltonian_expectation,
+    build_tensor_network_hamiltonian_expectations,
+    tensor_network_expectation_ps,
+)
 from flagquantum.simulation.tensor_network.path_search import (
     _CONTRACTION_PATH_CACHE,
     _contract_nodes_quality_multistart,
@@ -52,10 +53,7 @@ from flagquantum.simulation.tensor_network.path_search import (
 from flagquantum.simulation.tensor_network.stages import (
     compile_contraction_stages as _compile_contraction_stages,
 )
-from flagquantum.simulation.tensor_network.state import (
-    TensorNetworkState,
-    tensor_network_expectation_ps,
-)
+from flagquantum.simulation.tensor_network.state import TensorNetworkState
 
 pytestmark = pytest.mark.integration
 
@@ -82,7 +80,7 @@ def test_tensor_network_preserves_entangled_custom_initial_state():
     )
     circuit = fq.Circuit(2, dtype=torch.complex128, inputs=initial)
 
-    plan = build_tensor_network(circuit, dtype=torch.complex128)
+    plan = build_local_tensor_network(circuit, dtype=torch.complex128)
 
     assert len(plan.nodes) == 1
     assert plan.nodes[0].labels == (0, 1, 2)
@@ -115,7 +113,7 @@ def test_hamiltonian_mpo_compression_is_reused_for_static_observable(monkeypatch
 
 
 def test_persistent_distributed_plan_round_trip(tmp_path):
-    plan = build_tensor_network(fq.Circuit(3).h(0).cx(0, 2))
+    plan = build_local_tensor_network(fq.Circuit(3).h(0).cx(0, 2))
     nodes, outputs = tensor_execution._amplitude_projection(plan, "101")
     slicing = _build_slicing_plan(nodes, outputs)
     steps = _contract_nodes_quality_multistart(nodes, outputs)
@@ -188,23 +186,6 @@ def test_tensor_network_wrapper_delegates_local_numerics(monkeypatch):
     ]
 
 
-def test_tensor_network_observable_wrapper_delegates_plan_builder(monkeypatch):
-    expected = object()
-    calls = []
-
-    def replacement(plan_or_circuit, **axes):
-        calls.append((plan_or_circuit, axes))
-        return expected
-
-    monkeypatch.setattr(
-        tensor_execution, "_build_tensor_network_expectation", replacement
-    )
-    circuit = fq.Circuit(2).h(0)
-
-    assert build_tensor_network_expectation(circuit, x=(0,), z=(1,)) is expected
-    assert calls == [(circuit, {"x": (0,), "y": None, "z": (1,)})]
-
-
 def test_tensor_network_alias_and_top_level_runner():
     circuit = fq.Circuit(3)
     circuit.h(0).cx(0, 2).ry(1, theta=0.2)
@@ -256,7 +237,7 @@ def test_tensor_network_complex128_parameter_matrix_is_generated_in_float64():
     theta = torch.tensor(0.1, dtype=torch.float64, requires_grad=True)
     circuit = fq.Circuit(1, dtype=torch.complex128).ry(0, theta=theta)
 
-    plan = build_tensor_network(circuit, dtype=torch.complex128)
+    plan = build_local_tensor_network(circuit, dtype=torch.complex128)
     ry = next(node.tensor for node in plan.nodes if node.name.endswith(":ry"))
     expected = torch.cos(theta.detach() / 2)
 
@@ -297,7 +278,7 @@ def test_tensor_network_expectation_uses_direct_contraction():
 def test_tensor_network_expectation_plan_is_public_and_matches_circuit():
     circuit = fq.Circuit(3)
     circuit.h(0).cx(0, 2).ry(1, theta=0.2)
-    plan = build_tensor_network(circuit)
+    plan = build_local_tensor_network(circuit)
     expectation_plan = build_tensor_network_expectation(plan, x=[0, 2], z=[1])
 
     assert isinstance(expectation_plan, TensorNetworkExpectationPlan)
@@ -314,7 +295,7 @@ def test_build_tensor_network_exposes_contraction_plan():
     circuit = fq.Circuit(2)
     circuit.h(0).cx(0, 1)
 
-    plan = build_tensor_network(circuit)
+    plan = build_local_tensor_network(circuit)
 
     assert isinstance(plan, TensorNetworkContractionPlan)
     assert plan.n_qubits == 2
@@ -326,7 +307,7 @@ def test_build_tensor_network_exposes_contraction_plan():
 def test_tensor_network_greedy_path_matches_einsum_contract():
     circuit = fq.Circuit(4)
     circuit.h(0).cx(0, 3).ry(1, theta=0.2).rzz(2, 3, theta=-0.4)
-    plan = build_tensor_network(circuit)
+    plan = build_local_tensor_network(circuit)
 
     greedy_path = plan.greedy_path()
     cost = plan.contraction_cost()
@@ -345,7 +326,7 @@ def test_tensor_network_greedy_path_matches_einsum_contract():
 def test_tensor_network_memory_greedy_profile_and_contract():
     circuit = fq.Circuit(5)
     circuit.h(0).cx(0, 4).ry(1, theta=0.2).rzz(2, 3, theta=-0.4).cx(1, 3)
-    plan = build_tensor_network(circuit)
+    plan = build_local_tensor_network(circuit)
 
     profile = plan.contraction_profile("memory_greedy")
     greedy_profile = plan.contraction_profile("greedy")
@@ -452,7 +433,7 @@ def test_tensor_network_quality_reconfiguration_is_bounded_and_not_worse():
 def test_tensor_network_beam_profile_cache_and_auto_slicing():
     circuit = fq.Circuit(5)
     circuit.h(0).cx(0, 4).ry(1, theta=0.2).rzz(2, 3, theta=-0.4).cx(1, 3)
-    plan = build_tensor_network(circuit)
+    plan = build_local_tensor_network(circuit)
 
     beam_profile = plan.contraction_profile("beam", beam_width=4)
     cached_profile = plan.contraction_profile("beam", beam_width=4)
@@ -494,7 +475,7 @@ def test_tensor_network_beam_profile_cache_and_auto_slicing():
 def test_tensor_network_optimal_small_path_matches_einsum():
     circuit = fq.Circuit(2)
     circuit.h(0).cx(0, 1)
-    plan = build_tensor_network(circuit)
+    plan = build_local_tensor_network(circuit)
 
     optimal_profile = plan.contraction_profile("optimal")
 
@@ -510,7 +491,7 @@ def test_tensor_network_optimal_small_path_matches_einsum():
 def test_tensor_network_sliced_contract_matches_greedy_contract():
     circuit = fq.Circuit(4)
     circuit.h(0).cx(0, 3).ry(1, theta=0.2).rzz(2, 3, theta=-0.4)
-    plan = build_tensor_network(circuit)
+    plan = build_local_tensor_network(circuit)
     greedy_cost = plan.contraction_cost()
     output_size = plan.contraction_profile("greedy").output_size
     target_peak = max(output_size, greedy_cost["peak_size"] // 2)
@@ -590,7 +571,7 @@ def test_tensor_network_dry_run_uses_meta_for_huge_intermediate():
 def test_tensor_network_slicing_accepts_byte_budget_and_quality_path():
     circuit = fq.Circuit(4)
     circuit.h(0).cx(0, 3).ry(1, theta=0.2).rzz(2, 3, theta=-0.4)
-    plan = build_tensor_network(circuit)
+    plan = build_local_tensor_network(circuit)
     baseline = plan.contraction_profile("quality_multistart")
     element_size = max(node.tensor.element_size() for node in plan.nodes)
     target_elements = max(baseline.output_size, baseline.peak_size // 2)
@@ -662,7 +643,7 @@ def test_quality_sliced_compensated_reduction_preserves_autograd():
     theta = torch.tensor(0.23, dtype=torch.float64, requires_grad=True)
     circuit = fq.Circuit(4)
     circuit.h(0).cx(0, 3).ry(1, theta=theta).rzz(2, 3, theta=-0.4)
-    ket_plan = build_tensor_network(circuit, dtype=torch.complex128)
+    ket_plan = build_local_tensor_network(circuit, dtype=torch.complex128)
     assert {node.tensor.dtype for node in ket_plan.nodes} == {torch.complex128}
     plan = build_tensor_network_expectation(ket_plan, z=[0, 1, 2, 3])
     baseline = plan.contraction_profile("quality_multistart")
@@ -816,7 +797,7 @@ def test_tensor_network_expectation_sliced_contract_matches_greedy():
 def test_tensor_network_run_accepts_sliced_strategy_options():
     circuit = fq.Circuit(3)
     circuit.h(0).cx(0, 2).ry(1, theta=0.2)
-    plan = build_tensor_network(circuit)
+    plan = build_local_tensor_network(circuit)
     profile = plan.contraction_profile("greedy")
     target_peak = max(profile.output_size, profile.peak_size // 2)
 
@@ -974,7 +955,7 @@ def test_tensor_network_proxy_is_not_an_upper_bound_on_the_measured_peak():
     for left, right in edges:
         circuit.cx(left, right)
 
-    plan = tensor_execution.build_local_tensor_network(circuit)
+    plan = build_local_tensor_network(circuit)
     proxy = estimate_tensor_network_working_set_bytes(
         circuit.n_wires,
         contraction_width=interaction_width(circuit),
@@ -1460,7 +1441,7 @@ def test_amplitude_projectors_cross_the_host_boundary_independently_of_batch():
     circuit = fq.Circuit(6)
     for wire in range(6):
         circuit.ry(wire, theta=0.02)
-    plan = build_tensor_network(circuit)
+    plan = build_local_tensor_network(circuit)
 
     def host_lifts(bitstrings):
         original = torch.as_tensor
@@ -1516,7 +1497,7 @@ def test_parallel_slice_planner_reduces_rank_local_cost_vs_label_order():
             circuit.ry(wire, theta=0.01)
         for wire in range(layer % 2, 11, 2):
             circuit.cx(wire, wire + 1)
-    plan = build_tensor_network(circuit)
+    plan = build_local_tensor_network(circuit)
     nodes, outputs = tensor_execution._amplitude_batch_projection(
         plan,
         ("0" * 12,),

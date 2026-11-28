@@ -46,13 +46,13 @@ from flagquantum.simulation.native_cpu import (
     native_cpu_rzz_available,
     use_compact_cpu_cx_adjoint_cycles,
 )
+from flagquantum.simulation.native_cpu.permutation import compact_cx_permutation_images
 from flagquantum.simulation.native_cpu.rotation import (
     native_cpu_forward_rotation_tile_qubits,
 )
 from flagquantum.simulation.statevector import cx_adjoint
 from flagquantum.simulation.statevector.cx_adjoint import (
     apply_cpu_cx_adjoint_index,
-    cpu_cx_permutation_images,
     cpu_cx_permutation_index,
 )
 from flagquantum.simulation.statevector.operations import _apply_matrix
@@ -212,7 +212,7 @@ def test_native_compact_cx_adjoint_inplace_matches_sequence_gather(
     controls = (5, 2, 0, 6, 3)
     targets = (6, 4, 1, 3, 5)
     index = cpu_cx_permutation_index(ket, controls, targets, 7)
-    images = cpu_cx_permutation_images(controls, targets, 7)
+    images = compact_cx_permutation_images(controls, targets, 7)
     expected_ket = torch.index_select(ket, 1, index)
     expected_adjoint = torch.index_select(adjoint, 1, index)
 
@@ -264,7 +264,7 @@ def test_compact_cx_adjoint_gather_matches_permutation_table(
     controls = (5, 1, 4, 0, 3, 2)
     targets = (6, 4, 2, 3, 1, 5)
     index = cpu_cx_permutation_index(ket, controls, targets, 7)
-    images = cpu_cx_permutation_images(controls, targets, 7)
+    images = compact_cx_permutation_images(controls, targets, 7)
 
     actual = fused_compact_cx_adjoint_gather(ket, adjoint, images)
 
@@ -355,7 +355,7 @@ def test_compact_cx_gather_out_matches_permutation_table(
     controls = (0, 4, 1, 5, 2, 3)
     targets = (3, 6, 4, 2, 5, 1)
     index = cpu_cx_permutation_index(state, controls, targets, 7)
-    images = cpu_cx_permutation_images(controls, targets, 7)
+    images = compact_cx_permutation_images(controls, targets, 7)
     output = torch.empty_like(state)
 
     assert fused_compact_cx_gather_out(state, images, output)
@@ -1459,7 +1459,7 @@ def test_native_cx_rotation_adjoint_matches_sequential_boundary(
         targets=(6, 5, 4, 3, 2, 1),
         n_qubits=7,
     )
-    images = cpu_cx_permutation_images(
+    images = compact_cx_permutation_images(
         controls=(5, 4, 3, 2, 1, 0),
         targets=(6, 5, 4, 3, 2, 1),
         n_qubits=7,

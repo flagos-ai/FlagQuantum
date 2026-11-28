@@ -98,7 +98,7 @@ def _sliced_labels(*, count: int = 3) -> tuple[int, ...]:
 
     from collections import Counter
 
-    from flagquantum.simulation.tensor_network.entrypoints import (
+    from flagquantum.simulation.tensor_network.observables import (
         build_tensor_network_expectation,
     )
 
@@ -165,7 +165,7 @@ def test_tn_placement_rejects_undeployable_topologies(
 def test_tn_task_plan_places_slices_at_the_reported_local_world_size() -> None:
     slicing = execution._build_slicing_plan(
         *execution._amplitude_projection(
-            execution.build_tensor_network(_circuit()), "10001"
+            execution.build_local_tensor_network(_circuit()), "10001"
         ),
         sliced_labels=_sliced_labels(),
     )

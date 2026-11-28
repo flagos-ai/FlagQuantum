@@ -7,9 +7,6 @@ from dataclasses import dataclass
 from typing import Any
 
 from ...distributed.backend_policy import DistributedBackendPolicy
-from .release_policy import (
-    attach_evidence_contract as _attach_distributed_evidence_contract,
-)
 from .runtime_environment import _require_jax
 
 
@@ -65,7 +62,11 @@ class JAXDistributedQuantumPlan:
             "rank_local_jax_kernel_allowed_for_capacity_claim": False,
             "status": "planned_not_executed",
         }
-        return _attach_distributed_evidence_contract(payload)
+        from flagquantum.runtime.audit.statistics import (
+            attach_distributed_evidence_contract,
+        )
+
+        return attach_distributed_evidence_contract(payload)
 
 
 def _jax_global_indices_by_rank_for_plan(plan: Any) -> Any:

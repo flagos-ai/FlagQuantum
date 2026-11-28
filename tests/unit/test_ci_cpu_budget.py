@@ -292,3 +292,51 @@ def test_container_inherits_stricter_host_service_budget(
     monkeypatch.setenv("RUNNER_NAME", "cpu02")
     with pytest.raises(RuntimeError, match="another runner"):
         budget.main()
+
+
+@pytest.mark.parametrize(
+    "cpus,dedicated,threads", [(4, True, 4), (4, False, 2), (1, True, 1), (2, False, 1)]
+)
+def test_exclusive_case_uses_one_worker_within_the_existing_service_budget(
+    tmp_path, monkeypatch, cpus, dedicated, threads
+):
+    import json
+
+    from tools.ci import ci_cpu_budget as budget
+
+    monkeypatch.setenv("RUNNER_ENVIRONMENT", "self-hosted")
+    monkeypatch.setenv("RUNNER_NAME", "bounded-test-service")
+    monkeypatch.setenv("RUNNER_TEMP", str(tmp_path))
+    monkeypatch.setenv("GITHUB_ENV", str(tmp_path / "environment"))
+    monkeypatch.delenv("FQ_CI_HOST_BUDGET", raising=False)
+    monkeypatch.delenv("GITHUB_STEP_SUMMARY", raising=False)
+    monkeypatch.setattr(
+        budget.os, "sched_getaffinity", lambda _: set(range(32)), raising=False
+    )
+    monkeypatch.setattr(
+        budget.os,
+        "sysconf",
+        lambda name: 4096 if name == "SC_PAGE_SIZE" else 32 * GIB // 4096,
+    )
+    monkeypatch.setattr(
+        budget,
+        "controller_directories",
+        lambda: {"cpu": [tmp_path], "memory": [tmp_path]},
+    )
+    monkeypatch.setattr(budget, "read_limits", lambda _: ([float(cpus)], [24 * GIB]))
+    monkeypatch.setattr(budget, "is_dedicated_cpu_service", lambda _: dedicated)
+    budget.main(exclusive_test=True)
+    exported = dict(
+        line.split("=", 1)
+        for line in (tmp_path / "environment").read_text().splitlines()
+    )
+    report = json.loads(
+        (Path(exported["FQ_CI_REPORT_DIR"]) / "resources.json").read_text()
+    )
+    assert report["workers"] == 1
+    assert report["threads_per_worker"] == threads
+    assert report["effective_cpus"] == cpus
+    assert report["shared_registrations_budgeted"] == (1 if dedicated else 2)
+    assert exported["FQ_PYTEST_WORKERS"] == "1"
+    for name in ("OMP_NUM_THREADS", "MKL_NUM_THREADS", "OPENBLAS_NUM_THREADS"):
+        assert exported[name] == str(threads)
