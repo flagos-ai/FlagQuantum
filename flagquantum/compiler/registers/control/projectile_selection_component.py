@@ -9,13 +9,17 @@ from collections.abc import Mapping
 import numpy as np
 
 from ....core.ir.program import ProgramRecord
+from ....core.ir.program.register_types import opaque_register_type
 from ....core.ir.program.signatures import Signature
+from ....core.value_math import SymbolicInt
 from ..component_builder import BindingCollection, ComponentProgramBuilder
 from ..component_graph import _elements
 
 
 def projectile_selection_program(
-    signature: Signature, children: Mapping[str, ProgramRecord], nuclear_width: int
+    signature: Signature,
+    children: Mapping[str, ProgramRecord],
+    nuclear_width: SymbolicInt,
 ) -> ProgramRecord:
     """Compose the original SELECT calls without asserting opaque leaf cleanup."""
     if children.keys() != {
@@ -32,11 +36,17 @@ def projectile_selection_program(
         for role, child in children.items()
     }
     state = dict(builder.inputs)
-    n = int(signature.get_left("proj").bitsize)
-    p_width = int(signature.get_left("sys").bitsize)
-    p = np.array([builder.allocate(n) for _ in range(3)], dtype=object)
-    q = np.array([builder.allocate(p_width) for _ in range(3)], dtype=object)
-    rl: BindingCollection = builder.allocate(nuclear_width)
+    n = signature.get_left("proj").bitsize
+    p_width = signature.get_left("sys").bitsize
+    p = np.array(
+        [builder.allocate(dtype=opaque_register_type(n)) for _ in range(3)],
+        dtype=object,
+    )
+    q = np.array(
+        [builder.allocate(dtype=opaque_register_type(p_width)) for _ in range(3)],
+        dtype=object,
+    )
+    rl: BindingCollection = builder.allocate(dtype=opaque_register_type(nuclear_width))
     flags = np.asarray(state["ham_ctrl"]).copy()
     projectile = np.asarray(state["proj"]).copy()
 

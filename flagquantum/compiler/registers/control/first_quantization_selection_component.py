@@ -9,13 +9,17 @@ from collections.abc import Mapping
 import numpy as np
 
 from ....core.ir.program import ProgramRecord
+from ....core.ir.program.register_types import opaque_register_type
 from ....core.ir.program.signatures import Signature
+from ....core.value_math import SymbolicInt
 from ..component_builder import BindingCollection, ComponentProgramBuilder
 from ..component_graph import _elements
 
 
 def first_quantization_selection_program(
-    signature: Signature, children: Mapping[str, ProgramRecord], nuclear_width: int
+    signature: Signature,
+    children: Mapping[str, ProgramRecord],
+    nuclear_width: SymbolicInt,
 ) -> ProgramRecord:
     """Retain four source exchanges and through-owned selection/control words."""
     if children.keys() != {"exchange", "kinetic", "potential"}:
@@ -26,10 +30,16 @@ def first_quantization_selection_program(
         for role, child in children.items()
     }
     state = dict(builder.inputs)
-    width = int(signature.get_left("sys").bitsize)
-    p = np.array([builder.allocate(width) for _ in range(3)], dtype=object)
-    q = np.array([builder.allocate(width) for _ in range(3)], dtype=object)
-    rl: BindingCollection = builder.allocate(nuclear_width)
+    width = signature.get_left("sys").bitsize
+    p = np.array(
+        [builder.allocate(dtype=opaque_register_type(width)) for _ in range(3)],
+        dtype=object,
+    )
+    q = np.array(
+        [builder.allocate(dtype=opaque_register_type(width)) for _ in range(3)],
+        dtype=object,
+    )
+    rl: BindingCollection = builder.allocate(dtype=opaque_register_type(nuclear_width))
 
     def exchange(index: str, words: BindingCollection) -> BindingCollection:
         result = builder.call_dict(
