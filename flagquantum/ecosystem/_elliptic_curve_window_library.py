@@ -25,11 +25,57 @@ from ..compiler.formats.legacy_word_factories import _rename_program
 from ..compiler.registers.elliptic_curve.window_addition_component import (
     windowed_curve_addition_program,
 )
+from ..compiler.registers.lookup.qroam_clean_adjoint_component import (
+    qroam_clean_adjoint_wrapper_program,
+)
+from ..compiler.registers.lookup.qroam_clean_component import (
+    qroam_clean_unblocked_program,
+)
+from ..compiler.registers.lookup.qroam_clean_metadata import (
+    qroam_clean_adjoint_leaf_signature,
+    qroam_clean_signature,
+)
 from ..compiler.registers.lookup.qroam_resource_model import _optimal_erase_log
+from ..compiler.registers.lookup.qrom_declaration import QromDeclaration
 from ..core.ir.program import FunctionRecord, ProgramRecord
 from ..core.ir.program.registers import Register
+from ..core.value_math import SymbolicInt
 from ..errors import SerializationError
 from ._elliptic_curve_addition_library import elliptic_curve_addition_factories
+
+
+def _shape_only_point_lookup(
+    width: SymbolicInt, window: int
+) -> tuple[ProgramRecord, ProgramRecord]:
+    # The source chooses log block size zero when n is symbolic but the
+    # address window is concrete. No coordinates or dummy data are evaluated.
+    shape, widths, logs = (1 << window,), (width,) * 3, (0,)
+    signature = qroam_clean_signature(shape, widths, logs, selection_widths=(window,))
+    declaration = QromDeclaration.from_shape(
+        shape, widths, target_shapes=((1,),) * 3, selection_bitsizes=(window,)
+    )
+    forward = _rename_program(
+        qroam_clean_unblocked_program(
+            signature,
+            ProgramRecord(
+                (
+                    FunctionRecord(
+                        "point_qrom", (), registers=tuple(declaration.signature)
+                    ),
+                )
+            ),
+        ),
+        "point_table",
+    )
+    leaf = FunctionRecord(
+        "point_table_adjoint_erase",
+        (),
+        registers=tuple(qroam_clean_adjoint_leaf_signature(shape, widths, logs)),
+    )
+    erase = qroam_clean_adjoint_wrapper_program(
+        signature, leaf, (1,), name="point_table_adjoint"
+    )
+    return forward, erase
 
 
 def elliptic_curve_window_factories() -> dict[str, ComponentFactory]:
@@ -63,7 +109,15 @@ def elliptic_curve_window_factories() -> dict[str, ComponentFactory]:
         mul_window = _integer(
             {"mul_window_size": arguments.get("mul_window_size", 1)}, "mul_window_size"
         )
-        if not windowed or any(
+        symbolic_width = type(width) is not int
+        if (
+            windowed
+            and symbolic_width
+            and type(window) is int
+            and type(point.mod) is int
+        ):
+            forward, erased = _shape_only_point_lookup(width, window)
+        elif not windowed or any(
             type(value) is not int
             for value in (
                 width,
@@ -76,34 +130,39 @@ def elliptic_curve_window_factories() -> dict[str, ComponentFactory]:
             )
         ):
             return FunctionRecord(name, (), registers=tuple(signature))
-        assert isinstance(width, int) and isinstance(window, int)
-        table = windowed_point_table(
-            width, window, ECPoint(point.x, point.y, point.mod, point.curve_a)
-        )
-        forward = lookups["qualtran.bloqs.data_loading.qroam_clean.QROAMClean"](
-            "point_table",
-            None,
-            {
-                "data_or_shape": np.asarray(table.datasets),
-                "selection_bitsizes": np.array([window]),
-                "target_bitsizes": np.array([width] * 3),
-                "log_block_sizes": np.array(table.log_block_sizes),
-            },
-        )
-        assert isinstance(forward, ProgramRecord)
-        # Original erase block optimization is independent of the forward block.
-        # The wrapper keeps this field as metadata, without a physical leaf body.
-        erased = lookups[
-            "qualtran.bloqs.data_loading.qroam_clean.QROAMCleanAdjointWrapper"
-        ](
-            "point_table_adjoint",
-            None,
-            {
-                "qroam_clean": forward.functions[0],
-                "log_block_sizes": np.array([_optimal_erase_log(1 << window)]),
-            },
-        )
-        assert isinstance(erased, ProgramRecord)
+        else:
+            assert isinstance(width, int) and isinstance(window, int)
+            table = windowed_point_table(
+                width, window, ECPoint(point.x, point.y, point.mod, point.curve_a)
+            )
+            concrete_forward = lookups[
+                "qualtran.bloqs.data_loading.qroam_clean.QROAMClean"
+            ](
+                "point_table",
+                None,
+                {
+                    "data_or_shape": np.asarray(table.datasets),
+                    "selection_bitsizes": np.array([window]),
+                    "target_bitsizes": np.array([width] * 3),
+                    "log_block_sizes": np.array(table.log_block_sizes),
+                },
+            )
+            assert isinstance(concrete_forward, ProgramRecord)
+            forward = concrete_forward
+            # Original erase block optimization is independent of the forward block.
+            # The wrapper keeps this field as metadata, without a physical leaf body.
+            concrete_erased = lookups[
+                "qualtran.bloqs.data_loading.qroam_clean.QROAMCleanAdjointWrapper"
+            ](
+                "point_table_adjoint",
+                None,
+                {
+                    "qroam_clean": forward.functions[0],
+                    "log_block_sizes": np.array([_optimal_erase_log(1 << window)]),
+                },
+            )
+            assert isinstance(concrete_erased, ProgramRecord)
+            erased = concrete_erased
         root = addition(
             "curve_addition",
             None,

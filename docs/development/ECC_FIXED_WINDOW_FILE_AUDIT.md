@@ -121,3 +121,32 @@ lookup execution, the generic controlled RIGHT-output QROAM refusal and the
 inherited mod-5 release, coordinate and wider-window defects are not waived.
 This batch does not repair or edit the frozen source and does not claim the
 small valid curve domain covers arbitrary coordinates or larger curves.
+
+## Symbolic-width window dependency correction
+
+With symbolic n, finite modulus and concrete address width, the original window
+has five root calls. All available dependencies are now retained: its clean
+QROAM forward has three actual symbolic-width Allocate calls and one shaped
+QROM call; ECAdd has six calls; the erasure wrapper has one bank-shaped call.
+The earlier intake described shape-only QROAM forward itself as unavailable.
+That was incorrect: the genuine refusal is its parameterized QROM child.
+Every stopped child in the new traversal is required to refuse decomposition in
+the unchanged reference. Join, Split and Allocate are genuine source atoms;
+six symbolic-n arithmetic stages and both parameterized lookup leaves refuse.
+
+The source selects forward block log zero here. Shared lookup metadata and
+Compiler allocation/reshape owners preserve MSB ordering, RIGHT loaded words,
+scalar-to-singleton views and LEFT erasure consumption. No point samples, dummy
+arrays, primitive gates or prices are invented. Symbols in point coordinates and
+curve parameters are unused by the source shape-only path and remain unused
+natively. Root metadata roundtrips and SDK-free reconstruction are checked.
+Physical binding still refuses the eight unavailable source bodies. There is no
+new symbolic amplitude, physical cleanup or concrete resource claim.
+
+Two original finite erase-wrapper Programs and ordinary address-width-one/five
+window Programs are compared in full against the published baseline. Reused
+finite complex-channel, all-history, work-zero and measured/model resource
+receipts apply only to definition-identical Programs. Source scalar ECAddR
+absence, generic controlled RIGHT-output refusal and inherited arithmetic
+failures remain explicit. Fixed-n symbolic multiplication-window stage bodies
+remain a genuine direct-dependency gap; this slice does not close Q-0458.
