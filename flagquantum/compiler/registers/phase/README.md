@@ -37,3 +37,13 @@ Exact inverse construction consumes explicit child pairs. Run
 complex operators, integer powers and all small raw measurement histories. The
 [mean dependency audit](../../../../docs/development/MEAN_ESTIMATION_COMPONENT_AUDIT.md)
 keeps native bounded lookup emission separate from opaque-source resource models.
+
+`generalized_qsp_component.py` composes explicit forward, inverse, controlled and
+SU2 owners. Logical source leaves may remain typed declarations; binding requires
+complete reachable bodies. `hamiltonian_gqsp_component.py` preserves the actual
+Always wrappers around PREPARE and its explicit inverse, owns only private junk,
+and records its allocation/release without proving numerical cleanup. Numerical
+phase computation stays in Simulation. Run the generalized and Hamiltonian
+`test_*gqsp_component_library.py` scenarios plus
+`test_gqsp_logical_source_closure.py` for constructor, complete-call and binding
+boundaries. Controlled Hamiltonian composition needs explicit Always-aware owners.

@@ -102,3 +102,31 @@ architecture, internal IR and protected API checks pass using this worktree.
 Qualtran0.7.0 and actual Kickmix0.1 Simulator are asserted. Publication receipts
 are recorded in the external G2 ledger. No CI wait, dependency installation, ReadTheDocs, G3 change
 or PR merge is part of this batch.
+
+## Literal wrapper and symbolic composition closure, 2026-11-28
+
+The shared root now retains the actual `Always(PREPARE)` and
+`Always(PREPARE.adjoint())` wrappers, using the existing bookkeeping component.
+Allocation, signal/selection ownership and final Free remain source ordered.
+The former global rejection of nested declarations is removed; physical binding
+still refuses an actually missing reachable body. Explicit inverse ownership and
+THRU signatures remain mandatory. The wrapper alone is not a certificate that an
+arbitrary generic control transform preserves Always semantics.
+
+The actual unchanged `_symbolic_hamsim_by_gqsp` example now passes the five-call
+root comparison and both complete 35-call Hubbard PREPARE directions. Only its
+symbolic GQSP, which the original explicitly refuses to decompose, is a bodyless
+leaf. The actual serialized root resolves with an explicit context; its reachable
+Program equals direct composition up to function names. Transport references are
+logical declarations, not substitutes for available executed PREPARE bodies.
+Numerical emission is correctly refused at symbolic GQSP. Symbolic assumptions
+and original codec quirks retain their separate recorded boundaries.
+
+The existing finite small-walk full complex operators, all applicable measured
+branches, private-zero checks and three separate physical/model rows are reused
+and rerun against the wrapper change. Q-0540 remains open for complete actual
+finite Hubbard context and source-selected controlled composition, including
+unconditional Always ownership. The original outer temp residual probability
+0.016501741620346923 remains an explicit dirty-Free counterexample; no release
+of dirty work is accepted as clean execution. No source patch or new public API
+is introduced by this batch.

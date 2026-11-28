@@ -8,6 +8,7 @@ from ....core.ir.program import ProgramRecord
 from ....core.ir.program.signatures import Signature
 from ..component_builder import ComponentProgramBuilder
 from ..component_graph import _collections, _elements
+from ..primitives.always_component import always_component_program
 
 
 def hamiltonian_gqsp_component_program(
@@ -21,15 +22,16 @@ def hamiltonian_gqsp_component_program(
 
     The supplied inverse must restore private junk on the accepted input domain.
     Composition records that lifetime; it does not prove numerical cleanup.
+    Typed source declarations remain calls until their bodies are supplied.
+    The source's Always wrappers remain explicit. Controlled composition still
+    requires its own source-selected child owners.
     """
     modules = (gqsp, prepare, unprepare)
     if any(
-        record.physical_context is not None
-        or not record.functions
-        or any(not function.blocks for function in record.functions)
+        record.physical_context is not None or not record.functions
         for record in modules
     ):
-        raise ValueError("Hamiltonian GQSP requires complete logical child Programs")
+        raise ValueError("Hamiltonian GQSP requires nonempty logical child Programs")
     ports = gqsp.functions[0].registers
     preparation = prepare.functions[0].registers
     if (
@@ -62,10 +64,20 @@ def hamiltonian_gqsp_component_program(
             (builder.allocate(dtype=r.dtype) for r in junk for _ in r.all_idxs()),
         )
     )
+    prepared = always_component_program(
+        prepare,
+        entry=prepare.functions[0].name,
+        name=prepare.functions[0].name + "_always",
+    )
+    unprepared = always_component_program(
+        unprepare,
+        entry=unprepare.functions[0].name,
+        name=unprepare.functions[0].name + "_always",
+    )
     for record, registers in (
-        (prepare, preparation),
+        (prepared, preparation),
         (gqsp, ports),
-        (unprepare, preparation),
+        (unprepared, preparation),
     ):
         state.update(
             builder.call_program(

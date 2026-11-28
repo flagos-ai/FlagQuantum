@@ -273,7 +273,7 @@ def test_constructor_context_replacement_and_fail_closed(
             hamiltonian_gqsp_component_program(
                 context.gqsp, *context.prepare_pair, junk_names=names
             )
-    with pytest.raises(ValueError, match="complete logical"):
+    with pytest.raises(ValueError, match="nonempty logical"):
         hamiltonian_gqsp_component_program(
             ProgramRecord(()), *context.prepare_pair, junk_names=context.junk_names
         )
@@ -377,3 +377,84 @@ def test_junk_free_source_matrix_context_and_original_codec_boundary(
         context.gqsp, *context.prepare_pair, junk_names=()
     )
     _bound_check(source, program, monkeypatch)
+
+
+def test_actual_symbolic_hamiltonian_retains_always_and_complete_prepare(
+    locked_source: Any,
+) -> None:
+    from qualtran import DecomposeTypeError
+    from qualtran.bloqs.hamiltonian_simulation.hamiltonian_simulation_by_gqsp import (
+        _symbolic_hamsim_by_gqsp,
+    )
+
+    from flagquantum.compiler.formats.legacy_hamiltonian_gqsp_factories import (
+        HamiltonianGQSPContext,
+        hamiltonian_gqsp_factories,
+    )
+    from flagquantum.compiler.registers.component_definition_match import (
+        matches_component_definition,
+    )
+    from flagquantum.compiler.registers.phase.hamiltonian_gqsp_component import (
+        hamiltonian_gqsp_component_program,
+    )
+    from flagquantum.ecosystem._default_linear_combination_oracles import _signature
+    from flagquantum.ecosystem._packed_oracle_component_library import (
+        packed_oracle_library_factories,
+    )
+    from tests.unit.test_component_hierarchy_control import compare_layers
+    from tests.unit.test_hubbard_stored_graph import source_terminals
+    from tests.unit.test_sparse_chemistry_prepare_component import bind_used_workspace
+
+    source = _symbolic_hamsim_by_gqsp.make()
+    prepare = source.walk_operator.prepare
+    factories = packed_oracle_library_factories()
+    pair = tuple(
+        resolve_component_program(_library(child, 0), 0, factories)
+        for child in (prepare, prepare.adjoint())
+    )
+    assert len(prepare.decompose_bloq().bloq_instances) == 35
+    # Only the symbolic signal processor genuinely lacks a source body. Its
+    # available PREPARE directions must not be replaced with declarations.
+    with pytest.raises(DecomposeTypeError):
+        source.gqsp.decompose_bloq()
+    processor = ProgramRecord(
+        (
+            FunctionRecord(
+                "symbolic_gqsp", (), registers=tuple(_signature(source.gqsp.signature))
+            ),
+        )
+    )
+    record = hamiltonian_gqsp_component_program(
+        processor,
+        *pair,
+        junk_names=tuple(register.name for register in prepare.junk_registers),
+    )
+    assert verify_program_record(record) == ()
+    pairs = compare_layers(record, source, source_terminals(record))
+    assert sum(type(child).__name__ == "Always" for child in pairs.values()) == 2
+    assert len(record.functions[0].blocks[0].operations) == 5
+    assert sum(not function.blocks for function in record.functions) == 1
+    context = HamiltonianGQSPContext(
+        processor, (pair[0], pair[1]), tuple(r.name for r in prepare.junk_registers)
+    )
+    walk = source.walk_operator
+    constructors = hamiltonian_gqsp_factories(lambda child, t, eps: context)
+    # Constructor references are typed declarations only. The explicit context
+    # supplies the actual PREPARE pair and the genuine symbolic GQSP leaf.
+    for child in (
+        walk,
+        walk.block_encoding,
+        walk.prepare,
+        walk.block_encoding.select,
+    ):
+        constructors[type(child).__module__ + "." + type(child).__qualname__] = (
+            lambda name, registers, arguments: ProgramRecord(
+                (FunctionRecord(name, (), registers=registers),)
+            )
+        )
+    library = _library(source, 0)
+    restored = resolve_component_program(library, 0, constructors)
+    assert matches_component_definition(restored, restored.functions[0].name, record)
+    compare_layers(restored, source, source_terminals(restored))
+    with pytest.raises(ValueError, match="requires component bodies"):
+        bind_used_workspace(record, allow_workspace_outputs=True)
