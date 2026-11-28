@@ -1,6 +1,8 @@
 import contextlib
 import os
 import platform
+import re
+import shlex
 import sys
 from pathlib import Path
 from unittest import mock
@@ -55,26 +57,129 @@ def test_contributor_install_reuses_the_selected_torch() -> None:
     assert "python -m pip install --no-build-isolation -e '.[dev]'" in contributing
 
 
+def _editable_installs(commands: list[str]) -> list[tuple[int, list[str]]]:
+    """Find literal pip installs without confusing shell file checks with -e."""
+    installs: list[tuple[int, list[str]]] = []
+    for index, command in enumerate(commands):
+        for line in command.replace("\\\n", " ").splitlines():
+            if not re.search(r"\bpip(?:\d+(?:\.\d+)*)?\s+install\b", line):
+                continue
+            lexer = shlex.shlex(line, posix=True, punctuation_chars=";&|")
+            lexer.whitespace_split = True
+            segments: list[list[str]] = [[]]
+            for word in lexer:
+                if word and all(character in ";&|" for character in word):
+                    segments.append([])
+                else:
+                    segments[-1].append(word)
+            for words in segments:
+                while words and (
+                    words[0] in ("env", "exec", "command", "then", "do")
+                    or re.fullmatch(r"[A-Za-z_][A-Za-z0-9_]*=.*", words[0])
+                ):
+                    words = words[1:]
+                if not words:
+                    continue
+                executable = Path(words[0]).name
+                if re.fullmatch(r"python(?:\d+(?:\.\d+)*)?", executable) and words[
+                    1:4
+                ] == ["-m", "pip", "install"]:
+                    arguments = words[4:]
+                elif re.fullmatch(r"pip(?:\d+(?:\.\d+)*)?", executable) and words[
+                    1:2
+                ] == ["install"]:
+                    arguments = words[2:]
+                else:
+                    continue
+                if any(
+                    word in ("-e", "--editable") or word.startswith("--editable=")
+                    for word in arguments
+                ):
+                    installs.append((index, arguments))
+    return installs
+
+
 def test_ci_editable_installs_reuse_the_cpu_torch_environment() -> None:
     workflow = _workflow(".github/workflows/ci.yml")
 
     for name, job in workflow["jobs"].items():
         commands = _run_commands(job)
-        editable = [command for command in commands if " -e " in command]
+        editable = _editable_installs(commands)
         if not editable:
             continue
 
-        assert all("--no-build-isolation" in command for command in editable), name
+        assert all(
+            "--no-build-isolation" in arguments for _, arguments in editable
+        ), name
         assert any(CPU_TORCH_INDEX in command for command in commands), name
         cpu_install = next(
             index
             for index, command in enumerate(commands)
             if CPU_TORCH_INDEX in command
         )
-        project_install = next(
-            index for index, command in enumerate(commands) if " -e " in command
-        )
+        project_install = editable[0][0]
         assert cpu_install < project_install, name
+
+
+@pytest.mark.parametrize(
+    ("command", "valid"),
+    [
+        ('test ! -e "$previous"\nif [ -e "$source" ]; then echo ready; fi', True),
+        ("python -m pip install --no-build-isolation -e .", True),
+        ("python -m pip install -e .", False),
+        ("pip install --no-build-isolation -e .\npip install -e other", False),
+        ("pip install --no-build-isolation -e . && pip install -e other", False),
+        ("python3 -m pip install --no-build-isolation --editable=.", True),
+        ("pip install --editable .", False),
+        ("python -m pip install \\\n --no-build-isolation -e .", True),
+        ("echo 'pip install -e example'\npip install --no-build-isolation -e .", True),
+    ],
+)
+def test_editable_policy_recognizes_install_invocations(
+    monkeypatch: pytest.MonkeyPatch, command: str, valid: bool
+) -> None:
+    def workflow(path: str) -> dict[str, object]:
+        return {
+            "jobs": {
+                "fixture": {
+                    "steps": [
+                        {
+                            "run": f"python -m pip install torch --index-url {CPU_TORCH_INDEX}"
+                        },
+                        {"run": command},
+                    ]
+                }
+            }
+        }
+
+    monkeypatch.setattr(sys.modules[__name__], "_workflow", workflow)
+    if valid:
+        test_ci_editable_installs_reuse_the_cpu_torch_environment()
+    else:
+        with pytest.raises(AssertionError, match="fixture"):
+            test_ci_editable_installs_reuse_the_cpu_torch_environment()
+
+
+def test_editable_policy_keeps_torch_installation_before_project(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    def workflow(path: str) -> dict[str, object]:
+        return {
+            "jobs": {
+                "fixture": {
+                    "steps": [
+                        {"run": "python -m pip install --no-build-isolation -e ."},
+                        {
+                            "run": f"python -m pip install torch --index-url {CPU_TORCH_INDEX}"
+                        },
+                    ]
+                }
+            }
+        }
+
+    monkeypatch.setattr(sys.modules[__name__], "_workflow", workflow)
+    with pytest.raises(AssertionError, match="fixture"):
+        test_ci_editable_installs_reuse_the_cpu_torch_environment()
 
 
 def test_ci_measures_a_bounded_cold_cpu_install() -> None:
