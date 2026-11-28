@@ -8,6 +8,8 @@
 from ....core.ir.program import ProgramRecord
 from ....core.ir.program.register_bindings import RegisterBinding
 from ....core.ir.program.register_types import montgomery_register_type
+from ....core.ir.program.register_verifier import executable_register_width
+from ....core.ir.program.registers import RegisterType
 from ....core.ir.program.signatures import Signature
 from ..arithmetic.addition_component import addition_component_program
 from ..arithmetic.constant_addition_component import constant_addition_program
@@ -37,43 +39,11 @@ def modular_addition_program(
         raise ValueError("Modulus must be a positive integer fitting the operand")
     dtype = montgomery_register_type(width, modulus)
     narrow, wide = montgomery_register_type(width), montgomery_register_type(width + 1)
-    builder = ComponentProgramBuilder(
-        Signature.build_from_dtypes(x=dtype, y=dtype), comparison_bit_functions()
-    )
-    junk, sign = builder.allocate(), builder.allocate()
-    x, y = builder.inputs["x"], builder.inputs["y"]
-    assert isinstance(x, RegisterBinding) and isinstance(y, RegisterBinding)
-    xs, ys = builder.split(x), builder.split(y)
-    x = builder.join([junk, *xs], wide)
-    y = builder.join([sign, *ys], wide)
-    added = builder.call_program(
-        addition_component_program(width + 1, left_dtype=wide, right_dtype=wide),
-        {"a": x, "b": y},
-    )
-    added_x = added["a"]
-    assert isinstance(added_x, RegisterBinding)
-    xs = builder.split(added_x)
-    junk, x = xs[0], builder.join(xs[1:], narrow)
-    y = builder.call_program(
+    record = modular_addition_component_program(
+        dtype,
         constant_addition_program(wide, (-modulus) % (1 << (width + 1))),
-        {"x": added["b"]},
-    )["x"]
-    assert isinstance(y, RegisterBinding)
-    ys = builder.split(y)
-    sign, y = ys[0], builder.join(ys[1:], narrow)
-    corrected = builder.call_program(
         constant_addition_program(narrow, modulus, control_value=1),
-        {"ctrl": sign, "x": y},
     )
-    compared = builder.call_program(
-        linear_greater_program(width),
-        {"a": x, "b": corrected["x"], "target": corrected["ctrl"]},
-    )
-    cleared_sign = builder.call_dict("comparison_x", {"q": compared["target"]})["q"]
-    assert isinstance(cleared_sign, RegisterBinding)
-    builder.free(junk)
-    builder.free(cleared_sign)
-    record = builder.finalize({"x": compared["a"], "y": compared["b"]})
     if not adjoint:
         return record
     x_gate = ProgramRecord((comparison_bit_functions()[0],))
@@ -107,3 +77,58 @@ def modular_addition_program(
             (x_gate, x_gate),
         ),
     )
+
+
+def modular_addition_component_program(
+    dtype: RegisterType, subtraction: ProgramRecord, correction: ProgramRecord
+) -> ProgramRecord:
+    """Retain the source widening and sign cleanup around explicit constants.
+
+    The caller owns the actual minus-modulus and controlled plus-modulus
+    children. Unresolved constants may remain true source declarations;
+    this template supplies neither numerical encodings nor inferred prices.
+    """
+    width = executable_register_width(dtype)
+    if dtype.encoding != "montgomery":
+        raise ValueError("Modular addition requires Montgomery source words")
+    modular_add_requirements(width)
+    narrow, wide = montgomery_register_type(width), montgomery_register_type(width + 1)
+    builder = ComponentProgramBuilder(
+        Signature.build_from_dtypes(x=dtype, y=dtype), comparison_bit_functions()
+    )
+    junk, sign = builder.allocate(), builder.allocate()
+    x, y = builder.inputs["x"], builder.inputs["y"]
+    assert isinstance(x, RegisterBinding) and isinstance(y, RegisterBinding)
+    xs, ys = builder.split(x), builder.split(y)
+    x = builder.join([junk, *xs], wide)
+    y = builder.join([sign, *ys], wide)
+    added = builder.call_program(
+        addition_component_program(width + 1, left_dtype=wide, right_dtype=wide),
+        {"a": x, "b": y},
+    )
+    added_x = added["a"]
+    assert isinstance(added_x, RegisterBinding)
+    xs = builder.split(added_x)
+    junk, x = xs[0], builder.join(xs[1:], narrow)
+    y = builder.call_program(
+        subtraction,
+        {"x": added["b"]},
+        entry=subtraction.functions[0].name,
+    )["x"]
+    assert isinstance(y, RegisterBinding)
+    ys = builder.split(y)
+    sign, y = ys[0], builder.join(ys[1:], narrow)
+    corrected = builder.call_program(
+        correction,
+        {"ctrl": sign, "x": y},
+        entry=correction.functions[0].name,
+    )
+    compared = builder.call_program(
+        linear_greater_program(width),
+        {"a": x, "b": corrected["x"], "target": corrected["ctrl"]},
+    )
+    cleared_sign = builder.call_dict("comparison_x", {"q": compared["target"]})["q"]
+    assert isinstance(cleared_sign, RegisterBinding)
+    builder.free(junk)
+    builder.free(cleared_sign)
+    return builder.finalize({"x": compared["a"], "y": compared["b"]})
