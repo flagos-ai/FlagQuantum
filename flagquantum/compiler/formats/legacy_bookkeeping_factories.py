@@ -150,7 +150,18 @@ def _bookkeeping_factory(
             )
             function = constructor(name, dtype, bool(dirty))
         else:
-            if dtype.is_symbolic():
+            # The source Montgomery encoding depends only on its bit width.
+            # Symbolic modulus metadata is not an unresolved storage dimension
+            # (approved Proposal 130); other symbolic dtype refusals remain.
+            montgomery_view = (
+                dtype.encoding == "montgomery"
+                and dtype.parameters[:1] != (("storage", "classical"),)
+                and not (
+                    isinstance(dtype.quantum_bits, sympy.Expr)
+                    and bool(dtype.quantum_bits.free_symbols)
+                )
+            )
+            if dtype.is_symbolic() and not montgomery_view:
                 raise SerializationError(
                     f"{kind} does not accept a symbolic source dtype"
                 )
