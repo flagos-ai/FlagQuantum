@@ -91,3 +91,11 @@ raw operators, entangled spectator phase, reverse wire order and normal append.
 Symbolic modular addition exact adjoints reuse explicit child inverses at the
 same logical call boundary; source-refused constants remain declarations. See
 `tests/unit/test_symbolic_modular_addition_adjoint_calls.py`.
+
+`legacy_modular_control_factories` retains constructor provenance for the four
+ordinary/controlled modular add/subtract owners, their exact inverse wrappers,
+a positive additional control and the negative predicate wrapper. Existing
+forward factories retain their current symbolic scope; added controls and
+inverses in this catalogue require concrete widths and moduli. Unknown owners
+require explicit fallback callbacks. Original symbolic source-success control
+contexts remain a recorded native gap, not a source refusal or fabricated body.

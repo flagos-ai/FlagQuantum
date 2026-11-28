@@ -237,3 +237,22 @@ refuses the missing constant bodies. No phase, zero-work or default cost is
 claimed for an unbound modulus. Complete finite Programs are unchanged by
 factoring the same shell around explicit children. Symbolic-width roots and
 higher generic controlled ECC dependencies remain separately tracked.
+
+## Exact stored inverse and additional controls
+
+Both ordinary and singly-controlled subtraction expose exact five-call stored
+adjoints using the existing complement, constant forward/inverse and modular
+addition inverse owners. Forward Programs remain definition-identical.
+Additional controls preserve all five source calls, both inner polarities and
+inverse direction; their arithmetic/comparison dependency closure follows the
+original specialization rules. Only actual non-THRU controlled And/adder leaves
+remain unbound, and full physical binding rejects those additional-control
+parents. Ordinary shared inverse bodies retain independently checked primitive
+feedback, complex residue-domain amplitudes and clean private work.
+
+The source stream walker can explicitly descend through modular add children
+when surrounding subtraction loaders reuse previously released storage. This
+binds each original source stage to the actual native allocation events instead
+of assuming a standalone macro's private wire order applies in its parent.
+The original source is unchanged. SDK-free constructor reconstruction and
+negative added-control wrappers retain source ports and ownership boundaries.

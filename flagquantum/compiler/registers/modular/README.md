@@ -128,3 +128,16 @@ modular permutation. The source-bound constructor catalogue also retains the
 negative predicate wrapper. Run `tests/unit/test_controlled_doubling_source.py`
 for operands, primitive feedback, every small measurement history on the clean
 promised sector, source counterexamples and constructor reconstruction.
+
+`additional_control_component` adds a positive scalar control to the original
+ModAdd, CModAdd, ModSub and CModSub call graphs and their exact inverses. It
+selects arithmetic and comparison owners by complete definition equality.
+Forward Add becomes CAdd; forward CAdd uses the original three-call reduction;
+controlled inverses use the generic inverse owners instead. Constant loads keep
+Always(Add) unchanged and use the existing literal nested load controls.
+Original controlled And/adder comparator refusals remain only at their exact
+leaves. The parents cannot bind physically while those leaves are unresolved.
+Both subtraction owners now expose exact stored-call adjoints, retaining the
+five-call shell and unchanged forward Programs. Run
+`tests/unit/test_additional_modular_control_source.py` for source layers,
+constructor transport, inverse primitive/phase/cleanup and refusal boundaries.

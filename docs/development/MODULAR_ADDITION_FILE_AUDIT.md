@@ -264,3 +264,35 @@ Complete unchanged arithmetic/comparison definitions are certified before their
 existing primitive, branch, phase and work-zero evidence is reused. Each opaque
 constant must genuinely refuse the unchanged source decomposition. This grants
 no physical gate count, numerical inverse or cleanup proof at an unbound modulus.
+
+## Literal additional controls and inverse protocols
+
+The additional-control owner preserves ModAdd's seventeen calls and CModAdd's
+fourteen calls, both original control polarities and exact inverse direction.
+All available comparison, constant and arithmetic descendants remain explicit.
+Full stored definition certificates reuse the accepted Always(Add/inverse)
+owner before its phase and feedback evidence is reused; independent inverse
+Split scheduling inside that unchanged owner is not claimed ordinal-identical.
+Constructor source depths zero/one, SDK-free reconstruction and negative outer
+predicate wrappers retain the original ports and source modulus-codec bridges.
+
+The source control protocol differs by direction. Forward Add selects CAdd,
+and forward CAdd selects the three-call singly-controlled reduction. Generic
+control on Add-adjoint or CAdd-adjoint instead propagates control into their
+inverse bodies. Those inverse parents are available, but their controlled And
+leaves refuse non-THRU target ports. They remain declarations; a numerically
+valid specialized inverse is not substituted for the original generic recipe.
+The wider controlled comparator's original directional refusals remain explicit.
+No complete amplitude, measured gate inventory or work-zero claim covers these
+unbound modular parents. Symbolic added controls and inherited full-ring or
+symbolic-width construction boundaries remain open.
+
+The independently executable three-call arithmetic specialization has complete
+complex operators, entangled spectators, every small raw measurement history,
+zero-work and append execution evidence. For a=2,b=3 and controls=(1,1), both
+directions emit H15,T10,CX38,Tdg10,S5,measure5,CZ5,reset5. The separate original
+model is And5,Toffoli0,Clifford14,measure5,T-equivalent20,peak qubits12.
+For the one-bit data case with controls=(1,0), actual primitives include four X,
+six H, thirteen CX, four T and four Tdg, plus two each of S/measure/CZ/reset.
+The original model reports Clifford=-1 there; this source model anomaly is
+retained separately and is not a physical negative gate count.
