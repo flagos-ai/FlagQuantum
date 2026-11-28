@@ -12,12 +12,13 @@ from typing import Literal
 import numpy as np
 
 from ....core.ir import CircuitIR, Instruction
-from ....core.ir.program import ProgramRecord
+from ....core.ir.program import FunctionRecord, ProgramRecord
 from ....core.ir.program.register_types import quantum_bit_type
 from ....core.ir.program.registers import Register, RegisterSide, RegisterType
 from ..component_builder import BindingCollection, ComponentProgramBuilder
 from ..component_control import ControlAdder, control_component_hierarchy
 from ..component_gate_function import bit_gate_function
+from ..control.component_bookkeeping import bookkeeping_scalar_control_adder
 from .bitwise_component import bitwise_word_program
 
 
@@ -55,6 +56,36 @@ def _controlled_cx(
     return controls[0], (controls[1], target)
 
 
+def _toffoli_function() -> FunctionRecord:
+    bit = quantum_bit_type()
+    return bit_gate_function(
+        "bitwise_toffoli",
+        (Register("ctrl", bit, (2,)), Register("target", bit)),
+        CircuitIR(3, (Instruction("ccx", (0, 1, 2)),)),
+    )
+
+
+def nested_controlled_xor_constant_program(
+    dtype: RegisterType, pattern: int
+) -> ProgramRecord:
+    """Retain two separate positive scalar controls on the source XOR loader.
+
+    Source nested Controlled retains the inner Split/XOR/Join calls and turns
+    each loaded CNOT into an atomic Toffoli. This is distinct from a grouped
+    predicate that first computes a shared conjunction into private work.
+    """
+    record = controlled_bitwise_word_program(dtype, "xor_constant", pattern=pattern)
+    adders: dict[str, ControlAdder] = {"bitwise_controlled_x": _controlled_cx}
+    for function in record.functions:
+        if function.registers is not None and any(
+            register.side != RegisterSide.THRU for register in function.registers
+        ):
+            adders[function.name] = bookkeeping_scalar_control_adder(function)
+    return control_component_hierarchy(
+        replace(record, functions=(*record.functions, _toffoli_function())), adders
+    )
+
+
 def controlled_bitwise_word_program(
     dtype: RegisterType,
     operation: Literal["bitwise_not", "xor_constant", "xor"],
@@ -70,11 +101,7 @@ def controlled_bitwise_word_program(
         CircuitIR(2, (Instruction("cx", (0, 1)),)),
     )
     if operation == "xor":
-        cx = bit_gate_function(
-            "bitwise_toffoli",
-            (Register("ctrl", bit, (2,)), Register("target", bit)),
-            CircuitIR(3, (Instruction("ccx", (0, 1, 2)),)),
-        )
+        cx = _toffoli_function()
     adders: dict[str, ControlAdder] = {}
     for function in record.functions:
         assert function.registers is not None

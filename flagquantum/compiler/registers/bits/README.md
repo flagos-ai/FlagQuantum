@@ -136,3 +136,10 @@ two-word XOR: each CNOT becomes the existing typed Toffoli, while Split/Join
 retain the control unchanged. No work or measurement is introduced. Controlled
 equality reuses this owner; its source primitive checks are in
 `tests/unit/test_controlled_equality_component.py`.
+
+`nested_controlled_xor_constant_program` preserves two separate positive scalar
+controls (`ctrl2`, `ctrl`) on an MSB-first encoded pattern. Each source-loaded
+CNOT becomes one atomic Toffoli; no shared predicate flag or measurement is
+introduced. This differs from grouped-control synthesis even when the truth
+table agrees. Run `tests/unit/test_nested_controlled_bitwise_component.py` for
+complete source call/operand, gate and full complex-operator comparisons.
