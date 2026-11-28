@@ -364,5 +364,8 @@ Controlled coordinates/products and ECAdd also compose unresolved moduli at
 fixed width. Constructor expressions and exact inverse roles remain with
 `formats/legacy_symbolic_modular_controls.py`; the Ecosystem layer supplies
 explicit owned dependencies to the unchanged compiler stage layouts. Constant
-SymPy modulus values without free symbols and remaining symbolic word-width
-contexts require separate source-boundary auditing.
+SymPy moduli retain the same direct symbolic path; original transport converts
+them into Python int and is checked against that decoded constructor instead.
+Integer SymPy point coordinates retain ordinary and controlled window parents.
+Symbolic point moduli still reproduce the original Montgomery assertion in
+finite tables. Remaining nested-control and word-width contexts need auditing.

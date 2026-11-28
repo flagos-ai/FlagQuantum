@@ -573,3 +573,26 @@ Finite Programs require full equality against the preceding published head
 before their physical phase, feedback, work-zero and resource evidence is reused.
 No whole-symbolic physical execution or primitive count is inferred. Remaining
 word-width and constant-SymPy constructor contexts still need source audit.
+
+### Constant SymPy classification and transport boundaries
+
+Direct constant SymPy moduli retain the source's symbolic AddK declarations and
+all available modular/ECC parents. Having no free symbols does not turn a SymPy
+Integer into a Python int in the original decomposition classifier. Python
+integer numerical paths remain unchanged. Integer SymPy point coordinates also
+retain the ordinary and controlled five-call window parent with the complete
+same definitions and point data as their Python-coordinate counterpart.
+
+The original recursive term decoder changes a serialized SymPy Integer argument
+into Python int. Direct-object and wire-round-trip evidence are separate: the
+native transport is compared to the actual decoded source constructor. The
+original whole resolver additionally lacks ModSub/CModSub registrations. Those
+failures are reproduced without modifying its registry; its standalone argument
+decoder supplies the fields for an explicitly constructed reference class. No
+successful original full subtraction round trip is claimed.
+
+A symbolic point modulus, including Integer(p), still triggers the original
+uint_to_montgomery assertion after its first coordinate conversion. It is not
+coerced to bypass that failure. Nested positive controls remain a source-success
+native gap. Full parent acceptance is still open; source failures are recorded
+separately from physical primitive, phase and cleanup certificates.

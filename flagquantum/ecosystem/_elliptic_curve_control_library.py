@@ -279,10 +279,6 @@ def _controlled_stage_or_refusal(
         # The source stage fails while constructing its first dirty multiplier;
         # its six-call parent remains available and must not lose that layer.
         return _refused_control("controlled_" + kind, _SIGNATURES[kind](width))
-    if isinstance(modulus, sympy.Expr) and not modulus.free_symbols:
-        raise SerializationError(
-            "Constant symbolic-modulus arithmetic control bodies remain unsupported"
-        )
     return controlled_curve_arithmetic_stage(
         "coordinates" if kind == "_ECAddStepThree" else "products",
         width,

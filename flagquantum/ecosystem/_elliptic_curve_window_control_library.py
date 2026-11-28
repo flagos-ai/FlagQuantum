@@ -6,6 +6,8 @@
 
 from dataclasses import replace
 
+import sympy
+
 from ..algorithms.primitives.elliptic_curve_fixed_point import (
     fixed_point_addition_signature,
 )
@@ -50,10 +52,15 @@ def controlled_curve_window_addition(
         logs = (0,)
     else:
         if any(
-            type(value) is not int
-            for value in (point.x, point.y, point.mod, point.curve_a)
+            type(value) is not int and not isinstance(value, sympy.Integer)
+            for value in (point.x, point.y, point.curve_a)
         ):
             raise SerializationError("Symbolic curve point table remains unsupported")
+        if type(point.mod) is not int:
+            # Original uint_to_montgomery rejects every symbolic modulus,
+            # after the first source coordinate conversion, even Integer(p).
+            int(point.x)
+            raise AssertionError
         table = windowed_point_table(
             width, window, ECPoint(point.x, point.y, point.mod, point.curve_a)
         )

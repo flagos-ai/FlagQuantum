@@ -8,6 +8,7 @@ from collections.abc import Mapping
 from functools import partial
 
 import numpy as np
+import sympy
 
 from ..algorithms.primitives.elliptic_curve_fixed_point import (
     fixed_point_addition_signature,
@@ -117,15 +118,12 @@ def elliptic_curve_window_factories() -> dict[str, ComponentFactory]:
             and type(point.mod) is int
         ):
             forward, erased = _shape_only_point_lookup(width, window)
-        elif not windowed or any(
-            type(value) is not int
-            for value in (
-                width,
-                window,
-                point.x,
-                point.y,
-                point.mod,
-                point.curve_a,
+        elif (
+            not windowed
+            or any(type(value) is not int for value in (width, window, point.mod))
+            or any(
+                type(value) is not int and not isinstance(value, sympy.Integer)
+                for value in (point.x, point.y, point.curve_a)
             )
         ):
             return FunctionRecord(name, (), registers=tuple(signature))
