@@ -103,3 +103,45 @@ to have a physical body. Unknown symbolic widths must never bind as identities.
 Ordinary counterparts and every directly called leaf need the same source
 intake before changing ownership or claiming complete source coverage. No Core
 schema or physical symbolic-width admission is proposed by this design.
+
+## Complete logical momentum and potential dependency closure (2026-11-28)
+
+The source-success declaration gap is implemented in the shared Algorithms
+signature formulas, existing Compiler call builders and scoped Ecosystem
+constructor owners. Strict concrete signature APIs retain their previous
+validation. Raw logical declarations support zero and symbolic momentum widths;
+this does not admit symbolic physical allocation or add Core vocabulary.
+Ordinary/projectile Nu preserve all six source calls and UV both source calls.
+Ordinary Nu exact logical adjoints reverse flag ownership and preserve the
+source greedy ordering, including its Python-int versus SymPy-int distinction.
+UV exact outer adjoints call nuclear preparation before momentum unpreparation.
+Opaque inverse leaves have distinct names and remain declarations, never empty
+identity circuits. The original projectile mu inverse RIGHT flag defect remains
+literal; it is separate from the corrected native model.
+
+The new scenario test `tests/unit/test_momentum_source_declarations.py` checks
+complete source connections, stored libraries, blocked-SDK resolution, both
+logical directions and independent resource queries. The 72 complete finite
+forward Programs equal the published d22c9ea9f baseline. Existing executable
+uniform-child evidence is reused: all 32 complex measurement histories in each
+direction clear four private work wires, with 20 T/T-dagger gates and five
+measurements per direction. These measured child counts are not whole-root
+primitive counts. Original opaque Nu and nuclear leaves have no physical bodies,
+so whole-root primitive inventory and executable amplitudes are unavailable,
+not zero. The analytical Nu graph omits uniform preparation by source design.
+
+Shared arithmetic and comparison equations retain zero-width negative category
+multiplicities, original Python max ambiguity, symbolic widths and independent
+peak-width failures. UV inverse nuclear counts retain NumPy floating square-root
+rounding and symbolic rejection. Source M <= 1 declarations and count queries
+remain distinct from failed decomposition/peak queries. Source-unused eta and
+position precision remain metadata. Invalid quantum dimensions still refuse.
+
+The source codec loses symbol assumptions and converts SymPy integers to Python
+integers. Constructor reconstruction follows the decoded source separately from
+the original object. When stored edges exist, the existing generic typed graph
+reader can consume them with scoped leaf/uniform owners; no positivity is
+invented. Shallow UV calls survive even where recursive Nu construction fails.
+Frozen source files and exact error boundaries remain unchanged. Q-0375 and
+Q-0379 are eligible for faithful-source closure after this batch is published;
+Q-0382/Q-0388 top-level consumers remain separate next work.

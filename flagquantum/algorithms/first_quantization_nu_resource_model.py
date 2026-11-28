@@ -7,15 +7,35 @@
 
 """Resource models for preparing the first-quantized momentum transfer."""
 
-from ..compiler._component_trace.resource_model import ComponentCost, CostCall, GateCost
+from __future__ import annotations
+
+from typing import cast
+
+from ..compiler._component_trace.qec_gate_cost import QECGateCost
+from ..compiler._component_trace.resource_model import (
+    ComponentCost,
+    CostCall,
+    GateCost,
+    estimate_component_resources,
+)
 from ..compiler.registers.arithmetic.arithmetic_resource_model import (
     source_product_cost,
+    source_product_gate_cost,
     source_sum_of_squares_cost,
+    source_sum_of_squares_gate_cost,
+)
+from ..compiler.registers.comparison.comparison_resource_model import (
+    source_less_equal_gate_cost,
+    source_less_equal_resource_formula,
 )
 from ..compiler.registers.comparison.ordering import source_greater_cost
 from ..compiler.registers.preparation.uniform_preparation import (
     source_uniform_preparation_cost,
 )
+from ..compiler.registers.resources.symbolic_resource_model import (
+    SymbolicResourceFormula,
+)
+from ..core.value_math import SymbolicInt, smax
 from .first_quantization_nu import (
     prepare_nu_leaf_signatures,
     prepare_nu_signature,
@@ -133,11 +153,29 @@ def source_projectile_prepare_mu_cost(
 ) -> ComponentCost:
     """Estimate the projectile unary word with its source right-only flag."""
     signature = projectile_prepare_mu_signature(num_bits_p, num_bits_n)
-    toffoli = num_bits_n if adjoint else 2 * num_bits_n - num_bits_p - 1
+    toffoli = source_projectile_prepare_mu_formula(
+        num_bits_p, num_bits_n, adjoint=adjoint
+    ).toffoli
+    assert isinstance(toffoli, int)
     return ComponentCost(
         "PrepareMuUnaryEncodedOneHotWithProj",
         max(int(signature.n_qubits()), 3),
         GateCost(toffoli=toffoli),
+    )
+
+
+def source_projectile_prepare_mu_formula(
+    num_bits_p: SymbolicInt, num_bits_n: SymbolicInt, *, adjoint: bool = False
+) -> SymbolicResourceFormula:
+    """Retain the opaque mu declaration, including its unchanged RIGHT flag."""
+    if num_bits_n - num_bits_p < 0:
+        raise ValueError("Projectile width is less than electron width")
+    return SymbolicResourceFormula(
+        0,
+        0,
+        0,
+        cast(SymbolicInt, smax(num_bits_n + 1, 3)),
+        toffoli=num_bits_n if adjoint else 2 * num_bits_n - num_bits_p - 1,
     )
 
 
@@ -182,4 +220,108 @@ def projectile_prepare_nu_adjoint_model(
         "PrepareNuStateWithProj",
         adjoint=True,
         decomposed=decomposed,
+    )
+
+
+def source_nu_gate_cost(
+    num_bits_p: SymbolicInt,
+    m_param: int,
+    *,
+    num_bits_n: SymbolicInt | None = None,
+    adjoint: bool = False,
+) -> QECGateCost:
+    """Keep literal nu categories, including symbolic widths and omitted uniform m.
+
+    num_bits_n selects the projectile declaration. Gate counts alone do not
+    certify physical bodies or the projectile inverse's invalid flag wiring.
+    """
+    if type(m_param) is not int:
+        raise ValueError("Source momentum declarations require integer m_param")
+    width = num_bits_p if num_bits_n is None else num_bits_n
+    if num_bits_n is not None and width - num_bits_p < 0:
+        raise ValueError("Projectile width is less than electron width")
+    mu = (
+        width - 1
+        if num_bits_n is None
+        else source_projectile_prepare_mu_formula(
+            num_bits_p, width, adjoint=adjoint
+        ).toffoli
+    )
+    gates = QECGateCost(toffoli=mu + 3 * (width - 1))
+    if adjoint:
+        return gates
+    sample_width = (m_param - 1).bit_length()
+    product_width = 2 * width + 2
+    gates += QECGateCost(toffoli=6 * width + 5)
+    gates += source_sum_of_squares_gate_cost(width, 3)
+    gates += source_product_gate_cost(product_width, sample_width)
+    comparison = source_less_equal_gate_cost(sample_width, product_width)
+    return gates.plus(comparison, 1) + QECGateCost(clifford=1)
+
+
+def source_nu_resource_formula(
+    num_bits_p: SymbolicInt,
+    m_param: int,
+    *,
+    num_bits_n: SymbolicInt | None = None,
+    adjoint: bool = False,
+) -> SymbolicResourceFormula:
+    """Query the literal declared categories and complete source live-width bound.
+
+    The original projectile inverse has no valid width schedule. Its categories
+    remain available separately through source_nu_gate_cost. Uniform m contributes
+    to the source live peak even though the analytical gate graph omits it.
+    """
+    if num_bits_n is not None and adjoint:
+        raise ValueError("Original projectile nu adjoint has no valid peak width")
+    if m_param <= 1:
+        raise ValueError("Original nu sample body has no valid peak width")
+    gates = source_nu_gate_cost(
+        num_bits_p, m_param, num_bits_n=num_bits_n, adjoint=adjoint
+    )
+    width = num_bits_p if num_bits_n is None else num_bits_n
+    sample = (m_param - 1).bit_length()
+    ports = 4 * width + sample + 4
+    inequality: SymbolicInt = 4 * width + sample + 7
+    if not adjoint:
+        product = 2 * width + 2
+        greater = (
+            estimate_component_resources(
+                source_greater_cost(sample, product)
+            ).peak_logical_qubits
+            if type(width) is int
+            else source_less_equal_resource_formula(sample, product).logical_qubits
+        )
+        inequality = cast(
+            SymbolicInt,
+            smax(
+                inequality,
+                5 * width + 2,
+                product + sample + 2 * max(product, sample),
+                greater,
+                3,
+            ),
+        )
+    uniform = estimate_component_resources(source_uniform_preparation_cost(m_param))
+    peak = cast(
+        SymbolicInt,
+        smax(
+            ports,
+            smax(width + 1, 3) + ports - width,
+            smax(4 * width + 3, 3) + sample + 2,
+            smax(3 * width + 4, 3) + width + sample + 2,
+            smax(4 * width + 4, 3) + sample + 3,
+            inequality,
+            uniform.peak_logical_qubits + ports - sample,
+        ),
+    )
+    return SymbolicResourceFormula(
+        gates.and_bloq,
+        gates.clifford,
+        gates.measurement,
+        peak,
+        t=gates.t,
+        toffoli=gates.toffoli,
+        cswap=gates.cswap,
+        rotation=gates.rotation,
     )

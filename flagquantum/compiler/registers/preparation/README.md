@@ -76,3 +76,13 @@ still-open source constructor dependencies. The explicit context and actual
 controlled-Phase disposition are documented in
 `RESOLVER_LINEAR_COMBINATION_CONTEXT_AUDIT.md`; the default signed fixture does
 not execute a registerless scalar phase in its forward chain.
+
+
+`nu_preparation_component.py` composes six typed source calls and the ordinary
+exact logical inverse with directional flags. `potential_preparation_component.py`
+composes the two UV calls and their exact outer reversal. Callers supply owned
+leaf Programs; missing source bodies remain explicit opaque declarations.
+Neither builder evaluates a statevector or selects a backend. Algorithms owns
+signatures/models and Ecosystem owns decoded source constructors. Use
+`tests/unit/test_momentum_source_declarations.py` as the logical change path and
+`tests/unit/test_uniform_preparation_component.py` for executable child cleanup.

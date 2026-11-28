@@ -97,3 +97,16 @@ to have a physical body. Unknown symbolic widths must never bind as identities.
 Ordinary counterparts and every directly called leaf need the same source
 intake before changing ownership or claiming complete source coverage. No Core
 schema or physical symbolic-width admission is proposed by this design.
+
+## Complete logical momentum and potential dependency closure (2026-11-28)
+
+UV now retains the complete two-call source graph for zero/symbolic momentum
+widths and exact outer reversal. Invalid recursive Nu construction does not
+erase a valid shallow declaration. Unused eta/position precision stay metadata;
+source charge-query failures and inverse NumPy rounding remain visible. Shared
+Nu declarations and resource/codec boundaries are documented in
+[the momentum closure](RESOLVER_PROJECTILE_NU_AUDIT.md#complete-logical-momentum-and-potential-dependency-closure-2026-11-28).
+The new scenario test is `tests/unit/test_momentum_source_declarations.py`.
+No nuclear physical body is invented; actual uniform-child counts and
+whole-root model estimates remain separate. This completes the implementation
+scope for Q-0379, subject to passing checks and publication.

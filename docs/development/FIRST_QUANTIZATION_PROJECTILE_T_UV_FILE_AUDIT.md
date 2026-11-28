@@ -61,3 +61,13 @@ The untouched original suite reported 12 passed and six skipped.
 Q-0377, Q-0378 and Q-0380 close the kinetic declarations and original
 test coverage. Q-0379 stays open for the locked recursive adjoint
 failure and missing end-to-end physical preparation leaves.
+
+## Complete logical momentum and potential dependency closure (2026-11-28)
+
+The [complete potential constructor closure](RESOLVER_POTENTIAL_PREPARATION_AUDIT.md#complete-logical-momentum-and-potential-dependency-closure-2026-11-28)
+adds zero/symbolic declarations, shallow graphs with invalid recursive Nu,
+exact outer inverse and independent symbolic categories/peak queries.
+Q-0379 is eligible for faithful-source closure after checks and publication.
+This does not close the separate T-file or top-level consumers. Source opaque
+physical leaves, metadata codec loss and numerical inverse-rounding boundaries
+remain recorded.

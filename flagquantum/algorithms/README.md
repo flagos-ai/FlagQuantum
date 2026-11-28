@@ -372,3 +372,13 @@ Keep defaults deterministic, preserve requested precision and autograd, and
 avoid embedding device selection or performance assertions in an algorithm.
 Changes to root exports or protected result types require the public API change
 process rather than an algorithms-local compatibility wrapper.
+
+
+Momentum and potential preparation share raw source declaration equations with
+strict concrete signature helpers. `first_quantization_nu_resource_model.py`
+and `first_quantization_potential_formula.py` own source estimates, including
+symbolic expressions and source failures. Compiler owns call composition;
+Ecosystem owns constructor decoding. Models do not imply physical leaf bodies.
+The shortest change path is `tests/unit/test_momentum_source_declarations.py`;
+run it with the locked reference dependencies, then the existing Nu and potential
+library tests. Keep actual uniform-child measurements separate from root models.

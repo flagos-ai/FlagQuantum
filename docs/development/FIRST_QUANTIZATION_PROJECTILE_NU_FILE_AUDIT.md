@@ -63,3 +63,13 @@ six-call forward graph. Its mu inverse declaration retains the original RIGHT
 flag, separately from the corrected native model above. The actual uniform-m
 child reuses the accepted executable Program; opaque siblings still refuse
 physical binding. Constructor registration does not close Q-0375.
+
+## Complete logical momentum and potential dependency closure (2026-11-28)
+
+The [complete momentum dependency closure](RESOLVER_PROJECTILE_NU_AUDIT.md#complete-logical-momentum-and-potential-dependency-closure-2026-11-28)
+supersedes the earlier source-success declaration gap. All original six-call
+logical paths, source-exact inverse failure, raw metadata and independent
+resource equations are covered. Missing physical leaf bodies remain an original
+source limitation under approved faithful-source rules. Q-0375 is eligible
+for closure after this batch passes checks and is published; top-level
+Q-0382/Q-0388 remain separate.
