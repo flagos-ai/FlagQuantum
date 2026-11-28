@@ -12,19 +12,23 @@ from ....core.ir.program.registers import RegisterType
 from ....core.ir.program.signatures import Signature
 from ..arithmetic.constant_addition_component import constant_addition_program
 from ..bits.bitwise_component import bitwise_word_program
+from ..component_adjoint import adjoint_component_calls
 from ..component_builder import ComponentProgramBuilder
 from .controlled_modular_addition_component import controlled_modular_addition_program
 
 
 def controlled_modular_subtraction_program(
-    dtype: RegisterType, modulus: int, *, control_value: int = 1
+    dtype: RegisterType, modulus: int, *, control_value: int = 1, adjoint: bool = False
 ) -> ProgramRecord:
     """Preserve the source input shell and subtract x from y modulo modulus.
 
     Words are MSB first and retain uint or Montgomery descriptors. Inputs
     promise residues. The forward and exact inverse constant loaders retain
     the same modulus+1. The modular child owns its clean arithmetic work.
+    The adjoint reverses the shell using exact constant and modular-addition inverses.
     """
+    if type(adjoint) is not bool:
+        raise ValueError("Modular subtraction direction must be Boolean")
     width = executable_register_width(dtype)
     if dtype.encoding not in {"uint", "montgomery"}:
         raise ValueError("Modular subtraction requires unsigned or Montgomery words")
@@ -35,8 +39,25 @@ def controlled_modular_subtraction_program(
     addition = controlled_modular_addition_program(
         dtype, modulus, control_value=control_value
     )
-    return controlled_modular_subtraction_component_program(
+    record = controlled_modular_subtraction_component_program(
         dtype, load, unload, addition
+    )
+    if not adjoint:
+        return record
+    complement = bitwise_word_program(dtype, "bitwise_not")
+    return adjoint_component_calls(
+        record,
+        (
+            (load, unload),
+            (unload, load),
+            (complement, complement),
+            (
+                addition,
+                controlled_modular_addition_program(
+                    dtype, modulus, control_value=control_value, adjoint=True
+                ),
+            ),
+        ),
     )
 
 

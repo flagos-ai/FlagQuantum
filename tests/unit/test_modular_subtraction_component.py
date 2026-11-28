@@ -72,16 +72,24 @@ def fixture(
 
 
 def source_stream(
-    source: Any, bound: BoundRegisterProgram, ports: SourcePorts
+    source: Any,
+    bound: BoundRegisterProgram,
+    ports: SourcePorts,
+    *,
+    expand_modular: bool = False,
 ) -> tuple[Instruction, ...]:
     from qualtran.bloqs.bookkeeping import Allocate, Cast, Free, Join, Split
     from qualtran.bloqs.mcmt import And
+    from qualtran.bloqs.mod_arithmetic.mod_addition import CModAdd, ModAdd
 
     cursor = 0
     slots = MeasurementSlots(bound.circuit.instructions)
 
     def leaf(bloq: Any, old: SourcePorts, desired: SourcePorts) -> SourceResult | None:
         nonlocal cursor
+        base = bloq.subbloq if type(bloq).__name__ == "Adjoint" else bloq
+        if expand_modular and isinstance(base, (ModAdd, CModAdd)):
+            return None
         if bloq is source or isinstance(bloq, (Join, Split, Cast)):
             return None
         if isinstance(bloq, Free):
