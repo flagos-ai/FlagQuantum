@@ -10,11 +10,15 @@ import numpy as np
 
 from ....core.ir.program import ProgramRecord
 from ....core.ir.program.signatures import Signature
+from ..component_adjoint import adjoint_component_program
 from ..component_builder import ComponentProgramBuilder
 
 
 def double_factorization_one_body_program(
-    signature: Signature, children: Mapping[str, ProgramRecord]
+    signature: Signature,
+    children: Mapping[str, ProgramRecord],
+    *,
+    adjoint: bool = False,
 ) -> ProgramRecord:
     """Retain nine source stages and caller-owned rotation metadata."""
     if children.keys() != {
@@ -73,11 +77,30 @@ def double_factorization_one_body_program(
         builder.call_dict(entries["unprepare"], {k: state[k] for k in prep_ports})
     )
     state["spin"] = builder.call_dict(entries["hadamard"], {"q": state["spin"]})["q"]
-    return builder.finalize(state)
+    record = builder.finalize(state)
+    if not adjoint:
+        return record
+    # Use owned imported identities: opaque forward/inverse headers can have
+    # identical signatures without representing the same source operation.
+    partners = {
+        "prepare": "unprepare",
+        "unprepare": "prepare",
+        "rotate": "unrotate",
+        "unrotate": "rotate",
+        "hadamard": "hadamard",
+        "swap": "swap",
+        "phase": "phase",
+    }
+    return adjoint_component_program(
+        record, {entries[key]: entries[value] for key, value in partners.items()}
+    )
 
 
 def double_factorization_block_program(
-    signature: Signature, children: Mapping[str, ProgramRecord]
+    signature: Signature,
+    children: Mapping[str, ProgramRecord],
+    *,
+    one_body_inverse: ProgramRecord | None = None,
 ) -> ProgramRecord:
     """Thread seven source stages and retain the original unused theta word."""
     if children.keys() != {
@@ -94,6 +117,13 @@ def double_factorization_block_program(
         role: builder.import_program(child, entry=child.functions[0].name)
         for role, child in children.items()
     }
+    inverse_entry = (
+        builder.import_program(
+            one_body_inverse, entry=one_body_inverse.functions[0].name
+        )
+        if one_body_inverse is not None
+        else None
+    )
     state = dict(builder.inputs)
     flags = np.asarray(state.pop("ctrl")).copy()
 
@@ -148,4 +178,16 @@ def double_factorization_block_program(
     one_body()
     indexed("unload")
     outer("unprepare")
-    return builder.finalize({**state, "ctrl": flags})
+    record = builder.finalize({**state, "ctrl": flags})
+    if inverse_entry is None:
+        return record
+    partners = {
+        "prepare": "unprepare",
+        "unprepare": "prepare",
+        "load": "unload",
+        "unload": "load",
+        "reflection": "reflection",
+    }
+    mapping = {entries[key]: entries[value] for key, value in partners.items()}
+    mapping[entries["one_body"]] = inverse_entry
+    return adjoint_component_program(record, mapping)

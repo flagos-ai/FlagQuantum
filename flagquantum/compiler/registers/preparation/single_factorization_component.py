@@ -10,6 +10,7 @@ import numpy as np
 
 from ....core.ir.program import ProgramRecord
 from ....core.ir.program.signatures import Signature
+from ..component_adjoint import adjoint_component_program
 from ..component_builder import ComponentProgramBuilder
 
 
@@ -61,7 +62,10 @@ def single_factorization_one_body_program(
 
 
 def single_factorization_block_program(
-    signature: Signature, children: Mapping[str, ProgramRecord]
+    signature: Signature,
+    children: Mapping[str, ProgramRecord],
+    *,
+    adjoint: bool = False,
 ) -> ProgramRecord:
     """Retain the original five-call block and its ordered result permutation."""
     if children.keys() != {"prepare", "unprepare", "one_body", "reflection"}:
@@ -157,11 +161,25 @@ def single_factorization_block_program(
         result["l_ne_zero"],
         result["rot_aa"],
     )
-    return builder.finalize(
+    record = builder.finalize(
         {
             **state,
             "ctrl": flags,
             "pq": np.array([p, q], dtype=object),
             "rot_aa": rotations,
         }
+    )
+
+    if not adjoint:
+        return record
+    # The source one-body adjoint only toggles a field ignored by its body.
+    # Keep that literal child, distinct from a mathematical gate reversal.
+    partners = {
+        "prepare": "unprepare",
+        "unprepare": "prepare",
+        "one_body": "one_body",
+        "reflection": "reflection",
+    }
+    return adjoint_component_program(
+        record, {entries[key]: entries[value] for key, value in partners.items()}
     )
