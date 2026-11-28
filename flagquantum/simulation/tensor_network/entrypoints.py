@@ -12,26 +12,12 @@ from .contraction import (
     _contract_nodes_sliced,
 )
 from .local import (
-    build_local_tensor_network,
     ensure_local_tensor_network_plan,
     run_local_tensor_network,
 )
 from .models import (
     TensorNetworkContractionPlan,
-    TensorNetworkExpectationPlan,
     TensorNetworkNode,
-)
-from .observables import (
-    build_tensor_network_expectation as _build_tensor_network_expectation,
-)
-from .observables import (
-    build_tensor_network_hamiltonian_expectation as _build_tensor_network_hamiltonian_expectation,
-)
-from .observables import (
-    build_tensor_network_hamiltonian_expectations as _build_tensor_network_hamiltonian_expectations,
-)
-from .observables import (
-    tensor_network_expectation_ps as _tensor_network_expectation_ps,
 )
 from .observables import (
     tensor_network_expectations as _tensor_network_expectations,
@@ -40,77 +26,6 @@ from .path_search import _contract_nodes_greedy
 from .state import (
     TensorNetworkState,
 )
-
-
-def build_tensor_network(
-    circuit_or_ir: Any,
-    *,
-    bsz: int = 1,
-    device: torch.device | str = "cpu",
-    dtype: torch.dtype | None = None,
-) -> TensorNetworkContractionPlan:
-    """Build a general tensor-network contraction plan from a circuit or IR."""
-
-    return build_local_tensor_network(
-        circuit_or_ir, bsz=bsz, device=device, dtype=dtype
-    )
-
-
-def build_tensor_network_expectation(
-    plan_or_circuit: TensorNetworkContractionPlan | Any,
-    *,
-    z: Sequence[int] | None = None,
-    x: Sequence[int] | None = None,
-    y: Sequence[int] | None = None,
-) -> TensorNetworkExpectationPlan:
-    """Build a direct tensor-network expectation plan for a Pauli product."""
-
-    return _build_tensor_network_expectation(plan_or_circuit, x=x, y=y, z=z)
-
-
-def build_tensor_network_hamiltonian_expectation(
-    plan_or_circuit: TensorNetworkContractionPlan | Any,
-    hamiltonian: Any,
-) -> TensorNetworkExpectationPlan:
-    """Build one exact MPO tensor network for a sum of Pauli products."""
-
-    return _build_tensor_network_hamiltonian_expectation(plan_or_circuit, hamiltonian)
-
-
-def build_tensor_network_hamiltonian_expectations(
-    plan_or_circuit: TensorNetworkContractionPlan | Any,
-    hamiltonians: Sequence[Any],
-) -> TensorNetworkExpectationPlan:
-    """Build one exact block-MPO network for several Hamiltonian expectations."""
-
-    return _build_tensor_network_hamiltonian_expectations(plan_or_circuit, hamiltonians)
-
-
-def tensor_network_expectation_ps(
-    plan_or_circuit: TensorNetworkContractionPlan | Any,
-    *,
-    z: Sequence[int] | None = None,
-    x: Sequence[int] | None = None,
-    y: Sequence[int] | None = None,
-    strategy: str = "greedy",
-    max_peak_bytes: int | None = None,
-) -> torch.Tensor:
-    """Directly contract a Pauli-product expectation from a tensor network.
-
-    ``max_peak_bytes`` is a hard peak budget for this contraction: it is sliced to
-    fit the budget and raises when no slicing can, whereas without it ``strategy``
-    is the order that runs. See
-    :func:`flagquantum.simulation.tensor_network.observables.tensor_network_expectation_ps`.
-    """
-
-    return _tensor_network_expectation_ps(
-        plan_or_circuit,
-        x=x,
-        y=y,
-        z=z,
-        strategy=strategy,
-        max_peak_bytes=max_peak_bytes,
-    )
 
 
 def _normalize_bitstring(

@@ -14,7 +14,7 @@ from flagquantum.core.ir import MeasurementNode
 from flagquantum.runtime.measurements import execute_measurements
 from flagquantum.runtime.planner.synthesis import CheckedExecution
 from flagquantum.runtime.results import ExecutionResult
-from flagquantum.runtime.results.mps import mps_marginal, native_mps
+from flagquantum.runtime.results.adapters import native_mps
 
 
 class _ReadDiagnostics(TypedDict):
@@ -108,7 +108,9 @@ def probabilities(
         )
     with torch.no_grad():
         if native is not None:
-            marginal = mps_marginal(native, selected)
+            from flagquantum.simulation.mps.marginal import marginal_probabilities
+
+            marginal = marginal_probabilities(native, selected)
             tolerance = 1e-6 if native.dtype == torch.complex64 else 1e-10
             mass = float(marginal.sum().item())
             if (

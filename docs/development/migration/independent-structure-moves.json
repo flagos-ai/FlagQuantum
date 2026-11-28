@@ -2061,14 +2061,16 @@
     {
       "group": "runtime",
       "old": "flagquantum/runtime/mps_result.py",
-      "new": "flagquantum/runtime/results/mps.py",
+      "new": "flagquantum/runtime/results/adapters.py",
       "symbols": [
-        "mps_marginal",
         "native_mps"
       ],
       "same_import_path": false,
       "compatibility": "none",
-      "retirement": "internal path removed; consumers use authoritative owner"
+      "retirement": "Real native-result type admission consolidates in the existing result adapters. The argument-only marginal delegation is retired, not rebound or restored.",
+      "retired_private_members": [
+        "mps_marginal"
+      ]
     },
     {
       "group": "runtime",
@@ -4260,7 +4262,7 @@
     {
       "group": "services",
       "old": "flagquantum/services/_synthesis_readout.py",
-      "new": "flagquantum/synth/_readout.py",
+      "new": "flagquantum/runtime/results/readout.py",
       "symbols": [
         "Distribution",
         "_ReadDiagnostics",
@@ -4268,7 +4270,7 @@
       ],
       "same_import_path": false,
       "compatibility": "none",
-      "retirement": "internal path removed; consumers use authoritative owner"
+      "retirement": "The substantive bounded named-result reader is owned by Runtime/results. Historical Services and intermediate Synth private modules are removed; no forwarding implementation survives."
     },
     {
       "group": "services",
@@ -8164,7 +8166,6 @@
       "new": "flagquantum/simulation/statevector/cx_adjoint.py",
       "split_symbols": [
         "cpu_cx_permutation_index",
-        "cpu_cx_permutation_images",
         "apply_cpu_cx_adjoint_index",
         "apply_cpu_cx_adjoint_segment",
         "apply_cpu_compact_cx_adjoint_segment"
@@ -8174,13 +8175,13 @@
         "apply_cpu_compact_cx_adjoint_segment",
         "apply_cpu_cx_adjoint_index",
         "apply_cpu_cx_adjoint_segment",
-        "cpu_cx_permutation_images",
         "cpu_cx_permutation_index"
       ],
       "same_import_path": false,
       "retired_reexports": [
         "apply_cpu_compact_cx_adjoint_segment",
-        "apply_cpu_cx_adjoint_index"
+        "apply_cpu_cx_adjoint_index",
+        "cpu_cx_permutation_images"
       ],
       "remaining_imports": "used by this implementation; not a historical forwarding interface"
     },
@@ -10277,6 +10278,236 @@
         "_jax_nodes_from_torch_nodes"
       ],
       "retirement": "The shared conversion module retains no forwarding name. Statevector arithmetic belongs to the existing Simulation JAX numerical owner; Runtime keeps shape admission and shard record assembly."
+    },
+    {
+      "group": "jax-tn-graph-numerical-ownership",
+      "old": "flagquantum/runtime/executors/jax/tensor_network/gradients.py",
+      "new": "flagquantum/simulation/tensor_network/jax/kernels.py",
+      "symbols": [],
+      "partial": true,
+      "source_kind": "Internal numerical graph construction; explicit dtype is selected by the existing Runtime policy.",
+      "retired_private_members": [
+        "_jax_parameterized_tn_state_nodes"
+      ],
+      "retirement": "Numerical implementation is jax_parameterized_tn_state_nodes in the existing Simulation owner. All consumers call that owner directly; Runtime retains precision admission and execution orchestration. No compatibility forwarding."
+    },
+    {
+      "group": "jax-tn-graph-numerical-ownership",
+      "old": "flagquantum/runtime/executors/jax/tensor_network/gradients.py",
+      "new": "flagquantum/simulation/tensor_network/jax/kernels.py",
+      "symbols": [],
+      "partial": true,
+      "source_kind": "Internal numerical graph construction; explicit dtype is selected by the existing Runtime policy.",
+      "retired_private_members": [
+        "_jax_parameterized_tn_expectation_nodes"
+      ],
+      "retirement": "Numerical implementation is jax_parameterized_tn_expectation_nodes in the existing Simulation owner. All consumers call that owner directly; Runtime retains precision admission and execution orchestration. No compatibility forwarding."
+    },
+    {
+      "group": "runtime-direct-seam-retirement",
+      "old": "flagquantum/runtime/executors/jax/release_policy.py",
+      "new": "flagquantum/runtime/audit/statistics.py",
+      "symbols": [],
+      "partial": true,
+      "source_kind": "Retired internal argument delegation; the existing authoritative implementation is unchanged.",
+      "retired_private_members": [
+        "attach_evidence_contract"
+      ],
+      "retirement": "All operational callers use the existing defining owner directly, at the original lazy invocation stage. No replacement wrapper or compatibility added."
+    },
+    {
+      "group": "runtime-direct-seam-retirement",
+      "old": "flagquantum/runtime/executors/jax/release_policy.py",
+      "new": "flagquantum/runtime/audit/mps_readiness.py",
+      "symbols": [],
+      "partial": true,
+      "source_kind": "Retired internal argument delegation; the existing authoritative implementation is unchanged.",
+      "retired_private_members": [
+        "attach_mps_backward_readiness"
+      ],
+      "retirement": "All operational callers use the existing defining owner directly, at the original lazy invocation stage. No replacement wrapper or compatibility added."
+    },
+    {
+      "group": "runtime-direct-seam-retirement",
+      "old": "flagquantum/runtime/planner_adapter.py",
+      "new": "flagquantum/runtime/configuration.py",
+      "symbols": [],
+      "partial": true,
+      "source_kind": "Retired internal argument delegation; the existing authoritative implementation is unchanged.",
+      "retired_private_members": [
+        "backend_execution_options"
+      ],
+      "retirement": "All operational callers use the existing defining owner directly, at the original lazy invocation stage. No replacement wrapper or compatibility added.",
+      "compatibility": "none"
+    },
+    {
+      "group": "runtime-direct-seam-retirement",
+      "old": "flagquantum/runtime/planner_adapter.py",
+      "new": "flagquantum/runtime/executors/jax/statevector/training.py",
+      "symbols": [],
+      "partial": true,
+      "source_kind": "Retired internal argument delegation; the existing authoritative implementation is unchanged.",
+      "retired_private_members": [
+        "plan_jax_statevector_training"
+      ],
+      "retirement": "All operational callers use the existing defining owner directly, at the original lazy invocation stage. No replacement wrapper or compatibility added.",
+      "compatibility": "none"
+    },
+    {
+      "group": "runtime-direct-seam-retirement",
+      "old": "flagquantum/runtime/planner_adapter.py",
+      "new": "flagquantum/runtime/executors/jax/mps/planning.py",
+      "symbols": [],
+      "partial": true,
+      "source_kind": "Retired internal argument delegation; the existing authoritative implementation is unchanged.",
+      "retired_private_members": [
+        "plan_jax_mps_training"
+      ],
+      "retirement": "All operational callers use the existing defining owner directly, at the original lazy invocation stage. No replacement wrapper or compatibility added.",
+      "compatibility": "none"
+    },
+    {
+      "group": "simulation-direct-relay-retirement",
+      "old": "flagquantum/simulation/statevector/cx_adjoint.py",
+      "new": "flagquantum/simulation/native_cpu/permutation.py",
+      "symbols": [],
+      "partial": true,
+      "source_kind": "Retired internal argument delegation; the existing authoritative implementation is unchanged.",
+      "retired_private_members": [
+        "cpu_cx_permutation_images"
+      ],
+      "retirement": "All operational callers use the existing defining owner directly. State methods retain local imports after original validation and admission. No replacement wrapper or compatibility added."
+    },
+    {
+      "group": "simulation-direct-relay-retirement",
+      "old": "flagquantum/simulation/tensor_network/entrypoints.py",
+      "new": "flagquantum/simulation/tensor_network/local.py",
+      "symbols": [],
+      "partial": true,
+      "source_kind": "Retired internal argument delegation; the existing authoritative implementation is unchanged.",
+      "retired_private_members": [
+        "build_tensor_network"
+      ],
+      "retirement": "All operational callers use the existing defining owner directly. State methods retain local imports after original validation and admission. No replacement wrapper or compatibility added."
+    },
+    {
+      "group": "simulation-direct-relay-retirement",
+      "old": "flagquantum/simulation/tensor_network/entrypoints.py",
+      "new": "flagquantum/simulation/tensor_network/observables.py",
+      "symbols": [],
+      "partial": true,
+      "source_kind": "Retired internal argument delegation; the existing authoritative implementation is unchanged.",
+      "retired_private_members": [
+        "build_tensor_network_expectation",
+        "build_tensor_network_hamiltonian_expectation",
+        "build_tensor_network_hamiltonian_expectations",
+        "tensor_network_expectation_ps"
+      ],
+      "retirement": "All operational callers use the existing defining owner directly. State methods retain local imports after original validation and admission. No replacement wrapper or compatibility added."
+    },
+    {
+      "group": "simulation-direct-relay-retirement",
+      "old": "flagquantum/simulation/tensor_network/state.py",
+      "new": "flagquantum/simulation/tensor_network/observables.py",
+      "symbols": [],
+      "partial": true,
+      "source_kind": "Retired internal argument delegation; the existing authoritative implementation is unchanged.",
+      "retired_private_members": [
+        "tensor_network_expectation_ps"
+      ],
+      "retirement": "All operational callers use the existing defining owner directly. State methods retain local imports after original validation and admission. No replacement wrapper or compatibility added."
+    },
+    {
+      "group": "simulation-direct-relay-retirement",
+      "old": "flagquantum/runtime/executors/tensor_network/execution.py",
+      "new": "flagquantum/simulation/tensor_network/local.py",
+      "symbols": [],
+      "partial": true,
+      "retired_reexports": [
+        "build_tensor_network"
+      ],
+      "source_kind": "Retired internal imported builder binding; Runtime calls the existing defining builder by its canonical name.",
+      "retirement": "Current callers use build_local_tensor_network; no forwarding alias retained."
+    },
+    {
+      "group": "runtime-named-result-ownership",
+      "old": "flagquantum/synth/_readout.py",
+      "new": "flagquantum/runtime/results/readout.py",
+      "symbols": [],
+      "same_import_path": false,
+      "compatibility": "none",
+      "retirement": "Intermediate private reader module removed. Its original historical Services symbol identities remain mapped directly to the complete Runtime owner."
+    },
+    {
+      "group": "runtime-named-result-ownership",
+      "old": "flagquantum/runtime/results/mps.py",
+      "new": "flagquantum/runtime/results/adapters.py",
+      "symbols": [],
+      "same_import_path": false,
+      "compatibility": "none",
+      "retirement": "Intermediate MPS result module removed. Real native_mps type admission uses existing adapters; no numerical pass-through remains."
+    },
+    {
+      "group": "runtime-direct-seam-retirement",
+      "old": "flagquantum/runtime/results/mps.py",
+      "new": "flagquantum/simulation/mps/marginal.py",
+      "symbols": [],
+      "partial": true,
+      "retired_private_members": [
+        "mps_marginal"
+      ],
+      "compatibility": "none",
+      "source_kind": "Internal argument-only marginal delegation retired with the intermediate module.",
+      "retirement": "The complete Runtime reader invokes existing marginal_probabilities lazily inside its original no-grad MPS branch. The Simulation kernel and its refusal/gradient behavior are unchanged."
+    },
+    {
+      "group": "runtime-direct-seam-retirement",
+      "old": "flagquantum/runtime/dynamic/_conditions.py",
+      "new": "flagquantum/core/classical_control.py",
+      "symbols": [],
+      "partial": true,
+      "retired_private_members": [
+        "instruction_is_dynamic"
+      ],
+      "source_kind": "Retired key-presence predicate delegation; condition validators remain.",
+      "retirement": "All operational callers use existing is_classical_control_instruction. Malformed condition metadata still gets a predicate answer before its later validation boundary."
+    },
+    {
+      "group": "runtime-direct-seam-retirement",
+      "old": "flagquantum/runtime/executors/statevector/planning.py",
+      "new": "flagquantum/runtime/executors/statevector/models.py",
+      "symbols": [],
+      "partial": true,
+      "retired_private_members": [
+        "validate_distributed_statevector_plan"
+      ],
+      "source_kind": "Free internal validation relay retired in favor of the retained public plan validation operation.",
+      "retirement": "Callers use existing DistributedStatevectorPlan.validate. Its local call target is the existing planning.trace_distributed_statevector_plan; actual private validation and report construction remain in planning, unchanged. No numerical implementation or public method is removed."
+    },
+    {
+      "group": "runtime-query-aggregation-retirement",
+      "old": "flagquantum/runtime/executors/mps/noisy.py",
+      "new": "flagquantum/runtime/trajectories/mps.py",
+      "symbols": [],
+      "partial": true,
+      "same_import_path": false,
+      "retired_reexports": [
+        "merge_noisy_mps_results"
+      ],
+      "retired_private_members": [
+        "merge_noisy_mps_results"
+      ],
+      "compatibility": "retired internal relay has no compatibility; substantive executor remains",
+      "retirement": "The executor argument relay is removed; existing trajectory aggregation keeps the canonical operation name without its redundant runtime suffix. No numerical definition is claimed as moved.",
+      "remaining_imports": "Actual trajectory scheduling dependencies remain; consumers call the trajectory aggregation owner directly."
+    },
+    {
+      "group": "development-compose-location",
+      "old": "compose.dev.yaml",
+      "new": "docker/compose.dev.yaml",
+      "compatibility": "none",
+      "source_kind": "Unchanged development Compose configuration; no Python definitions or runtime API moved.",
+      "retirement": "Root file removed; commands explicitly preserve the repository project directory, .env discovery, build context, bind mount and project identity. Publication workflow path filters use the new file."
     }
   ],
   "retired_namespace_parents": [

@@ -5,6 +5,7 @@ from __future__ import annotations
 from collections.abc import Sequence
 from typing import Any
 
+from flagquantum.simulation.tensor_network.jax import contraction as _tn_contraction
 from flagquantum.simulation.tensor_network.jax.contraction import (
     contract_assigned_slices as _jax_contract_assigned_tensor_slices,
 )
@@ -24,13 +25,16 @@ def _jax_reduce_rank_partials(
     *,
     collective_backend: str,
 ) -> tuple[Any, str]:
-    jax, jnp = _require_jax()
+    jax, _ = _require_jax()
     partials = tuple(partials)
     if not partials:
         raise ValueError("Cannot reduce an empty partial list.")
     backend = str(collective_backend)
     if backend == "local_simulated":
-        return jnp.sum(jnp.stack(partials, axis=0), axis=0), "local_simulated_psum"
+        return (
+            _tn_contraction.sum_tensor_network_partials(partials),
+            "local_simulated_psum",
+        )
     if backend == "shard_map":
         # Keep a strict failure until the production shard_map axis resources
         # are plumbed through; silently using pmap would overstate coverage.

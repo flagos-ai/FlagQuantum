@@ -112,18 +112,38 @@ def test_clean_install_checks_do_not_import_the_checkout() -> None:
 
 def test_qec_real_installation_acceptance_is_a_required_package_step() -> None:
     workflow = yaml.safe_load((ROOT / ".github/workflows/ci.yml").read_text())
-    steps = workflow["jobs"]["package"]["steps"]
+    jobs = workflow["jobs"]
+    producer_steps = jobs["package"]["steps"]
+    consumer = jobs["package-qec-installed"]
+    steps = consumer["steps"]
+    assert "package" in consumer["needs"]
+    assert "if" not in consumer and not consumer.get("continue-on-error", False)
     gate = next(step for step in steps if step.get("id") == "qec-installed")
     assert "if" not in gate and not gate.get("continue-on-error", False)
     assert "tools/release/check_qec_installed_profiles.py" in gate["run"]
     assert "--dist-dir dist" in gate["run"]
     manifest = next(
         step
-        for step in steps
+        for step in producer_steps
         if step.get("name") == "Write checksummed artifact manifest"
     )
-    assert steps.index(manifest) < steps.index(gate)
-    assert "package" in workflow["jobs"]["ci-complete"]["needs"]
+    publication = next(
+        step
+        for step in producer_steps
+        if step.get("with", {}).get("name")
+        == "flagquantum-distributions-${{ github.sha }}"
+    )
+    assert producer_steps.index(manifest) < producer_steps.index(publication)
+    download = next(
+        step for step in steps if step.get("uses") == "actions/download-artifact@v8.0.2"
+    )
+    assert download["with"] == {
+        "digest-mismatch": "error",
+        "name": publication["with"]["name"],
+        "path": "dist",
+    }
+    assert steps.index(download) < steps.index(gate)
+    assert {"package", "package-qec-installed"} <= set(jobs["ci-complete"]["needs"])
     retained = next(
         step for step in steps if step.get("name") == "Retain installed QEC evidence"
     )

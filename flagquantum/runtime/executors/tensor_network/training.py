@@ -27,8 +27,10 @@ import torch
 import torch.distributed as dist
 
 from flagquantum.runtime.distributed import placement as _placement
+from flagquantum.simulation.tensor_network.observables import (
+    build_tensor_network_expectation,
+)
 
-from ....simulation.tensor_network.entrypoints import build_tensor_network_expectation
 from .distributed_optimizer import (
     execute_rank_owned_tn_sgd_step,
     plan_tn_parameter_owners,
