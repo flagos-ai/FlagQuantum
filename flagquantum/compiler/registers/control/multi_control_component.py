@@ -33,9 +33,14 @@ def positive_controlled_multi_x_program(values: tuple[int, ...]) -> ProgramRecor
     return _positive_controlled_multi_pauli_program(values, "x")
 
 
-def _positive_controlled_multi_pauli_program(
+def merged_pauli_control_program(
     values: tuple[int, ...], axis: Literal["x", "z"]
 ) -> ProgramRecord:
+    """Preserve the source scalar-plus-array predicate, including Toffoli control.
+
+    The first control is a positive scalar; the second retains the caller's
+    ordered activation array. The shared predicate owns measured clean work.
+    """
     if not values or any(
         type(value) is not int or value not in (0, 1) for value in values
     ):
@@ -65,12 +70,19 @@ def _positive_controlled_multi_pauli_program(
         )
         return outputs[control_name], (outputs[target_name],)
 
-    combined = control_component_via_predicate(
+    return control_component_via_predicate(
         body.finalize({"q": target}),
         {"main": add},
         (Register("ctrl1", bit), Register("ctrl2", bit, (len(values),))),
         (ControlRegister(1, (1,)), ControlRegister(1, values)),
     )
+
+
+def _positive_controlled_multi_pauli_program(
+    values: tuple[int, ...], axis: Literal["x", "z"]
+) -> ProgramRecord:
+    combined = merged_pauli_control_program(values, axis)
+    bit = quantum_bit_type()
     builder = ComponentProgramBuilder(
         Signature(
             (
