@@ -3,6 +3,7 @@
 from collections import Counter
 from dataclasses import dataclass
 from hashlib import sha1
+from importlib import import_module
 from importlib.metadata import version
 from pathlib import Path
 from typing import Any
@@ -24,8 +25,61 @@ from flagquantum.core.ir.program.registers import Register
 from flagquantum.core.value_math import SymbolicInt
 from flagquantum.ecosystem.cirq._register_emitter import import_register_emitter
 from flagquantum.simulation.unitary import get_unitary
+from tests._reference_dependencies import unavailable_reference
+
+try:
+    import cirq
+    import numpy as np
+
+    import_module("qualtran")
+    import_module("kickmix")
+except ModuleNotFoundError as _reference_import_error:
+    unavailable_reference(_reference_import_error)
 
 pytestmark = [pytest.mark.unit, pytest.mark.ftqc_reference]
+
+
+def test_empty_system_packed_select_keeps_selected_relative_phase(
+    source_module: tuple[Any, Any],
+) -> None:
+    from qualtran.bloqs.multiplexers.select_pauli_lcu import SelectPauliLCU
+
+    @dataclass(frozen=True)
+    class EmptySystem(SelectOracle):
+        @property
+        def control_registers(self) -> tuple[Register, ...]:
+            return ()
+
+        @property
+        def selection_registers(self) -> tuple[Register, ...]:
+            return (Register("selection", opaque_register_type(1)),)
+
+        @property
+        def target_registers(self) -> tuple[Register, ...]:
+            return (Register("target", opaque_register_type(0)),)
+
+    child = SelectPauliLCU(
+        1,
+        0,
+        tuple(cirq.DensePauliString("", coefficient=sign) for sign in (1, -1)),
+    )
+    original = source_module[0].BlackBoxSelect(child)
+    expected = torch.as_tensor(original.tensor_contract(), dtype=torch.complex128)
+    torch.testing.assert_close(
+        expected, torch.diag(torch.tensor([1, -1], dtype=torch.complex128))
+    )
+    emitter = import_register_emitter(child)
+    assert emitter.requirements() == (0, 0)
+    packed = PackedSelectDeclaration(EmptySystem()).bind(emitter)
+    assert packed.system_bitsize == 0
+    for adjoint in (False, True):
+        circuit = Circuit(1, dtype=torch.complex128).append(
+            packed.make_on(selection=(0,), target=(), adjoint=adjoint)
+        )
+        torch.testing.assert_close(get_unitary(circuit), expected, atol=2e-12, rtol=0)
+        ir = circuit.to_ir()
+        assert CircuitIR.from_json(ir.to_json()) == ir
+        assert Counter(gate.name for gate in ir.instructions) == {"x": 2, "z": 1}
 
 
 @dataclass(frozen=True)
@@ -253,8 +307,6 @@ def test_original_select_oracle_abstract_protocol_and_symbolic_metadata(
 def test_native_array_declaration_binds_non_self_adjoint_external_child(
     source_module: tuple[Any, Any],
 ) -> None:
-    import cirq
-    import numpy as np
     from qualtran import QAny
     from qualtran import Register as SourceRegister
     from qualtran.bloqs.multiplexers.select_base import SelectOracle as SourceOracle

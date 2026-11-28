@@ -128,3 +128,41 @@ and JSON roundtrip and match the source wrapper's complete complex matrices.
 RIGHT-only and classical target descriptors fail at binding, as do unresolved
 widths. Control metadata remains preserved and controlled packing remains
 refused under the original source defect.
+
+## Faithful whole-file disposition, November 28
+
+The earlier open-parent statement used the previous source-defect rule. Under
+the approved [G2 closure rule](G2_FAITHFUL_MIGRATION_CLOSURE_PROPOSAL.md),
+Q-0588 can close after whole-file and direct-dependency verification. All source
+properties, grouped signatures, width sums, AutoPartition composition, example
+and documentation have native owners. The abstract oracle protocol, generic
+array packing and symbolic-to-concrete handoff retain their existing evidence.
+
+The controlled wrapper's omitted control port is a reproduced upstream defect,
+not a missing valid packing algorithm. Keep its actual ValueError and native
+early refusal as a packing-correction follow-up; named controlled SELECT remains
+separately executable. No controlled packed execution is claimed.
+
+A fresh boundary intake verifies the successful empty-system child. Existing
+packing already supports it: the two signed empty rows produce Z on the one
+selection wire, with two X instructions and one Z, no work and no measurement.
+The complete source operator, both native directions, ordinary append and JSON
+roundtrip are now checked in test_select_oracle_binding.py. The source's live
+logical width and source gate model remain separate from this literal inventory.
+The source controlled empty-system child still fails the same partition check.
+No new execution implementation or protected behavior was necessary.
+
+Final batch evidence: 213 concentrated cases and 213 independent Cirq 1.6
+cases pass, including the empty-system packed consumer. The two unchanged
+original files report 14 passes, one original skip and two original expected
+failures; their notebook case is deselected here and reuses the existing complete
+notebook receipt above. The unchanged integration boundary reuses this head's
+248 passing cases. Seven Python owners/tests pass strict typing, Black and Ruff;
+architecture, IR, API, required/Cirq contracts, scope, English and links pass.
+The changed test's actual missing Cirq, NumPy, Qualtran and Kickmix imports are
+checked in both optional and mandatory modes (eight cases). Optional runs skip
+explicitly; mandatory runs preserve the original missing-dependency exception.
+Two preexisting unguarded imports are repaired, reducing dependency findings
+from 570 to 568, with none on the changed test. Source fixtures retain frozen
+blobs and actual Qualtran 0.7.0 / Kickmix 0.1 Simulator assertions. Receipts use
+prefix g2-select-source-closure; implementation owners remain unchanged.
