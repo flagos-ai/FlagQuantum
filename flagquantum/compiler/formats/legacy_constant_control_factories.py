@@ -80,10 +80,13 @@ def _unresolved_constant_program(
     """Retain an actual unresolved AddK constructor at its source refusal.
 
     Reuse constructor validation and control/adjoint provenance without a
-    numeric encoder. No concrete constant is accepted by this declaration path.
+    numeric encoder. The source classifies every SymPy expression as symbolic,
+    including Integer constants. Python integers must use the numerical path.
     """
-    if not constant.free_symbols:
-        raise SerializationError("A constant declaration requires unresolved symbols")
+    if not isinstance(constant, sympy.Expr):
+        raise SerializationError(
+            "A source symbolic constant requires a SymPy expression"
+        )
 
     def forbidden(word: RegisterType, value: object) -> tuple[int, ...]:
         raise SerializationError("An unresolved source constant has no bit encoding")

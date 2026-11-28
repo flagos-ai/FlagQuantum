@@ -80,10 +80,7 @@ def modular_control_factories(
         if (
             not isinstance(dtype, RegisterType)
             or type(dtype.num_qubits) is not int
-            or (
-                type(modulus) is not int
-                and not (isinstance(modulus, sympy.Expr) and modulus.free_symbols)
-            )
+            or (type(modulus) is not int and not isinstance(modulus, sympy.Expr))
         ):
             raise SerializationError(
                 "This modular control scope requires concrete width and integer or unresolved modulus"

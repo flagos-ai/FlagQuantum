@@ -169,12 +169,7 @@ def _modular_factory(
             )
         ):
             raise SerializationError(f"Invalid register signature for {kind}")
-    if (
-        kind == "ModDbl"
-        and type(width) is int
-        and isinstance(modulus, sympy.Expr)
-        and modulus.free_symbols
-    ):
+    if kind == "ModDbl" and type(width) is int and isinstance(modulus, sympy.Expr):
         return _rename_program(symbolic_modular_doubling_program(dtype, modulus), name)
     if any(isinstance(item, sympy.Expr) for item in (width, window, modulus, value)):
         return FunctionRecord(
@@ -281,10 +276,7 @@ def modular_multiplication_factories(
                 and spec.clauses[0][1].item() == 1
                 and isinstance(dtype, RegisterType)
                 and type(dtype.num_qubits) is int
-                and (
-                    type(modulus) is int
-                    or (isinstance(modulus, sympy.Expr) and modulus.free_symbols)
-                )
+                and (type(modulus) is int or isinstance(modulus, sympy.Expr))
             ):
                 if isinstance(modulus, sympy.Expr):
                     from .legacy_symbolic_modular_controls import (

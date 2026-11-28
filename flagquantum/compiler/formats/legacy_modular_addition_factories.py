@@ -213,7 +213,6 @@ def _modular_factory(
         kind in {"ModAdd", "CModAdd"}
         and type(width) is int
         and isinstance(modulus, sympy.Expr)
-        and modulus.free_symbols
     ):
         program = _symbolic_addition(
             dtype, modulus, controlled=kind == "CModAdd", control_value=cv

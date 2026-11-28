@@ -109,7 +109,6 @@ def _modular_factory(
         kind in {"ModSub", "CModSub"}
         and not dtype.is_symbolic()
         and isinstance(modulus, sympy.Expr)
-        and modulus.free_symbols
     ):
         load = unresolved_constant_addition_program(
             dtype, modulus + 1, name="load_complement"

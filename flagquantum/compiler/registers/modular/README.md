@@ -159,3 +159,11 @@ roles. `_control_calls` accepts those explicit declaration adders separately
 from complete-body matching. Unknown declarations are never identified by ABI.
 Run `tests/unit/test_symbolic_additional_modular_controls.py` for constructor
 argument observation, source operands, inverse roles and refusal boundaries.
+
+Every SymPy expression follows the source symbolic classification, including
+Integer constants with no free symbols. Direct parent construction therefore
+retains symbolic AddK refusals for Integer(p). The original recursive term wire
+decoder converts that Integer into Python int; constructor transport follows
+the decoded value, separately from the original direct object. It must not
+pretend these two decomposition paths are equal. Python integer constants still
+use the unchanged numerical owners and cannot enter the declaration helper.
