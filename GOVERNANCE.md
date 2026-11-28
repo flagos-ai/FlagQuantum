@@ -35,7 +35,7 @@ as a claim. `docs/development/INTEGRATION_WORKFLOW.md` records the measurements.
 | Ordinary change | A domain's internal implementation, its tests, and its documentation. | The required checks on the pull request, merged by the maintainer |
 | Protected surface | `AGENTS.md`, `config/architecture.toml`, `config/team-ownership.toml`, `contracts/**`, `.github/**`, `tools/**`, `pyproject.toml`, `flagquantum/core/ir/**` | Integration owner. A separate integration change, before the team implementation proceeds |
 | Stable Core API | The 34 exports in `docs/public_api_v1.json` | An API change proposal plus recorded authorization, per `AGENTS.md` |
-| Capability level | A level in `capability-maturity.toml` | Evidence that satisfies `tools/validation/check_capability_maturity.py`, approved by Integration |
+| Capability level | A level in `config/capability-maturity.toml` | Evidence that satisfies `tools/validation/check_capability_maturity.py`, approved by Integration |
 | Release | `flagquantum/version.py`, tags, release notes | Maintainer |
 
 The distinction that matters is the second row. `tools/architecture/check_team_scope.py` refuses a

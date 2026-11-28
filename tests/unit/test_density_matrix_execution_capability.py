@@ -51,7 +51,7 @@ from tools.architecture.source_relocations import source_path
 pytestmark = pytest.mark.unit
 
 ROOT = Path(__file__).resolve().parents[2]
-MATURITY = ROOT / "capability-maturity.toml"
+MATURITY = ROOT / "config" / "capability-maturity.toml"
 PARITY = ROOT / "contracts/cudaq-parity-matrix.toml"
 CAPABILITY = "density_matrix_execution"
 PARITY_ROW = "backend_density_matrix"

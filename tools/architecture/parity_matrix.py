@@ -41,7 +41,7 @@ except ModuleNotFoundError:  # pragma: no cover - Python 3.10 compatibility
 
 REPO_ROOT = Path(__file__).resolve().parents[2]
 CONTRACT_PATH = REPO_ROOT / "contracts" / "cudaq-parity-matrix.toml"
-MATURITY_PATH = REPO_ROOT / "capability-maturity.toml"
+MATURITY_PATH = REPO_ROOT / "config" / "capability-maturity.toml"
 EXPORT_CONTRACT_PATH = REPO_ROOT / "contracts" / "cudaq-export-contract.toml"
 GAP_MATRIX_PATH = REPO_ROOT / "contracts" / "interop-capability-gap-matrix.toml"
 OUTPUT_PATH = REPO_ROOT / "docs" / "reference" / "CUDAQ_PARITY_MATRIX.md"

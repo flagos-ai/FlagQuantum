@@ -268,7 +268,7 @@ def contract_version_provenance(contracts_dir: Path) -> dict[str, Any]:
 
 
 def maturity_entries(repo_root: Path) -> set[str]:
-    path = repo_root / "capability-maturity.toml"
+    path = repo_root / "config" / "capability-maturity.toml"
     if not path.is_file():
         return set()
     return set(load_toml(path).get("capabilities", {}).keys())

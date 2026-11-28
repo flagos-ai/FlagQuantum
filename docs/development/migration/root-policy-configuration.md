@@ -1,6 +1,9 @@
 # Root policy configuration
 
-Integration declaration, committed before implementation. Owner: Integration.
+Integration declaration was committed before implementation. Owner: Integration.
+
+Implementation is present; local and exact-head CI qualification are tracked
+separately and are not claimed complete by this declaration.
 
 Capability maturity and evidence-revision origins belong with repository policy
 under `config/`. Their existing data, evidence, origin declarations and rejection

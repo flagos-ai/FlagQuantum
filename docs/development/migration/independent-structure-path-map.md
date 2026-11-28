@@ -591,3 +591,10 @@ The [Simulation direct-relay retirement](simulation-direct-relay-retirement.md) 
 | Group | Previous path | Authoritative path | Scope |
 | --- | --- | --- | --- |
 | development-compose-location | `compose.dev.yaml` | `docker/compose.dev.yaml` | Unchanged YAML; old root file removed, explicit repository project directory preserves all relative-path and project behavior; workflow filters and ownership synchronized. |
+
+## Root policy configuration
+
+| Group | Previous path | Authoritative path | Scope |
+| --- | --- | --- | --- |
+| root-policy-configuration | `capability-maturity.toml` | `config/capability-maturity.toml` | Unchanged data, actual readers updated, root file removed; versioned authority names and explicit custom declarations paths preserved. |
+| root-policy-configuration | `evidence-revision-origins.toml` | `config/evidence-revision-origins.toml` | Unchanged data, actual readers updated, root file removed; versioned authority names and explicit custom declarations paths preserved. |

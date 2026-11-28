@@ -46,7 +46,7 @@ except ModuleNotFoundError:  # direct script execution
     )
 
 ROOT = Path(__file__).resolve().parents[2]
-MATRIX = ROOT / "capability-maturity.toml"
+MATRIX = ROOT / "config" / "capability-maturity.toml"
 EXPECTED_LEVELS = (
     "experimental",
     "development_evidence",

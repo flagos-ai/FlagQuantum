@@ -228,7 +228,7 @@ push leaves the machine, the push gate runs:
 - the strict type check of the whole package, and of the CI tooling;
 - capability maturity, required-check policy, and lazy-import validation;
 - evidence revision provenance: the revisions the walked evidence artifacts
-  record, against the declaration in `evidence-revision-origins.toml`;
+  record, against the declaration in `config/evidence-revision-origins.toml`;
 - multi-team ownership: the policy, and the classification of every path the
   branch changes relative to `origin/main`;
 - `pr-default`, `pr-runtime`, and `pr-distributed`.

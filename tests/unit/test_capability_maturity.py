@@ -50,12 +50,12 @@ def _require_repository_history() -> None:
 
 def test_repository_capability_maturity_matrix_is_valid():
     _require_repository_history()
-    data = tomllib.loads((ROOT / "capability-maturity.toml").read_text())
+    data = tomllib.loads((ROOT / "config" / "capability-maturity.toml").read_text())
     assert maturity_errors(data, ROOT) == ()
 
 
 def test_levels_are_explicit_and_not_collapsed():
-    data = tomllib.loads((ROOT / "capability-maturity.toml").read_text())
+    data = tomllib.loads((ROOT / "config" / "capability-maturity.toml").read_text())
     assert tuple(data["levels"]) == EXPECTED_LEVELS
     assert (
         data["capabilities"]["sharded_mps_training"]["level"] == "development_evidence"
@@ -66,7 +66,7 @@ def test_levels_are_explicit_and_not_collapsed():
 
 
 def test_release_certification_fails_closed_without_release_evidence():
-    data = tomllib.loads((ROOT / "capability-maturity.toml").read_text())
+    data = tomllib.loads((ROOT / "config" / "capability-maturity.toml").read_text())
     data["capabilities"]["local_statevector"]["level"] = "release_certified"
     errors = maturity_errors(data, ROOT)
     assert "local_statevector: release_certified requires release_gate" in errors
@@ -74,14 +74,14 @@ def test_release_certification_fails_closed_without_release_evidence():
 
 
 def test_every_capability_has_user_discovery_metadata():
-    data = tomllib.loads((ROOT / "capability-maturity.toml").read_text())
+    data = tomllib.loads((ROOT / "config" / "capability-maturity.toml").read_text())
     for capability in data["capabilities"].values():
         assert set(REQUIRED_USER_FIELDS) <= set(capability)
 
 
 def test_internal_experiments_may_have_no_public_api() -> None:
     _require_repository_history()
-    data = tomllib.loads((ROOT / "capability-maturity.toml").read_text())
+    data = tomllib.loads((ROOT / "config" / "capability-maturity.toml").read_text())
     capability = data["capabilities"]["split_real_imag_statevector_p5_autograd_bridge"]
     assert capability["level"] == "experimental"
     assert capability["public_apis"] == []
@@ -89,7 +89,7 @@ def test_internal_experiments_may_have_no_public_api() -> None:
 
 
 def test_supported_capability_requires_a_public_api() -> None:
-    data = tomllib.loads((ROOT / "capability-maturity.toml").read_text())
+    data = tomllib.loads((ROOT / "config" / "capability-maturity.toml").read_text())
     data["capabilities"]["local_statevector"]["public_apis"] = []
     assert any(
         "local_statevector: supported or certified capability requires a public API"
@@ -99,14 +99,14 @@ def test_supported_capability_requires_a_public_api() -> None:
 
 
 def test_user_discovery_links_fail_closed_when_missing():
-    data = tomllib.loads((ROOT / "capability-maturity.toml").read_text())
+    data = tomllib.loads((ROOT / "config" / "capability-maturity.toml").read_text())
     data["capabilities"]["ir"]["quick_start"] = "examples/does_not_exist.py"
     errors = maturity_errors(data, ROOT)
     assert "ir: quick_start path does not exist: examples/does_not_exist.py" in errors
 
 
 def test_performance_claim_binds_artifact_hash_code_environment_and_maturity():
-    data = tomllib.loads((ROOT / "capability-maturity.toml").read_text())
+    data = tomllib.loads((ROOT / "config" / "capability-maturity.toml").read_text())
     claim = data["capabilities"]["sharded_mps_training"]["performance_claims"][0]
     assert claim["artifact_sha256"]
     assert claim["code_version"]
@@ -123,26 +123,26 @@ def test_performance_claim_binds_artifact_hash_code_environment_and_maturity():
     ),
 )
 def test_performance_claim_identity_fails_closed(field, value, message):
-    data = tomllib.loads((ROOT / "capability-maturity.toml").read_text())
+    data = tomllib.loads((ROOT / "config" / "capability-maturity.toml").read_text())
     claim = data["capabilities"]["sharded_mps_training"]["performance_claims"][0]
     claim[field] = value
     assert any(message in error for error in maturity_errors(data, ROOT))
 
 
 def test_performance_claim_fails_closed_when_artifact_or_environment_is_missing():
-    data = tomllib.loads((ROOT / "capability-maturity.toml").read_text())
+    data = tomllib.loads((ROOT / "config" / "capability-maturity.toml").read_text())
     claim = data["capabilities"]["sharded_mps_training"]["performance_claims"][0]
     claim["artifact"] = "benchmarks/results/local/does-not-exist.json"
     errors = maturity_errors(data, ROOT)
     assert any("artifact does not exist" in error for error in errors)
 
-    data = tomllib.loads((ROOT / "capability-maturity.toml").read_text())
+    data = tomllib.loads((ROOT / "config" / "capability-maturity.toml").read_text())
     claim = data["capabilities"]["sharded_mps_training"]["performance_claims"][0]
     claim["artifact"] = "README.md"
     errors = maturity_errors(data, ROOT)
     assert any("artifact must be under benchmarks/results" in error for error in errors)
 
-    data = tomllib.loads((ROOT / "capability-maturity.toml").read_text())
+    data = tomllib.loads((ROOT / "config" / "capability-maturity.toml").read_text())
     claim = data["capabilities"]["sharded_mps_training"]["performance_claims"][0]
     claim["environment"] = []
     assert any("missing environment" in error for error in maturity_errors(data, ROOT))
@@ -298,7 +298,7 @@ def test_repository_performance_claims_declare_their_code_version_origin():
     """Every claim either resolves here or says why it cannot."""
 
     _require_repository_history()
-    data = tomllib.loads((ROOT / "capability-maturity.toml").read_text())
+    data = tomllib.loads((ROOT / "config" / "capability-maturity.toml").read_text())
     for capability in data["capabilities"].values():
         for claim in capability.get("performance_claims", ()):
             assert (

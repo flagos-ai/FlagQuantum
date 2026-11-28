@@ -10508,6 +10508,22 @@
       "compatibility": "none",
       "source_kind": "Unchanged development Compose configuration; no Python definitions or runtime API moved.",
       "retirement": "Root file removed; commands explicitly preserve the repository project directory, .env discovery, build context, bind mount and project identity. Publication workflow path filters use the new file."
+    },
+    {
+      "group": "root-policy-configuration",
+      "old": "capability-maturity.toml",
+      "new": "config/capability-maturity.toml",
+      "compatibility": "none",
+      "source_kind": "Unchanged repository policy data; no Python definitions or public authority identifiers moved.",
+      "retirement": "Root predecessor removed. Actual default readers and current metadata/link consumers use config; original data, repository-relative evidence, versioned authority identifiers and arbitrary explicit fixture paths are preserved."
+    },
+    {
+      "group": "root-policy-configuration",
+      "old": "evidence-revision-origins.toml",
+      "new": "config/evidence-revision-origins.toml",
+      "compatibility": "none",
+      "source_kind": "Unchanged repository policy data; no Python definitions or public authority identifiers moved.",
+      "retirement": "Root predecessor removed. Actual default readers and current metadata/link consumers use config; original data, repository-relative evidence, versioned authority identifiers and arbitrary explicit fixture paths are preserved."
     }
   ],
   "retired_namespace_parents": [

@@ -163,7 +163,7 @@ except ModuleNotFoundError:  # direct script execution
         revision_resolves,
     )
 
-DECLARATIONS = ROOT / "evidence-revision-origins.toml"
+DECLARATIONS = ROOT / "config" / "evidence-revision-origins.toml"
 SCHEMA = "flagquantum.evidence_revision_origins.v1"
 
 #: Directories whose artifacts are walked. A directory is listed when its
