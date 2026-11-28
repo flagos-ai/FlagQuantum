@@ -40,6 +40,9 @@ from ..compiler.formats.legacy_component_resolution import (
 from ..compiler.formats.legacy_controlled_factories import controlled_via_and_factories
 from ..compiler.formats.legacy_fixed_gate_factories import fixed_gate_factories
 from ..compiler.formats.legacy_modular_addition_factories import _integer
+from ..compiler.formats.legacy_modular_multiplication_factories import (
+    modular_multiplication_factories,
+)
 from ..compiler.formats.legacy_modular_subtraction_factories import (
     modular_subtraction_factories,
 )
@@ -105,6 +108,7 @@ from ..compiler.registers.modular.montgomery_multiplication_component import (
 from ..core.ir.program import FunctionRecord, ProgramRecord
 from ..core.ir.program.register_types import montgomery_register_type, quantum_bit_type
 from ..core.ir.program.registers import Register, RegisterType
+from ..core.value_math import SymbolicInt
 from ..errors import SerializationError
 
 
@@ -181,6 +185,44 @@ def _without_modulus(program: ProgramRecord) -> ProgramRecord:
     )
 
 
+def _multiplication(
+    width: int, window: SymbolicInt, modulus: int, *, adjoint: bool = False
+) -> ProgramRecord:
+    if type(window) is int:
+        return _without_modulus(
+            montgomery_multiplication_program(width, window, modulus, adjoint=adjoint)
+        )
+    factory = modular_multiplication_factories()[
+        "qualtran.bloqs.mod_arithmetic.mod_multiplication.DirtyOutOfPlaceMontgomeryModMul"
+    ]
+    arguments: dict[str, ResolvedArgument] = {
+        "bitsize": width,
+        "window_size": window,
+        "mod": modulus,
+        "uncompute": adjoint,
+    }
+    declaration = factory("multiply", None, arguments)
+    assert isinstance(declaration, FunctionRecord) and not declaration.blocks
+    assert declaration.registers is not None
+    # The source codec omits Montgomery modulus metadata, but keeps the exact
+    # symbolic history width and directional ports. Ask the existing factory
+    # to validate that source view instead of inserting a synthetic Cast body.
+    ports = tuple(
+        Register(
+            r.name,
+            (
+                montgomery_register_type(r.dtype.num_qubits)
+                if r.dtype.encoding == "montgomery"
+                else r.dtype
+            ),
+            r.shape_symbolic,
+            r.side,
+        )
+        for r in declaration.registers
+    )
+    return _program(factory("multiply", ports, arguments))
+
+
 def _slope(
     name: str,
     registers: tuple[Register, ...] | None,
@@ -199,7 +241,7 @@ def _slope(
     signature = addition_slope_signature(width)
     if registers is not None and registers != tuple(signature):
         raise SerializationError("Invalid original curve addition slope signature")
-    if type(width) is not int or type(modulus) is not int or type(window) is not int:
+    if type(width) is not int or type(modulus) is not int:
         return FunctionRecord(name, (), registers=tuple(signature))
     dtype = montgomery_register_type(width)
     zero = basis_vector_factories()["qualtran.bloqs.basic_gates.z_basis.IntState"](
@@ -212,16 +254,12 @@ def _slope(
         subtract=modular_subtraction_program(dtype, modulus),
         controlled_subtract=controlled_modular_subtraction_program(dtype, modulus),
         inverse=_without_modulus(modular_inverse_program(width, modulus)),
-        multiply=_without_modulus(
-            montgomery_multiplication_program(width, window, modulus)
-        ),
+        multiply=_multiplication(width, window, modulus),
         equals=equality_program(dtype),
         select_general=multi_control_x_program((0, 1, 1)),
         select_tangent=multi_control_x_program((1, 1, 1)),
         controlled_equals=controlled_equality_program(dtype, control_value=0),
-        multiply_adjoint=_without_modulus(
-            montgomery_multiplication_program(width, window, modulus, adjoint=True)
-        ),
+        multiply_adjoint=_multiplication(width, window, modulus, adjoint=True),
         inverse_adjoint=_without_modulus(
             modular_inverse_program(width, modulus, adjoint=True)
         ),
@@ -252,7 +290,7 @@ def _arithmetic_stage(
     )(width)
     if registers is not None and registers != tuple(signature):
         raise SerializationError("Invalid original curve arithmetic signature")
-    if type(width) is not int or type(modulus) is not int or type(window) is not int:
+    if type(width) is not int or type(modulus) is not int:
         return FunctionRecord(name, (), registers=tuple(signature))
     dtype = montgomery_register_type(width)
     zero = basis_vector_factories()["qualtran.bloqs.basic_gates.z_basis.IntState"](
@@ -263,12 +301,8 @@ def _arithmetic_stage(
         "cnot", None, {}
     )
     cnot_program = cnot if isinstance(cnot, ProgramRecord) else ProgramRecord((cnot,))
-    multiply = _without_modulus(
-        montgomery_multiplication_program(width, window, modulus)
-    )
-    multiply_adjoint = _without_modulus(
-        montgomery_multiplication_program(width, window, modulus, adjoint=True)
-    )
+    multiply = _multiplication(width, window, modulus)
+    multiply_adjoint = _multiplication(width, window, modulus, adjoint=True)
     if kind == "coordinates":
         program = addition_coordinates_program(
             signature,
@@ -345,20 +379,16 @@ def _cleanup(
     signature = addition_cleanup_signature(width)
     if registers is not None and registers != tuple(signature):
         raise SerializationError("Invalid original curve slope cleanup signature")
-    if type(width) is not int or type(modulus) is not int or type(window) is not int:
+    if type(width) is not int or type(modulus) is not int:
         return FunctionRecord(name, (), registers=tuple(signature))
     dtype = montgomery_register_type(width)
     graph = addition_cleanup_program(
         signature,
         inverse=_without_modulus(modular_inverse_program(width, modulus)),
-        multiply=_without_modulus(
-            montgomery_multiplication_program(width, window, modulus)
-        ),
+        multiply=_multiplication(width, window, modulus),
         select=multi_control_x_program((1, 1)),
         clear_slope=_clear_slope(dtype),
-        multiply_adjoint=_without_modulus(
-            montgomery_multiplication_program(width, window, modulus, adjoint=True)
-        ),
+        multiply_adjoint=_multiplication(width, window, modulus, adjoint=True),
         inverse_adjoint=_without_modulus(
             modular_inverse_program(width, modulus, adjoint=True)
         ),

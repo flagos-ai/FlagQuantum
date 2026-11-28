@@ -432,3 +432,18 @@ coordinates, products, cleanup and finish stages expose 28/28/34/18/65 source
 calls at n=5 and still need complete dependency intake; symbolic ECWindow's
 available five-call root is separate. No ECC parent is accepted from this slice,
 and supplied reference leaf prices do not establish native default pricing.
+
+## Symbolic multiplication-window dependency interface
+
+For fixed n and modulus with symbolic multiplication window w, the source
+slope, coordinates, products and cleanup stages still expose 28/28/34/18 calls
+at n=5. Their port directions and MSB order do not change. The multiplication
+history port has exactly `((n+w-1)//w)*w` bits and the original forward RIGHT /
+inverse LEFT ownership; target and reduced follow the same directions. The
+unchanged Montgomery multiplier and its specialized inverse both refuse
+decomposition through the private implementation for this profile. These leaves
+must remain explicit declarations. Concrete modular, comparison and inverse
+dependencies retain their existing complete owners and their acceptance evidence.
+No symbolic-window primitive inventory, amplitude or physical cleanup is inferred
+from this logical interface. The complete-file parent remains open until the
+other actual symbolic-modulus dependencies are closed.
