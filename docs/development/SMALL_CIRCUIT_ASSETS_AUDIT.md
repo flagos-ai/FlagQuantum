@@ -30,7 +30,7 @@ no independent analytical model.
 
 | Parent | Frozen asset | Verified execution and disposition |
 | --- | --- | --- |
-| K-0330 | cmul16_mod_21.kmx | All 64 basis columns, arbitrary complex superposition and both control values are exact. Original asset multiplies valid residues by 4, despite its 16 filename. Retained source discrepancy keeps this parent open. |
+| K-0330 | cmul16_mod_21.kmx | All 64 basis columns, arbitrary complex superposition and both control values are exact. Original asset multiplies valid residues by 4, despite its 16 filename. Literal migration is accepted by the 2026-11-28 review; the source naming discrepancy remains a separate follow-up. |
 | K-0331 | iadd8_qc_2clean_6dirty.kmx | Complete 8-bit classical-add asset accepted. All 256 addends, 256 target values, 64 dirty words and 64 erasure histories have the exact permutation, positive branch phase, clean q8/q9 and restored dirty q10..q15. |
 | K-0332 | inc3.kmx | All eight operator columns and a complex superposition match little-endian increment. No work or measurements. Accepted. |
 | K-0333 | inc8.kmx | All 32 erasure branches match increment on an arbitrary complex input including four entangled idle spectators. All five clean work wires return to zero. Accepted. |
@@ -141,9 +141,11 @@ controlled modular permutation. This runtime sample checks execution-path
 integration; exhaustive history coverage comes from the algebraic proof.
 
 K-0334 now closes without changing source bytes, gates, compiler/runtime code,
-reference observations or the established valid-input promise. K-0330 remains
-open for its separate original filename/multiplier discrepancy. No source
-defect waiver or invalid-residue arithmetic guarantee is inferred.
+reference observations or the established valid-input promise. At that point
+K-0330 remained open for its separate original filename/multiplier discrepancy.
+Its later [explicit closure review](G2_FUNCTIONAL_MIGRATION_DISPOSITIONS.md) uses
+the separately approved source-defect rule. No invalid-residue arithmetic
+guarantee is inferred.
 
 The follow-up passes 325 concentrated cases and 145 local integration cases.
 All three changed Python files pass strict typing, Black and Ruff; Verification

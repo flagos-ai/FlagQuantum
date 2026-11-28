@@ -29,7 +29,7 @@ concrete remaining work for open files. Reports lead with complete files closed
 and remaining gaps, followed by commits and verification scope. Capability
 subitems continue to index evidence within the fixed 1,280-file inventory.
 
-The latest whole-file batch audits GF2Square and its linear-map/converter
+The initial whole-file audit snapshot below covered GF2Square and its linear-map/converter
 call chain. Q-0521 closes as a complete native notebook. Q-0522/Q-0523 remain
 open for immutable source matrix/adjoint errors, QGF bookkeeping counts and
 exact generic admission/autotester/serialization boundaries. See the
@@ -41,6 +41,12 @@ implementation, tests and notebooks with the direct polynomial split/join
 files and assets. Existing evidence is reused and source defects retain their
 original witnesses. The earlier arithmetic-root width queue remains superseded
 by whole-file batches.
+
+The preceding paragraph records that historical batch, not current acceptance.
+Current decisions use the user-approved 2026-11-27
+[G2 closure rule](G2_FAITHFUL_MIGRATION_CLOSURE_PROPOSAL.md), the live workspace
+parent ledger and the [reviewed dispositions](G2_FUNCTIONAL_MIGRATION_DISPOSITIONS.md).
+Original source IDs, assets and acceptance evidence remain fixed.
 
 ## Module closure criteria
 
@@ -56,8 +62,12 @@ by whole-file batches.
    amplitudes, small exhaustive measurement branches and clean workspace.
    Numerical-only modules instead verify values, precision, warnings and state.
 4. Report measured primitives, source cost models and runtime statistics
-   separately. Unimplemented variants, source defects or protected-contract gaps
-   keep the file open. Do not silently repair the reference.
+   separately. Missing implementations, missing evidence and protected-contract
+   gaps keep the file open. Apply the approved G2 rule individually to complete
+   faithful migrations whose remaining conditions are reproduced source defects,
+   unmet performance targets or missing platform certificates. Retain each
+   witness, native impact, owner and follow-up; never waive a supported missing
+   execution path or silently repair the reference.
 5. Commit complete modules independently; run concentrated regression once at
    batch end. Publish locally verified work to #1084 without waiting for CI.
    Do not merge or start G3. Retain baseline failures explicitly.

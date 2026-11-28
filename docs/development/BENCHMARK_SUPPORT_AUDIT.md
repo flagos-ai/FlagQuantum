@@ -78,8 +78,10 @@ Dependency scanning retains 720 existing findings with zero touched findings.
 The empty-result source diagnostic remains unreachable. The source accepts a zero
 timing target and can report nonfinite values without a goal, which native also
 preserves. With a goal, UBSan confirms conversion of NaN to int at original
-main.perf.cc line 162. Native refuses that undefined goal comparison. **K-0324
-remains open** for these original defects. **K-0325 is accepted** for the complete
+main.perf.cc line 162. Native refuses that undefined goal comparison. The
+[2026-11-28 review](G2_FUNCTIONAL_MIGRATION_DISPOSITIONS.md) accepts K-0324's
+complete defined-domain migration with these original defects retained.
+**K-0325 is accepted** for the complete
 declaration and adaptive-engine scope. C++ runtime/clock portability and matched
 native/C++ performance remain unclaimed.
 

@@ -63,8 +63,10 @@ shifts, malformed literals, explicit widths and a 5,000-digit decimal input.
 All 38 unchanged original C++ tests pass. The complete source header/test parents
 can reuse these observations and native operator/lifetime assertions.
 
-The original implementation parent remains open for independently demonstrated
-source defects. AddressSanitizer reports a heap-buffer-overflow for both unsigned
+The original implementation parent was held open for independently demonstrated
+source defects; the [2026-11-28 review](G2_FUNCTIONAL_MIGRATION_DISPOSITIONS.md)
+accepts complete defined-domain migration with those witnesses retained.
+AddressSanitizer reports a heap-buffer-overflow for both unsigned
 assignment and scalar carry on zero-width storage. The unsanitized program can
 return normally, so its exit status alone supplies no memory-safety evidence.
 Native methods refuse these two cases. An isolated self-alias `%=` call exceeds
@@ -98,8 +100,9 @@ estimates are independent from actual emitted primitive counts.
 
 These one-run local observations include Python immutable updates and source
 limb order. All four final values match original C++. The native implementation
-does not meet the original C++ benchmark goals. K-0300 therefore stays open for
-performance disposition. Original C++ observed timings are stored separately
+does not meet the original C++ benchmark goals. K-0300's functional migration
+is now accepted by that review, while performance disposition remains open.
+Original C++ observed timings are stored separately
 from both its goals and these native observations. No throughput parity is claimed.
 
 Regeneration uses `tests/unit/fixtures/generate_fixed_width_integer.py` with

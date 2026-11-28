@@ -62,8 +62,9 @@ All 300 input and output elements match the unchanged source at one and three
 body repetitions. Array construction emits no quantum primitives, measurement
 or workspace. The analytical model is None. Original timing goal 2.8 microseconds
 is retained separately. A five-millisecond local timing run observes approximately
-144.53 microseconds per native call, including typed conversion. K-0248 remains
-open for the original performance target.
+144.53 microseconds per native call, including typed conversion. The original
+performance target remains unmet; K-0248's functional migration is accepted by
+the [2026-11-28 closure review](G2_FUNCTIONAL_MIGRATION_DISPOSITIONS.md).
 
 ## Complete stateful builder workloads
 
@@ -110,7 +111,8 @@ in the original execution oracle. No QEC model is inferred from opcode totals.
 
 These local CPU observations use five-millisecond target runs and include the
 native construction boundary above. The original goals are declared targets,
-separate from measured extension timings. K-0250 remains open for those targets.
+separate from measured extension timings. K-0250's functional migration is
+accepted by the same review; those performance follow-ups remain open.
 There is no throughput, SIMD or distributed scalability equivalence claim.
 
 ## Complete discovery source
@@ -138,6 +140,7 @@ byte-exactly with the locked source and native extension.
 
 The timing-suite and discovery parents K-0249 and K-0251 are accepted. Complete
 functional array and builder workload ports are delivered. K-0248 and K-0250
-remain open for their measured performance-target gaps. No source reference
+were originally kept open for their measured performance-target gaps; the
+2026-11-28 review accepts migration with those gaps retained. No source reference
 was changed, no source failure was hidden, and no performance target is counted
 as an analytical gate-resource estimate.

@@ -64,6 +64,13 @@ is unchanged. Evidence is retained in
 `ftqc-reference-env/g2-packed-chacha-rotation-boundary-20261122.json` and
 `g2-packed-chacha-original-round-refusals-20261122.json`.
 
+The [2026-11-28 closure review](G2_FUNCTIONAL_MIGRATION_DISPOSITIONS.md) does not
+accept K-0291 solely from those portable UB witnesses. The unchanged SSE header
+successfully executes rol32<0> and rol32<32> in an x86_64/Rosetta UBSan probe;
+both return the input word without sanitizer errors. The native helper rejects
+both amounts, so this is a source-defined implementation gap. It remains open
+independently of the approved treatment of original UB and unexecuted platforms.
+
 Immutable successors replace C++ mutation. Cached state survives failed seed
 construction. Source RNG consumption remains caller-owned, so failed seed
 attempts can still consume available caller words. The existing generator's

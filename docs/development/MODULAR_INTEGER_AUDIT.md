@@ -64,7 +64,8 @@ and the next RNG word. Failure records retain the original mutated target.
 
 `value *= INT64_MIN` negates the signed minimum in mod_int.cc line 166.
 UBSan reproduces signed overflow. Native multiplication refuses that input.
-K-0312 remains open for this original defect. Receipt
+The [2026-11-28 review](G2_FUNCTIONAL_MIGRATION_DISPOSITIONS.md) accepts K-0312's
+complete defined-domain migration with this original defect retained. Receipt
 `ftqc-reference-env/g2-modular-value-sanitizers-20261122.json` records the actual
 sanitized source failure and the successful self-move division probe separately.
 The original reference is unchanged.

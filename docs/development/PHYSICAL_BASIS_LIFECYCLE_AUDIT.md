@@ -88,9 +88,10 @@ observed approximately 37–162 us for sample, 131–1145 us for counting and
 about 2.9 us. Original C++ and Rosetta/SSE observations, target constants and
 native timings are recorded separately in the external batch receipts.
 These observations describe the single-device implementation and current host.
-Native timings exceed the original goals. K-0271 retains an open performance
-acceptance gap, consistent with the existing scalar and population-counter
-benchmark parents. Its complete functional workloads are delivered.
+Native timings exceed the original goals. K-0271's performance follow-up remains
+open. Its complete functional migration is accepted by the
+[2026-11-28 closure review](G2_FUNCTIONAL_MIGRATION_DISPOSITIONS.md), under the
+user-approved separation of migration and performance acceptance.
 
 ## Explicit adaptations and remaining boundaries
 

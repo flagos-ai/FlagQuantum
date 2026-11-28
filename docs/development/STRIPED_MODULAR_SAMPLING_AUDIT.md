@@ -64,7 +64,10 @@ stays with the existing physical instructions. The original benchmark goal is
 1.6e-6 seconds per 125-bit/64-lane batch. The unchanged source benchmark observed
 5.06e-6 seconds locally. Native Python observed 1.09e-3 seconds per batch over 128
 stateful iterations. Final output, scratch and next draw match original C++.
-The observations and source goal are separate. K-0317 remains open for performance.
+The observations and source goal are separate. The
+[2026-11-28 review](G2_FUNCTIONAL_MIGRATION_DISPOSITIONS.md) accepts K-0317's
+complete independent-buffer workload migration, with performance still unmet.
+K-0315's separate writable-alias contract remains open.
 
 Regeneration uses tests/unit/fixtures/generate_striped_modular_sampling.py with
 `--source-root`, `--corpus` and `--output`. Seven frozen blobs are checked before building
