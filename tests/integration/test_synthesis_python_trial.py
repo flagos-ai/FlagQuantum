@@ -14,7 +14,7 @@ from flagquantum.compiler import compile as compile_program
 from flagquantum.compiler.frontends._structured.verifier import HybridVerificationError
 from flagquantum.core.ir import CircuitIR, Instruction, MeasurementNode
 from flagquantum.core.parameters import Parameter
-from flagquantum.synth import _readout as readout
+from flagquantum.runtime.results import readout
 
 pytestmark = pytest.mark.integration
 

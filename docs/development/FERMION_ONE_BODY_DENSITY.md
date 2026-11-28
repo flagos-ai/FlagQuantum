@@ -72,7 +72,7 @@ Its preparation uses X/RY/CX/S gates without dense state loading. The test-only
 occupation oracle and complex unitary completion are bounded to four modes;
 they are not part of the normal execution path. The separate Integration
 registration records this executed scope as experimental in
-[`capability-maturity.toml`](../../capability-maturity.toml). The static
+[`capability-maturity.toml`](../../config/capability-maturity.toml). The static
 observable producer and differentiable measured-tensor assembler are distinct;
 the entry's gradient field describes the latter in the existing execution
 composition, not trainable observable coefficients.

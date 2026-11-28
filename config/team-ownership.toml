@@ -39,7 +39,6 @@ protected_paths = [
     "tools/**",
     # Release, deployment, and repository-level configuration. No development
     # team owns these; a change here is coordinated by Integration.
-    "ci/**",
     "docker/**",
     ".coveragerc",
     ".dockerignore",
@@ -60,8 +59,6 @@ protected_paths = [
     "MANIFEST.in",
     "README.md",
     "SECURITY.md",
-    "capability-maturity.toml",
-    "compose.dev.yaml",
     "conftest.py",
     "dependency-policy.toml",
     # The declaration table `tools/release/check_evidence_revisions.py` reads. It records
@@ -69,7 +66,6 @@ protected_paths = [
     # so an edit to it changes what the repository discloses about its own
     # evidence rather than what one team implements -- the same class as
     # `capability-maturity.toml` above.
-    "evidence-revision-origins.toml",
     "pytest.ini",
     "setup.py",
     # Attribution and source provenance for the native fermionic migration.

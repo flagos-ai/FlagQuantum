@@ -161,7 +161,7 @@ def test_contract_rejects_a_reordered_domain_list(
 
 def test_contract_and_registry_are_read_from_the_repository() -> None:
     assert CONTRACT_PATH == ROOT / "contracts" / "cudaq-parity-matrix.toml"
-    assert MATURITY_PATH == ROOT / "capability-maturity.toml"
+    assert MATURITY_PATH == ROOT / "config" / "capability-maturity.toml"
 
 
 def test_cudaq_contracts_pin_the_same_versions(contract: dict) -> None:

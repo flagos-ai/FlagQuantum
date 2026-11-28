@@ -61,7 +61,7 @@ device residency, device memory, operator, gradient, and numerical evidence
 from the logical FlagOS device.
 
 The exact development harness is frozen in
-[`ci/flagos_cuda_reference.lock.json`](../../ci/flagos_cuda_reference.lock.json).
+[`tools/ci/flagos_cuda_reference.lock.json`](../../tools/ci/flagos_cuda_reference.lock.json).
 Its v2 schema pins the container digest, Python and PyTorch runtime identity,
 Torch-FL package and source commit, the complete wheel build recipe, profile,
 dtypes, depths, and claim boundary. Strict validation compares measured

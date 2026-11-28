@@ -10,14 +10,14 @@ on:
   pull_request:
     paths:
       - docker/dev/**
-      - compose.dev.yaml
+      - docker/compose.dev.yaml
       - pyproject.toml
       - .github/workflows/publish-dev-container.yml
   push:
     branches: [main]
     paths:
       - docker/dev/**
-      - compose.dev.yaml
+      - docker/compose.dev.yaml
       - pyproject.toml
       - flagquantum/**
       - .github/workflows/publish-dev-container.yml

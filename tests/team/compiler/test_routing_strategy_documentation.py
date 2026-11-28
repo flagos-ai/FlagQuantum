@@ -26,7 +26,7 @@ except ModuleNotFoundError:  # pragma: no cover - Python 3.10 compatibility
 
 pytestmark = pytest.mark.unit
 
-MANIFEST = Path(__file__).resolve().parents[3] / "capability-maturity.toml"
+MANIFEST = Path(__file__).resolve().parents[3] / "config" / "capability-maturity.toml"
 
 
 def test_the_manifest_names_every_routing_strategy_the_code_accepts() -> None:

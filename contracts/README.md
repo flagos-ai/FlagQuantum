@@ -68,7 +68,7 @@ Repository-wide policy files remain at the repository root because they are
 entry points for CI and maintainers:
 
 - `architecture.toml`
-- `capability-maturity.toml`
+- `config/capability-maturity.toml`
 - `dependency-policy.toml`
 
 Contract filenames and schemas are compatibility surfaces. Move or rename a
@@ -137,7 +137,7 @@ be read as a statement about the pinned core versions.
 
 `qec-cudaq-alignment-checklist.toml` zooms into that one QEC domain. It is not a
 fourth opinion about the CUDA-Q surface: `cudaq-parity-matrix.toml` owns the
-capability inventory, the priority, and the join to `capability-maturity.toml`,
+capability inventory, the priority, and the join to `config/capability-maturity.toml`,
 and the checklist owns the symbol-level diff and the upstream attribution *within*
 those rows. A checklist row naming a matrix row must agree with that row's status,
 priority, and maturity entries, so the two cannot drift apart silently. Read it
