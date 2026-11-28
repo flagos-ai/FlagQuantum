@@ -274,7 +274,7 @@ def run_noisy_mps_runtime(
     )
 
 
-def merge_noisy_mps_results_runtime(
+def merge_noisy_mps_results(
     results: Any,
     *,
     require_complete: bool = True,

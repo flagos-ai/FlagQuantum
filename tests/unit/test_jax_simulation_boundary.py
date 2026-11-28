@@ -133,14 +133,12 @@ def test_runtime_reuses_simulation_owned_jax_mps_operations():
 
 
 def test_runtime_reuses_simulation_owned_jax_tensor_network_observables():
+    assert tensor_network_gradients._tn_kernels is jax_tensor_network
     assert (
         tensor_network_contraction._jax_contract_assigned_tensor_slices
         is jax_tensor_network_contraction.contract_assigned_slices
     )
-    assert (
-        tensor_network_gradients._jax_pauli_matrix
-        is jax_gate_primitives._jax_pauli_matrix
-    )
+    assert jax_tensor_network._jax_pauli_matrix is jax_gate_primitives._jax_pauli_matrix
     assert (
         tensor_network_gradients._jax_tn_loss_from_output
         is jax_tensor_network.jax_tensor_network_loss_from_output

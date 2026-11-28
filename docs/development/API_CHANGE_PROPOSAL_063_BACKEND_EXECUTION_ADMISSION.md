@@ -16,7 +16,7 @@ FlagQuantum has two independent backend facilities.
 It defines `BackendCapabilities` (name, tensor backend, devices, dtypes,
 autograd and mode support, preferred device, accelerators), keeps them in a
 `ContextVar`-scoped immutable mapping, and exposes `register_backend`,
-`list_backends`, `get_backend_capabilities`, `set_active_backend`,
+`list_backends`, `get_backend_capabilities`,
 `resolve_device`, and `resolve_dtype`. It is consumed by
 `runtime/execution.py`, `runtime/configuration.py`, and
 `runtime/execution_plan_contract.py`.
@@ -144,10 +144,16 @@ error. That is a failure-behaviour improvement, not an API addition.
 
 ## Compatibility
 
-`register_backend`, `list_backends`, `get_backend_capabilities`, and
-`set_active_backend` keep their names, parameters, and return types. New
-capability fields are additive with defaults that preserve current behaviour, so
-existing callers that construct a record or read a field are unaffected.
+`register_backend`, `list_backends` and `get_backend_capabilities` retain their
+names, parameters and return types. The associated
+[Runtime ownership package](migration/runtime-query-aggregation-retirement.md)
+removes the internal `set_active_backend` query relay: it never selected a
+backend, and `configuration.set_backend` already owns the context mutation.
+That operation queries the existing capability owner directly, retaining public
+selection signatures, defaults and error/context behavior. This proposal remains
+proposed and grants no Stable Core change approval or new compatibility promise.
+New capability fields are additive with defaults that preserve current behaviour,
+so existing callers that construct a record or read a field are unaffected.
 
 Rollback is removal of the admission step: the built-in path returns to being the
 only executable record, and pushed-back third-party records become

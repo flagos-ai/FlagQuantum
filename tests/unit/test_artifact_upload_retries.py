@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+import hashlib
+import json
 import re
 from itertools import pairwise, product
 from pathlib import Path
@@ -47,7 +49,9 @@ def test_retry_graph_stops_on_success_and_propagates_persistent_failure(
 def test_only_uploads_are_retried_and_the_last_attempt_is_required() -> None:
     steps = _steps()
     assert len(steps) == 3
-    assert all(step["uses"] == "actions/upload-artifact@v4" for step in steps)
+    assert all(
+        step["uses"] == "./.github/actions/upload-artifact/vendor" for step in steps
+    )
     assert steps[0]["if"] == "${{ !cancelled() }}"
     for previous, following in pairwise(steps):
         assert (
@@ -92,7 +96,7 @@ def test_workflow_uploads_have_budgets_and_unique_names_for_every_matrix_leg() -
             if matrix == "${{ fromJSON(needs.coverage-plan.outputs.matrix) }}":
                 matrix = {
                     "include": [
-                        {"shard": i, "hosted-bucket": i % 8} for i in range(192)
+                        {"shard": i, "hosted-bucket": i % 8} for i in range(256)
                     ]
                 }
             rows = matrix.get("include") or [
@@ -126,3 +130,22 @@ def test_workflow_uploads_have_budgets_and_unique_names_for_every_matrix_leg() -
                     names.add(name)
                     count += 1
     assert count > 64
+
+
+def test_local_upload_sdk_retains_exact_upstream_bytes_and_entry_point() -> None:
+    vendor = ACTION.parent / "vendor"
+    provenance = json.loads((vendor / "PROVENANCE.json").read_text())
+    assert provenance["commit"] == "ea165f8d65b6e75b540449e92b4886f43607fa02"
+    assert provenance["license"] == "MIT"
+    assert set(provenance["files"]) == {"action.yml", "LICENSE", "dist/upload/index.js"}
+    for name, expected in provenance["files"].items():
+        raw = (vendor / name).read_bytes()
+        assert hashlib.sha256(raw).hexdigest() == expected["sha256"]
+        assert (
+            hashlib.sha1(b"blob " + str(len(raw)).encode() + b"\0" + raw).hexdigest()
+            == expected["git_blob"]
+        )
+    metadata = yaml.safe_load((vendor / "action.yml").read_text())
+    assert metadata["runs"] == {"using": "node20", "main": "dist/upload/index.js"}
+    assert (vendor / metadata["runs"]["main"]).is_file()
+    assert "MIT License" in (vendor / "LICENSE").read_text()

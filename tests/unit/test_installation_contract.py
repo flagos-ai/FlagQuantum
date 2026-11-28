@@ -79,7 +79,7 @@ def test_ci_editable_installs_reuse_the_cpu_torch_environment() -> None:
 
 def test_ci_measures_a_bounded_cold_cpu_install() -> None:
     workflow = _workflow(".github/workflows/ci.yml")
-    package = workflow["jobs"]["package"]
+    package = workflow["jobs"]["package-installed"]
     steps = package["steps"]
     measured = [
         step
@@ -199,7 +199,7 @@ def test_one_wheel_is_loaded_on_the_older_runtime_minors() -> None:
     workflow = _workflow(".github/workflows/ci.yml")
     step = next(
         item
-        for item in workflow["jobs"]["package"]["steps"]
+        for item in workflow["jobs"]["package-installed"]["steps"]
         if item.get("name") == "Verify one wheel on older PyTorch runtimes"
     )
     command = step["run"]

@@ -8,6 +8,8 @@ from types import ModuleType
 import pytest
 import torch
 
+import flagquantum as fq
+
 pytestmark = pytest.mark.unit
 
 
@@ -21,9 +23,9 @@ def bmm_module(monkeypatch: pytest.MonkeyPatch) -> ModuleType:
     triton.language = language
     monkeypatch.setitem(sys.modules, "triton", triton)
     monkeypatch.setitem(sys.modules, "triton.language", language)
+    assert fq.__file__ is not None
     path = (
-        Path(__file__).resolve().parents[2]
-        / "flagquantum/simulation/kernels/triton/complex_bmm.py"
+        Path(fq.__file__).resolve().parent / "simulation/kernels/triton/complex_bmm.py"
     )
     spec = importlib.util.spec_from_file_location("_test_complex_bmm", path)
     assert spec is not None and spec.loader is not None

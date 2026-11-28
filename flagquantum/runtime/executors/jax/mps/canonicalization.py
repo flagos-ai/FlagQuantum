@@ -8,9 +8,6 @@ from flagquantum.simulation.mps.jax import pullbacks as _mps_numerics
 from flagquantum.simulation.mps.jax.pullbacks import jax_mps_canonicalization_pullback
 
 from ..common import communication_tier as _communication_tier
-from ..release_policy import (
-    attach_mps_backward_readiness as _attach_mps_backward_readiness,
-)
 from ..runtime_environment import _require_jax
 from .backward import _execute_minimal_mps_sharded_backward
 from .evidence import _summarize_minimal_mps_measured_runtime_evidence
@@ -153,7 +150,9 @@ def _execute_minimal_mps_canonicalization_truncation_pullback(
             "blockers": blockers,
         }
     )
-    return _attach_mps_backward_readiness(summary)
+    from flagquantum.runtime.audit.mps_readiness import _attach_mps_runtime_summary
+
+    return _attach_mps_runtime_summary(summary)
 
 
 def _execute_minimal_mps_sharded_optimizer_step(
@@ -311,7 +310,9 @@ def _execute_minimal_mps_sharded_optimizer_step(
             execution_scope=optimizer_execution_scope,
         )
     )
-    return _attach_mps_backward_readiness(summary)
+    from flagquantum.runtime.audit.mps_readiness import _attach_mps_runtime_summary
+
+    return _attach_mps_runtime_summary(summary)
 
 
 def _jax_mps_boundary_protocol(

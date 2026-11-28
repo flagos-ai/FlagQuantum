@@ -68,7 +68,7 @@ from flagquantum.errors import CapabilityError
 pytestmark = pytest.mark.unit
 
 ROOT = Path(__file__).resolve().parents[2]
-MATURITY = ROOT / "capability-maturity.toml"
+MATURITY = ROOT / "config" / "capability-maturity.toml"
 CAPABILITY = "algorithms_logical_resource_estimation"
 
 CHANNEL_OPCODES = frozenset(
