@@ -60,11 +60,11 @@ def test_complete_original_examples_retain_symbolic_declarations(name: str) -> N
         import_module("qualtran.bloqs.mod_arithmetic.mod_subtraction"), name
     )()
     program = _resolve(source)
-    if name == "_mod_neg":
+    if name in {"_mod_neg", "_cmod_neg"}:
         assert (
             len(program.functions[0].blocks[0].operations)
             == len(source.decompose_bloq().bloq_instances)
-            == 8
+            == (8 if name == "_mod_neg" else 14)
         )
     else:
         assert not program.functions[0].blocks

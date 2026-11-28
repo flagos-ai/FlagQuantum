@@ -157,14 +157,26 @@ def assert_symbolic_negation_dependencies(
             opaque.append(child)
             assert type(child).__name__ == "Controlled"
             assert child.subbloq == mod_subtraction.AddK(
-                QUInt(width), sympy.Symbol("p") + 1
+                (
+                    source.dtype
+                    if isinstance(source, mod_subtraction.CModNeg)
+                    else QUInt(width)
+                ),
+                sympy.Symbol("p") + 1,
             )
     assert len(opaque) == 1  # Repeated calls share the same source constant child.
+    registers = record.functions[0].registers
+    assert registers is not None
+    lefts = tuple(r for r in registers if r.side is not RegisterSide.RIGHT)
+    assert len(lefts) == input_words
+    inputs = []
+    offset = 0
+    for register in lefts:
+        size = int(register.bitsize)
+        inputs.append(tuple(range(offset, offset + size)))
+        offset += size
     with pytest.raises(ValueError, match="component bodies"):
-        bind_register_program(
-            record,
-            tuple(tuple(range(i * width, (i + 1) * width)) for i in range(input_words)),
-        )
+        bind_register_program(record, tuple(inputs))
     denied = {
         name: None
         for name in sys.modules
@@ -188,4 +200,22 @@ def test_all_available_symbolic_calls_operands_and_true_terminal_refusals(
         depth=depth,
         root_calls=8,
         input_words=1,
+    )
+
+
+@pytest.mark.parametrize("width", (3, 5))
+@pytest.mark.parametrize("montgomery", (False, True))
+@pytest.mark.parametrize("depth", (0, 1))
+@pytest.mark.parametrize("control_value", (0, 1))
+def test_controlled_symbolic_negation_retains_every_available_source_layer(
+    width: int, montgomery: bool, depth: int, control_value: int
+) -> None:
+    dtype = QMontgomeryUInt(width) if montgomery else QUInt(width)
+    assert_symbolic_negation_dependencies(
+        mod_subtraction.CModNeg(dtype, sympy.Symbol("p"), control_value),
+        modular_subtraction_factories(),
+        width=width,
+        depth=depth,
+        root_calls=14,
+        input_words=2,
     )

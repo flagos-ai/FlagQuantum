@@ -38,6 +38,14 @@ emitters for `adjoint=True`. Read
 source failures, complete definition ownership and separate primitive/model
 resource evidence.
 
+`controlled_modular_negation_component_program` composes all fourteen source
+calls around an explicitly supplied correction. Its constructor retains the
+available fixed-width symbolic-modulus body for both control polarities and
+leaves only the original unavailable Controlled(AddK(p+1)) child unbound.
+The finite wrapper still validates its modulus and builds the same complete
+Program. Run `tests/unit/test_symbolic_modular_negation_calls.py` for actual
+constructor, source layers, terminal refusals and SDK-free reconstruction.
+
 The complete modular multiplication graph family uses separate doubling,
 controlled multiplier, single-window, window traversal and output-allocation
 owners in the corresponding `*_component` modules. Shared clean-bank lifetime

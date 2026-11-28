@@ -38,6 +38,25 @@ def controlled_modular_negation_program(
     if type(control_value) is not int or control_value not in (0, 1):
         raise ValueError("Modular negation control value must be zero or one")
     correction = constant_addition_program(dtype, modulus + 1, control_value=1)
+    return controlled_modular_negation_component_program(
+        dtype, correction, control_value=control_value
+    )
+
+
+def controlled_modular_negation_component_program(
+    dtype: RegisterType, correction: ProgramRecord, *, control_value: int = 1
+) -> ProgramRecord:
+    """Compose source calls around an explicitly owned correction child.
+
+    Unresolved corrections remain typed declarations. Their constructor owner
+    supplies the true source boundary; this template infers no executable
+    arithmetic or resource price from an opaque signature.
+    """
+    width = executable_register_width(dtype)
+    if dtype.encoding not in {"uint", "montgomery"}:
+        raise ValueError("Modular negation requires unsigned or Montgomery words")
+    if type(control_value) is not int or control_value not in (0, 1):
+        raise ValueError("Modular negation control value must be zero or one")
     zero = multi_control_x_program((0,) * width)
     compute = and_component_program((control_value, 1), name="mod_neg_and")
     erase = and_component_program(
@@ -64,7 +83,9 @@ def controlled_modular_negation_program(
         fanout_component_program(width), {"control": result["target"], "targets": x}
     )
     added = builder.call_program(
-        correction, {"ctrl": spread["control"], "x": spread["targets"]}
+        correction,
+        {"ctrl": spread["control"], "x": spread["targets"]},
+        entry=correction.functions[0].name,
     )
     restored = builder.call_program(
         erase, {"ctrl": result["ctrl"], "target": added["ctrl"]}, entry="mod_neg_erase"

@@ -17,6 +17,7 @@ from ...core.ir.program.signatures import Signature
 from ...errors import SerializationError
 from ..registers.component_control import quantum_control_signature
 from ..registers.modular.controlled_modular_negation_component import (
+    controlled_modular_negation_component_program,
     controlled_modular_negation_program,
 )
 from ..registers.modular.controlled_modular_subtraction_component import (
@@ -42,7 +43,12 @@ def _unencoded_constant(dtype: RegisterType, value: object) -> tuple[int, ...]:
 
 
 def _symbolic_negation(
-    dtype: RegisterType, modulus: sympy.Expr, name: str
+    dtype: RegisterType,
+    modulus: sympy.Expr,
+    name: str,
+    *,
+    controlled: bool = False,
+    control_value: int = 1,
 ) -> ProgramRecord:
     # The source Controlled(AddK(k=p+1)) explicitly refuses symbolic k.
     # The remaining available control/fanout layers retain their complete bodies.
@@ -51,7 +57,10 @@ def _symbolic_negation(
     ](
         "correction_constant",
         None,
-        {"dtype": unsigned_register_type(dtype.num_qubits), "k": modulus + 1},
+        {
+            "dtype": dtype if controlled else unsigned_register_type(dtype.num_qubits),
+            "k": modulus + 1,
+        },
     )
     assert isinstance(constant, FunctionRecord) and not constant.blocks
     assert constant.registers is not None
@@ -68,7 +77,14 @@ def _symbolic_negation(
             ),
         )
     )
-    return _rename_program(modular_negation_component_program(dtype, correction), name)
+    program = (
+        controlled_modular_negation_component_program(
+            dtype, correction, control_value=control_value
+        )
+        if controlled
+        else modular_negation_component_program(dtype, correction)
+    )
+    return _rename_program(program, name)
 
 
 def _modular_factory(
@@ -100,8 +116,14 @@ def _modular_factory(
     signature = tuple(ports)
     if registers is not None and registers != signature:
         raise SerializationError(f"Invalid register signature for {kind}")
-    if kind == "ModNeg" and not dtype.is_symbolic() and isinstance(modulus, sympy.Expr):
-        return _symbolic_negation(dtype, modulus, name)
+    if (
+        kind in {"ModNeg", "CModNeg"}
+        and not dtype.is_symbolic()
+        and isinstance(modulus, sympy.Expr)
+    ):
+        return _symbolic_negation(
+            dtype, modulus, name, controlled=controlled, control_value=cv
+        )
     if dtype.is_symbolic() or isinstance(modulus, sympy.Expr):
         return FunctionRecord(name, (), registers=signature)
     if kind == "ModNeg":

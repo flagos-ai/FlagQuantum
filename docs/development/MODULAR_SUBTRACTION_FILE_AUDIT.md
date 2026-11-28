@@ -208,6 +208,17 @@ controlled AddK is one shared unavailable definition, even when called repeatedl
 
 Unbound modulus supplies no concrete gate stream, amplitude, cleanup or default
 resource price. Physical binding refuses its missing constant body. This does
-not expand CModNeg/ModSub/CModSub constructor-only symbolic bodies; their existing
+not expand ModSub/CModSub constructor-only symbolic bodies; their existing
 ordered library recipes and remaining dependency intake stay distinct. Finite
 source-stream, feedback, coherent-state and all-history proofs remain mandatory.
+
+The same dependency intake now closes the direct CModNeg fixed-width symbolic
+constructor: fourteen source calls retain both zero tests, measured conjunction
+compute/erase, fanout and explicit constant correction. Uint/Montgomery widths
+3/5, both control polarities and original serialization depths 0/1 compare every
+available source layer. The correction retains the source dtype, including
+Montgomery's modulus-omitted view. Only the actual Controlled(AddK(p+1)) source
+refusal remains bodyless. No symbolic gate counts, amplitude or physical cleanup
+are fabricated. Twelve complete finite Programs are definition-identical to
+the published baseline, so accepted finite phase/work/resource evidence remains
+applicable after factoring the shared template.
