@@ -429,6 +429,92 @@ test-command = "python smoke.py"
         assert "differs from the locked CPU image manifest" in result.stderr
 
 
+@pytest.mark.parametrize(
+    ("tables", "fault", "expected_exit"),
+    [
+        ("pytest", "none", 0),
+        ("coverage", "none", 0),
+        ("both", "none", 0),
+        ("both", "runtime_dependency", 1),
+        ("both", "optional_dependency", 1),
+        ("both", "build_requirement", 1),
+        ("both", "build_backend", 1),
+        ("both", "python_constraint", 1),
+        ("both", "unknown_tool", 1),
+        ("both", "packaging_tool", 1),
+    ],
+)
+def test_offline_manifest_accepts_checkout_test_config_but_keeps_install_identity(
+    tmp_path: Path, tables: str, fault: str, expected_exit: int
+) -> None:
+    original = """\
+[build-system]
+requires = ["setuptools>=77"]
+build-backend = "setuptools.build_meta"
+[project]
+name = "fixture"
+requires-python = ">=3.10,<3.13"
+dependencies = ["torch>=2.13"]
+[project.optional-dependencies]
+qec = ["stim>=1.16"]
+"""
+    pytest_config = """\
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+python_files = ["test_*.py"]
+python_classes = ["Test*"]
+python_functions = ["test_*"]
+addopts = ["--strict-markers"]
+markers = ["unit: local unit tests"]
+"""
+    coverage_config = """\
+[tool.coverage.run]
+source = ["flagquantum"]
+relative_files = true
+omit = ["flagquantum/benchmarking/*"]
+[tool.coverage.report]
+exclude_also = ["if TYPE_CHECKING:"]
+"""
+    image = tmp_path / "image.toml"
+    image.write_text(original, encoding="utf-8")
+    updated = original
+    if tables in ("pytest", "both"):
+        updated += pytest_config
+    if tables in ("coverage", "both"):
+        updated += coverage_config
+    replacements = {
+        "runtime_dependency": ("torch>=2.13", "torch>=2.14"),
+        "optional_dependency": ("stim>=1.16", "stim>=1.17"),
+        "build_requirement": ("setuptools>=77", "setuptools>=78"),
+        "build_backend": ("setuptools.build_meta", "other.backend"),
+        "python_constraint": (">=3.10,<3.13", ">=3.11,<3.13"),
+    }
+    if fault in replacements:
+        old, new = replacements[fault]
+        updated = updated.replace(old, new)
+    elif fault == "unknown_tool":
+        updated += "[tool.future_build]\nsetting = true\n"
+    elif fault == "packaging_tool":
+        updated += "[tool.setuptools]\ninclude-package-data = false\n"
+    checkout = tmp_path / "checkout.toml"
+    checkout.write_text(updated, encoding="utf-8")
+    result = subprocess.run(
+        [
+            sys.executable,
+            str(ROOT / ".github/actions/offline-cpu/check_manifest.py"),
+            str(checkout),
+            str(image),
+        ],
+        check=False,
+        capture_output=True,
+        text=True,
+        timeout=10,
+    )
+    assert result.returncode == expected_exit, result.stderr
+    if expected_exit:
+        assert "differs from the locked CPU image manifest" in result.stderr
+
+
 def test_coverage_aggregation_uses_the_producers_locked_environment() -> None:
     jobs = yaml.safe_load((ROOT / ".github/workflows/ci.yml").read_text())["jobs"]
     for name in ("coverage-plan", "coverage-shard", "coverage"):

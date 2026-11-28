@@ -18,6 +18,10 @@ def offline_manifest(path: Path) -> dict[str, object]:
     tools.pop("cibuildwheel", None)
     # Lint configuration does not change the installed dependency environment.
     tools.pop("ruff", None)
+    # Test selection and measurement are read from the checkout, not installed
+    # into the image. Project/build requirements and unknown tools stay checked.
+    tools.pop("pytest", None)
+    tools.pop("coverage", None)
     if not tools:
         config.pop("tool", None)
     return config
