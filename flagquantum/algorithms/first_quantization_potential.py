@@ -8,6 +8,7 @@
 from ..core.ir.program.register_types import opaque_register_type, quantum_bit_type
 from ..core.ir.program.registers import Register
 from ..core.ir.program.signatures import Signature
+from ..core.value_math import SymbolicInt
 from .first_quantization_nu import prepare_nu_signature
 
 
@@ -36,7 +37,14 @@ def select_uv_signature(
     num_bits_p: int, num_atoms: int, num_bits_nuc_pos: int
 ) -> Signature:
     """Return the potential flags, nuclear words, and three oriented axis banks."""
-    (index,) = prepare_zeta_signature(num_atoms)
+    prepare_zeta_signature(num_atoms)
+    return _select_uv_declaration(num_bits_p, num_atoms, num_bits_nuc_pos)
+
+
+def _select_uv_declaration(
+    num_bits_p: SymbolicInt, num_atoms: int, num_bits_nuc_pos: SymbolicInt
+) -> Signature:
+    (index,) = _zeta_declaration(num_atoms)
     return Signature(
         (
             Register("flag_tuv", quantum_bit_type()),
@@ -52,6 +60,12 @@ def select_uv_signature(
 
 def apply_nuclear_phase_signature(num_bits_p: int, num_bits_nuc: int) -> Signature:
     """Keep the source's capitalized Rl and distinct nuclear and momentum widths."""
+    return _nuclear_phase_declaration(num_bits_p, num_bits_nuc)
+
+
+def _nuclear_phase_declaration(
+    num_bits_p: SymbolicInt, num_bits_nuc: SymbolicInt
+) -> Signature:
     position = opaque_register_type(num_bits_nuc)
     return Signature(
         (

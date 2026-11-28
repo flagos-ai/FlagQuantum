@@ -7,6 +7,8 @@
 
 """Components for first-quantized plane-wave chemistry."""
 
+from __future__ import annotations
+
 from collections.abc import Sequence
 from dataclasses import dataclass, replace
 
@@ -25,10 +27,11 @@ from ..core.ir.program.register_types import (
 )
 from ..core.ir.program.registers import Register
 from ..core.ir.program.signatures import Signature
+from ..core.value_math import SymbolicInt
 from ..errors import ValidationError
 
 
-def _word(name: str, width: int, shape: tuple[int, ...] = ()) -> Register:
+def _word(name: str, width: SymbolicInt, shape: tuple[int, ...] = ()) -> Register:
     return Register(name, opaque_register_type(width), shape=shape)
 
 
@@ -36,7 +39,9 @@ def _bit(name: str) -> Register:
     return Register(name, quantum_bit_type())
 
 
-def _bounded(name: str, width: int, length: int | None = None) -> Register:
+def _bounded(
+    name: str, width: SymbolicInt, length: SymbolicInt | None = None
+) -> Register:
     return Register(
         name,
         bounded_unsigned_register_type(width, 2**width if length is None else length),
@@ -49,6 +54,13 @@ def first_quantization_signature(
     """Describe the matching source PREPARE or SELECT port order and domains."""
     if any(type(value) is not int or value < 1 for value in (p, eta, atoms, m)):
         raise ValueError("First-quantized dimensions must be positive integers")
+    return _first_quantization_declaration(p, eta, atoms, m, prepare=prepare)
+
+
+def _first_quantization_declaration(
+    p: SymbolicInt, eta: int, atoms: int, m: int, *, prepare: bool
+) -> Signature:
+    """Retain source logical widths without changing concrete API admission."""
     n_eta, n_atoms = (eta - 1).bit_length(), (atoms - 1).bit_length()
     indices = (_bounded("i", n_eta, eta), _bounded("j", n_eta, eta))
     momenta = tuple(_bounded(name, p) for name in ("r", "s", "mu"))
@@ -159,6 +171,11 @@ def momentum_exchange_signature(eta: int, num_bits_p: int) -> Signature:
         raise ValueError(
             "Momentum exchange requires at least two particles and a positive coordinate width"
         )
+    return _momentum_exchange_declaration(eta, num_bits_p)
+
+
+def _momentum_exchange_declaration(eta: int, num_bits_p: SymbolicInt) -> Signature:
+    """Describe source exchange ports independently of its Split body."""
     selection_width = (eta - 1).bit_length()
     return Signature(
         (

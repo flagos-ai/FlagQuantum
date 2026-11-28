@@ -5,6 +5,8 @@
 
 """Native register contracts for the projectile PREPARE and SELECT models."""
 
+from __future__ import annotations
+
 from ..core.ir.program.register_types import (
     bounded_unsigned_register_type,
     opaque_register_type,
@@ -12,17 +14,18 @@ from ..core.ir.program.register_types import (
 )
 from ..core.ir.program.registers import Register
 from ..core.ir.program.signatures import Signature
+from ..core.value_math import SymbolicInt
 
 
 def _bit(name: str, shape: tuple[int, ...] = ()) -> Register:
     return Register(name, quantum_bit_type(), shape=shape)
 
 
-def _word(name: str, width: int, shape: tuple[int, ...] = ()) -> Register:
+def _word(name: str, width: SymbolicInt, shape: tuple[int, ...] = ()) -> Register:
     return Register(name, opaque_register_type(width), shape=shape)
 
 
-def _index(name: str, width: int, bound: int | None = None) -> Register:
+def _index(name: str, width: SymbolicInt, bound: SymbolicInt | None = None) -> Register:
     return Register(
         name,
         bounded_unsigned_register_type(width, 2**width if bound is None else bound),
@@ -36,11 +39,14 @@ def projectile_prepare_tuv_signature() -> Signature:
     )
 
 
-def _selection_words(
-    n: int, eta: int, atoms: int, m: int, *, prepare: bool
-) -> tuple[Register, ...]:
+def _require_dimensions(n: int, eta: int, atoms: int, m: int) -> None:
     if any(type(value) is not int or value < 1 for value in (n, eta, atoms, m)):
         raise ValueError("First-quantized dimensions must be positive integers")
+
+
+def _selection_declarations(
+    n: SymbolicInt, eta: int, atoms: int, m: int, *, prepare: bool
+) -> tuple[Register, ...]:
     width = (eta - 1).bit_length()
     coordinates = (
         (_index("w", 2, 3), _index("w_mean", 2, 3))
@@ -60,12 +66,19 @@ def _selection_words(
 
 def projectile_prepare_signature(n: int, eta: int, atoms: int, m: int) -> Signature:
     """Describe the projectile preparation's ordered through and flag words."""
+    _require_dimensions(n, eta, atoms, m)
+    return _projectile_prepare_declaration(n, eta, atoms, m)
+
+
+def _projectile_prepare_declaration(
+    n: SymbolicInt, eta: int, atoms: int, m: int
+) -> Signature:
     return Signature(
         (
             _index("tuv", 1),
             _index("tepm", 2, 3),
             _index("uv", 2),
-            *_selection_words(n, eta, atoms, m, prepare=True),
+            *_selection_declarations(n, eta, atoms, m, prepare=True),
             _bit("succ_nu"),
             _bit("plus_t"),
             _bit("flags", (4,)),
@@ -79,12 +92,19 @@ def projectile_select_signature(
     """Describe both system banks and the independent control and index words."""
     if type(p) is not int or p < 1:
         raise ValueError("First-quantized dimensions must be positive integers")
+    _require_dimensions(n, eta, atoms, m)
+    return _projectile_select_declaration(p, n, eta, atoms, m)
+
+
+def _projectile_select_declaration(
+    p: SymbolicInt, n: SymbolicInt, eta: int, atoms: int, m: int
+) -> Signature:
     return Signature(
         (
             _bit("ham_ctrl", (4,)),
             _bit("i_ne_j"),
             _bit("plus_t"),
-            *_selection_words(n, eta, atoms, m, prepare=False),
+            *_selection_declarations(n, eta, atoms, m, prepare=False),
             _word("sys", p, (eta, 3)),
             _word("proj", n, (3,)),
         )
@@ -95,6 +115,10 @@ def projectile_select_t_signature(num_bits_n: int) -> Signature:
     """Expose the two coordinate selectors and the projectile momentum bank."""
     if type(num_bits_n) is not int or num_bits_n < 1:
         raise ValueError("First-quantized dimensions must be positive integers")
+    return _projectile_select_t_declaration(num_bits_n)
+
+
+def _projectile_select_t_declaration(num_bits_n: SymbolicInt) -> Signature:
     return Signature(
         (
             _bit("flag_T"),
@@ -118,6 +142,17 @@ def projectile_select_uv_signature(
         for width in (num_bits_p, num_bits_n, num_atoms, num_bits_nuc_pos)
     ):
         raise ValueError("First-quantized dimensions must be positive integers")
+    return _projectile_select_uv_declaration(
+        num_bits_p, num_bits_n, num_atoms, num_bits_nuc_pos
+    )
+
+
+def _projectile_select_uv_declaration(
+    num_bits_p: SymbolicInt,
+    num_bits_n: SymbolicInt,
+    num_atoms: int,
+    num_bits_nuc_pos: SymbolicInt,
+) -> Signature:
     return Signature(
         (
             _bit("flag_tuv"),
