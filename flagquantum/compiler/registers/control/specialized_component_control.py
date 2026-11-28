@@ -21,7 +21,7 @@ from ....core.ir.program.signatures import Signature
 from ..component_adjoint import adjoint_component_calls
 from ..component_builder import BindingCollection, ComponentProgramBuilder
 from ..component_control import ControlAdder
-from ..component_graph import _call_entry, _namespace_helpers
+from ..component_graph import _namespace_helpers, _stored_entry
 from .component_predicate import control_predicate_program
 from .control_predicate import ControlRegister
 
@@ -78,7 +78,10 @@ def multi_controlled_component_program(
         # attempts to invoke the child. Preserve that admission order even for
         # a declaration whose executable body is not available yet.
         register_port_types(declaration, RegisterSide.LEFT)
-    function = _call_entry(record, entry)
+    # The specialization invokes the supplied positive body once. It need not
+    # traverse that body's calls: atomic source gates such as TwoBitCSwap are
+    # valid positive children, while declarations still have no stored body.
+    function = _stored_entry(record, entry)
     assert function.registers is not None
     original_controls = tuple(r for r in function.registers if r.name == control_name)
     if (

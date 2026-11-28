@@ -178,3 +178,12 @@ the bounded traversal in `lookup/unary_iteration.py`.
 Run `tests/unit/test_unary_component_calls.py` for a complete native construction,
 generic inverse, append and all-branch example. It also checks exact source graph
 streams, typed-provider replacement and execution with SDK imports blocked.
+
+Generic positive controls on word exchange and selected-word phase preserve the
+original call boundaries. The caller owns MSB-first THRU words and the outer
+control. Word Split/Join, allocation and release pass that control unchanged.
+Controlled bit exchanges reuse the existing packed-AND single-control owner;
+controlled MultiControlZ reuses the existing combined-clause predicate owner.
+Private conjunction work is restored and measurement-erased by those owners.
+The generic path is distinct from a source operation's specialized control
+recipe; source constructors may choose different bodies for those paths.

@@ -5,6 +5,8 @@
 
 """Retain register exchange calls and the existing exact seven-T bit recipe."""
 
+from dataclasses import replace
+
 from ....core.ir import CircuitIR
 from ....core.ir.program import ProgramRecord
 from ....core.ir.program.register_bindings import RegisterBinding
@@ -12,8 +14,41 @@ from ....core.ir.program.register_types import quantum_bit_type
 from ....core.ir.program.registers import Register, RegisterType
 from ....core.ir.program.signatures import Signature
 from ..component_builder import ComponentProgramBuilder
+from ..component_control import control_component_program
 from ..component_gate_function import bit_gate_function
+from ..control.component_bookkeeping import bookkeeping_scalar_control_adder
+from ..control.specialized_component_control import specialized_component_control_system
 from .controlled_swap import controlled_swap_bit_ir
+
+
+def positive_controlled_swap_program(width: int) -> ProgramRecord:
+    """Control the source word CSwap through its packed bit specializations.
+
+    The outer ctrl2 and original ctrl precede MSB-first x/y words. Split/Join
+    pass the outer control unchanged; each bit exchange owns one restored
+    conjunction and one measurement through the shared specialization owner.
+    """
+    record = controlled_swap_program(width)
+    leaf = next(
+        function for function in record.functions if function.name == "swap_bit"
+    )
+    positive = replace(leaf, name="positive_swap_bit")
+    module, adder = specialized_component_control_system(
+        ProgramRecord((positive,)), "ctrl", 1, 1, positive.name
+    )
+    used = {operation.callee for operation in record.functions[0].blocks[0].operations}
+    controls = {
+        function.name: (
+            adder
+            if function.name == leaf.name
+            else bookkeeping_scalar_control_adder(function)
+        )
+        for function in record.functions[1:]
+        if function.name in used
+    }
+    return control_component_program(
+        replace(record, functions=(*record.functions, *module.functions)), controls
+    )
 
 
 def controlled_swap_program(width: int) -> ProgramRecord:

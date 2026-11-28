@@ -8,11 +8,29 @@
 from collections.abc import Mapping, Sequence
 from typing import TypeVar
 
-from ....core.ir.program import ProgramRecord, verify_program_record
+from ....core.ir.program import FunctionRecord, ProgramRecord, verify_program_record
 from ..component_builder import BindingCollection, ComponentProgramBuilder
+from ..component_control import ControlAdder
 from .component_extension import StructuredControlAdder
 
 _Controls = TypeVar("_Controls", bound=Sequence[BindingCollection])
+
+
+def bookkeeping_scalar_control_adder(function: FunctionRecord) -> ControlAdder:
+    """Adapt a verified bookkeeping leaf to scalar positive-control propagation."""
+    _, structured = bookkeeping_component_control_system(
+        ProgramRecord((function,)), function.name
+    )
+
+    def add(
+        builder: ComponentProgramBuilder,
+        control: BindingCollection,
+        values: dict[str, BindingCollection],
+    ) -> tuple[BindingCollection, tuple[BindingCollection, ...]]:
+        controls, outputs = structured(builder, (control,), values)
+        return controls[0], outputs
+
+    return add
 
 
 def call_with_unchanged_controls(

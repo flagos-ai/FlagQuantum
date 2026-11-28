@@ -7,7 +7,12 @@ from dataclasses import replace
 from itertools import product
 from typing import Any
 
-import numpy as np
+from tests._reference_dependencies import unavailable_reference
+
+try:
+    import numpy as np
+except ModuleNotFoundError as _reference_import_error:
+    unavailable_reference(_reference_import_error)
 import pytest
 import torch
 
@@ -427,3 +432,65 @@ def test_specialized_helper_executes_through_existing_append() -> None:
     torch.testing.assert_close(
         result.final_states.reshape(8, -1), expected.expand(8, -1), atol=3e-12, rtol=0
     )
+
+
+@pytest.mark.parametrize("values", ((1, 1), (0, 1), (1, 0)))
+@pytest.mark.parametrize("inverse", (False, True))
+def test_atomic_positive_body_uses_original_packed_control_protocol(
+    values: tuple[int, ...], inverse: bool
+) -> None:
+    from tests._reference_dependencies import unavailable_reference
+
+    try:
+        from qualtran.bloqs.basic_gates import CNOT
+        from qualtran.bloqs.mcmt.specialized_ctrl import (
+            _MultiControlledFromSinglyControlled,
+        )
+    except ModuleNotFoundError as error:
+        unavailable_reference(error)
+
+    from flagquantum.compiler.registers.component_gate_function import bit_gate_function
+    from flagquantum.compiler.registers.control.specialized_component_control import (
+        multi_controlled_component_pair,
+    )
+    from tests.unit.test_chebyshev_component import assert_all_small_raw_histories
+    from tests.unit.test_component_hierarchy_control import compare_layers
+    from tests.unit.test_default_linear_combination_oracles import bind
+    from tests.unit.test_multi_control_component import atomic_leaves
+    from tests.unit.test_multiplexed_source_binding import logical_operator
+
+    primitive = ProgramRecord(
+        (
+            bit_gate_function(
+                "main",
+                tuple(Signature.build(ctrl=1, target=1)),
+                CircuitIR(2, (Instruction("cx", (0, 1)),)),
+            ),
+        )
+    )
+    pair = multi_controlled_component_pair(primitive, primitive, "ctrl", values)
+    source = _MultiControlledFromSinglyControlled(
+        cvs=values, ctrl_bloq=CNOT(), ctrl_reg_name="ctrl"
+    )
+    if inverse:
+        source = source.adjoint()
+    record = pair[int(inverse)]
+    compare_layers(record, source, atomic_leaves(record))
+    bound, logical = bind(record)
+    expected = torch.as_tensor(source.tensor_contract(), dtype=torch.complex128)
+    torch.testing.assert_close(
+        logical_operator(bound.circuit, logical), expected, rtol=0, atol=8e-11
+    )
+    assert_all_small_raw_histories(bound.circuit, logical, expected)
+
+
+def test_atomic_positive_admission_does_not_invent_a_declaration_body() -> None:
+    from flagquantum.core.ir.program import FunctionRecord
+
+    declaration = FunctionRecord(
+        "positive", (), registers=tuple(Signature.build(ctrl=1, target=1))
+    )
+    with pytest.raises(ValueError, match="one typed entry block"):
+        multi_controlled_component_program(
+            ProgramRecord((declaration,)), "ctrl", (1, 1), "positive"
+        )

@@ -19,6 +19,66 @@ from ..component_gate_function import bit_gate_function
 from .control_predicate import ControlRegister
 
 
+def positive_controlled_multi_z_program(values: tuple[int, ...]) -> ProgramRecord:
+    """Preserve Controlled(MultiControlZ)'s merged scalar/array control call.
+
+    The source generic root calls one ControlledViaAnd(Z) with two clauses;
+    it does not replace that call with a flattened control-array wrapper.
+    """
+    if not values or any(
+        type(value) is not int or value not in (0, 1) for value in values
+    ):
+        raise ValueError(
+            "Controlled MultiControlZ requires nonempty binary activations"
+        )
+    bit = quantum_bit_type()
+    z = bit_gate_function(
+        "z", (Register("q", bit),), CircuitIR(1, (Instruction("z", (0,)),))
+    )
+    cz = bit_gate_function(
+        "positive_z",
+        tuple(Signature.build(q1=1, q2=1)),
+        CircuitIR(2, (Instruction("cz", (0, 1)),)),
+    )
+    body = ComponentProgramBuilder(Signature.build(q=1), (z, cz))
+    target = body.call_dict(z.name, body.inputs)["q"]
+
+    def add(
+        builder: ComponentProgramBuilder,
+        control: BindingCollection,
+        arguments: dict[str, BindingCollection],
+    ) -> tuple[BindingCollection, tuple[BindingCollection, ...]]:
+        outputs = builder.call_dict(cz.name, {"q1": control, "q2": arguments["q"]})
+        return outputs["q1"], (outputs["q2"],)
+
+    combined = control_component_via_predicate(
+        body.finalize({"q": target}),
+        {"main": add},
+        (Register("ctrl1", bit), Register("ctrl2", bit, (len(values),))),
+        (ControlRegister(1, (1,)), ControlRegister(1, values)),
+    )
+    builder = ComponentProgramBuilder(
+        Signature(
+            (
+                Register("ctrl", bit),
+                Register("controls", bit, (len(values),)),
+                Register("target", bit),
+            )
+        )
+    )
+    outputs = builder.call_program(
+        combined,
+        {
+            "ctrl1": builder.inputs["ctrl"],
+            "ctrl2": builder.inputs["controls"],
+            "q": builder.inputs["target"],
+        },
+    )
+    return builder.finalize(
+        {"ctrl": outputs["ctrl1"], "controls": outputs["ctrl2"], "target": outputs["q"]}
+    )
+
+
 def multi_control_x_program(values: tuple[int, ...]) -> ProgramRecord:
     """XOR a binary activation into a dirty target, retaining ordered controls."""
     return _multi_control_program(values, "x")

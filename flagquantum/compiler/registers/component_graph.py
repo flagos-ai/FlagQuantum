@@ -26,7 +26,8 @@ from .component_builder import BindingCollection, ComponentProgramBuilder
 from .component_schedule import local_operation_order
 
 
-def _call_entry(record: ProgramRecord, entry: str) -> FunctionRecord:
+def _stored_entry(record: ProgramRecord, entry: str) -> FunctionRecord:
+    """Validate one stored typed body, retaining primitive operations as leaves."""
     diagnostics = verify_program_record(record)
     if diagnostics:
         raise ValueError(f"invalid component graph: {diagnostics}")
@@ -43,6 +44,13 @@ def _call_entry(record: ProgramRecord, entry: str) -> FunctionRecord:
     block = function.blocks[0]
     if block.terminator != "return" or block.edges or block.return_values is None:
         raise ValueError("component traversal requires explicit returned values")
+    return function
+
+
+def _call_entry(record: ProgramRecord, entry: str) -> FunctionRecord:
+    function = _stored_entry(record, entry)
+    functions = {definition.name: definition for definition in record.functions}
+    block = function.blocks[0]
     if any(
         op.opcode != "call" or functions[op.callee or ""].registers is None
         for op in block.operations
