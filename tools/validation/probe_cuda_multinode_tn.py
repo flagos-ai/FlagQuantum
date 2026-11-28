@@ -460,7 +460,9 @@ def _sliced_label_multiplicities() -> dict[int, int]:
     """
 
     plan = build_tensor_network_expectation(
-        build_local_tensor_network(_forward_circuit(), device="cpu", dtype=COMPLEX_DTYPE),
+        build_local_tensor_network(
+            _forward_circuit(), device="cpu", dtype=COMPLEX_DTYPE
+        ),
         z=list(OBSERVABLE_WIRES),
     )
     counts = Counter(label for node in plan.nodes for label in node.labels)
