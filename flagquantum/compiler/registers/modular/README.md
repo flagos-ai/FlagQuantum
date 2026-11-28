@@ -141,3 +141,10 @@ Both subtraction owners now expose exact stored-call adjoints, retaining the
 five-call shell and unchanged forward Programs. Run
 `tests/unit/test_additional_modular_control_source.py` for source layers,
 constructor transport, inverse primitive/phase/cleanup and refusal boundaries.
+
+`montgomery_signature.py` owns directional dirty-product port metadata and the
+original rounded history-width expression, independently of numerical bodies.
+The source constructor adapter and controlled curve-stage bindings share it.
+The wrapper's separate concrete parity, capacity and divisibility assertions
+retain their original order and messages; the metadata-only implementation
+signature does not silently apply those wrapper constraints to other classes.

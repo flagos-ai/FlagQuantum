@@ -35,6 +35,7 @@ from ..registers.modular.modular_multiplication_component import (
 from ..registers.modular.montgomery_multiplication_component import (
     montgomery_multiplication_program,
 )
+from ..registers.modular.montgomery_signature import montgomery_product_signature
 from ..registers.modular.single_window_component import single_window_program
 from ..registers.modular.windowed_multiplication_component import (
     windowed_multiplication_program,
@@ -144,21 +145,19 @@ def _modular_factory(
                 Register("qrom_index", montgomery_register_type(window, modulus)),
             ]
         else:
-            side = RegisterSide.LEFT if inverse else RegisterSide.RIGHT
+            ports = list(
+                montgomery_product_signature(width, window, modulus, adjoint=inverse)
+            )
             if kind == "_DirtyOutOfPlaceMontgomeryModMulImpl":
-                side = RegisterSide.THRU
-            history_width = ((width + window - 1) // window) * window
-            ports = [
-                Register("x", dtype),
-                Register("y", dtype),
-                Register("target", dtype, side=side),
-                Register(
-                    "qrom_indices",
-                    montgomery_register_type(history_width, modulus),
-                    side=side,
-                ),
-                Register("reduced", quantum_bit_type(), side=side),
-            ]
+                ports = [
+                    Register(
+                        register.name,
+                        register.dtype,
+                        register.shape_symbolic,
+                        side=RegisterSide.THRU,
+                    )
+                    for register in ports
+                ]
     signature = tuple(ports)
     if registers is not None and registers != signature:
         if (
