@@ -21,6 +21,10 @@ from ...core.ir.program.registers import Register, RegisterSide, RegisterType
 from ...errors import SerializationError
 from ..registers.comparison._component_gates import comparison_bit_functions
 from ..registers.component_adjoint import adjoint_component_calls
+from ..registers.component_control import ControlAdder, _stored_control_adder
+from ..registers.modular.controlled_doubling_component import (
+    controlled_modular_doubling_program,
+)
 from ..registers.modular.modular_doubling_component import (
     modular_doubling_component_program,
     modular_doubling_program,
@@ -35,8 +39,10 @@ from ..registers.modular.single_window_component import single_window_program
 from ..registers.modular.windowed_multiplication_component import (
     windowed_multiplication_program,
 )
+from .legacy_component_arguments import ControlSpecification
 from .legacy_component_resolution import ComponentFactory, ResolvedArgument
 from .legacy_constant_control_factories import unresolved_constant_addition_program
+from .legacy_controlled_factories import controlled_via_and_factories
 from .legacy_modular_addition_factories import _integer
 from .legacy_word_factories import _rename_program
 from .montgomery_port_views import restore_montgomery_ports, source_modulus_omission
@@ -195,7 +201,9 @@ def _modular_factory(
 
 
 def modular_multiplication_factories(
-    *, adjoint_factory: ComponentFactory | None = None
+    *,
+    adjoint_factory: ComponentFactory | None = None,
+    controlled_factory: ComponentFactory | None = None,
 ) -> dict[str, ComponentFactory]:
     """Keep exact doubling adjoints in a compilation-local constructor context."""
     kinds: tuple[_Kind, ...] = (
@@ -254,6 +262,53 @@ def modular_multiplication_factories(
             return adjoint_factory(name, registers, arguments)
         raise SerializationError("Missing exact modular doubling adjoint context")
 
+    def controlled(
+        name: str,
+        registers: tuple[Register, ...] | None,
+        arguments: Mapping[str, ResolvedArgument],
+    ) -> FunctionRecord | ProgramRecord:
+        child = arguments.get("subbloq")
+        spec = arguments.get("ctrl_spec")
+        if isinstance(child, FunctionRecord) and child in recipes:
+            values, direction = recipes[child]
+            dtype = values["dtype"]
+            modulus = _integer(values, "mod")
+            if (
+                set(arguments) == {"subbloq", "ctrl_spec"}
+                and isinstance(spec, ControlSpecification)
+                and len(spec.clauses) == 1
+                and spec.clauses[0][0] == quantum_bit_type()
+                and spec.clauses[0][1].shape == ()
+                and spec.clauses[0][1].item() == 1
+                and isinstance(dtype, RegisterType)
+                and type(dtype.num_qubits) is int
+                and type(modulus) is int
+            ):
+                result = controlled_modular_doubling_program(
+                    dtype, modulus, adjoint=direction
+                )
+                if registers is not None and registers != result.functions[0].registers:
+                    result = restore_montgomery_ports(result, registers)
+                return _rename_program(result, name)
+        if controlled_factory is not None:
+            return controlled_factory(name, registers, arguments)
+        raise SerializationError(
+            "Missing controlled modular doubling constructor context"
+        )
+
+    def positive(child: FunctionRecord) -> tuple[ProgramRecord, ControlAdder]:
+        if child not in recipes:
+            raise SerializationError("Missing modular doubling predicate context")
+        values, direction = recipes[child]
+        dtype, modulus = values["dtype"], _integer(values, "mod")
+        if not isinstance(dtype, RegisterType) or type(modulus) is not int:
+            raise SerializationError("Controlled doubling requires a concrete modulus")
+        module = _rename_program(
+            controlled_modular_doubling_program(dtype, modulus, adjoint=direction),
+            child.name + "_positive",
+        )
+        return module, _stored_control_adder(module.functions[0])
+
     return {
         **{
             f"qualtran.bloqs.mod_arithmetic.mod_multiplication.{kind}": partial(
@@ -263,4 +318,6 @@ def modular_multiplication_factories(
         },
         "qualtran.bloqs.mod_arithmetic.mod_multiplication.ModDbl": forward,
         "qualtran._infra.adjoint.Adjoint": inverse,
+        "qualtran._infra.controlled.Controlled": controlled,
+        **controlled_via_and_factories(control_system=positive),
     }

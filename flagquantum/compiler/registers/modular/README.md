@@ -117,3 +117,14 @@ than substituting a zero constant. Run
 `tests/unit/test_symbolic_modular_negation_calls.py` for available call/operand
 closure, codec and reference-free reconstruction, and the modular subtraction
 component tests for finite streams, complex states, feedback and clean work.
+
+`controlled_modular_doubling_program` follows literal positive control propagation
+through the existing fifteen-call doubling graph and its exact adjoint. Constant
+loads use the existing singly/nested controlled owners; X/CNOT become CNOT/Toffoli,
+and verified bookkeeping keeps its control unchanged. It deliberately retains
+an upstream limitation: inactive-control output rebinding is not an identity and
+can release dirty input storage. It must not be presented as a corrected controlled
+modular permutation. The source-bound constructor catalogue also retains the
+negative predicate wrapper. Run `tests/unit/test_controlled_doubling_source.py`
+for operands, primitive feedback, every small measurement history on the clean
+promised sector, source counterexamples and constructor reconstruction.

@@ -251,3 +251,32 @@ no certifiable primitive stream; source QEC models remain separate. For width 3
 the symbolic source model estimates And=7, Clifford=64, measurements=7,
 T-equivalent=28 and peak qubits=14 in either direction. Those estimates are not
 measured gates or a successful physical cleanup claim.
+
+## Literal controlled doubling dependency
+
+The shared controlled doubling owner composes the complete fifteen-call source
+root in both directions. Exact stored definition matching selects the subtraction
+and correction constructors; no same-signature inference chooses arithmetic.
+Bookkeeping control is passed through only after body verification. Constant
+arithmetic, nested constant controls and primitive CNOT/Toffoli owners are reused.
+The scoped constructor context handles positive control and the negative predicate
+wrapper; unknown owners require an explicit fallback. Symbolic controlled modulus
+and deeper control contexts remain unimplemented, not source refusals.
+
+The unmodified source has an inactive-sector layout defect. For QUInt(2), p=3,
+control=0, x=1, its decomposition tensor outputs x=2 although its classical callback
+returns x=1. The x=2 column has norm zero, consistent with dirty released storage.
+The raw probe is retained outside the repository in the G2 evidence ledger.
+Faithful migration preserves this behavior instead of silently repairing it.
+Full complex amplitudes and work-zero are checked on the complete active residue
+sector plus inactive zero, in both directions and every small measurement history.
+No work-zero or unitary claim covers the source dirty-release counterexample.
+Primitive/feedback streams compare against the original decomposition; primitive
+CCX inventory and source model T equivalents are kept distinct (source prices
+atomic Toffoli at four T here). Ordinary finite doubling remains unchanged.
+
+For n=2,p=3 both directions emit CX=62,H=15,T=10,Tdg=10,S=5,
+measurement=5,CZ=5,reset=5 and atomic CCX=5. The separate source estimate is
+And=5,Toffoli=5,Clifford=37,measurement=5,T-equivalent=40 and peak qubits=12.
+The twenty emitted T/Tdg instructions and five atomic CCX therefore match that
+source T convention without claiming forty emitted T instructions.

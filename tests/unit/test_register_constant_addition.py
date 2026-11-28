@@ -221,8 +221,11 @@ def reference_arithmetic_gates(
             # Controlled.as_cirq_op exports a Cirq control wrapper. Recover the
             # same source Bloq's custom controlled decomposition before Cirq's
             # generic controlled-unitary synthesis can change its primitive set.
-            ((cv,),) = tuple(gate.control_values)
-            bloq = gate.sub_gate.bloq.controlled(ctrl_spec=CtrlSpec(cvs=cv))
+            values = tuple(tuple(value) for value in gate.control_values)
+            assert all(len(value) == 1 for value in values)
+            bloq = gate.sub_gate.bloq
+            for (cv,) in reversed(values):
+                bloq = bloq.controlled(ctrl_spec=CtrlSpec(cvs=cv))
         if (
             preserve_components
             and isinstance(gate, cirq.ControlledGate)
