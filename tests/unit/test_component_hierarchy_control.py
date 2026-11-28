@@ -107,6 +107,9 @@ def _cy_source_port_views(
 def compare_layers(
     record: ProgramRecord, source: Any, terminals: set[str]
 ) -> dict[str, Any]:
+    diagnostics = verify_program_record(record)
+    if diagnostics:
+        raise ValueError(f"invalid component graph: {diagnostics}")
     functions = {f.name: f for f in record.functions}
     pairs = {"main": source}
     pending = ["main"]
@@ -119,7 +122,33 @@ def compare_layers(
         assert tuple(
             observer.signature(Signature(functions[name].registers or ()))
         ) == tuple(composite.signature)
-        actual = _native_trace(record, name)
+        # Validate the complete module once. Keep immediate bodies because the
+        # source scheduler recognizes atomic Allocate/Free through those bodies.
+        # Deeper callees need only signatures during this local traversal.
+        function = functions[name]
+        children = dict.fromkeys(
+            op.callee
+            for block in function.blocks
+            for op in block.operations
+            if op.callee is not None and op.callee != name
+        )
+        grandchildren = dict.fromkeys(
+            op.callee
+            for child in children
+            for block in functions[child].blocks
+            for op in block.operations
+            if op.callee is not None and op.callee != name and op.callee not in children
+        )
+        local = replace(
+            record,
+            canonical_payload=None,
+            functions=(
+                function,
+                *(functions[child] for child in children),
+                *(replace(functions[child], blocks=()) for child in grandchildren),
+            ),
+        )
+        actual = _native_trace(local, name)
         expected = _source_trace(
             observer,
             composite,
