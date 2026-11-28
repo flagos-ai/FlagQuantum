@@ -1002,7 +1002,7 @@ jobs:
           - {shard: 32, hosted-bucket: 0, runner: fq-bw1100-10-cpu01-validation}
           - {shard: 33, hosted-bucket: 1, runner: fq-bw1100-11-cpu01-validation}
           - {shard: 34, hosted-bucket: 2, runner: fq-bw1100-12-cpu01-validation}
-          - {shard: 35, hosted-bucket: 3, runner: fq-bw1100-14-cpu01-validation}
+          - {shard: 35, hosted-bucket: 3, runner: fq-bw1100-2-cpu15-validation}
           - {shard: 36, hosted-bucket: 4, runner: fq-bw1100-15-cpu01-validation}
           - {shard: 37, hosted-bucket: 5, runner: fq-bw1100-16-cpu01-validation}
           - {shard: 38, hosted-bucket: 6, runner: fq-bw1100-17-cpu01-validation}
