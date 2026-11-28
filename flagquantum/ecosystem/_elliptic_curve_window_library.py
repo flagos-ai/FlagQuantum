@@ -122,7 +122,6 @@ def elliptic_curve_window_factories() -> dict[str, ComponentFactory]:
             for value in (
                 width,
                 window,
-                mul_window,
                 point.x,
                 point.y,
                 point.mod,

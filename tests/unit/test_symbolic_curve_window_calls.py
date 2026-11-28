@@ -1,7 +1,9 @@
 """Retain the complete symbolic point window and every available lookup layer."""
 
+import ast
 import sys
 from importlib import import_module
+from pathlib import Path
 from unittest.mock import patch
 
 import pytest
@@ -104,6 +106,62 @@ def test_symbolic_width_keeps_five_root_four_lookup_six_add_and_one_erase_calls(
         "_ECAddStepThree",
         "_ECAddStepTwo",
     ]
+    with pytest.raises(ValueError, match="component bodies"):
+        bind_register_program(record, ((0,), (1,), (2,)))
+    denied = {
+        name: None
+        for name in sys.modules
+        if name.split(".", 1)[0] in {"qualtran", "cirq", "kickmix"}
+    }
+    with patch.dict(sys.modules, denied):
+        assert (
+            resolve_component_program(library, 0, elliptic_curve_window_factories())
+            == record
+        )
+
+
+def test_complete_fixed_window_source_member_inventory_has_recorded_owners() -> None:
+    module = import_module(ECWindowAddR.__module__)
+    assert module.__file__ is not None
+    tree = ast.parse(Path(module.__file__).read_text())
+    audit = (
+        Path(__file__).parents[2] / "docs/development/ECC_FIXED_WINDOW_FILE_AUDIT.md"
+    ).read_text()
+    names = []
+    for node in tree.body:
+        if isinstance(node, (ast.ClassDef, ast.FunctionDef)):
+            names.append(node.name)
+            if isinstance(node, ast.ClassDef):
+                names.extend(
+                    node.name + "." + m.name
+                    for m in node.body
+                    if isinstance(m, ast.FunctionDef)
+                )
+    assert len(names) == 14
+    assert all(f"`{name}`" in audit for name in names)
+
+
+@pytest.mark.parametrize("width,modulus", ((3, 3), (5, 7)))
+def test_fixed_width_symbolic_multiplier_keeps_complete_available_window_hierarchy(
+    width: int, modulus: int
+) -> None:
+    from tests.unit.test_ecc_symbolic_multiplication_window import (
+        _compare_available_layers,
+    )
+
+    point = ECPoint(0, 1, modulus, 1)
+    source = ECWindowAddR(width, point, 1, sympy.Symbol("w"))
+    encoded = serialize_component_library(_library(source, 0))
+    library = deserialize_component_library(encoded)
+    assert serialize_component_library(library) == encoded
+    record = resolve_component_program(library, 0, elliptic_curve_window_factories())
+    finite = resolve_component_program(
+        _library(ECWindowAddR(width, point, 1, 1), 0),
+        0,
+        elliptic_curve_window_factories(),
+    )
+    _compare_available_layers(record, source, finite)
+    assert len(record.functions[0].blocks[0].operations) == 5
     with pytest.raises(ValueError, match="component bodies"):
         bind_register_program(record, ((0,), (1,), (2,)))
     denied = {

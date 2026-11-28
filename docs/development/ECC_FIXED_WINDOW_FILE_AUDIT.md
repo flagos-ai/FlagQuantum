@@ -150,3 +150,47 @@ receipts apply only to definition-identical Programs. Source scalar ECAddR
 absence, generic controlled RIGHT-output refusal and inherited arithmetic
 failures remain explicit. Fixed-n symbolic multiplication-window stage bodies
 remain a genuine direct-dependency gap; this slice does not close Q-0458.
+
+## Fixed-width symbolic multiplication window
+
+The original window root also has five calls when only the multiplication
+window is symbolic. It now composes the same finite point table and the literal
+six-stage addition with its four available changed stage bodies. At n=5 these
+contain 28/28/34/18 calls. Every unchanged modular, inverse, comparison and
+control dependency is compared in full with the finite accepted Program;
+only the actual source-refused symbolic Montgomery forward/inverse stay opaque.
+Both arithmetic root and point-window root retain all available higher calls.
+No physical multiplication, cleanup or gate price is inferred for that leaf.
+
+### Complete source member ownership
+
+| Original definition | Authoritative native responsibility and evidence |
+| --- | --- |
+| `ECAddR` | Algorithms fixed-point data and Ecosystem original constructor declaration; original quantum body is absent. |
+| `ECAddR.signature` | `fixed_point_addition_signature`, including symbolic widths and scalar control. |
+| `ECAddR.on_classical_vals` | Fixed-point classical map and shared affine-value owner; original callbacks and control-zero alias preservation. |
+| `ECAddR.wire_symbol` | Drawer `elliptic_curve_addition_wire_symbol`, exact scalar/coordinate glyph tests. |
+| `_ec_add_r` | Original symbolic example, source signature/glyphs and stored declaration. |
+| `_ec_add_r_small` | Original five-bit example, complete callback and stored declaration evidence. |
+| `ECWindowAddR` | Algorithms window operation and Ecosystem complete available constructor contexts. |
+| `ECWindowAddR.signature` | Shared shaped control/unsigned coordinate signature, both concrete and symbolic. |
+| `ECWindowAddR.qrom` | Native repeated-point table and shared symbolic lookup metadata; forward/erase models separately tested. |
+| `ECWindowAddR.build_composite_bloq` | Compiler Join/load/add/erase/Split graph; source RIGHT/LEFT banks and explicit native erasure replacement. |
+| `ECWindowAddR.build_call_graph` | Three-child source graph and parameterized ECC/lookup model owners; no primitive/model conflation. |
+| `ECWindowAddR.on_classical_vals` | Raw Montgomery callback, all original fast/slow callback inputs; quantum domain remains separate. |
+| `ECWindowAddR.wire_symbol` | Drawer callback, exact root/array-control/coordinate glyph tests. |
+| `_ec_window_add_r_small` | Original sixteen-bit example, 8,507 definitions and five root calls; no dense execution assertion. |
+
+### Remaining controlled higher-layer gap
+
+Fresh unchanged-source probing corrects another overly broad historical refusal
+note. Positive Controlled(ECWindowAddR) has five available calls, its negative
+control wrapper has three, and its Controlled(ECAdd) child has six. The generic
+controlled QROAM forward and erasure children really refuse non-THRU registers;
+that does not make their available parents bodyless. Controlled coordinate and
+product stages additionally expose 24/28 calls at n=3. These higher controlled
+contexts still require native constructor/dependency binding. Q-0458 stays open
+for that implementation gap; the source refusal is recorded at its actual leaf.
+Symbolic address windows still fail original QROAM construction with a NoneType
+iteration error. Bare ECAddR, symbolic point conversion and inherited finite
+arithmetic defects retain their independently reproduced source dispositions.
