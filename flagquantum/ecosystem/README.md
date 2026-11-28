@@ -315,3 +315,14 @@ RIGHT-junk lifetimes and unavailable leaf declarations. It does not select the
 corrected mathematical THC operation or synthesize missing rotation networks.
 The THC walk file audit distinguishes literal source calls, specialized positive
 inverse ownership, source constructor defects and actual construction limits.
+
+`_hubbard_walk_component_library.capture_hubbard_walk_context` translates actual
+locked Hubbard PREPARE/SELECT dependencies into the existing `WalkContext`.
+Ordinary and positive control pairs retain source order and explicit inverses;
+coefficient conversion uses the existing Simulation owner. Captured reflection
+private temp follows the source's lifetime, including its recorded dirty-release
+counterexample. Capture is not a clean-work or numerical execution certificate.
+Run `tests/unit/test_hubbard_walk_source_context.py` for the two original examples,
+all four directional/control graphs, and the actual degree-127 Hamiltonian root.
+The latter captures SDK coefficient payloads and derives phases natively; native
+coefficient-model acceptance is a separate existing numerical test obligation.

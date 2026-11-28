@@ -130,3 +130,47 @@ unconditional Always ownership. The original outer temp residual probability
 0.016501741620346923 remains an explicit dirty-Free counterexample; no release
 of dirty work is accepted as clean execution. No source patch or new public API
 is introduced by this batch.
+
+## Complete actual Hubbard dependency adapter, 2026-11-28
+
+`ecosystem/_hubbard_walk_component_library.py` now captures the actual square
+Hubbard walk into existing native PREPARE/SELECT, select-block, reflection,
+control-view and exact-adjoint owners. It adds no numerical kernel, Core type,
+export, synthesis algorithm or private replacement registry. Source signatures
+and named control views are retained, including the original set-derived order.
+Geometry and ordinary-source ownership are checked before conversion.
+
+Both original finite and symbolic Hamiltonian examples compare all four ordinary,
+adjoint, positive-control and positive-control-adjoint walk graphs, 118 reachable
+source/native node pairs per graph. Available children all have bodies. The
+existing ModAddK and scalar carrier acceptance boundaries remain explicit.
+Original specialized SELECT adjoint serialization refuses SpecializeOnCtrlBit.ONE;
+its live exact inverse is supplied by the existing native owner, without changing
+the codec or reference. Finite source angles retain the accepted coefficient owner.
+
+The actual finite factory has degree127. Its native composed Hamiltonian has
+2921 definitions and matches all563 reachable source nodes above the accepted
+atomic boundaries, including every one of255 exact SU2 definitions. This is an
+interoperability case: source coefficient payloads are captured at the SDK
+boundary and native Simulation computes phases. Independent native Hamiltonian
+coefficient numerics retain their prior acceptance receipts. This does not imply
+a complete serialized symbolic coefficient codec or a whole physical operator
+certificate for the defective private-Free source domain.
+
+Separate emitted inventory/model accounts for the finite original walk:
+
+| Direction | Emitted instructions | Emitted measurements | Declared source model | Source/native logical peak |
+|---|---:|---:|---|---:|
+| Ordinary and adjoint | 963 each | 28 each | 16 CSwap,26 And,87 Clifford,8 rotation,26 measurement | 26/26 |
+| Positive control and its adjoint | 1008 each | 31 each | 16 CSwap,29 And,90 Clifford,8 rotation,29 measurement | 26/26 |
+
+These inventories include existing native scalar carriers and primitive lowering.
+They are not the original model categories or proof that released reflection temp
+was zero. The 0.016501741620346923 dirty-Free counterexample and the independently
+validated caller-owned-junk mathematical operation remain separate.
+
+This completes the actual finite Hubbard dependency/context gap recorded above.
+Q-0540 stays open for the remaining literal controlled-Hamiltonian composition:
+its Always-wrapped preparations must bypass outer controls while the actual GQSP
+receives them, with explicit source-selected owners. Missing controlled execution
+is not relabeled as an upstream defect. No G3 or automatic PR merge follows.
