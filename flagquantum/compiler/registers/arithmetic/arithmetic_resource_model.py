@@ -14,8 +14,9 @@ from dataclasses import fields
 from typing import cast
 
 from ..._component_trace.arithmetic_call import ArithmeticCall
-from ..._component_trace.qec_gate_cost import query_qec_gate_cost
+from ..._component_trace.qec_gate_cost import QECGateCost, query_qec_gate_cost
 from ..._component_trace.resource_model import ComponentCost, CostCall, GateCost
+from ..._component_trace.symbolic_math import SymbolicInt
 from ..control.control_predicate_resource_model import control_predicate_cost
 from .arithmetic_declarations import arithmetic_callees
 
@@ -112,10 +113,12 @@ def source_sum_of_squares_cost(width: int, count: int) -> ComponentCost:
     if any(type(n) is not int or n < 1 for n in (width, count)):
         raise ValueError("Sum of squares requires a positive width and count")
     result_width = 2 * width + (count - 1).bit_length()
+    gates = source_sum_of_squares_gate_cost(width, count)
+    assert isinstance(gates.toffoli, int)
     return ComponentCost(
         "SumOfSquares",
         count * width + result_width,
-        GateCost(toffoli=count * width**2 - width - (count % 3 == 0)),
+        GateCost(toffoli=gates.toffoli),
         family="arithmetic",
     )
 
@@ -125,9 +128,21 @@ def source_product_cost(left: int, right: int) -> ComponentCost:
     if any(type(n) is not int or n < 1 for n in (left, right)):
         raise ValueError("Product requires positive input widths")
     longest = max(left, right)
+    gates = source_product_gate_cost(left, right)
+    assert isinstance(gates.toffoli, int)
     return ComponentCost(
         "Product",
         left + right + 2 * longest,
-        GateCost(toffoli=2 * left * right - longest),
+        GateCost(toffoli=gates.toffoli),
         family="arithmetic",
     )
+
+
+def source_sum_of_squares_gate_cost(width: SymbolicInt, count: int) -> QECGateCost:
+    """Retain the original formula independently of physical width admission."""
+    return QECGateCost(toffoli=count * width**2 - width - int(count % 3 == 0))
+
+
+def source_product_gate_cost(left: SymbolicInt, right: SymbolicInt) -> QECGateCost:
+    """Keep the source Python maximum, including unresolved comparison failures."""
+    return QECGateCost(toffoli=2 * left * right - max(left, right))

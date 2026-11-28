@@ -7,6 +7,7 @@
 """Unsigned register less-or-equal with the source comparison tree."""
 
 from ....core.ir import Instruction
+from ..._component_trace.qec_gate_cost import QECGateCost
 from ..._component_trace.resource_model import ComponentCost, GateCost
 from ..._component_trace.symbolic_math import SymbolicInt
 from ..control.control_predicate_resource_model import control_predicate_cost
@@ -38,7 +39,8 @@ def source_equal_width_less_equal_cost(
 ) -> ComponentCost:
     """Count the source comparison tree for two equal-width concrete words."""
     _, slots = less_equal_requirements(width, width)
-    erase = control_predicate_cost((1, 1), uncompute=True, legacy_shims=legacy_shims)
+    gates = source_equal_width_less_equal_gate_cost(width, legacy_shims=legacy_shims)
+    assert isinstance(gates.clifford, int)
     return ComponentCost(
         "LessThanEqual",
         int(source_equal_width_less_equal_decomposition_peak(width)),
@@ -46,9 +48,22 @@ def source_equal_width_less_equal_cost(
             and_bloq=slots,
             # Original mixers/comparator declare positive And pairs; their
             # cleanup Clifford charge comes from the shared QEC authority.
-            clifford=13 + 22 * (width - 1) + (erase.gates.clifford - 1) * slots,
+            clifford=gates.clifford,
             measurement=slots,
         ),
+    )
+
+
+def source_equal_width_less_equal_gate_cost(
+    width: SymbolicInt, *, legacy_shims: bool = False
+) -> QECGateCost:
+    """Retain mixer multiplicities even when no physical zero-width tree exists."""
+    erase = control_predicate_cost((1, 1), uncompute=True, legacy_shims=legacy_shims)
+    slots = 2 * width - 1
+    return QECGateCost(
+        and_bloq=slots,
+        clifford=13 + 22 * (width - 1) + (erase.gates.clifford - 1) * slots,
+        measurement=slots,
     )
 
 

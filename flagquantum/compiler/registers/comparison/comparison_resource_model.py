@@ -13,7 +13,11 @@ from ..._component_trace.resource_model import ComponentCost, GateCost
 from ..._component_trace.symbolic_math import SymbolicInt, smax
 from ..control.control_predicate_resource_model import control_predicate_cost
 from ..resources.symbolic_resource_model import SymbolicResourceFormula
-from .less_equal import less_equal_requirements, source_equal_width_less_equal_cost
+from .less_equal import (
+    less_equal_requirements,
+    source_equal_width_less_equal_cost,
+    source_equal_width_less_equal_gate_cost,
+)
 from .less_than import source_less_than_constant_cost
 
 
@@ -92,6 +96,66 @@ def source_less_equal_resource_formula(
         20 * left_width + 10 + cleanup.gates.clifford * ands,
         ands,
         cast(SymbolicInt, smax(7, left_width + right_width + 1)),
+    )
+
+
+def source_less_equal_gate_cost(
+    left_width: SymbolicInt, right_width: SymbolicInt, *, legacy_shims: bool = False
+) -> QECGateCost:
+    """Query literal categories, including zero-word declarations without a body.
+
+    Concrete positive words retain the existing tree model. A zero word still
+    has the source's negative mixer multiplicity; no emitted gate is implied.
+    """
+    if not isinstance(left_width, int) or not isinstance(right_width, int):
+        return QECGateCost().plus(
+            source_less_equal_resource_formula(
+                left_width, right_width, legacy_shims=legacy_shims
+            ),
+            1,
+        )
+    if min(left_width, right_width) < 0:
+        raise ValueError("Comparison categories require nonnegative widths")
+    if min(left_width, right_width) > 0:
+        return QECGateCost().plus(
+            source_less_equal_cost(
+                left_width, right_width, legacy_shims=legacy_shims
+            ).gates,
+            1,
+        )
+    core = source_equal_width_less_equal_gate_cost(0, legacy_shims=legacy_shims)
+    gap = max(left_width, right_width)
+    if gap == 0:
+        return core
+    prefix = QECGateCost(clifford=4)
+    if gap > 1:
+        prefix = (
+            QECGateCost()
+            .plus(
+                control_predicate_cost((0,) * gap, legacy_shims=legacy_shims).gates, 1
+            )
+            .plus(
+                control_predicate_cost(
+                    (0,) * gap, uncompute=True, legacy_shims=legacy_shims
+                ).gates,
+                1,
+            )
+        )
+    join = (
+        QECGateCost()
+        .plus(control_predicate_cost((1, 0), legacy_shims=legacy_shims).gates, 1)
+        .plus(
+            control_predicate_cost(
+                (1, 0), uncompute=True, legacy_shims=legacy_shims
+            ).gates,
+            1,
+        )
+    )
+    return (
+        core
+        + prefix
+        + join
+        + QECGateCost(clifford=-1 + 2 * int(right_width > left_width))
     )
 
 
