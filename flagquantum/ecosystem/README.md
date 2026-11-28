@@ -342,7 +342,8 @@ and the six-call curve-addition root from explicit source constructor fields.
 It uses shared arithmetic controllers and compiler-owned stage layouts. Genuine
 controlled state/multiplier and directional stage failures remain declarations.
 Symbolic widths and failed child constructors retain the available root layer;
-available symbolic-modulus arithmetic control remains an explicit native gap.
+finite-width unresolved-modulus controls reuse the same arithmetic owners and
+retain only actual symbolic AddK and directional source refusals.
 Its control-only constructor catalogue uses ordinary child declarations as
 metadata references; plain forward execution retains the existing addition
 catalogue. Reachable controlled bodies never replace an available source layer
@@ -358,3 +359,10 @@ The curve catalogue explicitly opts into compiler-owned predicate composition
 for logical symbolic targets; other catalogues retain their declaration default.
 Run `tests/unit/test_ecc_window_controlled.py` for the source/transport boundary,
 including the original symbolic-array serialization failure at source depth one.
+
+Controlled coordinates/products and ECAdd also compose unresolved moduli at
+fixed width. Constructor expressions and exact inverse roles remain with
+`formats/legacy_symbolic_modular_controls.py`; the Ecosystem layer supplies
+explicit owned dependencies to the unchanged compiler stage layouts. Constant
+SymPy modulus values without free symbols and remaining symbolic word-width
+contexts require separate source-boundary auditing.

@@ -51,6 +51,7 @@ _PROFILES = (
     (3, 3, 3),
     (6, 13, 2),
     (3, 3, sympy.Symbol("w", positive=True, integer=True)),
+    (3, sympy.Symbol("p"), 1),
 )
 
 
@@ -58,7 +59,7 @@ _PROFILES = (
 def stage(
     kind: Literal["coordinates", "products"],
     width: int,
-    modulus: int,
+    modulus: SymbolicInt,
     window: SymbolicInt,
 ) -> ProgramRecord:
     return controlled_curve_arithmetic_stage(kind, width, modulus, window)
@@ -89,7 +90,9 @@ def available_layers(record: ProgramRecord, source: Any) -> dict[str, Any]:
     for name, child in pairs.items():
         if not functions[name].blocks:
             assert type(child).__name__ == "Controlled"
-            with pytest.raises(DecomposeTypeError, match="non-thru registers"):
+            with pytest.raises(
+                DecomposeTypeError, match="non-thru registers|symbolic AddK"
+            ):
                 child.decompose_bloq()
     return pairs
 
@@ -99,7 +102,7 @@ def available_layers(record: ProgramRecord, source: Any) -> dict[str, Any]:
 def test_every_available_stage_layer_and_actual_directional_refusal(
     kind: Literal["coordinates", "products"],
     width: int,
-    modulus: int,
+    modulus: SymbolicInt,
     window: SymbolicInt,
 ) -> None:
     record = stage(kind, width, modulus, window)
@@ -275,10 +278,18 @@ def test_available_six_call_parent_retained_when_actual_children_fail(
 def test_available_symbolic_modulus_control_is_not_mislabeled_as_source_refusal() -> (
     None
 ):
-    from flagquantum.errors import SerializationError
-
     p = sympy.Symbol("p", positive=True, integer=True)
     source = ec_add._ECAddStepThree(3, p, 1).controlled()
     assert len(source.decompose_bloq().bloq_instances) == 24
-    with pytest.raises(SerializationError, match="Symbolic-modulus"):
-        controlled_curve_addition(3, p, 1)
+    record = controlled_curve_addition(3, p, 1)
+    calls = record.functions[0].blocks[0].operations
+    assert len(calls) == 6
+    compare_layers(
+        record,
+        ec_add.ECAdd(3, p, 1).controlled(),
+        {op.callee for op in calls if op.callee is not None},
+    )
+    for index, kind in ((2, "coordinates"), (3, "products")):
+        callee = calls[index].callee
+        assert callee is not None
+        assert matches_component_definition(record, callee, stage(kind, 3, p, 1))

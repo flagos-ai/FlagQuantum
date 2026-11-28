@@ -555,3 +555,21 @@ primitive inventories, amplitudes and work-zero remain unavailable at this
 source frontier; no synthetic physical certificate replaces those refusals.
 Fixed-n symbolic-modulus arithmetic composition and remaining constructor
 contexts still prevent full ec_add.py/ec_add_r.py parent acceptance.
+
+### Fixed-width unresolved-modulus control composition
+
+The available symbolic ModAdd/CModAdd/ModSub/CModSub/ModDbl control roots retain
+17/14/5/5/15 calls in both directions and both inner polarities. The shared
+finite arithmetic specialization and generic inverse controllers are reused.
+Unresolved AddK, its inverse and nested controls remain declarations only where
+the original actually refuses symbolic constants. Named load/unload roles are
+bound separately: two empty declarations with equal ABI do not prove equal
+expressions or directions. Constructor observers retain -p, p and p+1, and
+inverse selection without replacing symbolic expressions by numerical values.
+
+Controlled coordinate/product stages and the six-call ECAdd root compose those
+real owners at fixed n with unresolved p; the earlier native gap is removed.
+Finite Programs require full equality against the preceding published head
+before their physical phase, feedback, work-zero and resource evidence is reused.
+No whole-symbolic physical execution or primitive count is inferred. Remaining
+word-width and constant-SymPy constructor contexts still need source audit.

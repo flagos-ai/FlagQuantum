@@ -9,6 +9,8 @@ from dataclasses import replace
 from functools import partial
 from typing import Literal
 
+import sympy
+
 from ..algorithms.primitives.elliptic_curve_addition import (
     elliptic_curve_addition_signature,
 )
@@ -45,6 +47,11 @@ from ..compiler.formats.legacy_component_resolution import (
 from ..compiler.formats.legacy_controlled_factories import controlled_via_and_factories
 from ..compiler.formats.legacy_fixed_gate_factories import fixed_gate_factories
 from ..compiler.formats.legacy_modular_addition_factories import _integer
+from ..compiler.formats.legacy_symbolic_modular_controls import (
+    symbolic_additional_modular_addition_program,
+    symbolic_additional_modular_subtraction_program,
+    symbolic_controlled_modular_doubling_program,
+)
 from ..compiler.formats.legacy_word_factories import _rename_program
 from ..compiler.registers.bits.bitwise_component_control import (
     _controlled_cx,
@@ -131,7 +138,7 @@ def _refused_control(name: str, signature: Signature) -> ProgramRecord:
 def controlled_curve_arithmetic_stage(
     kind: Literal["coordinates", "products"],
     width: int,
-    modulus: int,
+    modulus: SymbolicInt,
     window: SymbolicInt = 1,
 ) -> ProgramRecord:
     """Compose all source-available positive-controlled coordinate/product calls.
@@ -143,6 +150,21 @@ def controlled_curve_arithmetic_stage(
     constraints remain enforced. Unresolved source leaves prevent physical binding.
     """
     validate_dirty_montgomery_constructor(width, window, modulus)
+    add_owner = (
+        symbolic_additional_modular_addition_program
+        if isinstance(modulus, sympy.Expr)
+        else additional_modular_addition_program
+    )
+    subtract_owner = (
+        symbolic_additional_modular_subtraction_program
+        if isinstance(modulus, sympy.Expr)
+        else additional_modular_subtraction_program
+    )
+    double_owner = (
+        symbolic_controlled_modular_doubling_program
+        if isinstance(modulus, sympy.Expr)
+        else controlled_modular_doubling_program
+    )
     dtype = montgomery_register_type(width)
     signature = (
         addition_coordinates_signature
@@ -192,28 +214,26 @@ def controlled_curve_arithmetic_stage(
             cnot=cnot_program,
             controlled_subtract=owner(
                 "controlled_subtract",
-                additional_modular_subtraction_program(dtype, modulus, control_value=1),
+                subtract_owner(dtype, modulus, control_value=1),
             ),
-            double=owner("double", controlled_modular_doubling_program(dtype, modulus)),
+            double=owner("double", double_owner(dtype, modulus)),
             add=owner(
                 "add",
-                additional_modular_addition_program(
-                    montgomery_register_type(width, modulus), modulus
-                ),
+                add_owner(montgomery_register_type(width, modulus), modulus),
             ),
             controlled_add=owner(
                 "controlled_add",
-                additional_modular_addition_program(dtype, modulus, control_value=1),
+                add_owner(dtype, modulus, control_value=1),
             ),
             add_adjoint=owner(
                 "add_inverse",
-                additional_modular_addition_program(
+                add_owner(
                     montgomery_register_type(width, modulus), modulus, adjoint=True
                 ),
             ),
             double_adjoint=owner(
                 "double_inverse",
-                controlled_modular_doubling_program(dtype, modulus, adjoint=True),
+                double_owner(dtype, modulus, adjoint=True),
             ),
         )
     else:
@@ -223,9 +243,7 @@ def controlled_curve_arithmetic_stage(
             cnot=cnot_program,
             multiply=multiply,
             multiply_adjoint=multiply_adjoint,
-            subtract=owner(
-                "subtract", additional_modular_subtraction_program(dtype, modulus)
-            ),
+            subtract=owner("subtract", subtract_owner(dtype, modulus)),
         )
     functions = {function.name: function for function in program.functions}
     for operation in program.functions[0].blocks[0].operations:
@@ -261,9 +279,9 @@ def _controlled_stage_or_refusal(
         # The source stage fails while constructing its first dirty multiplier;
         # its six-call parent remains available and must not lose that layer.
         return _refused_control("controlled_" + kind, _SIGNATURES[kind](width))
-    if type(modulus) is not int:
+    if isinstance(modulus, sympy.Expr) and not modulus.free_symbols:
         raise SerializationError(
-            "Symbolic-modulus arithmetic control bodies remain unsupported"
+            "Constant symbolic-modulus arithmetic control bodies remain unsupported"
         )
     return controlled_curve_arithmetic_stage(
         "coordinates" if kind == "_ECAddStepThree" else "products",
@@ -291,7 +309,8 @@ def elliptic_curve_control_factories() -> dict[str, ComponentFactory]:
     This control-only catalogue declares ordinary children as constructor
     references; plain forward execution uses elliptic_curve_addition_factories.
     Requested controlled parents retain all available bodies. Arithmetic bodies
-    require concrete n/mod; genuine refusal declarations retain symbolic metadata.
+    require concrete n and concrete or unresolved mod; genuine refusal
+    declarations retain symbolic metadata.
     """
     recipes: dict[FunctionRecord, tuple[str, dict[str, ResolvedArgument]]] = {}
 
