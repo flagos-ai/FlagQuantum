@@ -55,3 +55,22 @@ atomic complete-set publication. CPU/memory admission and scientific workers
 remain unchanged. Independently replay the failed run's immutable 256 artifacts
 with observed active I/O, original ZIP/database hashes and SQLite integrity.
 This is transport diagnosis, not a CI/test rerun or runner/hardware qualification.
+
+## Existing temporary directories on a reused recipient
+
+Own65 CI exposed a recipient with an existing RUNNER_TEMP/coverage-plan directory
+(job141032922089). A fixed name must not assume prior job cleanup succeeded.
+Use freshly created task-owned temporary roots for the producer bootstrap, the
+producer plan and the recipient plan. The plan writer creates a child below its
+fresh parent; publish only successful step output paths and keep source fallback
+independent from the preserved plan. Do not remove or overwrite old directories,
+relax Git/source/plan checks, or change original scientific inputs, selection,
+resources, clocks or output identities. Exercise existing misleading fixed-name
+directories in the real producer/recipient script regressions.
+
+The core312 partition also exposed an unsynchronized policy consumer that still
+looked for the removed second plan download. Synchronize that test with the
+bounded initial/retry/promotion graph and successful fresh plan output, keeping
+its digest, strict retry, path isolation and two-consumer assertions. Update the
+stale eight-transfer tool documentation. These remain the same declared PR1360
+handoff repair; preserve all current65 observations before another publication.
