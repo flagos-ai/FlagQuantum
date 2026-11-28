@@ -4,13 +4,98 @@
 
 """Compose the finite QSP call chain from explicit native directional children."""
 
+from collections.abc import Mapping
+from dataclasses import replace
+
 from ....core.ir.program import ProgramRecord
 from ....core.ir.program.register_types import quantum_bit_type
 from ....core.ir.program.registers import Register
 from ....core.ir.program.signatures import Signature
-from ..component_builder import ComponentProgramBuilder
-from ..component_control import quantum_control_signature
+from ..component_builder import BindingCollection, ComponentProgramBuilder
+from ..component_control import (
+    ControlAdder,
+    control_component_program,
+    quantum_control_signature,
+)
 from ..component_graph import _collections, _elements
+
+
+def controlled_gqsp_component_program(
+    record: ProgramRecord, controlled_calls: Mapping[str, ProgramRecord]
+) -> ProgramRecord:
+    """Control a GQSP root using explicit source-selected child owners.
+
+    Each supplied child has a leading positive control followed by the original
+    child's data in the same typed order. Port names may differ; packing views
+    belong to those child owners. No controlled semantics are inferred from a
+    signature. A bodyless source GQSP remains an unexecutable declaration.
+    """
+    if not record.functions or record.physical_context is not None:
+        raise ValueError("Controlled GQSP requires a logical source Program")
+    root = record.functions[0]
+    if (
+        root.registers is None
+        or not root.registers
+        or root.registers[0] != Register("signal", quantum_bit_type())
+        or not Signature(root.registers).thru_registers_only
+    ):
+        raise ValueError("Controlled GQSP requires its through signal and data ports")
+    if not root.blocks:
+        return replace(
+            record,
+            canonical_payload=None,
+            functions=(
+                replace(
+                    root,
+                    registers=tuple(
+                        quantum_control_signature(
+                            Signature(root.registers), ((quantum_bit_type(), ()),)
+                        )
+                    ),
+                ),
+                *record.functions[1:],
+            ),
+        )
+    functions = {function.name: function for function in record.functions}
+    adders: dict[str, ControlAdder] = {}
+    for name, module in controlled_calls.items():
+        original = functions.get(name)
+        if original is None or original.registers is None or not module.functions:
+            raise ValueError("Controlled GQSP requires explicit typed child owners")
+        old_ports = original.registers
+        ports = module.functions[0].registers
+        if (
+            module.physical_context is not None
+            or ports is None
+            or len(ports) != len(old_ports) + 1
+            or ports[0] != Register(ports[0].name, quantum_bit_type())
+            or not Signature(ports).thru_registers_only
+            or tuple((r.dtype, r.shape, r.side) for r in ports[1:])
+            != tuple((r.dtype, r.shape, r.side) for r in old_ports)
+        ):
+            raise ValueError("Controlled GQSP child must preserve typed data order")
+
+        def add(
+            builder: ComponentProgramBuilder,
+            control: BindingCollection,
+            values: dict[str, BindingCollection],
+            *,
+            child: ProgramRecord = module,
+            original_ports: tuple[Register, ...] = old_ports,
+            controlled_ports: tuple[Register, ...] = ports,
+        ) -> tuple[BindingCollection, tuple[BindingCollection, ...]]:
+            inputs = {
+                new.name: values[old.name]
+                for new, old in zip(controlled_ports[1:], original_ports, strict=True)
+            }
+            inputs[controlled_ports[0].name] = control
+            outputs = builder.call_program(child, inputs, entry=child.functions[0].name)
+            return outputs[controlled_ports[0].name], tuple(
+                outputs[r.name] for r in controlled_ports[1:]
+            )
+
+        adders[name] = add
+    return control_component_program(record, adders, entry=root.name)
 
 
 def gqsp_control_view(

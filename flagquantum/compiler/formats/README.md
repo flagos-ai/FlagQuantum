@@ -60,3 +60,12 @@ normal SU2 mapping remains unchanged. Run `tests/unit/test_controlled_su2_source
 for both polarities, adjoints, complete complex operators, symbolic binding and
 SDK-free append. The [SU2 constructor audit](../../../docs/development/RESOLVER_SU2_AUDIT.md)
 separates primitive inventories, declared models and source limitations.
+
+`legacy_hamiltonian_gqsp_factories.controlled_hamiltonian_gqsp_factories` accepts
+separate ordinary and controlled GQSP contexts, associated with the actual
+resolved walk/time/precision. It reuses the existing positive-control protocol
+and negative predicate wrapper; both Always PREPARE calls stay uncontrolled.
+Missing contexts fail closed. Numerical coefficient and phase derivation belongs
+to Simulation, not this constructor. Start with
+`tests/unit/test_controlled_hamiltonian_gqsp_source.py` and the
+[complete source audit](../../../docs/development/HAMILTONIAN_GQSP_CONSTRUCTOR_AUDIT.md).

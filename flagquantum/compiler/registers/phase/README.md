@@ -40,10 +40,16 @@ keeps native bounded lookup emission separate from opaque-source resource models
 
 `generalized_qsp_component.py` composes explicit forward, inverse, controlled and
 SU2 owners. Logical source leaves may remain typed declarations; binding requires
-complete reachable bodies. `hamiltonian_gqsp_component.py` preserves the actual
+complete bodies for every definition included in the bound module. Unused owner
+inputs can remain unimported; bodyless definitions cannot be included in a
+physical module. `hamiltonian_gqsp_component.py` preserves the actual
 Always wrappers around PREPARE and its explicit inverse, owns only private junk,
 and records its allocation/release without proving numerical cleanup. Numerical
 phase computation stays in Simulation. Run the generalized and Hamiltonian
 `test_*gqsp_component_library.py` scenarios plus
 `test_gqsp_logical_source_closure.py` for constructor, complete-call and binding
-boundaries. Controlled Hamiltonian composition needs explicit Always-aware owners.
+boundaries. `controlled_gqsp_component_program` threads an outer positive control
+through explicit controlled child Programs, preserving source-selected walk
+predicates. The Hamiltonian constructor leaves both Always preparations outside
+that control. Run `test_controlled_hamiltonian_gqsp_source.py` for both default
+polarities, measured execution and the symbolic declaration refusal.

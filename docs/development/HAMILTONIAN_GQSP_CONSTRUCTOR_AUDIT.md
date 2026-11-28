@@ -210,3 +210,58 @@ source mixed-polarity forward-walk predicate, then compose the Always-aware
 Hamiltonian root. The source mixed predicate is CtrlSpecAnd, not the packed
 specialization used for the double-positive inverse branch. No parent checkbox
 is changed by the present dependency delivery.
+
+## Complete source closure and controlled execution, 2026-11-28
+
+The remaining controlled composition is implemented. The ordinary root is
+unchanged. `controlled_gqsp_component_program` preserves the outer control,
+controlled SU2 owners, double-positive inverse walk and mixed-polarity forward
+walk. The mixed branch retains CtrlSpecAnd and the existing specialized positive
+walk; the inverse branch retains separate packed SELECT/reflection reductions.
+The scoped Hamiltonian constructor binds these explicit contexts to the actual
+resolved walk, time and precision. Both Always preparations bypass the outer
+control, including the zero-polarity protocol wrapper.
+
+| Complete source responsibility | Native owner and acceptance |
+|---|---|
+| Normalization presence, alpha, time/precision and signature | Existing constructor/context validation and original source constructor receipts |
+| Degree and finite approx_cos | Simulation Jacobi-Anger and new shared Hamiltonian coefficient owner; exact source arrays, both time signs, zero time, cached-degree reuse |
+| Symbolic approx_cos | Same owner returns the original shape expression; no fabricated coefficients or executable empty body |
+| Verified complement and phase recursion | Existing Simulation root and phase owners; native P/Q/phases derive independently of reference values |
+| GQSP and half synthesis precision | Existing scoped GQSP factory and controlled root with explicit directional children |
+| Private junk and Always preparation pair | Existing Hamiltonian component; allocation, two uncontrolled Always calls and final Free remain source ordered |
+| Positive and negative default controls | Scoped Hamiltonian constructor and existing control predicate owner; full available source graph and clean execution |
+| Concrete and symbolic original examples | Degree127 concrete graph:9901definitions/3120compared source nodes; symbolic declarations preserve the source refusal to execute |
+| Declared costs | Existing source-model owners and original model receipts; emitted primitive inventories below remain separate |
+
+192 concentrated cases pass independently with Cirq1.7 and Cirq1.6, including
+all changed owners, existing hierarchy controls, ordinary Hamiltonian numerical
+and projection paths, source constructors, measured GQSP and SU2 controls. The
+clean independent SELECT fixture verifies complete complex operators, every
+small raw measurement history, zero private work, SDK-free append/JSON and
+DynamicCircuit execution for both polarities. It supplies a generic composition
+certificate, not a replacement numerical claim about the actual Hubbard model.
+
+The large comparison checks the complete Program once, then retains immediate
+child bodies and deeper signatures per local traversal. Immediate Allocate/Free
+bodies are necessary for source scheduling; dropping them was detected by the
+large graph comparison and corrected. Full-module validation remains mandatory.
+Physical binding still requires bodies for every included definition, including
+unused declarations. Unused owner inputs that are never imported are distinct.
+
+| Fixture | Control | Emitted primitives | Emitted measurements | Declared source model | Source logical peak |
+|---|---:|---:|---:|---|---:|
+| Clean small SELECT | 1 |149|5|2Toffoli,5And,43Clifford,20rotation,5measurement|7|
+| Clean small SELECT | 0 |151|5|2Toffoli,5And,45Clifford,20rotation,5measurement|7|
+| Actual Hubbard,t=.002,precision=.01 |1|2441|71|42CSwap,65And,217Clifford,42rotation,65measurement|30|
+| Actual Hubbard,t=.002,precision=.01 |0|2443|71|42CSwap,65And,219Clifford,42rotation,65measurement|30|
+
+Under the approved faithful-migration rule, Q-0540 is ready for whole-file
+acceptance after the local strict/architecture gates and verified publication.
+This supersedes the earlier staged open notes. Frozen source/test hashes and
+original source-test receipts remain unchanged. Retained upstream boundaries
+are the Issue860 finite-grid bound, root-conditioning failures, the actual
+Hubbard private-Free residual0.016501741620346923, symbolic-assumption transport
+loss and specialized SELECT adjoint enum serialization refusal. Controlled Rx
+is an original atomic leaf: no deeper source primitive stream is claimed.
+No whole actual Hubbard complex-amplitude or zero-work certificate is asserted.
