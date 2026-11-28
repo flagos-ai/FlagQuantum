@@ -2642,11 +2642,13 @@ jobs:
       - *source_transport_2
       - *source_transport_3
       - name: Preserve the verified incremental coverage bootstrap
+        id: coverage-bootstrap
         run: |
           test "$(cat "$RUNNER_TEMP/ci-source/source.sha")" = "$GITHUB_SHA"
           test -s "$RUNNER_TEMP/ci-source/source.pack"
-          mkdir "$RUNNER_TEMP/coverage-bootstrap"
-          cp "$RUNNER_TEMP/ci-source/source.sha" "$RUNNER_TEMP/ci-source/source.pack" "$RUNNER_TEMP/coverage-bootstrap/"
+          bootstrap="$(mktemp -d "$RUNNER_TEMP/fq-coverage-bootstrap.XXXXXXXX")"
+          cp "$RUNNER_TEMP/ci-source/source.sha" "$RUNNER_TEMP/ci-source/source.pack" "$bootstrap/"
+          echo "path=$bootstrap" >> "$GITHUB_OUTPUT"
       - name: Check whether cached Git objects complete the source tree
         id: source-cache
         run: |
@@ -2721,18 +2723,23 @@ jobs:
           if [ "$GITHUB_EVENT_NAME" = pull_request ]; then
             marker="$marker and not slow"
           fi
+          plan_root="$(mktemp -d "$RUNNER_TEMP/fq-coverage-plan.XXXXXXXX")"
           python -m pytest --collect-only -q -m "$marker" -p tools.ci.pytest_shard \
-            --fq-write-coverage-plan "$RUNNER_TEMP/coverage-plan" \
+            --fq-write-coverage-plan "$plan_root/plan" \
             --fq-coverage-plan-count "$FQ_COVERAGE_SHARDS"
+          echo "path=$plan_root/plan" >> "$GITHUB_OUTPUT"
       - name: Bundle the verified incremental source with the coverage plan
+        env:
+          FQ_COVERAGE_BOOTSTRAP: ${{ steps.coverage-bootstrap.outputs.path }}
+          FQ_COVERAGE_PLAN: ${{ steps.plan.outputs.path }}
         run: |
-          test "$(cat "$RUNNER_TEMP/coverage-bootstrap/source.sha")" = "$GITHUB_SHA"
-          cp "$RUNNER_TEMP/coverage-bootstrap/source.sha" "$RUNNER_TEMP/coverage-bootstrap/source.pack" "$RUNNER_TEMP/coverage-plan/"
+          test "$(cat "$FQ_COVERAGE_BOOTSTRAP/source.sha")" = "$GITHUB_SHA"
+          cp "$FQ_COVERAGE_BOOTSTRAP/source.sha" "$FQ_COVERAGE_BOOTSTRAP/source.pack" "$FQ_COVERAGE_PLAN/"
       - uses: ./.github/actions/upload-artifact
         timeout-minutes: 6
         with:
           name: coverage-plan-${{ github.sha }}
-          path: ${{ runner.temp }}/coverage-plan/
+          path: ${{ steps.plan.outputs.path }}/
           if-no-files-found: error
 
   coverage-shard:
@@ -2785,10 +2792,12 @@ jobs:
           path: ${{ runner.temp }}/ci-source-incremental-retry
       - *source_transport_3
       - name: Preserve the verified coverage plan before source fallback
+        id: coverage-plan-stage
         run: |
           test "$(cat "$RUNNER_TEMP/ci-source/source.sha")" = "$GITHUB_SHA"
-          mkdir "$RUNNER_TEMP/coverage-plan"
-          cp "$RUNNER_TEMP/ci-source/plan.json" "$RUNNER_TEMP/ci-source/"shard-*.txt "$RUNNER_TEMP/coverage-plan/"
+          plan="$(mktemp -d "$RUNNER_TEMP/fq-coverage-plan.XXXXXXXX")"
+          cp "$RUNNER_TEMP/ci-source/plan.json" "$RUNNER_TEMP/ci-source/"shard-*.txt "$plan/"
+          echo "path=$plan" >> "$GITHUB_OUTPUT"
       - name: Check whether cached Git objects complete the source tree
         id: source-cache
         run: |
@@ -2859,7 +2868,7 @@ jobs:
       - name: Run this exact coverage partition (pull requests)
         if: github.event_name == 'pull_request'
         env:
-          FQ_COVERAGE_PLAN: ${{ runner.temp }}/coverage-plan
+          FQ_COVERAGE_PLAN: ${{ steps.coverage-plan-stage.outputs.path }}
         run: |
           mkdir -p "$RUNNER_TEMP/fq-coverage"
           export COVERAGE_FILE="$RUNNER_TEMP/fq-coverage/.coverage.${{ matrix.shard }}"
@@ -2871,7 +2880,7 @@ jobs:
       - name: Run this exact coverage partition (integration revisions)
         if: github.event_name != 'pull_request'
         env:
-          FQ_COVERAGE_PLAN: ${{ runner.temp }}/coverage-plan
+          FQ_COVERAGE_PLAN: ${{ steps.coverage-plan-stage.outputs.path }}
         run: |
           mkdir -p "$RUNNER_TEMP/fq-coverage"
           export COVERAGE_FILE="$RUNNER_TEMP/fq-coverage/.coverage.${{ matrix.shard }}"

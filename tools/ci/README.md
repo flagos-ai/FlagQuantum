@@ -41,7 +41,7 @@ python -I tools/ci/ci_source_archive.py --help
 See the [root-tool Integration declaration](../../docs/development/migration/root-tool-ownership.md). Incoming #1084 semantic changes remain separately unqualified.
 
 Coverage aggregation uses `ci_coverage_artifacts.py` on the host interpreter to
-start at most eight REST artifact transfers. It publishes only the exact current
+start at most sixteen REST artifact transfers. It publishes only the exact current
 run/source shard set after SHA-256 and safe ZIP verification; the original
 SQLite integrity, combine and coverage-policy steps remain mandatory. The
 locked offline Python wrapper continues to perform coverage computation without

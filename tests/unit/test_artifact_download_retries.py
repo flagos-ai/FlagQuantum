@@ -74,13 +74,14 @@ def test_stage_refuses_ambiguous_selectors_and_keeps_retry_directory_clean(
 def test_coverage_workflow_consumes_only_isolated_download_outputs() -> None:
     jobs = yaml.safe_load((ROOT / ".github/workflows/ci.yml").read_text())["jobs"]
     for job, artifact_id, environment in [
-        ("coverage-shard", "coverage-plan-download", "FQ_COVERAGE_PLAN"),
+        ("coverage-shard", "source-incremental-download", "FQ_COVERAGE_PLAN"),
         ("coverage", "coverage-data", "FQ_COVERAGE_INPUTS"),
     ]:
         steps = jobs[job]["steps"]
         index, step = next(
             (i, step) for i, step in enumerate(steps) if step.get("id") == artifact_id
         )
+        expected_path = "${{ steps." + artifact_id + ".outputs.path }}"
         if job == "coverage":
             assert step["timeout-minutes"] == 4
             assert not step.get("continue-on-error", False)
@@ -88,10 +89,39 @@ def test_coverage_workflow_consumes_only_isolated_download_outputs() -> None:
             assert "timeout --kill-after=10s 240s" in step["run"]
             assert not any(s.get("id") == "coverage-data-retry" for s in steps)
         else:
-            assert step["uses"] == "./.github/actions/download-artifact"
-            assert step["timeout-minutes"] == 6
-            assert not step.get("continue-on-error", False)
-        expected_path = "${{ steps." + artifact_id + ".outputs.path }}"
+            retry, promotion, preserved_plan = steps[index + 1 : index + 4]
+            assert step["uses"] == retry["uses"] == "actions/download-artifact@v8.0.2"
+            assert step["continue-on-error"] is True
+            assert step["timeout-minutes"] == 1
+            assert retry["timeout-minutes"] == 2
+            assert not retry.get("continue-on-error", False)
+            assert (
+                retry["if"]
+                == "${{ !cancelled() && steps.source-incremental-download.outcome == 'failure' }}"
+            )
+            assert (
+                step["with"]["name"]
+                == retry["with"]["name"]
+                == "coverage-plan-${{ github.sha }}"
+            )
+            assert (
+                step["with"]["digest-mismatch"]
+                == retry["with"]["digest-mismatch"]
+                == "error"
+            )
+            assert step["with"]["path"] != retry["with"]["path"]
+            assert (
+                promotion["if"]
+                == "${{ steps.source-incremental-retry.outcome == 'success' }}"
+            )
+            assert promotion["env"]["FQ_CI_SOURCE_DIR"] == step["with"]["path"]
+            assert (
+                preserved_plan["name"]
+                == "Preserve the verified coverage plan before source fallback"
+            )
+            assert not preserved_plan.get("continue-on-error", False)
+            assert preserved_plan["id"] == "coverage-plan-stage"
+            expected_path = "${{ steps.coverage-plan-stage.outputs.path }}"
         consumers = [
             step for step in steps[index + 1 :] if environment in step.get("env", {})
         ]

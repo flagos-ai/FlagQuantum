@@ -162,9 +162,16 @@ def test_plan_bundle_keeps_initial_source_before_full_fallback(
 ) -> None:
     temporary = tmp_path / "temporary with spaces;$()"
     source = temporary / "ci-source"
-    plan = temporary / "coverage-plan"
+    plan = temporary / "fresh collected plan"
     source.mkdir(parents=True)
     plan.mkdir()
+    stale_bootstrap = temporary / "coverage-bootstrap"
+    stale_plan = temporary / "coverage-plan"
+    for directory in (stale_bootstrap, stale_plan):
+        directory.mkdir()
+        (directory / "retained").write_bytes(b"older task output")
+    step_output = tmp_path / "bootstrap-output"
+
     identity = "a" * 40
     (source / "source.sha").write_text(
         ("b" * 40 if fault == "stale-source" else identity) + "\n"
@@ -173,7 +180,12 @@ def test_plan_bundle_keeps_initial_source_before_full_fallback(
     if fault != "missing-pack":
         (source / "source.pack").write_bytes(b"" if fault == "empty-pack" else initial)
     (plan / "plan.json").write_bytes(b"unchanged collected plan")
-    env = {**os.environ, "RUNNER_TEMP": str(temporary), "GITHUB_SHA": identity}
+    env = {
+        **os.environ,
+        "RUNNER_TEMP": str(temporary),
+        "GITHUB_SHA": identity,
+        "GITHUB_OUTPUT": str(step_output),
+    }
     result = subprocess.run(
         [
             "bash",
@@ -189,10 +201,17 @@ def test_plan_bundle_keeps_initial_source_before_full_fallback(
     )
     if fault != "none":
         assert result.returncode != 0
-        assert not (temporary / "coverage-bootstrap").exists()
+        assert not step_output.exists()
+        assert not list(temporary.glob("fq-coverage-bootstrap.*"))
         assert not (plan / "source.pack").exists()
+        assert (stale_bootstrap / "retained").read_bytes() == b"older task output"
         return
     assert result.returncode == 0, result.stderr
+    bootstrap = Path(step_output.read_text().strip().removeprefix("path="))
+    assert bootstrap.parent == temporary and bootstrap != stale_bootstrap
+    assert (stale_bootstrap / "retained").read_bytes() == b"older task output"
+    assert (stale_plan / "retained").read_bytes() == b"older task output"
+    env.update(FQ_COVERAGE_BOOTSTRAP=str(bootstrap), FQ_COVERAGE_PLAN=str(plan))
     (source / "source.pack").write_bytes(b"large full-source fallback")
     result = subprocess.run(
         [
@@ -223,6 +242,10 @@ def test_bundled_plan_survives_full_source_retry_and_refuses_stale_identity(
     monkeypatch.setenv("GITHUB_SHA", identity)
     temporary = tmp_path / "temporary with spaces;$()"
     source = temporary / "ci-source"
+    stale_plan = temporary / "coverage-plan"
+    stale_plan.mkdir(parents=True)
+    (stale_plan / "retained").write_bytes(b"older task output")
+    step_output = tmp_path / "plan-output"
     node = "tests/unit/test_original.py::test_original"
     write_plan((node,), source, 1)
     original = {p.name: p.read_bytes() for p in source.iterdir()}
@@ -233,6 +256,7 @@ def test_bundled_plan_survives_full_source_retry_and_refuses_stale_identity(
         "RUNNER_TEMP": str(temporary),
         "GITHUB_SHA": identity,
         "FQ_CI_SOURCE_DIR": str(source),
+        "GITHUB_OUTPUT": str(step_output),
     }
     result = subprocess.run(
         [
@@ -260,7 +284,9 @@ def test_bundled_plan_survives_full_source_retry_and_refuses_stale_identity(
         timeout=10,
     )
     assert result.returncode == 0, result.stderr
-    plan = temporary / "coverage-plan"
+    plan = Path(step_output.read_text().strip().removeprefix("path="))
+    assert plan.parent == temporary and plan != stale_plan
+    assert (stale_plan / "retained").read_bytes() == b"older task output"
     assert {p.name: p.read_bytes() for p in plan.iterdir()} == original
     assert verify_plan(plan, 0).read_text().splitlines() == [node]
     assert set(p.name for p in source.iterdir()) == {"source.sha", "source.pack"}
