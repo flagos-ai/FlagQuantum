@@ -130,10 +130,25 @@ def regenerate(source_root: Path, output: Path) -> int:
         "wx",
         "w+x",
         "wx+",
+        "re",
+        "rbe",
+        "r+e",
+        "rb+e",
+        "r+be",
+        "we",
+        "wbe",
+        "w+e",
+        "ae",
+        "abe",
+        "a+e",
+        "wxe",
+        "w+xe",
+        "wx+e",
+        "invalid",
     ):
         for default in ("NONE", "DEFAULT"):
             for action in ("read", "write", "absent"):
-                if action == "write" and mode in ("r", "rb"):
+                if action == "write" and mode.startswith("r") and "+" not in mode:
                     continue
                 for argv in (
                     ["program"],

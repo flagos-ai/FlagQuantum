@@ -93,3 +93,13 @@ uses that same kernel. All 419 additional original-source backing-allocation and
 next-draw observations match. Overlapping full-batch memcpy remains undefined
 in C++ and is refused explicitly; this boundary is not a missing defined path.
 See [the complete sampler audit](STRIPED_MODULAR_SAMPLING_AUDIT.md).
+
+
+### Subsequent implementation: K-0284 host C file modes
+
+The POSIX source-success extended-mode gap is implemented through host fopen
+and an owned descriptor transfer. The complete 2,756-observation source corpus
+retains actual mode admission, file effects, defaults and diagnostics. Windows
+text translation and other unmeasured runtime certificates remain explicit
+platform follow-ups under the approved closure rule; no Windows parity is
+claimed. See [the command audit](COMMAND_ARGUMENTS_AUDIT.md).

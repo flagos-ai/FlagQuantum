@@ -3,6 +3,7 @@
 import importlib
 import json
 import math
+import os
 import struct
 from io import BytesIO
 from pathlib import Path
@@ -99,12 +100,7 @@ def test_complete_original_scalar_observations(
             )
             assert isinstance(expected, str)
             kind, _, payload = expected.partition(" ")
-            if operation == "file" and low == "re":
-                # The host accepts a nonstandard C mode that native refuses.
-                assert expected == "file 0 6162630d0a", case
-                with pytest.raises(ValueError, match="Unsupported C file mode"):
-                    observe(operation, name, default, low, high, argv)
-            elif kind in ("invalid", "range"):
+            if kind in ("invalid", "range"):
                 exception = ValueError if kind == "invalid" else KeyError
                 with pytest.raises(exception) as error:
                     observe(operation, name, default, low, high, argv)
@@ -135,7 +131,7 @@ def test_complete_original_scalar_observations(
                             "!d", original
                         ), case
             count += 1
-    assert count == 2498
+    assert count == 2756
 
 
 def test_reference_identity_and_c_string_boundary() -> None:
@@ -187,11 +183,12 @@ def test_file_default_and_failure_ownership(tmp_path: Path) -> None:
     ):
         raise RuntimeError("consumer")
     assert opened.closed
-    with (
-        pytest.raises(ValueError, match="Unsupported C file mode"),
-        open_file_argument("--in", None, "re", ["program", "--in", str(path)]),
-    ):
-        pytest.fail("Unsupported mode yielded a stream")
+    with open_file_argument(
+        "--in", None, "re", ["program", "--in", str(path)]
+    ) as opened:
+        assert opened.read() == b"abc\r\n"
+        assert not os.get_inheritable(opened.fileno())
+    assert opened.closed
 
 
 @pytest.mark.parametrize(
@@ -269,3 +266,60 @@ def test_real_commands_reuse_integer_conversion(
         ]
     assert module.main(argv) == 0
     assert "1__2" in calls
+
+
+def test_host_mode_consumer_failure_closes_stream(tmp_path: Path) -> None:
+    path = tmp_path / "source"
+    path.write_bytes(b"abc")
+    with (
+        pytest.raises(RuntimeError, match="consumer"),
+        open_file_argument(
+            "--in", None, "re", ["program", "--in", str(path)]
+        ) as opened,
+    ):
+        assert opened.read(1) == b"a"
+        raise RuntimeError("consumer")
+    assert opened.closed
+
+
+def test_host_mode_transfer_failure_closes_descriptor(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    from flagquantum.ecosystem._command_arguments import _open_host_c_file
+
+    path = tmp_path / "source"
+    path.write_bytes(b"abc")
+    descriptors: list[int] = []
+
+    def fail_transfer(descriptor: int, mode: str) -> None:
+        descriptors.append(descriptor)
+        raise RuntimeError("transfer")
+
+    monkeypatch.setattr(os, "fdopen", fail_transfer)
+    with pytest.raises(RuntimeError, match="transfer"):
+        _open_host_c_file(str(path), "re")
+    assert len(descriptors) == 1
+    with pytest.raises(OSError):
+        os.fstat(descriptors[0])
+
+
+def test_host_mode_duplicate_failure_closes_c_stream(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    path = tmp_path / "source"
+    path.write_bytes(b"abc")
+    descriptors: list[int] = []
+
+    def fail_duplicate(descriptor: int) -> int:
+        descriptors.append(descriptor)
+        raise OSError("duplicate")
+
+    monkeypatch.setattr(os, "dup", fail_duplicate)
+    with (
+        pytest.raises(ValueError, match="Failed to open"),
+        open_file_argument("--in", None, "re", ["program", "--in", str(path)]),
+    ):
+        pytest.fail("Failed descriptor duplication yielded a stream")
+    assert len(descriptors) == 1
+    with pytest.raises(OSError):
+        os.fstat(descriptors[0])

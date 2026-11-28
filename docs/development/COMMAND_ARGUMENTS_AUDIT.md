@@ -28,8 +28,8 @@ and retain the C runtime's parse endpoint. No process locale is changed.
 Enum lookup returns the original mapped object. A missing default key maps
 source out_of_range to KeyError. File acquisition is a context manager that
 closes a newly opened handle and preserves caller-owned defaults. Source fopen
-binary modes map to Python binary modes. Text/newline behavior and unsupported
-C mode strings need explicit comparison boundaries. No quantum primitives,
+binary modes map to Python binary modes. POSIX extended mode admission delegates to the same host C runtime.
+Windows text/newline behavior remains a platform-specific follow-up. No quantum primitives,
 measurement branches, work bits or quantum resource model belong to parsing.
 
 ## Definition disposition and evidence
@@ -42,7 +42,7 @@ measurement branches, work bits or quantum resource model belong to parsing.
 | find_float_argument and find_double_argument | float_argument selects direct strtof/strtod, exact scalar-overload defaults/bounds and signed zero; failure diagnostics match |
 | find_bool_argument | bool_argument distinguishes absent, bare and nonempty flags |
 | find_enum_argument template | enum_argument retains mapped-object identity and missing-default KeyError corresponding to original out_of_range |
-| find_open_file_argument | open_file_argument preserves defaults and standard host-POSIX byte modes with explicit scoped ownership; nonstandard modes remain open |
+| find_open_file_argument | open_file_argument preserves defaults and standard host-POSIX byte modes with explicit scoped ownership; extended POSIX modes use host fopen |
 | Existing KMX commands | sample, spin and sampled-counts use the shared integer callback through their actual main entry points |
 
 Five frozen blobs are checked before compiling the unchanged source. All eleven
@@ -75,10 +75,20 @@ The float32 witness `1.0000000596046447753906250000000001` rounds directly to
 The native direct-C route matches the original. NaN explicit values fail,
 whereas a NaN default can return under the original comparisons.
 
-On the measured macOS host, original fopen accepts the nonstandard `re` mode.
-Native explicitly refuses it. A source corpus record and an asserted native
-refusal retain this mismatch. **K-0284 remains open** for host-specific C mode
-semantics, Windows text translation and unverified C-runtime portability.
+On the measured macOS host, original fopen accepts the extended `re` mode.
+Native now delegates nonstandard POSIX modes to host fopen, obtains the actual
+file access flags, duplicates the untouched descriptor and closes the C stream.
+The owned Python binary stream retains initial position, append flags, file
+creation/truncation and exclusive-open effects. Its descriptor is non-inheritable.
+The default stream is never transferred or closed. C runtime refusal maps to
+the existing source diagnostic. Failure to duplicate closes the C stream;
+failure to create the Python stream closes the duplicate. The source handle
+never escapes Ecosystem, and no native C reads or writes precede transfer.
+
+K-0284's source-success POSIX mode gap is closed. The approved faithful-migration
+rule retains Windows text translation and unmeasured runtime portability as
+platform follow-ups, not as claims of tested support. Non-POSIX extended modes
+still fail explicitly. The existing standard binary mode route is unchanged.
 K-0285 and K-0286 have complete declaration and original-test disposition for
 the verified native routes. Missing default enum keys follow actual source
 out_of_range behavior despite the source header's invalid_argument prose.
@@ -106,3 +116,27 @@ python -m flagquantum.ecosystem.kmx_sample --in input.kmx --out output.txt --sho
 The last command takes twelve samples using the original signed-integer grammar.
 Raw source-run, regression, integration and environment receipts are retained in
 `ftqc-reference-env/g2-command-arguments-*20261122.*` beside the main ledgers.
+
+
+## POSIX host-mode closure (2026-11-28)
+
+The complete current corpus has 2,756 original observations, including extended
+read/update/write/append/exclusive mode spellings with `e` in several positions,
+invalid modes, existing and absent files, missing/default arguments, empty paths,
+file effects and ownership. The five pinned source/test blobs are verified
+before compiling the unchanged implementation. Fresh generation reproduces the
+corpus exactly; no source mode parser is patched. Both normal and consumer-error
+exits close acquired streams, transfer failure closes the duplicate, and the
+original caller-owned default remains open. Existing scalar, enum, diagnostics
+and actual KMX command callback evidence is reused for unchanged definitions.
+This edge-owned implementation adds no Core, compiler or quantum instructions.
+
+Current verification passes 239 concentrated command-helper and actual KMX
+command checks plus 82 local register integration checks, without skips. Strict
+typing covers all three changed Python files. Black, Ruff, Ecosystem scope,
+architecture, IR/API, required checks, Cirq interoperability, English, links and
+whitespace pass. The expanded source corpus regenerates byte-for-byte. An
+initial regression retained the old fixture cardinality assertion (2,498); all
+observations already matched, and the assertion now records the actual 2,756.
+Zero quantum primitives, measurements or work qubits are emitted; no independent
+quantum model or new performance claim applies to this classical edge helper.

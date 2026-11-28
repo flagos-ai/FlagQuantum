@@ -4,10 +4,12 @@
 
 """First-match command flags with explicit source scalar and file ownership."""
 
+import ctypes
+import os
 from collections.abc import Iterator, Mapping, Sequence
 from contextlib import contextmanager
 from math import copysign, isnan
-from typing import BinaryIO, Literal, TypeVar
+from typing import BinaryIO, Literal, TypeVar, cast
 
 from ._command_numbers import parse_c_float, parse_int64
 
@@ -199,13 +201,50 @@ def open_file_argument(
         "wx+": "xb+",
     }
     normalized = mode.replace("b", "")
-    if normalized not in binary_modes:
-        raise ValueError(f"Unsupported C file mode {mode!r}")
     try:
-        stream = open(path, binary_modes[normalized])
+        if normalized in binary_modes:
+            stream = open(path, binary_modes[normalized])
+        else:
+            stream = _open_host_c_file(path, mode)
     except OSError as error:
         raise ValueError(f"Failed to open '{path}'") from error
+
     try:
         yield stream
     finally:
         stream.close()
+
+
+def _open_host_c_file(path: str, mode: str) -> BinaryIO:
+    """Transfer a newly acquired POSIX C stream to an owned Python descriptor.
+
+    Host fopen determines mode admission and file effects. No C reads or writes
+    occur before transfer, so the duplicate retains the exact initial position.
+    """
+    if os.name != "posix":
+        raise ValueError(f"Unsupported C file mode {mode!r}")
+    import fcntl
+
+    runtime = ctypes.CDLL(None)
+    runtime.fopen.argtypes = (ctypes.c_char_p, ctypes.c_char_p)
+    runtime.fopen.restype = ctypes.c_void_p
+    runtime.fileno.argtypes = (ctypes.c_void_p,)
+    runtime.fileno.restype = ctypes.c_int
+    runtime.fclose.argtypes = (ctypes.c_void_p,)
+    runtime.fclose.restype = ctypes.c_int
+    handle = runtime.fopen(os.fsencode(path), os.fsencode(mode))
+    if not handle:
+        raise OSError(f"Host fopen refused {path!r}")
+    try:
+        descriptor = os.dup(runtime.fileno(handle))
+    finally:
+        runtime.fclose(handle)
+    try:
+        access = fcntl.fcntl(descriptor, fcntl.F_GETFL) & os.O_ACCMODE
+        binary_mode = (
+            "rb+" if access == os.O_RDWR else "wb" if access == os.O_WRONLY else "rb"
+        )
+        return cast(BinaryIO, os.fdopen(descriptor, binary_mode))
+    except BaseException:
+        os.close(descriptor)
+        raise
