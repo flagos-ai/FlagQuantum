@@ -180,3 +180,42 @@ is reused. The initial diagnostic was explicitly stopped after identifying
 repeated child expansion; final bounded runs reuse unique child evidence and
 retain the full original example and sharing checks. No source failure is
 converted into a skip or a native physical success.
+
+## Faithful complete-source disposition, November 28
+
+Q-0473 is eligible for acceptance under the approved
+[G2 closure rule](G2_FAITHFUL_MIGRATION_CLOSURE_PROPOSAL.md). Whole-file review
+confirms native ownership of fields and modulus-width validation, empty root
+signature, seeded/symbolic make_for_shor, multiplier construction, complete
+ordered composite, source aggregate, factor generalizer, both examples and
+documentation. The shared exact MeasureQFT shim declaration and controlled
+modular multiplier dependencies retain their existing owners and receipts.
+
+The literal root must still refuse physical binding at the source measurement
+shim. MeasureQFT discards the CBit outputs produced by MeasureZ, and unchanged
+source finalization fails. A bodyless declaration preserves that failure; it is
+not a zero-gate implementation. Symbolic source decomposition also refuses.
+The explicit native readout circuit, retained modular result and result slots
+remain an independently specified executable path, not a repair substituted
+for the original empty-return root. No source root-wide primitive or clean-free
+certificate is claimed. The modular result's release is deliberately dirty.
+
+Keep the n-bit modeled versus 2n-bit actual Fourier child and missing preparation
+costs as upstream model follow-ups. Valid unsigned modular child execution
+retains complete complex basis columns, exact source primitives/feedback, all
+2^48 local erasure histories and zero private work from the existing constructor
+receipt. Large-scale physical demonstration is unverified. In particular this
+review does not close Q-0471's unfinished successful 2048-bit ModExp graph.
+The immutable source and its failures are not modified.
+
+Final acceptance: 28 concentrated cases and 28 independent Cirq 1.6 cases
+pass, including the original eight-bit example, symbolic declarations and
+full selected-multiplier channel certificate. The unchanged original file
+reports five passes, four original skips and one original expected failure;
+one notebook is deselected and reuses its previous full receipt. Three frozen
+source/test/shim blobs and real locked runtimes are verified. Two unchanged
+Python owners pass strict typing, Black and Ruff; architecture, IR, API,
+required/Cirq contracts, scope, English, links and whitespace pass. Existing
+248-case integration and source-free constructor evidence are reused because
+this disposition changes no execution owner. Dependency findings remain 568.
+Receipt prefix: g2-rsa-phase-source-closure.
