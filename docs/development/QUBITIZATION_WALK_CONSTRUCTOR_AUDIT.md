@@ -77,7 +77,7 @@ Large-example exact child ownership, retained-source-ABI disposition and
 remaining constructor coverage still require acceptance. G2 remains active;
 this batch neither enters G3 nor authorizes merging the integration PR.
 
-## THC source context and the remaining control-direction boundary
+## Literal source contexts and control-direction closure
 
 `capture_thc_walk_context` now owns the actual THC factory children and narrow
 RIGHT-junk reflection rather than substituting a corrected signal extension.
@@ -85,6 +85,26 @@ See `THC_CHEMISTRY_WALK_FILE_AUDIT.md` and
 `tests/unit/test_thc_walk_source_context.py`. Its positive pair reverses the
 stored specialized forward graph. The source's separate
 `Controlled(SelectBlockEncoding).adjoint()` constructor changes specialization
-to a generic controlled inverse SELECT. That literal constructor path remains
-unclaimed; successful ordinary THC factory capture does not close Q-0658 by
-itself. Whole physical gates remain unavailable at the original opaque leaves.
+to a generic controlled inverse SELECT. That literal THC constructor path is
+now independently stored and source-compared, with its bystander-versus-active
+control discrepancy retained. It is not substituted by the specialized graph
+inverse or claimed to repair the original operation.
+
+Sparse capture likewise has an explicit `literal_source=True` profile, with
+original RIGHT banks, narrow reflection and missing source QROAM eraser. Its
+positive source inverse binds the complete generic sparse SELECT/Majorana
+dependency graph. The original eight-spin, 65-row example now passes ordinary,
+positive and inverse call/return checks and all nine constructor combinations
+of three controls and three adjoint orders. The default arbitrary-bank/signal
+extension remains a separately tested mathematical profile; its complete
+immutable context equals the published baseline.
+
+Known source atomic views execute through existing exact gate owners.
+Genuinely absent Controlled(And), rotation/comparator/eraser bodies retain
+declarations. Logical peaks, source QEC models or model errors and physical
+inventories are separate evidence. The original direct controlled-LCU missing
+ctrl failure is reproduced for both polarities; it is retained as a source
+limit, while external control of the complete walk is implemented. See
+`GENERIC_WORD_CONTROL_AUDIT.md` for the complete control dependency ownership,
+SDK-view distinction, complex child operators and raw measurement histories.
+Whole literal physical walks remain unavailable at original missing leaves.

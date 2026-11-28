@@ -7,8 +7,8 @@ Google LLC 2023 Apache-2.0 attribution.
 | Parent | Frozen blob | Current disposition |
 |---|---|---|
 | Q-0656 `qubitization/__init__.py` | `d259f1657c3ca0e9d3ac08ed554667b9be79cd57` | Its sole relative export maps to native `QubitizationWalk` and ordinary append. |
-| Q-0658 `qubitization_walk_operator.py` | `117515efb1e42c58b0fab451c454fbd756585f74` | All members audited below. Source/admission boundaries remain open. |
-| Q-0659 `qubitization_walk_operator_test.py` | `a9dfd4398e3ec279e9a2a08a99d31c6ca22bc52b` | All original responsibilities mapped. Slow reference cases remain tracked. The complete native notebook is mapped in QUBITIZATION_WALK_NOTEBOOK_AUDIT.md. |
+| Q-0658 `qubitization_walk_operator.py` | `117515efb1e42c58b0fab451c454fbd756585f74` | Complete member and three-factory dependency mapping, including distinct literal control recipes. Missing source bodies and source defects remain explicit below. |
+| Q-0659 `qubitization_walk_operator_test.py` | `a9dfd4398e3ec279e9a2a08a99d31c6ca22bc52b` | Complete unchanged original suite accepted, including all three slow nodes; later evidence below supersedes the initial timeout. The native notebook is mapped in QUBITIZATION_WALK_NOTEBOOK_AUDIT.md. |
 
 ## Ownership and complete source mapping
 
@@ -136,5 +136,48 @@ The THC factory now has a literal native dependency owner separate from the
 corrected mathematical operation. Its original RIGHT-junk lifetimes, narrow
 reflection and opaque physical leaves are retained. The specialized positive
 forward graph inverse and the source's distinct generic Controlled.adjoint
-constructor must not be conflated. The latter is an explicit remaining source
-constructor gap under Q-0658; see `QUBITIZATION_WALK_CONSTRUCTOR_AUDIT.md`.
+constructor must not be conflated. Both literal source constructor recipes
+are now independently implemented; see `QUBITIZATION_WALK_CONSTRUCTOR_AUDIT.md`.
+
+## Complete chemistry source dependency closure
+
+The previously missing successful sparse generic-control paths now exist:
+five SELECT calls, all four controlled Majorana bodies, exact atomic controls,
+bookkeeping control bypass and separately retained source inverse recipes.
+Both source CY profiles retain their actual call graph. The actual original
+eight-spin, 65-row sparse factory uses its narrow source ABI and RIGHT banks,
+with no replacement by the separate arbitrary-bank extension. Positive,
+negative and grouped controls resolve in all three control/adjoint orders.
+The earlier 450-rank/152-spin/20-angle/10-keep THC context and coefficient/data
+receipts are reused; its generic controlled source inverse was independently
+published in `8545fb346`. No unchanged large QROM is expanded again.
+
+All source members and three example factories above are now mapped to their
+owned dependencies. The original slow suite was accepted unchanged under
+Q-0659. Existing Ising/small SELECT/LCU complete complex operators, spectator
+states, applicable measurement histories, clean work and ordinary append
+evidence is reused. New executable CY and atomic phase dependencies separately
+verify complete complex operators and applicable raw branches. Whole literal
+chemistry operators and emitted primitive totals are still unavailable at
+genuinely missing original Controlled(And), rotation/comparator/eraser bodies.
+Logical peaks and source model failures are recorded independently.
+
+The original controlled-LCU missing ctrl, unordered signature union, invalid
+narrow-reflection junk cleanup and specialized-control bystander behavior
+remain source limitations. They are preserved under the approved faithful
+migration rule, with their corrected native mathematical profiles kept separate.
+The earlier open-root conclusions above are historical and are superseded only
+after this complete dependency batch passes local acceptance and publication.
+
+This dependency batch passes 564 concentrated cases in the default SDK profile
+and 570 in the independent Cirq 1.6 profile; the latter also collects six newly
+added logical-model cases. The final model, atomic-CY and pre-existing-control
+checks pass 15 cases per profile. Two direct controlled-LCU source failures are
+reverified with their exact native diagnostics. All 145 local integration cases
+pass. Ten Python files pass strict typing, Black and Ruff, with owner scopes,
+architecture, IR/API, required/Cirq contracts, English, links and whitespace.
+Thirty-two actual optional/mandatory dependency absence cases pass. Both CY
+operators execute and append with SDK modules blocked; their IR JSON round trips
+retain exact instructions. Four generic sparse graphs build without SDK imports.
+The reference Y and rotation blobs were independently checked against the locked
+upstream commit and are asserted by the fixture. No reference source was edited.

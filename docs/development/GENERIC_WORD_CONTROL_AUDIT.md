@@ -75,7 +75,7 @@ measurements and peak 33. No whole literal primitive inventory is inferred.
 Actual large ordinary context and its data tables reuse the accepted
 `g2-thc-walk-closure-*` receipt; no unchanged massive QROM is expanded again.
 
-## Remaining complete walk boundary
+## Complete available sparse control dependency graph
 
 The actual original eight-spin, 65-row sparse example matches the literal
 block, reflection, ordinary walk and adjoint call/return records. The original
@@ -85,11 +85,42 @@ physical binding still refuses the original missing eraser body. The default
 extended-bank profile is compared as a complete immutable context to the
 published baseline, separately from the literal profile.
 
-Q-0658 remains open for generic controlled sparse adjoints. The source's five
-root calls and four controlled Majorana bodies succeed even though nested
-Controlled(And) has no non-THRU decomposition. Those successful higher bodies
-must be implemented before acceptance. Controlled inverse CY also has a
-three-call source body, including controlled half-X powers; it cannot be
-represented by an opaque declaration merely because And lacks a body.
+The five-call generic sparse root and all four controlled Majorana bodies are
+now stored independently of nested Controlled(And)'s unavailable non-THRU
+decomposition. Both directions, original control polarities and spin dimensions
+4/6/8 retain source calls, operands and returns. Unknown computational children
+still fail. The literal sparse context supplies a separate positive source
+block pair, and the constructor resolver preserves both control/adjoint orders.
+Nine actual 65-row constructor paths cover positive, negative and grouped
+controls, with all three control/adjoint orders.
+
+Sparse constructor contexts retain the original control value, including zero,
+rather than only a boolean recording its presence. Adding a control to an
+already specialized SELECT reuses the original packed-control helper; controlling
+its adjoint uses the separately owned generic graph. Both existing polarities
+and all three adjoint orders match source calls. Sixteen previously admitted
+complete Programs remain equal to the published baseline.
+
+Cirq 1.7's q-array CY and inverse-CY use three calls: controlled half-X,
+packed-controlled CZ and controlled negative half-X. Scalar CYGate, used by the
+Cirq 1.6 source conversion, instead specializes through its packed-control
+helper. Ecosystem selects the actual owned gate view; Compiler imports no SDK.
+Cirq 1.6's explicitly wrapped generic ControlledGate(Y) has a third, six-call
+decomposition. Tests retain that boundary instead of attributing the three-call
+graph to it. Both implemented CY profiles have full complex-operator and all
+small raw-history proofs, including zero private work. The source atomic
+controlled S/S-dagger action uses the existing exact Pauli-power leaf and
+ordinary `circuit.append(op)`; it is not an empty declaration.
+
+For the three-call CY realization, emitted primitives are seven H, two
+controlled phases, two T, two T-dagger, six CX, one S, two CZ, one measurement
+and one reset. It uses three logical bits and one private predicate. The
+original model separately reports one And, two Clifford, two rotations and one
+measurement. The scalar helper's model has one And, two Clifford, no rotations
+and one measurement. Both modeled peaks are four. Whole generic sparse logical
+peaks are 16/23/25 for 4/6/8 spins in either direction, matching source queries.
+Its source QEC gate model still raises at Controlled(And); no zero or estimated
+primitive total replaces that failure.
+
 No full walk complex operator, private-work proof or primitive inventory is
 claimed at unavailable source leaves.
