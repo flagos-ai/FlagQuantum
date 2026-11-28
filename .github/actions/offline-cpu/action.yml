@@ -60,7 +60,10 @@ runs:
 
         # Container UID 0 maps to the unprivileged daemon user in rootless Docker.
         container_user="$(id -u):$(id -g)"
-        if docker info --format '{{range .SecurityOptions}}{{println .}}{{end}}' | grep -Fxq name=rootless; then
+        # Read the full response before matching: grep -q may otherwise close the
+        # pipe early and turn a positive match into SIGPIPE under pipefail.
+        docker_security_options="$(docker info --format '{{range .SecurityOptions}}{{println .}}{{end}}')"
+        if grep -Fxq name=rootless <<< "$docker_security_options"; then
           container_user=0:0
         fi
         export FQ_CI_CONTAINER_USER="$container_user"

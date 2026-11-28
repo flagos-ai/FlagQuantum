@@ -83,3 +83,50 @@ def test_width_identity_and_rejections() -> None:
         pauli(factors=((0, "x"), (0, "y")))
     with pytest.raises(ValueError, match="finite"):
         pauli(float("nan"))
+
+
+@pytest.mark.parametrize("encoding", ENCODINGS)
+def test_encoding_rejects_partial_sum_overflow_before_later_cancellation(
+    encoding: Encoding,
+) -> None:
+    operator = 1.7e308 * (number(0) + number(1) + number(2) - number(3))
+    with pytest.raises(ValueError, match="coefficient must be finite"):
+        encode_fermion(operator, n_modes=4, encoding=encoding)
+
+
+@pytest.mark.parametrize("encoding", ENCODINGS)
+def test_encoding_preserves_finite_large_coefficient_cancellation(
+    encoding: Encoding,
+) -> None:
+    operator = number(0) + number(1) - number(2) - number(3)
+    expected = encode_fermion(operator, n_modes=4, encoding=encoding).operator * 1.7e308
+    actual = encode_fermion(1.7e308 * operator, n_modes=4, encoding=encoding)
+    assert actual.operator == expected
+    assert actual.encoding == encoding and actual.n_modes == 4
+
+
+@pytest.mark.parametrize("encoding", ENCODINGS)
+def test_overlapping_quartic_images_match_independent_fock_action(
+    encoding: Encoding,
+) -> None:
+    pairs = [(p, q) for p in range(4) for q in range(p + 1, 4)]
+    operator = 0.13 * number(0) - 0.07 * number(3)
+    for left, (p, q) in enumerate(pairs):
+        for right, (r, s) in enumerate(pairs):
+            coefficient = 0.03 * (left + 1) - 0.02j * (right + 1)
+            operator += (
+                coefficient * create(p) * create(q) * annihilate(r) * annihilate(s)
+            )
+    encoded = encode_fermion(operator, n_modes=4, encoding=encoding)
+    permutation = []
+    for index in range(16):
+        bits = tuple((index >> (3 - wire)) & 1 for wire in range(4))
+        mapped = encoded.reference_bits(bits)
+        permutation.append(sum(bit << (3 - wire) for wire, bit in enumerate(mapped)))
+    image = pauli_matrix(encoded.operator, n_qubits=4)
+    torch.testing.assert_close(
+        image[permutation][:, permutation],
+        fock_matrix(operator, 4),
+        atol=1e-12,
+        rtol=1e-12,
+    )

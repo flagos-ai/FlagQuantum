@@ -8164,7 +8164,6 @@
       "new": "flagquantum/simulation/statevector/cx_adjoint.py",
       "split_symbols": [
         "cpu_cx_permutation_index",
-        "cpu_cx_permutation_images",
         "apply_cpu_cx_adjoint_index",
         "apply_cpu_cx_adjoint_segment",
         "apply_cpu_compact_cx_adjoint_segment"
@@ -8174,13 +8173,13 @@
         "apply_cpu_compact_cx_adjoint_segment",
         "apply_cpu_cx_adjoint_index",
         "apply_cpu_cx_adjoint_segment",
-        "cpu_cx_permutation_images",
         "cpu_cx_permutation_index"
       ],
       "same_import_path": false,
       "retired_reexports": [
         "apply_cpu_compact_cx_adjoint_segment",
-        "apply_cpu_cx_adjoint_index"
+        "apply_cpu_cx_adjoint_index",
+        "cpu_cx_permutation_images"
       ],
       "remaining_imports": "used by this implementation; not a historical forwarding interface"
     },
@@ -10277,6 +10276,156 @@
         "_jax_nodes_from_torch_nodes"
       ],
       "retirement": "The shared conversion module retains no forwarding name. Statevector arithmetic belongs to the existing Simulation JAX numerical owner; Runtime keeps shape admission and shard record assembly."
+    },
+    {
+      "group": "jax-tn-graph-numerical-ownership",
+      "old": "flagquantum/runtime/executors/jax/tensor_network/gradients.py",
+      "new": "flagquantum/simulation/tensor_network/jax/kernels.py",
+      "symbols": [],
+      "partial": true,
+      "source_kind": "Internal numerical graph construction; explicit dtype is selected by the existing Runtime policy.",
+      "retired_private_members": [
+        "_jax_parameterized_tn_state_nodes"
+      ],
+      "retirement": "Numerical implementation is jax_parameterized_tn_state_nodes in the existing Simulation owner. All consumers call that owner directly; Runtime retains precision admission and execution orchestration. No compatibility forwarding."
+    },
+    {
+      "group": "jax-tn-graph-numerical-ownership",
+      "old": "flagquantum/runtime/executors/jax/tensor_network/gradients.py",
+      "new": "flagquantum/simulation/tensor_network/jax/kernels.py",
+      "symbols": [],
+      "partial": true,
+      "source_kind": "Internal numerical graph construction; explicit dtype is selected by the existing Runtime policy.",
+      "retired_private_members": [
+        "_jax_parameterized_tn_expectation_nodes"
+      ],
+      "retirement": "Numerical implementation is jax_parameterized_tn_expectation_nodes in the existing Simulation owner. All consumers call that owner directly; Runtime retains precision admission and execution orchestration. No compatibility forwarding."
+    },
+    {
+      "group": "runtime-direct-seam-retirement",
+      "old": "flagquantum/runtime/executors/jax/release_policy.py",
+      "new": "flagquantum/runtime/audit/statistics.py",
+      "symbols": [],
+      "partial": true,
+      "source_kind": "Retired internal argument delegation; the existing authoritative implementation is unchanged.",
+      "retired_private_members": [
+        "attach_evidence_contract"
+      ],
+      "retirement": "All operational callers use the existing defining owner directly, at the original lazy invocation stage. No replacement wrapper or compatibility added."
+    },
+    {
+      "group": "runtime-direct-seam-retirement",
+      "old": "flagquantum/runtime/executors/jax/release_policy.py",
+      "new": "flagquantum/runtime/audit/mps_readiness.py",
+      "symbols": [],
+      "partial": true,
+      "source_kind": "Retired internal argument delegation; the existing authoritative implementation is unchanged.",
+      "retired_private_members": [
+        "attach_mps_backward_readiness"
+      ],
+      "retirement": "All operational callers use the existing defining owner directly, at the original lazy invocation stage. No replacement wrapper or compatibility added."
+    },
+    {
+      "group": "runtime-direct-seam-retirement",
+      "old": "flagquantum/runtime/planner_adapter.py",
+      "new": "flagquantum/runtime/configuration.py",
+      "symbols": [],
+      "partial": true,
+      "source_kind": "Retired internal argument delegation; the existing authoritative implementation is unchanged.",
+      "retired_private_members": [
+        "backend_execution_options"
+      ],
+      "retirement": "All operational callers use the existing defining owner directly, at the original lazy invocation stage. No replacement wrapper or compatibility added.",
+      "compatibility": "none"
+    },
+    {
+      "group": "runtime-direct-seam-retirement",
+      "old": "flagquantum/runtime/planner_adapter.py",
+      "new": "flagquantum/runtime/executors/jax/statevector/training.py",
+      "symbols": [],
+      "partial": true,
+      "source_kind": "Retired internal argument delegation; the existing authoritative implementation is unchanged.",
+      "retired_private_members": [
+        "plan_jax_statevector_training"
+      ],
+      "retirement": "All operational callers use the existing defining owner directly, at the original lazy invocation stage. No replacement wrapper or compatibility added.",
+      "compatibility": "none"
+    },
+    {
+      "group": "runtime-direct-seam-retirement",
+      "old": "flagquantum/runtime/planner_adapter.py",
+      "new": "flagquantum/runtime/executors/jax/mps/planning.py",
+      "symbols": [],
+      "partial": true,
+      "source_kind": "Retired internal argument delegation; the existing authoritative implementation is unchanged.",
+      "retired_private_members": [
+        "plan_jax_mps_training"
+      ],
+      "retirement": "All operational callers use the existing defining owner directly, at the original lazy invocation stage. No replacement wrapper or compatibility added.",
+      "compatibility": "none"
+    },
+    {
+      "group": "simulation-direct-relay-retirement",
+      "old": "flagquantum/simulation/statevector/cx_adjoint.py",
+      "new": "flagquantum/simulation/native_cpu/permutation.py",
+      "symbols": [],
+      "partial": true,
+      "source_kind": "Retired internal argument delegation; the existing authoritative implementation is unchanged.",
+      "retired_private_members": [
+        "cpu_cx_permutation_images"
+      ],
+      "retirement": "All operational callers use the existing defining owner directly. State methods retain local imports after original validation and admission. No replacement wrapper or compatibility added."
+    },
+    {
+      "group": "simulation-direct-relay-retirement",
+      "old": "flagquantum/simulation/tensor_network/entrypoints.py",
+      "new": "flagquantum/simulation/tensor_network/local.py",
+      "symbols": [],
+      "partial": true,
+      "source_kind": "Retired internal argument delegation; the existing authoritative implementation is unchanged.",
+      "retired_private_members": [
+        "build_tensor_network"
+      ],
+      "retirement": "All operational callers use the existing defining owner directly. State methods retain local imports after original validation and admission. No replacement wrapper or compatibility added."
+    },
+    {
+      "group": "simulation-direct-relay-retirement",
+      "old": "flagquantum/simulation/tensor_network/entrypoints.py",
+      "new": "flagquantum/simulation/tensor_network/observables.py",
+      "symbols": [],
+      "partial": true,
+      "source_kind": "Retired internal argument delegation; the existing authoritative implementation is unchanged.",
+      "retired_private_members": [
+        "build_tensor_network_expectation",
+        "build_tensor_network_hamiltonian_expectation",
+        "build_tensor_network_hamiltonian_expectations",
+        "tensor_network_expectation_ps"
+      ],
+      "retirement": "All operational callers use the existing defining owner directly. State methods retain local imports after original validation and admission. No replacement wrapper or compatibility added."
+    },
+    {
+      "group": "simulation-direct-relay-retirement",
+      "old": "flagquantum/simulation/tensor_network/state.py",
+      "new": "flagquantum/simulation/tensor_network/observables.py",
+      "symbols": [],
+      "partial": true,
+      "source_kind": "Retired internal argument delegation; the existing authoritative implementation is unchanged.",
+      "retired_private_members": [
+        "tensor_network_expectation_ps"
+      ],
+      "retirement": "All operational callers use the existing defining owner directly. State methods retain local imports after original validation and admission. No replacement wrapper or compatibility added."
+    },
+    {
+      "group": "simulation-direct-relay-retirement",
+      "old": "flagquantum/runtime/executors/tensor_network/execution.py",
+      "new": "flagquantum/simulation/tensor_network/local.py",
+      "symbols": [],
+      "partial": true,
+      "retired_reexports": [
+        "build_tensor_network"
+      ],
+      "source_kind": "Retired internal imported builder binding; Runtime calls the existing defining builder by its canonical name.",
+      "retirement": "Current callers use build_local_tensor_network; no forwarding alias retained."
     }
   ],
   "retired_namespace_parents": [

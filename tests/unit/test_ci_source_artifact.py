@@ -407,3 +407,127 @@ def test_source_cache_stops_previous_runner_writers_before_checkout() -> None:
             assert "--cleanup-containers" in probe
             assert probe.index("--cleanup-containers") < probe.index("complete=false")
         assert checked
+
+
+@pytest.mark.skipif(os.name == "nt", reason="Source packing runs in Linux bash")
+@pytest.mark.parametrize(
+    "mode", ["pull_request", "override", "push", "linear", "invalid"]
+)
+def test_source_pack_uses_the_previous_pr_tree_with_verified_full_fallback(
+    tmp_path: Path, mode: str
+) -> None:
+    """Exclude cached PR objects, retaining cold-cache and non-PR behavior."""
+    jobs = yaml.safe_load((ROOT / ".github/workflows/ci.yml").read_text())["jobs"]
+    pack = next(
+        step["run"]
+        for step in jobs["prepare-source"]["steps"]
+        if step.get("id") == "pack-source"
+    )
+    source = tmp_path / "source"
+    source.mkdir()
+    environment = {
+        **os.environ,
+        "GIT_CONFIG_NOSYSTEM": "1",
+        "GIT_CONFIG_GLOBAL": os.devnull,
+        "GITHUB_RUN_ID": "123",
+        "GITHUB_RUN_ATTEMPT": "1",
+        "GITHUB_EVENT_NAME": "push" if mode == "push" else "pull_request",
+        "RUNNER_TEMP": str(tmp_path),
+        "GITHUB_OUTPUT": str(tmp_path / "outputs"),
+    }
+    environment.pop("FQ_CI_SOURCE_BASE", None)
+
+    def git(*arguments: str, cwd: Path = source, data: bytes | None = None) -> str:
+        return (
+            subprocess.run(
+                ["git", *arguments],
+                cwd=cwd,
+                env=environment,
+                input=data,
+                check=True,
+                capture_output=True,
+                timeout=20,
+            )
+            .stdout.decode()
+            .strip()
+        )
+
+    git("init", "-b", "baseline")
+    git("config", "user.name", "FlagQuantum")
+    git("config", "user.email", "liuwei.chem.phys@gmail.com")
+    (source / "tools").mkdir()
+    helper = (ROOT / "tools/ci_source_archive.py").read_bytes()
+    (source / "tools/ci_source_archive.py").write_bytes(helper)
+    git("add", ".")
+    git("commit", "-m", "baseline")
+    baseline = git("rev-parse", "HEAD")
+    git("checkout", "-b", "topic")
+    (source / "cached.txt").write_text("previous PR tree\n")
+    git("add", ".")
+    git("commit", "-m", "previous PR head")
+    cached_blob = git("rev-parse", "HEAD:cached.txt")
+    (source / "current.txt").write_text("current PR tree\n")
+    git("add", ".")
+    git("commit", "-m", "current PR head")
+    if mode != "linear":
+        git("checkout", "baseline")
+        (source / "main.txt").write_text("new main tree\n")
+        git("add", ".")
+        git("commit", "-m", "main advanced")
+        git("merge", "--no-ff", "topic", "-m", "synthetic PR merge")
+    if mode == "override":
+        environment["FQ_CI_SOURCE_BASE"] = baseline
+    elif mode == "invalid":
+        environment["FQ_CI_SOURCE_BASE"] = "missing-explicit-base"
+    sha = git("rev-parse", "HEAD")
+    environment["GITHUB_SHA"] = sha
+    result = subprocess.run(
+        ["bash", "-eo", "pipefail", "-c", pack],
+        cwd=source,
+        env=environment,
+        capture_output=True,
+        text=True,
+        timeout=20,
+    )
+    if mode == "invalid":
+        assert result.returncode != 0
+        return
+    assert result.returncode == 0, result.stderr
+    outputs = dict(
+        line.split("=", 1)
+        for line in Path(environment["GITHUB_OUTPUT"]).read_text().splitlines()
+    )
+    for kind in ("incremental", "full"):
+        target = tmp_path / kind
+        target.mkdir()
+        git("init", cwd=target)
+        artifact = Path(outputs[f"{kind}-path"])
+        assert (artifact / "source.sha").read_text().strip() == sha
+        git(
+            "index-pack",
+            "--stdin",
+            cwd=target,
+            data=(artifact / "source.pack").read_bytes(),
+        )
+        assert git("rev-parse", sha, cwd=target) == sha
+        assert (
+            git("show", f"{sha}:tools/ci_source_archive.py", cwd=target)
+            == helper.decode().strip()
+        )
+        assert git("show", f"{sha}:current.txt", cwd=target) == "current PR tree"
+        present = (
+            subprocess.run(
+                ["git", "cat-file", "-e", cached_blob],
+                cwd=target,
+                env=environment,
+                capture_output=True,
+                timeout=20,
+            ).returncode
+            == 0
+        )
+        assert present == (kind == "full" or mode != "pull_request")
+        if kind == "full":
+            # A consumer with no prior objects still obtains the complete tree.
+            git("checkout", "--detach", sha, cwd=target)
+            assert (target / "cached.txt").read_text() == "previous PR tree\n"
+            assert git("status", "--porcelain", cwd=target) == ""

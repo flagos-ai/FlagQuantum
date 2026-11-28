@@ -36,7 +36,12 @@ dataclass locations, schemas, signatures and native ABI remain unchanged.
 
 MPS circuit lowering is outside this closure. Its combined IR interpretation,
 gate admission, fusion and lowering must be reviewed with Construction/IR.
-No isolated matrix operation is extracted from that path here.
+No isolated matrix operation is extracted from that path here. A subsequent
+[gate-preparation follow-up](runtime-mps-local-numerical-ownership.md#gate-preparation-follow-up-after-pr-1345)
+reviews and removes the remaining inline products, layer stacks and rank-owned
+zero sites while preserving every lowering signature, IR admission rule and
+parser representation. Circuit interpretation itself remains in Runtime; this
+follow-up does not claim Construction/IR integration is complete.
 
 ## Independence from PR 1084
 
