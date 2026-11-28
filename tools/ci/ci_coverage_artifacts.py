@@ -1,4 +1,4 @@
-"""Restore this run's complete coverage inputs with eight active downloads."""
+"""Restore this run's complete coverage inputs with sixteen active downloads."""
 
 from __future__ import annotations
 
@@ -21,7 +21,7 @@ from urllib.error import HTTPError, URLError
 from urllib.parse import urlsplit
 from urllib.request import HTTPRedirectHandler, Request, build_opener
 
-_DOWNLOADS = 8
+_DOWNLOADS = 16
 _MAX_ZIP_BYTES = 8 * 1024 * 1024
 _MAX_DATABASE_BYTES = 16 * 1024 * 1024
 _TRANSIENT_STATUS = {408, 429, 500, 502, 503, 504}
