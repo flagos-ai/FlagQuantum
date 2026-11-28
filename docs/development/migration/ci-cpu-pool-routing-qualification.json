@@ -50,5 +50,25 @@
   ],
   "positive_memory_headroom_claim": false,
   "represents_actual_new_head_CI_qualification": false,
-  "scope": "Raw profile results establish only the observed complete workload on these existing targets. Both peak memory readings reached the quota, with reclaim events and no OOM. Next-head GitHub CI must independently preserve scientific calls, original selected nodes and whole-job time targets."
+  "scope": "Raw profile results establish only the observed complete workload on these existing targets. Both peak memory readings reached the quota, with reclaim events and no OOM. Next-head GitHub CI must independently preserve scientific calls, original selected nodes and whole-job time targets.",
+  "source_transfer_preview": {
+    "actual_immutable_merge": "a10b64e3aeaa247b024cb1b6fc0851d96379fb94",
+    "original_incremental_pack_bytes": 2157948,
+    "candidate_incremental_pack_bytes": 67845,
+    "full_pack_bytes": 77338581,
+    "full_pack_sha256": "64db2e9274950dd8248edf536bcec33e6730e9c09dfaf006fe38867eb966ca18",
+    "full_pack_bytes_identical": true,
+    "regression_cases": 5,
+    "focused_tests_passed": 61,
+    "scope": "Producer replay on the actual first routing merge object, not a next-head CI or transfer latency qualification. Existing cold-cache repair and full fallback remain required."
+  },
+  "coverage_download_retry": {
+    "first_attempt_minutes": 2,
+    "retry_minutes": 3,
+    "retry_is_separate_workflow_step": true,
+    "retry_failure_is_fatal": true,
+    "existing_private_staging_and_strict_digest_checks_preserved": true,
+    "all256_files_and_SQLite_integrity_required": true,
+    "actual_new_head_CI_qualified": false
+  }
 }

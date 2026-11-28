@@ -491,8 +491,15 @@ def test_coverage_shards_are_combined_before_the_policy_is_enforced() -> None:
         and "pattern" in step.get("with", {})
     )
     assert download["with"]["merge-multiple"] is True
-    assert download["timeout-minutes"] == 6
-    assert not download.get("continue-on-error", False)
+    assert download["timeout-minutes"] == 2
+    assert download["continue-on-error"] is True
+    retry = next(
+        step for step in source_steps if step.get("id") == "coverage-data-retry"
+    )
+    assert retry["uses"] == download["uses"]
+    assert retry["with"] == download["with"]
+    assert retry["timeout-minutes"] == 3
+    assert not retry.get("continue-on-error", False)
     assert commands.index("integrity_check") < commands.index(
         'coverage combine "$FQ_COVERAGE_INPUTS"'
     )

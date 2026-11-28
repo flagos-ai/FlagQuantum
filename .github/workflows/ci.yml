@@ -144,7 +144,14 @@ jobs:
           git rev-parse HEAD > "$staging/full/source.sha"
           git rev-list --objects --no-walk HEAD | git pack-objects --stdout > "$staging/full/source.pack"
           cp "$staging/full/source.sha" "$staging/incremental/source.sha"
-          base="${FQ_CI_SOURCE_BASE:-$(git rev-list --first-parent --max-count=9 HEAD | tail -n 1)}"
+          base="${FQ_CI_SOURCE_BASE:-}"
+          # PR consumers already cache earlier PR trees, rather than just main.
+          if [ -z "$base" ] && [ "${GITHUB_EVENT_NAME:-}" = pull_request ]; then
+            base="$(git rev-parse --verify 'HEAD^2^' 2>/dev/null || true)"
+          fi
+          if [ -z "$base" ]; then
+            base="$(git rev-list --first-parent --max-count=9 HEAD | tail -n 1)"
+          fi
           {
             git rev-parse HEAD
             git rev-list --objects 'HEAD^{tree}' "^${base}^{tree}"
@@ -2763,13 +2770,22 @@ jobs:
         run: python -c "from coverage import Coverage; print(Coverage.__module__)"
       - uses: ./.github/actions/download-artifact
         id: coverage-data
-        timeout-minutes: 6
+        timeout-minutes: 2
+        continue-on-error: true
+        with:
+          pattern: coverage-shard-*-${{ github.sha }}
+          merge-multiple: true
+      # A composite timeout exhausts its nested retry too. Retry in a new step.
+      - uses: ./.github/actions/download-artifact
+        id: coverage-data-retry
+        if: ${{ !cancelled() && steps.coverage-data.outcome == 'failure' }}
+        timeout-minutes: 3
         with:
           pattern: coverage-shard-*-${{ github.sha }}
           merge-multiple: true
       - name: Validate complete coverage inputs
         env:
-          FQ_COVERAGE_INPUTS: ${{ steps.coverage-data.outputs.path }}
+          FQ_COVERAGE_INPUTS: ${{ steps.coverage-data.outcome == 'success' && steps.coverage-data.outputs.path || steps.coverage-data-retry.outputs.path }}
         run: |
           python - <<'PY'
           from pathlib import Path
@@ -2797,7 +2813,7 @@ jobs:
           PY
       - name: Combine coverage shards
         env:
-          FQ_COVERAGE_INPUTS: ${{ steps.coverage-data.outputs.path }}
+          FQ_COVERAGE_INPUTS: ${{ steps.coverage-data.outcome == 'success' && steps.coverage-data.outputs.path || steps.coverage-data-retry.outputs.path }}
         run: |
           python -m coverage combine "$FQ_COVERAGE_INPUTS"
           python -m coverage xml
