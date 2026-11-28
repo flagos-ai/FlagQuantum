@@ -129,3 +129,8 @@ shared callee identities from `select_swap_callees.py`. Start with
 exact forward/adjoint primitives and complex dirty-bank restoration. See
 `docs/development/SELECT_SWAP_QROM_FILE_AUDIT.md` for source refusals and the
 independent primitive, allocation and logical-model accounts.
+
+QROM reuses imported XOR-mask definitions within each builder. Repeated calls
+still consume fresh bindings and emit independent SSA results in source order.
+This affects construction cost only; lookup order, feedback and the complete
+Program remain unchanged, including the reserved-workspace profile.

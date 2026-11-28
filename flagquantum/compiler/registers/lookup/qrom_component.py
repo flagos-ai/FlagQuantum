@@ -102,6 +102,8 @@ def qrom_program(
         assert isinstance(target, RegisterBinding)
         predicate = target
 
+    xor_entries: dict[tuple[bool, int, int], str] = {}
+
     def load(
         row: tuple[int, ...], active: RegisterBinding | None
     ) -> RegisterBinding | None:
@@ -117,18 +119,25 @@ def qrom_program(
                 raise ValueError("Source QROM cannot bind a zero-width scalar load")
             words = target_values[i]
             dtype = unsigned_register_type(width)
-            if active is None:
-                returned = builder.call_program(
-                    bitwise_word_program(dtype, "xor_constant", pattern=value),
-                    {"x": words[index]},
-                )
-            else:
-                returned = builder.call_program(
-                    controlled_bitwise_word_program(
+            key = active is not None, width, value
+            entry = xor_entries.get(key)
+            if entry is None:
+                # A bank reuses the same masks across rows/cells. Import once
+                # per lexical builder; the original import already shares these
+                # exact definitions, and each call still reserves fresh SSA.
+                operation = (
+                    bitwise_word_program(dtype, "xor_constant", pattern=value)
+                    if active is None
+                    else controlled_bitwise_word_program(
                         dtype, "xor_constant", pattern=value
-                    ),
-                    {"ctrl": active, "x": words[index]},
+                    )
                 )
+                entry = builder.import_program(operation)
+                xor_entries[key] = entry
+            if active is None:
+                returned = builder.call_dict(entry, {"x": words[index]})
+            else:
+                returned = builder.call_dict(entry, {"ctrl": active, "x": words[index]})
                 successor = returned["ctrl"]
                 assert isinstance(successor, RegisterBinding)
                 active = successor

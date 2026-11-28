@@ -66,6 +66,7 @@ class ComponentProgramBuilder:
         self._registers = tuple(signature)
         self._name = name
         self._functions: dict[str, FunctionRecord] = {}
+        self._call_signatures: dict[str, Signature] = {}
         for function in functions:
             self.define(function)
         declaration = FunctionRecord(name, (), registers=self._registers)
@@ -156,9 +157,15 @@ class ComponentProgramBuilder:
             function = self._functions[callee]
         except KeyError:
             raise ValueError(f"unknown component definition {callee!r}") from None
-        register_port_types(function, RegisterSide.LEFT)
-        assert function.registers is not None
-        signature = Signature(function.registers)
+        signature = self._call_signatures.get(callee)
+        if signature is None:
+            # Definitions are immutable and cannot be replaced in this builder.
+            # Cache only successful declaration admission; failed validation
+            # still precedes operation reservation on every attempted call.
+            register_port_types(function, RegisterSide.LEFT)
+            assert function.registers is not None
+            signature = Signature(function.registers)
+            self._call_signatures[callee] = signature
         position = len(self._operations)
         self._operations.append(Operation("call", callee=callee))
         operands: list[ValueRef] = []
