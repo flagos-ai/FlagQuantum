@@ -38,6 +38,8 @@ from flagquantum.core.ir.program import (
 from flagquantum.core.ir.program.registers import Register
 from flagquantum.ecosystem.cirq._register_emitter import import_register_emitter
 from flagquantum.ecosystem.cirq._register_graph import import_register_graph
+from flagquantum.ecosystem.cirq.models import CirqConversionError
+from tests._reference_dependencies import unavailable_reference
 
 pytestmark = [pytest.mark.unit, pytest.mark.ftqc_reference]
 
@@ -156,13 +158,16 @@ def test_actual_top_level_constructor_and_stored_graph_model_consumers(
 def test_source_failure_stages_and_actual_signal_prepare_append(
     kind: str, monkeypatch: pytest.MonkeyPatch
 ) -> None:
-    import cirq
-    import numpy as np
-    from qualtran.bloqs.chemistry.df.double_factorization import (
-        DoubleFactorizationBlockEncoding,
-        DoubleFactorizationOneBody,
-    )
-    from qualtran.serialization.bloq import bloqs_to_proto
+    try:
+        import cirq
+        import numpy as np
+        from qualtran.bloqs.chemistry.df.double_factorization import (
+            DoubleFactorizationBlockEncoding,
+            DoubleFactorizationOneBody,
+        )
+        from qualtran.serialization.bloq import bloqs_to_proto
+    except ModuleNotFoundError as error:
+        unavailable_reference(error)
 
     source = (
         DoubleFactorizationOneBody(50, 6, 250, 12, num_bits_rot=8)
@@ -182,8 +187,15 @@ def test_source_failure_stages_and_actual_signal_prepare_append(
     graph = source.decompose_bloq().flatten()
     with pytest.raises(ValueError, match="numpy.uint8"):
         bloqs_to_proto(graph, max_depth=1)
-    with pytest.raises(ValueError, match="numpy.uint8"):
+    # Live graph capture no longer serializes the source first. It reaches
+    # the original opaque SDK leaf and must reject that unsupported operation.
+    with pytest.raises(CirqConversionError) as rejected:
         import_register_graph(source)
+    report = rejected.value.report
+    assert report.adapter == "cirq" and report.direction == "from_cirq"
+    assert len(report.issues) == 1
+    assert report.issues[0].code == "unsupported_operation"
+    assert report.issues[0].operation_name == "BloqAsCirqGate"
     exported = source.decompose_bloq().to_cirq_circuit()
     with pytest.raises(TypeError, match="Opaque source leaf"):
         cirq.decompose(
