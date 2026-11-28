@@ -16,7 +16,7 @@ them:
 | Question | Authority |
 | --- | --- |
 | Which capabilities must exist, and their current status | `contracts/cudaq-parity-matrix.toml`, generated into `docs/reference/CUDAQ_PARITY_MATRIX.md` |
-| What FlagQuantum may depend on, and how a dependency is adopted | [`dependency-policy.toml`](../../dependency-policy.toml) plus engineering decision principle 6 |
+| What FlagQuantum may depend on, and how a dependency is adopted | [`config/dependency-policy.toml`](../../config/dependency-policy.toml) plus engineering decision principle 6 |
 | Whether the programme is authorized to run beside the CPU vertical path | [ADR ARCH-012](../architecture/decisions/ARCH_012_CUDAQ_PARITY_CONTROL_SEQUENCE.md), **Approved** |
 
 ARCH-012 is approved. The control sequence in
@@ -647,13 +647,13 @@ explicitly not scalability evidence, and neither is any later single-node result
 
 Borrowing a vendor-neutral project is permitted, and is the intended route for the
 `B_open_neutral` rows. It is not unrestricted: every adoption remains subject to
-`dependency-policy.toml` and to engineering decision principle 6, which requires a
+`config/dependency-policy.toml` and to engineering decision principle 6, which requires a
 documented need, an ownership boundary, a licence and supply-chain review, a
 replacement interface, and an exit plan.
 
 No project below is a core dependency; a core install brings PyTorch only. The
 entries already declared as optional extras - `stim`, `pymatching` and `cotengra` -
-are pinned in `dependency-policy.toml`, and that file, not this table, is where a
+are pinned in `config/dependency-policy.toml`, and that file, not this table, is where a
 declared extra's version range and classified owner live. The table records
 ownership of the **licence check**, not approval to adopt. Licences were read from
 each project's own repository metadata on 2026-09-30; the licence column must be
@@ -689,7 +689,7 @@ Four rules govern this table.
    Depending on a third party for statevector, tensor-network, or dynamics
    execution would recreate the problem the programme exists to solve.
 3. **Borrowing a project does not borrow its support model.** An adopted project
-   needs a named internal owner, a pinned version in `dependency-policy.toml`, and
+   needs a named internal owner, a pinned version in `config/dependency-policy.toml`, and
    an exit plan, in the same way the existing interop extras have.
 4. **A copyleft licence is a different proposition from a permissive one, and the
    table records the difference.** "Vendor-neutral" and "may be used" are not the

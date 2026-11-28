@@ -146,7 +146,7 @@ Proposed local commands after implementation:
 
 ```sh
 python -m pytest -q tests/unit/test_qec_installed_profiles.py tests/qec/test_pymatching_batch.py tests/qec/test_adapters_pymatching.py tests/qec/test_independent_batch_decoding.py
-python tools/check_dependency_policy.py
+python tools/architecture/check_dependency_policy.py
 python -m ruff check flagquantum/qec/adapters/pymatching.py tests/qec/test_pymatching_batch.py tests/unit/test_qec_installed_profiles.py tools/release/qec_installed_smoke.py
 python -m black --check flagquantum/qec/adapters/pymatching.py tests/qec/test_pymatching_batch.py tests/unit/test_qec_installed_profiles.py tools/release/qec_installed_smoke.py
 python -m mypy --strict --python-version 3.12 --explicit-package-bases --follow-imports=silent flagquantum/qec/adapters/pymatching.py tests/qec/test_pymatching_batch.py tests/unit/test_qec_installed_profiles.py tools/release/qec_installed_smoke.py

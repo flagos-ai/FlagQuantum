@@ -17,3 +17,11 @@ change its owning implementation, then run from the repository root:
 python -m pytest tests/unit/test_architecture_boundaries.py tests/unit/test_source_relocations.py -q
 python tools/architecture/check_architecture.py
 ```
+
+The remaining root-tool implementations have moved to their owners. The dependency gate reads the same config policy and repository source roots.
+
+```sh
+python tools/architecture/check_dependency_policy.py
+```
+
+See the [root-tool Integration declaration](../../docs/development/migration/root-tool-ownership.md). Incoming #1084 semantic changes remain separately unqualified.

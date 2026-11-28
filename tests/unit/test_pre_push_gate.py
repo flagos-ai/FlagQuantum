@@ -24,7 +24,7 @@ def test_pre_push_gate_reuses_checked_in_ci_tiers() -> None:
         "pre-commit",
         "--show-diff-on-failure",
     ) in commands
-    assert ("python", "tools/check_dependency_policy.py") in commands
+    assert ("python", "tools/architecture/check_dependency_policy.py") in commands
     assert ("python", "tools/validation/check_braket_interop_contract.py") in commands
     assert ("python", "tools/validation/check_qiskit_interop_contract.py") in commands
     assert ("python", "tools/validation/check_cudaq_export_contract.py") in commands
@@ -37,7 +37,7 @@ def test_pre_push_gate_reuses_checked_in_ci_tiers() -> None:
         "tools/validation/check_interop_capability_gap_matrix.py",
     ) in commands
     assert ("python", "tools/validation/check_openqasm_import_contract.py") in commands
-    assert ("python", "tools/check_multi_level_ir_contract.py") in commands
+    assert ("python", "tools/validation/check_multi_level_ir_contract.py") in commands
     assert ("python", "tools/validation/check_double_single_contract.py") in commands
     assert (
         "python",

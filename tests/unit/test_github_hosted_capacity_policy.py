@@ -22,6 +22,7 @@ WORKFLOWS = ROOT / ".github" / "workflows"
 CEILING = 8
 BUCKETS = frozenset(f"flagquantum-gh-{slot}" for slot in range(CEILING))
 TRUSTED_CPU_ROUTE = "${{ (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository) && 'flagquantum-cpu-general' || 'ubuntu-latest' }}"
+BW_CPU_ROUTE = "${{ (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository) && 'flagquantum-bw1100-cpu' || 'ubuntu-latest' }}"
 A800_CPU_ROUTE = '${{ fromJSON((github.event_name != \'pull_request\' || github.event.pull_request.head.repo.full_name == github.repository) && \'["self-hosted","linux","x64","flagquantum-cpu"]\' || \'["ubuntu-latest"]\') }}'
 BOUNDED_PYTEST_ADDOPTS = "-n 16 --dist=worksteal --durations=50"
 
@@ -190,7 +191,7 @@ def test_cpu_pytest_tiers_use_sixteen_bounded_work_stealing_workers() -> None:
         download = next(
             step
             for step in _steps("ci.yml", job)
-            if step.get("uses") == "actions/download-artifact@v8.0.2" and step.get("if")
+            if step.get("id") == "source-full-download"
         )
         assert download["with"]["digest-mismatch"] == "error"
         assert (
@@ -263,11 +264,7 @@ def test_migrated_cpu_jobs_keep_frameworks_and_processes_isolated(job: str) -> N
         )
     if job == "coverage-shard":
         assert " ".join(definition["runs-on"].split()) == (
-            "${{ fromJSON( (github.event_name != 'pull_request' || "
-            "github.event.pull_request.head.repo.full_name == github.repository) "
-            '&& (matrix.a800 && \'["self-hosted","linux","x64","flagquantum-cpu",'
-            '"flagquantum-a800-cpu"]\' || \'["self-hosted","linux","x64","flagquantum-cpu"]\') '
-            "|| '[\"ubuntu-latest\"]' ) }}"
+            '${{ fromJSON( (github.event_name != \'pull_request\' || github.event.pull_request.head.repo.full_name == github.repository) && (matrix.runner && format(\'["self-hosted","linux","x64","flagquantum-cpu","{0}"]\', matrix.runner) || matrix.a800 && \'["self-hosted","linux","x64","flagquantum-cpu","flagquantum-a800-cpu"]\' || \'["self-hosted","linux","x64","flagquantum-cpu"]\') || \'["ubuntu-latest"]\' ) }}'
         )
         assert any(
             step.get("uses") == "./.github/actions/offline-cpu"
@@ -299,7 +296,7 @@ def test_dependency_bounds_retain_the_full_matrix_on_isolated_cpu_runners() -> N
     assert "python -m pytest tests/smoke tests/test_native_circuit.py -q" in commands
     assert "--print-floor" in commands
     assert "mypy --strict" in commands
-    assert definition["runs-on"] == TRUSTED_CPU_ROUTE
+    assert definition["runs-on"] == BW_CPU_ROUTE
     assert "max-parallel" not in definition["strategy"]
     isolated = next(
         step
@@ -307,6 +304,16 @@ def test_dependency_bounds_retain_the_full_matrix_on_isolated_cpu_runners() -> N
         if step.get("uses") == "./.github/actions/isolated-python"
     )
     assert isolated["with"]["torch-spec"] == "${{ matrix.torch }}"
+    assert isolated["with"]["inherit-installed-dependencies"] == "false"
+    project = next(
+        step
+        for step in steps
+        if step.get("name") == "Install project within the selected Torch bound"
+    )
+    assert project["env"]["FQ_TORCH_SPEC"] == "${{ matrix.torch }}"
+    assert '"$FQ_TORCH_SPEC" > "$RUNNER_TEMP/fq-torch-bound.txt"' in project["run"]
+    assert '--constraint "$RUNNER_TEMP/fq-torch-bound.txt" -e .' in project["run"]
+    assert "--no-deps" not in project["run"]
 
 
 def test_pull_requests_use_compatibility_smoke_on_older_python() -> None:
@@ -488,15 +495,15 @@ def test_coverage_shards_are_combined_before_the_policy_is_enforced() -> None:
         str(step.get("run", "")) for step in _steps("ci.yml", "coverage")
     )
     assert "needs.coverage-shard.result" in commands
-    download = next(
-        step
-        for step in _steps("ci.yml", "coverage")
-        if step.get("uses") == "./.github/actions/download-artifact"
-        and "pattern" in step.get("with", {})
-    )
-    assert download["with"]["merge-multiple"] is True
-    assert download["timeout-minutes"] == 6
+    download = next(step for step in source_steps if step.get("id") == "coverage-data")
+    assert "python3 -I tools/ci/ci_coverage_artifacts.py" in download["run"]
+    assert '--run-id "$GITHUB_RUN_ID"' in download["run"]
+    assert '--source-sha "$GITHUB_SHA"' in download["run"]
+    assert '--count "$FQ_COVERAGE_SHARDS"' in download["run"]
+    assert download["timeout-minutes"] == 4
     assert not download.get("continue-on-error", False)
+    assert not any(step.get("id") == "coverage-data-retry" for step in source_steps)
+    assert final["permissions"]["actions"] == "read"
     assert commands.index("integrity_check") < commands.index(
         'coverage combine "$FQ_COVERAGE_INPUTS"'
     )
@@ -625,7 +632,10 @@ def test_openfermion_validation_does_not_wait_for_container_builds() -> None:
 
 def test_native_fermion_uses_isolated_cpu_capacity_for_trusted_changes() -> None:
     job = _document("ci.yml")["jobs"]["native-fermion"]
-    assert job["runs-on"] == TRUSTED_CPU_ROUTE
+    assert job["runs-on"] == "ubuntu-latest"
+    assert _groups(job) == {"flagquantum-gh-3", "flagquantum-gh-4"}
+    assert job["concurrency"]["queue"] == "max"
+    assert job["timeout-minutes"] == 45
     assert len(job["strategy"]["matrix"]["include"]) == 2
     isolated = next(
         step
@@ -785,7 +795,7 @@ def test_queue_uses_full_integration_suites_and_preserves_required_check_names()
 
 
 def test_pr_gate_template_preserves_strict_checks_without_a_merge_queue() -> None:
-    config = json.loads((ROOT / "ci/pr-gate-main.json").read_text())
+    config = json.loads((ROOT / "tools/ci/pr-gate-main.json").read_text())
     assert config["enforcement"] == "active"
     assert config["target"] == "branch"
     assert config["conditions"] == {
@@ -929,6 +939,7 @@ def test_dependency_bounds_uses_checked_mirror_without_changing_torch_spec() -> 
     )
     assert isolated["with"] == {
         "torch-spec": "${{ matrix.torch }}",
+        "inherit-installed-dependencies": "false",
         "self-hosted-pypi-index": "https://mirrors.aliyun.com/pypi/simple",
     }
     assert any(

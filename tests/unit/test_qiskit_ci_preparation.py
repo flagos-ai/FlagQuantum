@@ -149,7 +149,7 @@ def test_hosted_wheel_cache_does_not_restore_installed_environments() -> None:
         "runner.arch",
         "py312",
         "matrix.qiskit",
-        "dependency-policy.toml",
+        "config/dependency-policy.toml",
     ):
         assert component in cache["with"]["key"]
     assert "restore-keys" not in cache["with"]

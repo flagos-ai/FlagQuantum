@@ -365,7 +365,7 @@ python -m pytest tests/unit/test_algorithms_package.py \
   tests/test_hybrid_optimization.py \
   tests/integration/test_cpu_vertical_slice.py -q
 python tools/architecture/check_architecture.py
-python tools/check_dependency_policy.py
+python tools/architecture/check_dependency_policy.py
 ```
 
 Keep defaults deterministic, preserve requested precision and autograd, and

@@ -325,7 +325,7 @@ prepared environment (each externally supervised by an explicit timeout):
 
 ```bash
 PIP_NO_INDEX=1 FQ_BUILD_EMBEDDED_STIM=1 python -m build --sdist --wheel --no-isolation --outdir /private/tmp/fq-file-conversion-dist
-python tools/verify_distribution_artifacts.py /private/tmp/fq-file-conversion-dist
+python tools/release/verify_distribution_artifacts.py /private/tmp/fq-file-conversion-dist
 python tools/release/check_qec_installed_profiles.py --dist-dir /private/tmp/fq-file-conversion-dist --report-dir /private/tmp/fq-file-conversion-installed
 python tools/validation/verify_embedded_stabilizer_install.py
 ```

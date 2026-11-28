@@ -210,7 +210,7 @@ python -m pytest tests/team/compiler/test_construction_semantics.py -q
 python -m pytest tests/team/compiler/test_construction_dependencies.py -q
 python -m pytest tests/integration/test_construction_execution_boundary.py -q
 python tools/architecture/check_architecture.py
-python tools/check_dependency_policy.py
+python tools/architecture/check_dependency_policy.py
 ```
 
 The CS-01 boundary probes use existing Circuit/IR/runtime capabilities. They

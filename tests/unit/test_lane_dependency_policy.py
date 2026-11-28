@@ -57,7 +57,8 @@ from typing import NamedTuple
 
 import pytest
 
-from tools.check_dependency_policy import distribution_name, load_toml
+from tests.unit.test_test_reachability_policy import _test_files
+from tools.architecture.check_dependency_policy import distribution_name, load_toml
 from tools.ci.ci_tier import CI_TIERS
 
 pytestmark = pytest.mark.unit
@@ -65,7 +66,7 @@ pytestmark = pytest.mark.unit
 ROOT = Path(__file__).resolve().parents[2]
 WORKFLOW_DIR = ROOT / ".github" / "workflows"
 CI_WORKFLOW = "ci.yml"
-POLICY = ROOT / "dependency-policy.toml"
+POLICY = ROOT / "config" / "dependency-policy.toml"
 # Where an opt-in device run is recorded, since no lane can supply its variable.
 MANUAL = ROOT / "docs/development/TESTING.md"
 
@@ -604,7 +605,7 @@ class Row(NamedTuple):
 
 def _audit() -> list[Row]:
     rows: list[Row] = []
-    for path in sorted((ROOT / "tests").rglob("test_*.py")):
+    for path in _test_files():
         source = path.read_text(encoding="utf-8")
         tree = ast.parse(source, filename=str(path))
         relative = path.relative_to(ROOT).as_posix()

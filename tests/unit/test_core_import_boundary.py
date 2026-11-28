@@ -50,12 +50,12 @@ from pathlib import Path
 
 import pytest
 
-from tools.check_dependency_policy import load_toml
+from tools.architecture.check_dependency_policy import load_toml
 
 pytestmark = pytest.mark.unit
 
 ROOT = Path(__file__).resolve().parents[2]
-POLICY = ROOT / "dependency-policy.toml"
+POLICY = ROOT / "config" / "dependency-policy.toml"
 CORE_PACKAGE = ROOT / "flagquantum" / "core"
 
 

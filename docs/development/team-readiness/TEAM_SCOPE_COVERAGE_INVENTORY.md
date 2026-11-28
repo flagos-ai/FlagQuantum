@@ -258,7 +258,7 @@ release configuration" under Integration coordination. `protected_paths` covers
 | --- | --- |
 | `dependency-policy.toml` | Declares `schema = "flagquantum_dependency_policy_v2"`, the Python support matrix, the torch range, and every optional extra. `docs/development/DEPENDENCY_POLICY.md` calls it "the executable support matrix". |
 | `setup.py`, `MANIFEST.in`, `config/environments/environment.yml` | Packaging and release inputs. |
-| `pytest.ini`, `.coveragerc`, `.pre-commit-config.yaml` | Test and quality configuration that governs whether a change can be verified. |
+| `pyproject.toml`, `.pre-commit-config.yaml` | Test and quality configuration that governs whether a change can be verified. |
 
 Editing `dependency-policy.toml` currently requires no integration coordination
 under the machine check even though it can change the supported Python versions

@@ -54,7 +54,7 @@ except ModuleNotFoundError:  # pragma: no cover - Python 3.10 compatibility
 
 pytestmark = pytest.mark.unit
 
-MANIFEST = Path(__file__).resolve().parents[3] / "capability-maturity.toml"
+MANIFEST = Path(__file__).resolve().parents[3] / "config" / "capability-maturity.toml"
 
 # The lowest four wires are a bare two-link chain, so wire 3 is reachable from
 # nothing below it, while wires 4..7 are a complete graph. A four-wire program

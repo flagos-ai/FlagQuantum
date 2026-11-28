@@ -15,11 +15,13 @@ from ...compiler.select_lowering import (
     lower_select_program,
     supports_dynamic_select,
 )
-from ...core.classical_control import validate_classical_control
+from ...core.classical_control import (
+    is_classical_control_instruction,
+    validate_classical_control,
+)
 from ...core.ir import CircuitIR, MeasurementNode
 from ...core.ising import IsingBraidProgram
 from ...errors import CapabilityError, ValidationError
-from ..dynamic._conditions import instruction_is_dynamic
 from ..dynamic._final_outputs import (
     mark_dynamic_final_outputs,
     resolve_dynamic_final_output_options,
@@ -799,7 +801,8 @@ def _validated_plan_program(
     if not isinstance(source_ir, CircuitIR):
         raise TypeError("program must be a Circuit or CircuitIR")
     is_dynamic = any(
-        instruction_is_dynamic(instruction) for instruction in source_ir.instructions
+        is_classical_control_instruction(instruction)
+        for instruction in source_ir.instructions
     )
     if measurements is not None:
         if source_ir.measurements:
@@ -922,7 +925,8 @@ def plan(
         noise_model=noise_model,
     )
     is_dynamic = any(
-        instruction_is_dynamic(instruction) for instruction in source_ir.instructions
+        is_classical_control_instruction(instruction)
+        for instruction in source_ir.instructions
     )
     if is_dynamic and options is not None and options.batch_size is not None:
         raise ValidationError(
@@ -966,7 +970,7 @@ def plan(
         and any(map(supports_dynamic_select, source_ir.instructions))
     ):
         candidate = lower_select_program(source_ir, "dynamic_unary_iteration")
-        if any(instruction_is_dynamic(op) for op in candidate.instructions):
+        if any(is_classical_control_instruction(op) for op in candidate.instructions):
             source_ir = candidate
             is_dynamic = True
     if is_dynamic:
@@ -1157,7 +1161,7 @@ def plan_for_backend(
 ) -> ExecutionPlan:
     """Build an execution plan after normalizing backend policy."""
 
-    from ..planner_adapter import backend_execution_options
+    from ..configuration import backend_execution_options
 
     backend_options = backend_execution_options(
         mode=mode,

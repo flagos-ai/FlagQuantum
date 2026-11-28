@@ -2,7 +2,7 @@
 
 Choose a supported workflow by user goal, runtime, hardware, and evidence level.
 This catalog is generated from the machine-validated
-[`capability-maturity.toml`](../../capability-maturity.toml) source of truth.
+[`capability-maturity.toml`](../../config/capability-maturity.toml) source of truth.
 
 > Maturity applies only to the scope stated in each row. A local, replicated,
 > sliced, or planned execution path is not distributed scalability evidence.

@@ -49,7 +49,7 @@ To run the optional test from a FlagQuantum development environment:
 ```sh
 python -m pip install 'qualtran==0.7.0'
 python -m pytest -q tests/unit/algorithms/primitives/multiplexers
-python -m pytest -q tools/qualtran_parity
+python -m pytest -q tests/reference/qualtran
 ```
 
 ## SelectPauliLCU
@@ -65,7 +65,7 @@ unused address. The current dense lowering supports ten operand qubits.
 Run the comparison with Qualtran 0.7.0, Cirq Core 1.4.0, and NumPy 1.26.4:
 
 ```sh
-python -m pytest -qs tools/qualtran_parity/test_pauli_lcu_walk_qualtran.py
+python -m pytest -qs tests/reference/qualtran/test_pauli_lcu_walk_qualtran.py
 ```
 
 For H = X − 0.6Y + 0.4Z, both walks use three index qubits, one data
@@ -90,7 +90,7 @@ policy for rotations, Toffolis, and measurement-based uncomputation.
 
 ### Native PREPARE and walk comparison
 
-Run `python -m pytest -qs tools/qualtran_parity/test_native_pauli_lcu_walk.py`
+Run `python -m pytest -qs tests/reference/qualtran/test_native_pauli_lcu_walk.py`
 with the same pinned reference environment. For the same signed Hamiltonian,
 Qualtran's native alias PREPARE uses a two-bit address and coefficient
 precision 0.17. Its native LCU block differs from H/2 by 0.04714045 in
@@ -109,7 +109,7 @@ levels make these counts descriptive rather than a common Clifford+T cost.
 
 ### SELECT table-size sweep
 
-Run `python -m pytest -qs tools/qualtran_parity/test_select_pauli_lcu_qualtran.py`
+Run `python -m pytest -qs tests/reference/qualtran/test_select_pauli_lcu_qualtran.py`
 in the pinned reference environment. The sweep reuses the existing SELECT
 parity test and appends each bound operation with `Circuit.append`. For each
 case, the dense executor and gate lowering agree with Qualtran on complex
@@ -194,7 +194,7 @@ the automatic dynamic path's returned samples.
 `prepare_lcu` reuses FlagQuantum's arbitrary state preparation, pads unused
 addresses with zero amplitude, and returns the circuit and L1 normalization.
 SELECT carries the signs. The optional comparison
-`python -m pytest -qs tools/qualtran_parity/test_pauli_lcu_prepare.py`
+`python -m pytest -qs tests/reference/qualtran/test_pauli_lcu_prepare.py`
 uses Qualtran 0.7.0 and weights (1, -1/2, 1/4, 1/4) on (X, Y, Z, I).
 Both preparations give index probabilities (1/2, 1/4, 1/8, 1/8), and both
 complete block encodings reproduce the signed H/2, including its complex

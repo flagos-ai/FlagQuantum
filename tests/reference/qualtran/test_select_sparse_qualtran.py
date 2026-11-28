@@ -10,7 +10,7 @@ from flagquantum.algorithms.primitives.multiplexers import SelectSparse
 from flagquantum.compiler.select_lowering import lower_select_program
 from flagquantum.runtime.dynamic.circuit import DynamicCircuit
 from flagquantum.runtime.dynamic.execution import run_dynamic
-from tools.qualtran_parity.clifford_t_counts import clifford_t_counts
+from tests.reference.qualtran.clifford_t_counts import clifford_t_counts
 
 
 def test_select_sparse_qualtran() -> None:

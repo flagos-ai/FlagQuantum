@@ -52,9 +52,8 @@ jobs:
   prepare-source:
     outputs:
       artifact-key: ${{ steps.pack-source.outputs.artifact-key }}
-    runs-on: ${{ fromJSON((github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository) && '["self-hosted","linux","x64","flagquantum-cpu"]' || '["ubuntu-latest"]') }}
-    # Cold migration trees can require up to 2,048 verified API objects.
-    # Keep ten minutes for checkout fallback, packing and artifact upload.
+    runs-on: ubuntu-latest
+    # Source publication needs GitHub networking, not scientific CPU resources.
     timeout-minutes: 30
     env:
       # Self-hosted GitHub connections can reset HTTP/2 streams.
@@ -64,7 +63,7 @@ jobs:
     permissions:
       contents: read
     concurrency:
-      group: flagquantum-${{ (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository) && format('self-hosted-{0}-prepare-source-{1}', github.run_id, strategy.job-index || 0) || 'gh' }}-5
+      group: flagquantum-gh-5
       queue: max
     steps:
       - name: Restore verified source through the GitHub API
@@ -95,7 +94,7 @@ jobs:
               os.environ["GITHUB_GRAPHQL_URL"],
               data=json.dumps({"query": query, "variables": {
                   "owner": owner, "name": name,
-                  "expression": f"{sha}:tools/ci_source_archive.py",
+                  "expression": f"{sha}:tools/ci/ci_source_archive.py",
               }}).encode(),
               headers={
                   "Authorization": f"Bearer {os.environ['GH_TOKEN']}",
@@ -145,12 +144,19 @@ jobs:
           git rev-parse HEAD > "$staging/full/source.sha"
           git rev-list --objects --no-walk HEAD | git pack-objects --stdout > "$staging/full/source.pack"
           cp "$staging/full/source.sha" "$staging/incremental/source.sha"
-          base="${FQ_CI_SOURCE_BASE:-$(git rev-list --first-parent --max-count=9 HEAD | tail -n 1)}"
+          base="${FQ_CI_SOURCE_BASE:-}"
+          # PR consumers already cache earlier PR trees, rather than just main.
+          if [ -z "$base" ] && [ "${GITHUB_EVENT_NAME:-}" = pull_request ]; then
+            base="$(git rev-parse --verify 'HEAD^2^' 2>/dev/null || true)"
+          fi
+          if [ -z "$base" ]; then
+            base="$(git rev-list --first-parent --max-count=9 HEAD | tail -n 1)"
+          fi
           {
             git rev-parse HEAD
             git rev-list --objects 'HEAD^{tree}' "^${base}^{tree}"
             # Carry the Git path proof for bounded API repair of cache misses.
-            git rev-parse 'HEAD^{tree}' 'HEAD:tools' 'HEAD:tools/ci_source_archive.py'
+            git rev-parse 'HEAD^{tree}' 'HEAD:tools' 'HEAD:tools/ci' 'HEAD:tools/ci/ci_source_archive.py'
           } | git pack-objects --stdout > "$staging/incremental/source.pack"
       - uses: ./.github/actions/upload-artifact
         timeout-minutes: 6
@@ -176,6 +182,7 @@ jobs:
   quality:
     needs: prepare-source
     runs-on: ubuntu-latest
+    timeout-minutes: 30
     concurrency:
       group: flagquantum-gh-0
       queue: max
@@ -204,12 +211,6 @@ jobs:
       - run: python -m pip install --upgrade pip 'setuptools>=77.0.3' wheel
       - uses: ./.github/actions/install-cpu-torch
       - run: python -m pip install --no-build-isolation -e '.[dev]'
-      - name: English repository content
-        run: python tools/architecture/check_repository_language.py
-      - name: Ruff production and test surface
-        run: ruff check flagquantum tests tools
-      - name: Black production and test surface
-        run: black --check flagquantum tests tools
       - name: Strict type check of the whole package
         # Target 3.12 because numpy's bundled stubs use PEP 695 ``type``
         # statements, which mypy only parses at 3.12. The 3.10 and 3.11
@@ -266,11 +267,11 @@ jobs:
           fi
           python tools/release/check_evidence_retention.py --base "$BASE_SHA"
       - name: Enforce core, extras, interop, and external-platform dependencies
-        run: python tools/check_dependency_policy.py
+        run: python tools/architecture/check_dependency_policy.py
       - name: Verify Amazon Braket circuit interoperability contract
         run: python tools/validation/check_braket_interop_contract.py
       - name: Verify Cirq interoperability contract
-        run: python tools/check_cirq_interop_contract.py
+        run: python tools/validation/check_cirq_interop_contract.py
       - name: Verify CUDA-Q export contract
         run: python tools/validation/check_cudaq_export_contract.py
       - name: Verify Qiskit interoperability contract
@@ -292,7 +293,7 @@ jobs:
       - name: Verify OpenQASM import contract
         run: python tools/validation/check_openqasm_import_contract.py
       - name: Verify internal multi-level IR contract
-        run: python tools/check_multi_level_ir_contract.py
+        run: python tools/validation/check_multi_level_ir_contract.py
       - name: Verify realtime messaging contract
         run: python tools/validation/check_realtime_messaging_contract.py
       - name: Verify the qubit-vocabulary ledgers
@@ -356,33 +357,17 @@ jobs:
         run: python tools/architecture/public_api_snapshot.py
       - name: Verify proposed Stable Core classification
         run: python -m pytest tests/unit/test_public_api_candidate.py -q
-      - name: Reject legacy root API in user-facing files
-        run: python tools/architecture/check_legacy_root_api_usage.py
       - name: Verify correctness certification matrix
         run: python tools/validation/correctness_certification.py --check
       - name: Verify capability maturity claims
         run: python tools/validation/check_capability_maturity.py
-      # The two modules below resolve each performance claim's recorded
-      # `code_version` against this repository's history. A depth-1 clone cannot
-      # separate a revision it never fetched from one the repository never
-      # contained, so those tests skip in every other lane rather than read that
-      # silence as a pass -- which leaves this job, the only one that fetches
-      # full history, as the only place they can reach a verdict. Running them
-      # here is what keeps the pin check live instead of nominally present.
-      - name: Verify performance claim provenance where history resolves
-        run: >-
-          python -m pytest
-          tests/unit/test_capability_maturity.py
-          tests/unit/test_docs_source_of_truth.py
-          tests/unit/test_evidence_revisions.py
-          -q
       # Three two-node probe contract tests recompute the digest of the contract
       # each checked-in artifact recorded, from the revision the artifact names.
       # That needs the commit, so those three assertions skip in a depth-1 lane
       # rather than read a clone that never fetched the revision as a mismatch.
       # They ran in the unit tier and errored there for exactly that reason,
       # which is why the skip has to be paired with somewhere it reaches a
-      # verdict: this job, the only one that fetches full history. The rest of
+      # verdict: a gate that fetches full history. The rest of
       # each module is about the artifact's own content and runs everywhere.
       - name: Verify checked-in probe artifacts against their recorded contracts
         run: >-
@@ -391,22 +376,6 @@ jobs:
           tests/team/runtime/test_cuda_multinode_mps_probe.py
           tests/team/runtime/test_cuda_multinode_statevector_probe.py
           -q
-      # The six artifact validators in this job resolve the revision of the one
-      # artifact each of them names, so an artifact no validator names was never
-      # asked -- which is how nineteen artifacts under `artifacts/` came to record
-      # revisions this repository does not contain. This step asks a directory
-      # instead of a list, and asks two questions: every full-length revision at
-      # any depth in an artifact under `artifacts/` or `benchmarks/results/` must
-      # be obtainable here -- this repository holds the commit and a ref reaches
-      # it -- or be accounted for by an origin, either declared in
-      # `evidence-revision-origins.toml` or stated inside the artifact as
-      # `<field>_origin` beside the field that records the revision. An artifact
-      # whose two records disagree fails rather than passing twice. Presence alone
-      # is not enough, because a commit only a deleted branch pointed at stays in
-      # the object database of the checkout that made it and no clone obtains it.
-      # It needs the full history this job already fetches.
-      - name: Verify evidence revision origins
-        run: python tools/release/check_evidence_revisions.py
       - name: Verify checked-in FlagOS reference evidence
         run: >-
           python tools/validation/validate_flagos_reference_evidence.py
@@ -426,22 +395,186 @@ jobs:
           path: ${{ env.FQ_CI_REPORT_DIR }}
           retention-days: 7
 
+
+  quality-style:
+    needs: prepare-source
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    concurrency:
+      group: flagquantum-gh-1
+      queue: max
+    steps:
+      # The evidence provenance gates below ask whether each recorded source
+      # revision is present in this repository and whether a ref of it reaches
+      # the commit. A depth-1 clone cannot answer either question about a
+      # revision it did not fetch: it cannot tell one it never fetched from one
+      # the repository never contained, nor list the refs reaching a commit, and
+      # tools/release/evidence_provenance.py fails closed on that ambiguity rather than
+      # reading it as a pass.
+      - name: Clear sparse checkout state from a previous job
+        run: |
+          if [ -d .git ]; then
+            git sparse-checkout disable
+            rm -f .git/info/sparse-checkout
+            git config --local --unset core.sparseCheckout || true
+          fi
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - uses: ./.github/actions/isolated-python
+      - run: python -m pip install --upgrade pip 'setuptools>=77.0.3' wheel
+      - uses: ./.github/actions/install-cpu-torch
+      - run: python -m pip install --no-build-isolation -e '.[dev]'
+      - name: English repository content
+        run: python tools/architecture/check_repository_language.py
+      - name: Ruff production and test surface
+        run: ruff check flagquantum tests tools
+      - name: Black production and test surface
+        run: black --check flagquantum tests tools
+      - name: Reject legacy root API in user-facing files
+        run: python tools/architecture/check_legacy_root_api_usage.py
+      - name: Retain resource limits and pytest timing reports
+        if: ${{ always() && env.FQ_CI_REPORT_DIR != '' }}
+        uses: ./.github/actions/upload-artifact
+        timeout-minutes: 6
+        with:
+          name: cpu-report-${{ github.job }}-${{ strategy.job-index || '0' }}
+          path: ${{ env.FQ_CI_REPORT_DIR }}
+          retention-days: 7
+
+
+  quality-provenance:
+    needs: prepare-source
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    concurrency:
+      group: flagquantum-gh-2
+      queue: max
+    steps:
+      # The evidence provenance gates below ask whether each recorded source
+      # revision is present in this repository and whether a ref of it reaches
+      # the commit. A depth-1 clone cannot answer either question about a
+      # revision it did not fetch: it cannot tell one it never fetched from one
+      # the repository never contained, nor list the refs reaching a commit, and
+      # tools/release/evidence_provenance.py fails closed on that ambiguity rather than
+      # reading it as a pass.
+      - name: Clear sparse checkout state from a previous job
+        run: |
+          if [ -d .git ]; then
+            git sparse-checkout disable
+            rm -f .git/info/sparse-checkout
+            git config --local --unset core.sparseCheckout || true
+          fi
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - uses: ./.github/actions/isolated-python
+      - run: python -m pip install --upgrade pip 'setuptools>=77.0.3' wheel
+      - uses: ./.github/actions/install-cpu-torch
+      - run: python -m pip install --no-build-isolation -e '.[dev]'
+      # The two modules below resolve each performance claim's recorded
+      # `code_version` against this repository's history. A depth-1 clone cannot
+      # separate a revision it never fetched from one the repository never
+      # contained, so those tests skip in every other lane rather than read that
+      # silence as a pass -- which leaves a gate that fetches
+      # full history, as the only place they can reach a verdict. Running them
+      # here is what keeps the pin check live instead of nominally present.
+      - name: Verify performance claim provenance where history resolves
+        run: >-
+          python -m pytest
+          tests/unit/test_capability_maturity.py
+          tests/unit/test_docs_source_of_truth.py
+          tests/unit/test_evidence_revisions.py
+          -q
+      - name: Retain resource limits and pytest timing reports
+        if: ${{ always() && env.FQ_CI_REPORT_DIR != '' }}
+        uses: ./.github/actions/upload-artifact
+        timeout-minutes: 6
+        with:
+          name: cpu-report-${{ github.job }}-${{ strategy.job-index || '0' }}
+          path: ${{ env.FQ_CI_REPORT_DIR }}
+          retention-days: 7
+
+
+  quality-evidence-origins:
+    needs: prepare-source
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    concurrency:
+      group: flagquantum-gh-3
+      queue: max
+    steps:
+      # The evidence provenance gates below ask whether each recorded source
+      # revision is present in this repository and whether a ref of it reaches
+      # the commit. A depth-1 clone cannot answer either question about a
+      # revision it did not fetch: it cannot tell one it never fetched from one
+      # the repository never contained, nor list the refs reaching a commit, and
+      # tools/release/evidence_provenance.py fails closed on that ambiguity rather than
+      # reading it as a pass.
+      - name: Clear sparse checkout state from a previous job
+        run: |
+          if [ -d .git ]; then
+            git sparse-checkout disable
+            rm -f .git/info/sparse-checkout
+            git config --local --unset core.sparseCheckout || true
+          fi
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - uses: ./.github/actions/isolated-python
+      - run: python -m pip install --upgrade pip 'setuptools>=77.0.3' wheel
+      - uses: ./.github/actions/install-cpu-torch
+      - run: python -m pip install --no-build-isolation -e '.[dev]'
+      # The six artifact validators in this job resolve the revision of the one
+      # artifact each of them names, so an artifact no validator names was never
+      # asked -- which is how nineteen artifacts under `artifacts/` came to record
+      # revisions this repository does not contain. This step asks a directory
+      # instead of a list, and asks two questions: every full-length revision at
+      # any depth in an artifact under `artifacts/` or `benchmarks/results/` must
+      # be obtainable here -- this repository holds the commit and a ref reaches
+      # it -- or be accounted for by an origin, either declared in
+      # `evidence-revision-origins.toml` or stated inside the artifact as
+      # `<field>_origin` beside the field that records the revision. An artifact
+      # whose two records disagree fails rather than passing twice. Presence alone
+      # is not enough, because a commit only a deleted branch pointed at stays in
+      # the object database of the checkout that made it and no clone obtains it.
+      # It needs the full history these gates already fetch.
+      - name: Verify evidence revision origins
+        run: python tools/release/check_evidence_revisions.py
+      - name: Retain resource limits and pytest timing reports
+        if: ${{ always() && env.FQ_CI_REPORT_DIR != '' }}
+        uses: ./.github/actions/upload-artifact
+        timeout-minutes: 6
+        with:
+          name: cpu-report-${{ github.job }}-${{ strategy.job-index || '0' }}
+          path: ${{ env.FQ_CI_REPORT_DIR }}
+          retention-days: 7
+
   native-fermion:
     needs: prepare-source
-    runs-on: ${{ (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository) && 'flagquantum-cpu-general' || 'ubuntu-latest' }}
-    # Cold science wheels measured over 16 minutes across shared runners.
+    runs-on: ubuntu-latest
+    # Fresh science wheels use hosted networking, not an offline CPU cache.
     timeout-minutes: 45
     permissions:
       contents: read
     concurrency:
-      group: flagquantum-${{ (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository) && format('a100-cpu-{0}-native-fermion-{1}', github.run_id, strategy.job-index || 0) || 'gh' }}-4
+      group: flagquantum-gh-${{ matrix.hosted-bucket }}
       queue: max
     strategy:
       fail-fast: false
       matrix:
         include:
-          - {python: "3.10", torch: "2.10.0", pyscf: "2.8.0", h5py: "3.11.0"}
-          - {python: "3.12", torch: "2.14.1", pyscf: "2.15.0", h5py: "3.16.0"}
+          - {python: "3.10", torch: "2.10.0", pyscf: "2.8.0", h5py: "3.11.0", hosted-bucket: 3}
+          - {python: "3.12", torch: "2.14.1", pyscf: "2.15.0", h5py: "3.16.0", hosted-bucket: 4}
     env:
       OMP_NUM_THREADS: "1"
       MKL_NUM_THREADS: "1"
@@ -449,11 +582,38 @@ jobs:
       CUDA_VISIBLE_DEVICES: ""
       MAX_JOBS: "2"
     steps:
-      - uses: actions/download-artifact@v8.0.2
+      - &source_transport_1
+        uses: actions/download-artifact@v8.0.2
+        id: source-incremental-download
+        timeout-minutes: 1
+        continue-on-error: true
         with:
           digest-mismatch: error
           name: ci-source-incremental-${{ needs.prepare-source.outputs.artifact-key }}
           path: ${{ runner.temp }}/ci-source
+      - &source_transport_2
+        uses: actions/download-artifact@v8.0.2
+        id: source-incremental-retry
+        if: ${{ !cancelled() && steps.source-incremental-download.outcome == 'failure' }}
+        timeout-minutes: 2
+        with:
+          digest-mismatch: error
+          name: ci-source-incremental-${{ needs.prepare-source.outputs.artifact-key }}
+          path: "${{ runner.temp }}/ci-source-incremental-retry"
+      - &source_transport_3
+        name: Use the successful incremental source retry
+        id: source-incremental-promote
+        if: ${{ steps.source-incremental-retry.outcome == 'success' }}
+        env:
+          FQ_CI_SOURCE_DIR: "${{ runner.temp }}/ci-source"
+        run: |
+          previous="$FQ_CI_SOURCE_DIR-incremental-abandoned"
+          retry="$FQ_CI_SOURCE_DIR-incremental-retry"
+          test ! -e "$previous"
+          if [ -e "$FQ_CI_SOURCE_DIR" ]; then
+            mv "$FQ_CI_SOURCE_DIR" "$previous"
+          fi
+          mv "$retry" "$FQ_CI_SOURCE_DIR"
       - name: Check whether cached Git objects complete the source tree
         id: source-cache
         run: |
@@ -464,7 +624,7 @@ jobs:
           fi
           git index-pack --stdin < "$RUNNER_TEMP/ci-source/source.pack"
           if [ "$RUNNER_ENVIRONMENT" = self-hosted ]; then
-            git show "$sha:tools/ci_source_archive.py" > "$RUNNER_TEMP/ci-source/cleanup-source.py"
+            git show "$sha:tools/ci/ci_source_archive.py" > "$RUNNER_TEMP/ci-source/cleanup-source.py"
             python3 "$RUNNER_TEMP/ci-source/cleanup-source.py" --cleanup-containers
           fi
           complete=false
@@ -482,18 +642,45 @@ jobs:
         run: |
           sha="$(cat "$RUNNER_TEMP/ci-source/source.sha")"
           test "$sha" = "$GITHUB_SHA"
-          git show "$sha:tools/ci_source_archive.py" > "$RUNNER_TEMP/ci-source/repair-source.py"
+          git show "$sha:tools/ci/ci_source_archive.py" > "$RUNNER_TEMP/ci-source/repair-source.py"
           if timeout --kill-after=15s 120s python3 "$RUNNER_TEMP/ci-source/repair-source.py"; then
             echo "complete=true" >> "$GITHUB_OUTPUT"
           else
             echo "complete=false" >> "$GITHUB_OUTPUT"
           fi
-      - uses: actions/download-artifact@v8.0.2
+      - &source_transport_4
+        uses: actions/download-artifact@v8.0.2
+        id: source-full-download
+        timeout-minutes: 2
+        continue-on-error: true
         if: steps.source-cache.outputs.complete != 'true' && steps.source-repair.outputs.complete != 'true'
         with:
           digest-mismatch: error
           name: ci-source-${{ needs.prepare-source.outputs.artifact-key }}
           path: ${{ runner.temp }}/ci-source
+      - &source_transport_5
+        uses: actions/download-artifact@v8.0.2
+        id: source-full-retry
+        if: ${{ !cancelled() && steps.source-full-download.outcome == 'failure' }}
+        timeout-minutes: 2
+        with:
+          digest-mismatch: error
+          name: ci-source-${{ needs.prepare-source.outputs.artifact-key }}
+          path: "${{ runner.temp }}/ci-source-full-retry"
+      - &source_transport_6
+        name: Use the successful full source retry
+        id: source-full-promote
+        if: ${{ steps.source-full-retry.outcome == 'success' }}
+        env:
+          FQ_CI_SOURCE_DIR: "${{ runner.temp }}/ci-source"
+        run: |
+          previous="$FQ_CI_SOURCE_DIR-full-abandoned"
+          retry="$FQ_CI_SOURCE_DIR-full-retry"
+          test ! -e "$previous"
+          if [ -e "$FQ_CI_SOURCE_DIR" ]; then
+            mv "$FQ_CI_SOURCE_DIR" "$previous"
+          fi
+          mv "$retry" "$FQ_CI_SOURCE_DIR"
       - name: Restore and verify this run's exact source commit
         run: |
           sha="$(cat "$RUNNER_TEMP/ci-source/source.sha")"
@@ -575,11 +762,9 @@ jobs:
       matrix:
         python-version: ["3.10", "3.11"]
     steps:
-      - uses: actions/download-artifact@v8.0.2
-        with:
-          digest-mismatch: error
-          name: ci-source-incremental-${{ needs.prepare-source.outputs.artifact-key }}
-          path: ${{ runner.temp }}/ci-source
+      - *source_transport_1
+      - *source_transport_2
+      - *source_transport_3
       - name: Check whether cached Git objects complete the source tree
         id: source-cache
         run: |
@@ -590,7 +775,7 @@ jobs:
           fi
           git index-pack --stdin < "$RUNNER_TEMP/ci-source/source.pack"
           if [ "$RUNNER_ENVIRONMENT" = self-hosted ]; then
-            git show "$sha:tools/ci_source_archive.py" > "$RUNNER_TEMP/ci-source/cleanup-source.py"
+            git show "$sha:tools/ci/ci_source_archive.py" > "$RUNNER_TEMP/ci-source/cleanup-source.py"
             python3 "$RUNNER_TEMP/ci-source/cleanup-source.py" --cleanup-containers
           fi
           complete=false
@@ -608,18 +793,15 @@ jobs:
         run: |
           sha="$(cat "$RUNNER_TEMP/ci-source/source.sha")"
           test "$sha" = "$GITHUB_SHA"
-          git show "$sha:tools/ci_source_archive.py" > "$RUNNER_TEMP/ci-source/repair-source.py"
+          git show "$sha:tools/ci/ci_source_archive.py" > "$RUNNER_TEMP/ci-source/repair-source.py"
           if timeout --kill-after=15s 120s python3 "$RUNNER_TEMP/ci-source/repair-source.py"; then
             echo "complete=true" >> "$GITHUB_OUTPUT"
           else
             echo "complete=false" >> "$GITHUB_OUTPUT"
           fi
-      - uses: actions/download-artifact@v8.0.2
-        if: steps.source-cache.outputs.complete != 'true' && steps.source-repair.outputs.complete != 'true'
-        with:
-          digest-mismatch: error
-          name: ci-source-${{ needs.prepare-source.outputs.artifact-key }}
-          path: ${{ runner.temp }}/ci-source
+      - *source_transport_4
+      - *source_transport_5
+      - *source_transport_6
       - name: Restore and verify this run's exact source commit
         run: |
           sha="$(cat "$RUNNER_TEMP/ci-source/source.sha")"
@@ -676,7 +858,7 @@ jobs:
         # `sys.version_info` passes on 3.11 and 3.12 and fails to collect on
         # 3.10; the `try`/`except ModuleNotFoundError` form is the one that
         # survives both this lane and a stripped standard library, and
-        # `tools/check_dependency_policy.py` holds every site to it. This step
+        # `tools/architecture/check_dependency_policy.py` holds every site to it. This step
         # proves the lane is what that fallback assumes: the standard library
         # module is there exactly where the version says, and where it is not,
         # the substitute the fallback imports is installed.
@@ -724,11 +906,9 @@ jobs:
       group: flagquantum-${{ (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository) && format('self-hosted-{0}-cpu-core-3-12-tests-{1}', github.run_id, strategy.job-index || 0) || 'gh' }}-5
       queue: max
     steps:
-      - uses: actions/download-artifact@v8.0.2
-        with:
-          digest-mismatch: error
-          name: ci-source-incremental-${{ needs.prepare-source.outputs.artifact-key }}
-          path: ${{ runner.temp }}/ci-source
+      - *source_transport_1
+      - *source_transport_2
+      - *source_transport_3
       - name: Check whether cached Git objects complete the source tree
         id: source-cache
         run: |
@@ -739,7 +919,7 @@ jobs:
           fi
           git index-pack --stdin < "$RUNNER_TEMP/ci-source/source.pack"
           if [ "$RUNNER_ENVIRONMENT" = self-hosted ]; then
-            git show "$sha:tools/ci_source_archive.py" > "$RUNNER_TEMP/ci-source/cleanup-source.py"
+            git show "$sha:tools/ci/ci_source_archive.py" > "$RUNNER_TEMP/ci-source/cleanup-source.py"
             python3 "$RUNNER_TEMP/ci-source/cleanup-source.py" --cleanup-containers
           fi
           complete=false
@@ -757,18 +937,15 @@ jobs:
         run: |
           sha="$(cat "$RUNNER_TEMP/ci-source/source.sha")"
           test "$sha" = "$GITHUB_SHA"
-          git show "$sha:tools/ci_source_archive.py" > "$RUNNER_TEMP/ci-source/repair-source.py"
+          git show "$sha:tools/ci/ci_source_archive.py" > "$RUNNER_TEMP/ci-source/repair-source.py"
           if timeout --kill-after=15s 120s python3 "$RUNNER_TEMP/ci-source/repair-source.py"; then
             echo "complete=true" >> "$GITHUB_OUTPUT"
           else
             echo "complete=false" >> "$GITHUB_OUTPUT"
           fi
-      - uses: actions/download-artifact@v8.0.2
-        if: steps.source-cache.outputs.complete != 'true' && steps.source-repair.outputs.complete != 'true'
-        with:
-          digest-mismatch: error
-          name: ci-source-${{ needs.prepare-source.outputs.artifact-key }}
-          path: ${{ runner.temp }}/ci-source
+      - *source_transport_4
+      - *source_transport_5
+      - *source_transport_6
       - name: Restore and verify this run's exact source commit
         run: |
           sha="$(cat "$RUNNER_TEMP/ci-source/source.sha")"
@@ -869,13 +1046,13 @@ jobs:
           - {shard: 32, hosted-bucket: 0, runner: fq-bw1100-10-cpu01-validation}
           - {shard: 33, hosted-bucket: 1, runner: fq-bw1100-11-cpu01-validation}
           - {shard: 34, hosted-bucket: 2, runner: fq-bw1100-12-cpu01-validation}
-          - {shard: 35, hosted-bucket: 3, runner: fq-bw1100-14-cpu01-validation}
+          - {shard: 35, hosted-bucket: 3, runner: fq-bw1100-2-cpu15-validation}
           - {shard: 36, hosted-bucket: 4, runner: fq-bw1100-15-cpu01-validation}
           - {shard: 37, hosted-bucket: 5, runner: fq-bw1100-16-cpu01-validation}
           - {shard: 38, hosted-bucket: 6, runner: fq-bw1100-17-cpu01-validation}
           - {shard: 39, hosted-bucket: 7, runner: fq-bw1100-2-cpu01-validation}
           - {shard: 40, hosted-bucket: 0, runner: fq-bw1100-10-cpu02-validation}
-          - {shard: 41, hosted-bucket: 1, runner: fq-bw1100-11-cpu02-validation}
+          - {shard: 41, hosted-bucket: 1, runner: fq-bw1100-11-cpu13-validation}
           - {shard: 42, hosted-bucket: 2, runner: fq-bw1100-12-cpu02-validation}
           - {shard: 43, hosted-bucket: 3, runner: fq-bw1100-14-cpu02-validation}
           - {shard: 44, hosted-bucket: 4, runner: fq-bw1100-15-cpu02-validation}
@@ -890,7 +1067,7 @@ jobs:
           - {shard: 53, hosted-bucket: 5, runner: fq-bw1100-16-cpu03-validation}
           - {shard: 54, hosted-bucket: 6, runner: fq-bw1100-17-cpu03-validation}
           - {shard: 55, hosted-bucket: 7, runner: fq-bw1100-2-cpu03-validation}
-          - {shard: 56, hosted-bucket: 0, runner: fq-bw1100-10-cpu04-validation}
+          - {shard: 56, hosted-bucket: 0, runner: fq-bw1100-10-cpu13-validation}
           - {shard: 57, hosted-bucket: 1, runner: fq-bw1100-11-cpu04-validation}
           - {shard: 58, hosted-bucket: 2, runner: fq-bw1100-12-cpu04-validation}
           - {shard: 59, hosted-bucket: 3, runner: fq-bw1100-14-cpu04-validation}
@@ -898,7 +1075,7 @@ jobs:
           - {shard: 61, hosted-bucket: 5, runner: fq-bw1100-16-cpu04-validation}
           - {shard: 62, hosted-bucket: 6, runner: fq-bw1100-17-cpu04-validation}
           - {shard: 63, hosted-bucket: 7, runner: fq-bw1100-2-cpu04-validation}
-          - {shard: 64, hosted-bucket: 0, runner: fq-bw1100-10-cpu05-validation}
+          - {shard: 64, hosted-bucket: 0, runner: fq-bw1100-10-cpu15-validation}
           - {shard: 65, hosted-bucket: 1, runner: fq-bw1100-11-cpu05-validation}
           - {shard: 66, hosted-bucket: 2, runner: fq-bw1100-12-cpu05-validation}
           - {shard: 67, hosted-bucket: 3, runner: fq-bw1100-14-cpu05-validation}
@@ -971,11 +1148,9 @@ jobs:
       group: flagquantum-${{ (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository) && format('self-hosted-{0}-cpu-runtime-{1}', github.run_id, strategy.job-index || 0) || 'gh' }}-${{ matrix.hosted-bucket }}
       queue: max
     steps:
-      - uses: actions/download-artifact@v8.0.2
-        with:
-          digest-mismatch: error
-          name: ci-source-incremental-${{ needs.prepare-source.outputs.artifact-key }}
-          path: ${{ runner.temp }}/ci-source
+      - *source_transport_1
+      - *source_transport_2
+      - *source_transport_3
       - name: Check whether cached Git objects complete the source tree
         id: source-cache
         run: |
@@ -986,7 +1161,7 @@ jobs:
           fi
           git index-pack --stdin < "$RUNNER_TEMP/ci-source/source.pack"
           if [ "$RUNNER_ENVIRONMENT" = self-hosted ]; then
-            git show "$sha:tools/ci_source_archive.py" > "$RUNNER_TEMP/ci-source/cleanup-source.py"
+            git show "$sha:tools/ci/ci_source_archive.py" > "$RUNNER_TEMP/ci-source/cleanup-source.py"
             python3 "$RUNNER_TEMP/ci-source/cleanup-source.py" --cleanup-containers
           fi
           complete=false
@@ -1004,18 +1179,15 @@ jobs:
         run: |
           sha="$(cat "$RUNNER_TEMP/ci-source/source.sha")"
           test "$sha" = "$GITHUB_SHA"
-          git show "$sha:tools/ci_source_archive.py" > "$RUNNER_TEMP/ci-source/repair-source.py"
+          git show "$sha:tools/ci/ci_source_archive.py" > "$RUNNER_TEMP/ci-source/repair-source.py"
           if timeout --kill-after=15s 120s python3 "$RUNNER_TEMP/ci-source/repair-source.py"; then
             echo "complete=true" >> "$GITHUB_OUTPUT"
           else
             echo "complete=false" >> "$GITHUB_OUTPUT"
           fi
-      - uses: actions/download-artifact@v8.0.2
-        if: steps.source-cache.outputs.complete != 'true' && steps.source-repair.outputs.complete != 'true'
-        with:
-          digest-mismatch: error
-          name: ci-source-${{ needs.prepare-source.outputs.artifact-key }}
-          path: ${{ runner.temp }}/ci-source
+      - *source_transport_4
+      - *source_transport_5
+      - *source_transport_6
       - name: Restore and verify this run's exact source commit
         run: |
           sha="$(cat "$RUNNER_TEMP/ci-source/source.sha")"
@@ -1092,11 +1264,9 @@ jobs:
       group: flagquantum-gh-4
       queue: max
     steps:
-      - uses: actions/download-artifact@v8.0.2
-        with:
-          digest-mismatch: error
-          name: ci-source-incremental-${{ needs.prepare-source.outputs.artifact-key }}
-          path: ${{ runner.temp }}/ci-source
+      - *source_transport_1
+      - *source_transport_2
+      - *source_transport_3
       - name: Check whether cached Git objects complete the source tree
         id: source-cache
         run: |
@@ -1107,7 +1277,7 @@ jobs:
           fi
           git index-pack --stdin < "$RUNNER_TEMP/ci-source/source.pack"
           if [ "$RUNNER_ENVIRONMENT" = self-hosted ]; then
-            git show "$sha:tools/ci_source_archive.py" > "$RUNNER_TEMP/ci-source/cleanup-source.py"
+            git show "$sha:tools/ci/ci_source_archive.py" > "$RUNNER_TEMP/ci-source/cleanup-source.py"
             python3 "$RUNNER_TEMP/ci-source/cleanup-source.py" --cleanup-containers
           fi
           complete=false
@@ -1125,18 +1295,15 @@ jobs:
         run: |
           sha="$(cat "$RUNNER_TEMP/ci-source/source.sha")"
           test "$sha" = "$GITHUB_SHA"
-          git show "$sha:tools/ci_source_archive.py" > "$RUNNER_TEMP/ci-source/repair-source.py"
+          git show "$sha:tools/ci/ci_source_archive.py" > "$RUNNER_TEMP/ci-source/repair-source.py"
           if timeout --kill-after=15s 120s python3 "$RUNNER_TEMP/ci-source/repair-source.py"; then
             echo "complete=true" >> "$GITHUB_OUTPUT"
           else
             echo "complete=false" >> "$GITHUB_OUTPUT"
           fi
-      - uses: actions/download-artifact@v8.0.2
-        if: steps.source-cache.outputs.complete != 'true' && steps.source-repair.outputs.complete != 'true'
-        with:
-          digest-mismatch: error
-          name: ci-source-${{ needs.prepare-source.outputs.artifact-key }}
-          path: ${{ runner.temp }}/ci-source
+      - *source_transport_4
+      - *source_transport_5
+      - *source_transport_6
       - name: Restore and verify this run's exact source commit
         run: |
           sha="$(cat "$RUNNER_TEMP/ci-source/source.sha")"
@@ -1203,11 +1370,9 @@ jobs:
     env:
       OPTIONAL_VERSIONS: "1.32.3 1.32.*"
     steps:
-      - uses: actions/download-artifact@v8.0.2
-        with:
-          digest-mismatch: error
-          name: ci-source-incremental-${{ needs.prepare-source.outputs.artifact-key }}
-          path: ${{ runner.temp }}/ci-source
+      - *source_transport_1
+      - *source_transport_2
+      - *source_transport_3
       - name: Check whether cached Git objects complete the source tree
         id: source-cache
         run: |
@@ -1218,7 +1383,7 @@ jobs:
           fi
           git index-pack --stdin < "$RUNNER_TEMP/ci-source/source.pack"
           if [ "$RUNNER_ENVIRONMENT" = self-hosted ]; then
-            git show "$sha:tools/ci_source_archive.py" > "$RUNNER_TEMP/ci-source/cleanup-source.py"
+            git show "$sha:tools/ci/ci_source_archive.py" > "$RUNNER_TEMP/ci-source/cleanup-source.py"
             python3 "$RUNNER_TEMP/ci-source/cleanup-source.py" --cleanup-containers
           fi
           complete=false
@@ -1236,18 +1401,15 @@ jobs:
         run: |
           sha="$(cat "$RUNNER_TEMP/ci-source/source.sha")"
           test "$sha" = "$GITHUB_SHA"
-          git show "$sha:tools/ci_source_archive.py" > "$RUNNER_TEMP/ci-source/repair-source.py"
+          git show "$sha:tools/ci/ci_source_archive.py" > "$RUNNER_TEMP/ci-source/repair-source.py"
           if timeout --kill-after=15s 120s python3 "$RUNNER_TEMP/ci-source/repair-source.py"; then
             echo "complete=true" >> "$GITHUB_OUTPUT"
           else
             echo "complete=false" >> "$GITHUB_OUTPUT"
           fi
-      - uses: actions/download-artifact@v8.0.2
-        if: steps.source-cache.outputs.complete != 'true' && steps.source-repair.outputs.complete != 'true'
-        with:
-          digest-mismatch: error
-          name: ci-source-${{ needs.prepare-source.outputs.artifact-key }}
-          path: ${{ runner.temp }}/ci-source
+      - *source_transport_4
+      - *source_transport_5
+      - *source_transport_6
       - name: Restore and verify this run's exact source commit
         run: |
           sha="$(cat "$RUNNER_TEMP/ci-source/source.sha")"
@@ -1304,11 +1466,9 @@ jobs:
       group: flagquantum-${{ (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository) && format('self-hosted-{0}-triton-optional-{1}', github.run_id, strategy.job-index || 0) || 'gh' }}-1
       queue: max
     steps:
-      - uses: actions/download-artifact@v8.0.2
-        with:
-          digest-mismatch: error
-          name: ci-source-incremental-${{ needs.prepare-source.outputs.artifact-key }}
-          path: ${{ runner.temp }}/ci-source
+      - *source_transport_1
+      - *source_transport_2
+      - *source_transport_3
       - name: Check whether cached Git objects complete the source tree
         id: source-cache
         run: |
@@ -1319,7 +1479,7 @@ jobs:
           fi
           git index-pack --stdin < "$RUNNER_TEMP/ci-source/source.pack"
           if [ "$RUNNER_ENVIRONMENT" = self-hosted ]; then
-            git show "$sha:tools/ci_source_archive.py" > "$RUNNER_TEMP/ci-source/cleanup-source.py"
+            git show "$sha:tools/ci/ci_source_archive.py" > "$RUNNER_TEMP/ci-source/cleanup-source.py"
             python3 "$RUNNER_TEMP/ci-source/cleanup-source.py" --cleanup-containers
           fi
           complete=false
@@ -1337,18 +1497,15 @@ jobs:
         run: |
           sha="$(cat "$RUNNER_TEMP/ci-source/source.sha")"
           test "$sha" = "$GITHUB_SHA"
-          git show "$sha:tools/ci_source_archive.py" > "$RUNNER_TEMP/ci-source/repair-source.py"
+          git show "$sha:tools/ci/ci_source_archive.py" > "$RUNNER_TEMP/ci-source/repair-source.py"
           if timeout --kill-after=15s 120s python3 "$RUNNER_TEMP/ci-source/repair-source.py"; then
             echo "complete=true" >> "$GITHUB_OUTPUT"
           else
             echo "complete=false" >> "$GITHUB_OUTPUT"
           fi
-      - uses: actions/download-artifact@v8.0.2
-        if: steps.source-cache.outputs.complete != 'true' && steps.source-repair.outputs.complete != 'true'
-        with:
-          digest-mismatch: error
-          name: ci-source-${{ needs.prepare-source.outputs.artifact-key }}
-          path: ${{ runner.temp }}/ci-source
+      - *source_transport_4
+      - *source_transport_5
+      - *source_transport_6
       - name: Restore and verify this run's exact source commit
         run: |
           sha="$(cat "$RUNNER_TEMP/ci-source/source.sha")"
@@ -1422,11 +1579,9 @@ jobs:
       MAX_JOBS: "2"
       QISKIT_VERSION: ${{ matrix.qiskit }}.*
     steps:
-      - uses: actions/download-artifact@v8.0.2
-        with:
-          digest-mismatch: error
-          name: ci-source-incremental-${{ needs.prepare-source.outputs.artifact-key }}
-          path: ${{ runner.temp }}/ci-source
+      - *source_transport_1
+      - *source_transport_2
+      - *source_transport_3
       - name: Check whether cached Git objects complete the source tree
         id: source-cache
         run: |
@@ -1437,7 +1592,7 @@ jobs:
           fi
           git index-pack --stdin < "$RUNNER_TEMP/ci-source/source.pack"
           if [ "$RUNNER_ENVIRONMENT" = self-hosted ]; then
-            git show "$sha:tools/ci_source_archive.py" > "$RUNNER_TEMP/ci-source/cleanup-source.py"
+            git show "$sha:tools/ci/ci_source_archive.py" > "$RUNNER_TEMP/ci-source/cleanup-source.py"
             python3 "$RUNNER_TEMP/ci-source/cleanup-source.py" --cleanup-containers
           fi
           complete=false
@@ -1455,18 +1610,15 @@ jobs:
         run: |
           sha="$(cat "$RUNNER_TEMP/ci-source/source.sha")"
           test "$sha" = "$GITHUB_SHA"
-          git show "$sha:tools/ci_source_archive.py" > "$RUNNER_TEMP/ci-source/repair-source.py"
+          git show "$sha:tools/ci/ci_source_archive.py" > "$RUNNER_TEMP/ci-source/repair-source.py"
           if timeout --kill-after=15s 120s python3 "$RUNNER_TEMP/ci-source/repair-source.py"; then
             echo "complete=true" >> "$GITHUB_OUTPUT"
           else
             echo "complete=false" >> "$GITHUB_OUTPUT"
           fi
-      - uses: actions/download-artifact@v8.0.2
-        if: steps.source-cache.outputs.complete != 'true' && steps.source-repair.outputs.complete != 'true'
-        with:
-          digest-mismatch: error
-          name: ci-source-${{ needs.prepare-source.outputs.artifact-key }}
-          path: ${{ runner.temp }}/ci-source
+      - *source_transport_4
+      - *source_transport_5
+      - *source_transport_6
       - name: Restore and verify this run's exact source commit
         run: |
           sha="$(cat "$RUNNER_TEMP/ci-source/source.sha")"
@@ -1510,7 +1662,7 @@ jobs:
         if: runner.environment == 'github-hosted'
         with:
           path: ${{ env.FQ_QISKIT_WHEEL_DIRECTORY }}
-          key: qiskit-wheels-${{ runner.os }}-${{ runner.arch }}-py312-${{ matrix.qiskit }}-${{ hashFiles('dependency-policy.toml', '.github/actions/prepare-qiskit-wheels/action.yml') }}
+          key: qiskit-wheels-${{ runner.os }}-${{ runner.arch }}-py312-${{ matrix.qiskit }}-${{ hashFiles('config/dependency-policy.toml', '.github/actions/prepare-qiskit-wheels/action.yml') }}
       - name: Preserve the online wheel resolver interpreter
         run: echo "FQ_QISKIT_RESOLVER_PYTHON=$(command -v python)" >> "$GITHUB_ENV"
       - uses: ./.github/actions/offline-cpu
@@ -1583,11 +1735,9 @@ jobs:
       MAX_JOBS: "2"
       OPTIONAL_VERSIONS: "1.6.1 1.7.0"
     steps:
-      - uses: actions/download-artifact@v8.0.2
-        with:
-          digest-mismatch: error
-          name: ci-source-incremental-${{ needs.prepare-source.outputs.artifact-key }}
-          path: ${{ runner.temp }}/ci-source
+      - *source_transport_1
+      - *source_transport_2
+      - *source_transport_3
       - name: Check whether cached Git objects complete the source tree
         id: source-cache
         run: |
@@ -1598,7 +1748,7 @@ jobs:
           fi
           git index-pack --stdin < "$RUNNER_TEMP/ci-source/source.pack"
           if [ "$RUNNER_ENVIRONMENT" = self-hosted ]; then
-            git show "$sha:tools/ci_source_archive.py" > "$RUNNER_TEMP/ci-source/cleanup-source.py"
+            git show "$sha:tools/ci/ci_source_archive.py" > "$RUNNER_TEMP/ci-source/cleanup-source.py"
             python3 "$RUNNER_TEMP/ci-source/cleanup-source.py" --cleanup-containers
           fi
           complete=false
@@ -1616,18 +1766,15 @@ jobs:
         run: |
           sha="$(cat "$RUNNER_TEMP/ci-source/source.sha")"
           test "$sha" = "$GITHUB_SHA"
-          git show "$sha:tools/ci_source_archive.py" > "$RUNNER_TEMP/ci-source/repair-source.py"
+          git show "$sha:tools/ci/ci_source_archive.py" > "$RUNNER_TEMP/ci-source/repair-source.py"
           if timeout --kill-after=15s 120s python3 "$RUNNER_TEMP/ci-source/repair-source.py"; then
             echo "complete=true" >> "$GITHUB_OUTPUT"
           else
             echo "complete=false" >> "$GITHUB_OUTPUT"
           fi
-      - uses: actions/download-artifact@v8.0.2
-        if: steps.source-cache.outputs.complete != 'true' && steps.source-repair.outputs.complete != 'true'
-        with:
-          digest-mismatch: error
-          name: ci-source-${{ needs.prepare-source.outputs.artifact-key }}
-          path: ${{ runner.temp }}/ci-source
+      - *source_transport_4
+      - *source_transport_5
+      - *source_transport_6
       - name: Restore and verify this run's exact source commit
         run: |
           sha="$(cat "$RUNNER_TEMP/ci-source/source.sha")"
@@ -1679,7 +1826,7 @@ jobs:
               python -m pip install --upgrade "cirq-core==${version}"
             fi
             python -c 'from importlib.metadata import version; import sys; assert version("cirq-core") == sys.argv[1]' "$version"
-            python tools/check_cirq_interop_contract.py --verify-sdk
+            python tools/validation/check_cirq_interop_contract.py --verify-sdk
             python -m pytest tests/test_cirq_interop.py tests/test_cirq_interop_conformance.py -m cirq -q
             python -c "import sys, flagquantum; assert not any(name == 'cirq' or name.startswith('cirq.') for name in sys.modules)"
           ); done
@@ -1703,11 +1850,9 @@ jobs:
       MAX_JOBS: "2"
       OPTIONAL_VERSIONS: "1.117.0 1.127.1"
     steps:
-      - uses: actions/download-artifact@v8.0.2
-        with:
-          digest-mismatch: error
-          name: ci-source-incremental-${{ needs.prepare-source.outputs.artifact-key }}
-          path: ${{ runner.temp }}/ci-source
+      - *source_transport_1
+      - *source_transport_2
+      - *source_transport_3
       - name: Check whether cached Git objects complete the source tree
         id: source-cache
         run: |
@@ -1718,7 +1863,7 @@ jobs:
           fi
           git index-pack --stdin < "$RUNNER_TEMP/ci-source/source.pack"
           if [ "$RUNNER_ENVIRONMENT" = self-hosted ]; then
-            git show "$sha:tools/ci_source_archive.py" > "$RUNNER_TEMP/ci-source/cleanup-source.py"
+            git show "$sha:tools/ci/ci_source_archive.py" > "$RUNNER_TEMP/ci-source/cleanup-source.py"
             python3 "$RUNNER_TEMP/ci-source/cleanup-source.py" --cleanup-containers
           fi
           complete=false
@@ -1736,18 +1881,15 @@ jobs:
         run: |
           sha="$(cat "$RUNNER_TEMP/ci-source/source.sha")"
           test "$sha" = "$GITHUB_SHA"
-          git show "$sha:tools/ci_source_archive.py" > "$RUNNER_TEMP/ci-source/repair-source.py"
+          git show "$sha:tools/ci/ci_source_archive.py" > "$RUNNER_TEMP/ci-source/repair-source.py"
           if timeout --kill-after=15s 120s python3 "$RUNNER_TEMP/ci-source/repair-source.py"; then
             echo "complete=true" >> "$GITHUB_OUTPUT"
           else
             echo "complete=false" >> "$GITHUB_OUTPUT"
           fi
-      - uses: actions/download-artifact@v8.0.2
-        if: steps.source-cache.outputs.complete != 'true' && steps.source-repair.outputs.complete != 'true'
-        with:
-          digest-mismatch: error
-          name: ci-source-${{ needs.prepare-source.outputs.artifact-key }}
-          path: ${{ runner.temp }}/ci-source
+      - *source_transport_4
+      - *source_transport_5
+      - *source_transport_6
       - name: Restore and verify this run's exact source commit
         run: |
           sha="$(cat "$RUNNER_TEMP/ci-source/source.sha")"
@@ -1808,11 +1950,17 @@ jobs:
     env:
       OPTIONAL_VERSIONS: "0.15.1 0.16.0.post1"
     steps:
-      - uses: actions/download-artifact@v8.0.2
+      - &source_transport_7
+        uses: actions/download-artifact@v8.0.2
+        id: source-full-download
+        timeout-minutes: 2
+        continue-on-error: true
         with:
           digest-mismatch: error
           name: ci-source-${{ needs.prepare-source.outputs.artifact-key }}
           path: ${{ runner.temp }}/ci-source
+      - *source_transport_5
+      - *source_transport_6
       - name: Restore and verify this run's exact source commit
         run: |
           sha="$(cat "$RUNNER_TEMP/ci-source/source.sha")"
@@ -1895,11 +2043,9 @@ jobs:
     env:
       OPTIONAL_VERSIONS: "0.44.1 0.45.1"
     steps:
-      - uses: actions/download-artifact@v8.0.2
-        with:
-          digest-mismatch: error
-          name: ci-source-incremental-${{ needs.prepare-source.outputs.artifact-key }}
-          path: ${{ runner.temp }}/ci-source
+      - *source_transport_1
+      - *source_transport_2
+      - *source_transport_3
       - name: Check whether cached Git objects complete the source tree
         id: source-cache
         run: |
@@ -1910,7 +2056,7 @@ jobs:
           fi
           git index-pack --stdin < "$RUNNER_TEMP/ci-source/source.pack"
           if [ "$RUNNER_ENVIRONMENT" = self-hosted ]; then
-            git show "$sha:tools/ci_source_archive.py" > "$RUNNER_TEMP/ci-source/cleanup-source.py"
+            git show "$sha:tools/ci/ci_source_archive.py" > "$RUNNER_TEMP/ci-source/cleanup-source.py"
             python3 "$RUNNER_TEMP/ci-source/cleanup-source.py" --cleanup-containers
           fi
           complete=false
@@ -1928,18 +2074,15 @@ jobs:
         run: |
           sha="$(cat "$RUNNER_TEMP/ci-source/source.sha")"
           test "$sha" = "$GITHUB_SHA"
-          git show "$sha:tools/ci_source_archive.py" > "$RUNNER_TEMP/ci-source/repair-source.py"
+          git show "$sha:tools/ci/ci_source_archive.py" > "$RUNNER_TEMP/ci-source/repair-source.py"
           if timeout --kill-after=15s 120s python3 "$RUNNER_TEMP/ci-source/repair-source.py"; then
             echo "complete=true" >> "$GITHUB_OUTPUT"
           else
             echo "complete=false" >> "$GITHUB_OUTPUT"
           fi
-      - uses: actions/download-artifact@v8.0.2
-        if: steps.source-cache.outputs.complete != 'true' && steps.source-repair.outputs.complete != 'true'
-        with:
-          digest-mismatch: error
-          name: ci-source-${{ needs.prepare-source.outputs.artifact-key }}
-          path: ${{ runner.temp }}/ci-source
+      - *source_transport_4
+      - *source_transport_5
+      - *source_transport_6
       - name: Restore and verify this run's exact source commit
         run: |
           sha="$(cat "$RUNNER_TEMP/ci-source/source.sha")"
@@ -1985,7 +2128,7 @@ jobs:
 
   dependency-bounds:
     needs: prepare-source
-    runs-on: ${{ (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository) && 'flagquantum-cpu-general' || 'ubuntu-latest' }}
+    runs-on: ${{ (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository) && 'flagquantum-bw1100-cpu' || 'ubuntu-latest' }}
     timeout-minutes: 30
     env:
       OMP_NUM_THREADS: "1"
@@ -1994,7 +2137,7 @@ jobs:
       CUDA_VISIBLE_DEVICES: ""
       JAX_PLATFORMS: cpu
     concurrency:
-      group: flagquantum-${{ (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository) && format('a100-cpu-{0}-dependency-bounds-{1}', github.run_id, strategy.job-index || 0) || 'gh' }}-2
+      group: flagquantum-${{ (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository) && format('self-hosted-{0}-dependency-bounds-{1}', github.run_id, strategy.job-index || 0) || 'gh' }}-2
       queue: max
     strategy:
       fail-fast: false
@@ -2015,11 +2158,9 @@ jobs:
           - python: "3.12"
             torch: "torch>=2.14,<2.15"
     steps:
-      - uses: actions/download-artifact@v8.0.2
-        with:
-          digest-mismatch: error
-          name: ci-source-incremental-${{ needs.prepare-source.outputs.artifact-key }}
-          path: ${{ runner.temp }}/ci-source
+      - *source_transport_1
+      - *source_transport_2
+      - *source_transport_3
       - name: Check whether cached Git objects complete the source tree
         id: source-cache
         run: |
@@ -2030,7 +2171,7 @@ jobs:
           fi
           git index-pack --stdin < "$RUNNER_TEMP/ci-source/source.pack"
           if [ "$RUNNER_ENVIRONMENT" = self-hosted ]; then
-            git show "$sha:tools/ci_source_archive.py" > "$RUNNER_TEMP/ci-source/cleanup-source.py"
+            git show "$sha:tools/ci/ci_source_archive.py" > "$RUNNER_TEMP/ci-source/cleanup-source.py"
             python3 "$RUNNER_TEMP/ci-source/cleanup-source.py" --cleanup-containers
           fi
           complete=false
@@ -2048,7 +2189,7 @@ jobs:
         run: |
           sha="$(cat "$RUNNER_TEMP/ci-source/source.sha")"
           test "$sha" = "$GITHUB_SHA"
-          git show "$sha:tools/ci_source_archive.py" > "$RUNNER_TEMP/ci-source/repair-source.py"
+          git show "$sha:tools/ci/ci_source_archive.py" > "$RUNNER_TEMP/ci-source/repair-source.py"
           # A cold cache otherwise downloads the complete Actions artifact over
           # the runner's slow blob-storage route. Git negotiates existing objects.
           if timeout --kill-after=15s 180s git -c http.version=HTTP/1.1 fetch \
@@ -2062,12 +2203,9 @@ jobs:
           else
             echo "complete=false" >> "$GITHUB_OUTPUT"
           fi
-      - uses: actions/download-artifact@v8.0.2
-        if: steps.source-cache.outputs.complete != 'true' && steps.source-repair.outputs.complete != 'true'
-        with:
-          digest-mismatch: error
-          name: ci-source-${{ needs.prepare-source.outputs.artifact-key }}
-          path: ${{ runner.temp }}/ci-source
+      - *source_transport_4
+      - *source_transport_5
+      - *source_transport_6
       - name: Restore and verify this run's exact source commit
         run: |
           sha="$(cat "$RUNNER_TEMP/ci-source/source.sha")"
@@ -2091,13 +2229,20 @@ jobs:
       - uses: ./.github/actions/isolated-python
         with:
           torch-spec: ${{ matrix.torch }}
+          inherit-installed-dependencies: "false"
           self-hosted-pypi-index: https://mirrors.aliyun.com/pypi/simple
       - run: python -m pip install --upgrade pip 'setuptools>=77.0.3' wheel
       - uses: ./.github/actions/install-cpu-torch
         with:
           torch-spec: ${{ matrix.torch }}
       - run: python -m pip install 'pytest>=7.0.0,<10'
-      - run: python -m pip install --no-build-isolation -e . --no-deps
+      - name: Install project within the selected Torch bound
+        env:
+          FQ_TORCH_SPEC: ${{ matrix.torch }}
+        run: |
+          printf '%s\n' "$FQ_TORCH_SPEC" > "$RUNNER_TEMP/fq-torch-bound.txt"
+          python -m pip install --no-build-isolation \
+            --constraint "$RUNNER_TEMP/fq-torch-bound.txt" -e .
       - name: Verify dependency consistency and CPU frameworks
         run: |
           python -m pip check
@@ -2110,7 +2255,7 @@ jobs:
         if: matrix.python == '3.12'
         run: >-
           python -m pip install
-          $(python tools/check_dependency_policy.py --print-floor)
+          $(python tools/architecture/check_dependency_policy.py --print-floor)
       - name: Run the Python gates on the declared development floor
         if: matrix.python == '3.12'
         run: |
@@ -2154,7 +2299,65 @@ jobs:
           mkdir -p dist
           cp dist-a/* dist/
       - name: Verify artifact contents
-        run: python tools/verify_distribution_artifacts.py dist
+        run: python tools/release/verify_distribution_artifacts.py dist
+      - name: Write checksummed artifact manifest
+        run: python tools/release/artifact_manifest.py --output dist/manifest.json dist/*.whl dist/*.tar.gz
+      - uses: ./.github/actions/upload-artifact
+        timeout-minutes: 6
+        with:
+          name: flagquantum-distributions-${{ github.sha }}
+          path: dist/
+
+
+  package-manylinux:
+    needs: prepare-source
+    runs-on: ubuntu-22.04
+    timeout-minutes: 30
+    concurrency:
+      group: flagquantum-gh-5
+      queue: max
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - run: python -m pip install build setuptools wheel
+      # Reproducible artifacts are compiled against PyTorch's 2.10 Stable ABI.
+      # The cold-install steps below validate the resulting artifacts against
+      # the declared runtime range, including preinstalled vendor baselines.
+      - run: python -m pip install "torch>=2.10,<2.11" --index-url https://download.pytorch.org/whl/cpu
+      - name: Build and test the publishable manylinux wheel
+        uses: pypa/cibuildwheel@v4.3.0
+        with:
+          # cp310-abi3 is the single wheel for every supported CPython.
+          # cibuildwheel builds it against torch 2.10 and tests it on 2.14.
+          only: cp310-manylinux_x86_64
+          output-dir: wheelhouse
+      - name: Verify publishable manylinux wheel contents
+        run: python tools/release/verify_distribution_artifacts.py wheelhouse
+
+  package-installed:
+    needs: [prepare-source, package]
+    runs-on: ubuntu-22.04
+    timeout-minutes: 30
+    concurrency:
+      group: flagquantum-gh-4
+      queue: max
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - run: python -m pip install build setuptools wheel
+      # Reproducible artifacts are compiled against PyTorch's 2.10 Stable ABI.
+      # The cold-install steps below validate the resulting artifacts against
+      # the declared runtime range, including preinstalled vendor baselines.
+      - run: python -m pip install "torch>=2.10,<2.11" --index-url https://download.pytorch.org/whl/cpu
+      - uses: actions/download-artifact@v8.0.2
+        with:
+          digest-mismatch: error
+          name: flagquantum-distributions-${{ github.sha }}
+          path: dist
       - name: Verify one wheel on older PyTorch runtimes
         timeout-minutes: 15
         run: |
@@ -2168,15 +2371,6 @@ jobs:
               /tmp/fq-torch-compat/bin/python -c "import torch; from importlib.metadata import requires; from packaging.requirements import Requirement; r=next(Requirement(x) for x in requires('flagquantum') if Requirement(x).name == 'torch'); assert r.specifier.contains(torch.__version__), (r, torch.__version__); from flagquantum.simulation.native_cpu import adjoint; assert adjoint.native_cpu_adjoint_available(), repr(adjoint._EXTENSION_ERROR); import flagquantum as fq; assert fq.Circuit(2).h(0).cx(0,1).state().shape[-1] == 4"
             )
           done
-      - name: Build and test the publishable manylinux wheel
-        uses: pypa/cibuildwheel@v4.3.0
-        with:
-          # cp310-abi3 is the single wheel for every supported CPython.
-          # cibuildwheel builds it against torch 2.10 and tests it on 2.14.
-          only: cp310-manylinux_x86_64
-          output-dir: wheelhouse
-      - name: Verify publishable manylinux wheel contents
-        run: python tools/verify_distribution_artifacts.py wheelhouse
       - name: Cold-install CPU wheel and run quick start
         timeout-minutes: 5
         env:
@@ -2207,8 +2401,29 @@ jobs:
           /tmp/fq-sdist/bin/python -c "import flagquantum as fq; c=fq.Circuit(2).h(0).cx(0,1); assert c.state().shape[-1] == 4"
           /tmp/fq-sdist/bin/python -c "from flagquantum.simulation.numerics.conformance import run_double_single_conformance; assert run_double_single_conformance().passed"
           popd
-      - name: Write checksummed artifact manifest
-        run: python tools/release/artifact_manifest.py --output dist/manifest.json dist/*.whl dist/*.tar.gz
+
+  package-qec-installed:
+    needs: [prepare-source, package]
+    runs-on: ubuntu-22.04
+    timeout-minutes: 30
+    concurrency:
+      group: flagquantum-gh-5
+      queue: max
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - run: python -m pip install build setuptools wheel
+      # Reproducible artifacts are compiled against PyTorch's 2.10 Stable ABI.
+      # The cold-install steps below validate the resulting artifacts against
+      # the declared runtime range, including preinstalled vendor baselines.
+      - run: python -m pip install "torch>=2.10,<2.11" --index-url https://download.pytorch.org/whl/cpu
+      - uses: actions/download-artifact@v8.0.2
+        with:
+          digest-mismatch: error
+          name: flagquantum-distributions-${{ github.sha }}
+          path: dist
       - name: Verify real QEC optional installations outside the checkout
         id: qec-installed
         timeout-minutes: 15
@@ -2224,12 +2439,6 @@ jobs:
           name: qec-installed-${{ github.sha }}
           path: ${{ runner.temp }}/qec-installed-reports/
           retention-days: 7
-      - uses: ./.github/actions/upload-artifact
-        timeout-minutes: 6
-        with:
-          name: flagquantum-distributions-${{ github.sha }}
-          path: dist/
-
   release-wheel-platform:
     needs: prepare-source
     # Linux is exercised by `package`; these are the two native toolchains that
@@ -2266,7 +2475,7 @@ jobs:
           only: ${{ matrix.identifier }}
           output-dir: wheelhouse
       - name: Verify release wheel contents
-        run: python tools/verify_distribution_artifacts.py wheelhouse
+        run: python tools/release/verify_distribution_artifacts.py wheelhouse
       - uses: ./.github/actions/upload-artifact
         timeout-minutes: 6
         with:
@@ -2301,11 +2510,9 @@ jobs:
       group: flagquantum-${{ (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository) && format('self-hosted-{0}-distributed-cpu-shard-{1}', github.run_id, strategy.job-index || 0) || 'gh' }}-4
       queue: max
     steps:
-      - uses: actions/download-artifact@v8.0.2
-        with:
-          digest-mismatch: error
-          name: ci-source-incremental-${{ needs.prepare-source.outputs.artifact-key }}
-          path: ${{ runner.temp }}/ci-source
+      - *source_transport_1
+      - *source_transport_2
+      - *source_transport_3
       - name: Check whether cached Git objects complete the source tree
         id: source-cache
         run: |
@@ -2316,7 +2523,7 @@ jobs:
           fi
           git index-pack --stdin < "$RUNNER_TEMP/ci-source/source.pack"
           if [ "$RUNNER_ENVIRONMENT" = self-hosted ]; then
-            git show "$sha:tools/ci_source_archive.py" > "$RUNNER_TEMP/ci-source/cleanup-source.py"
+            git show "$sha:tools/ci/ci_source_archive.py" > "$RUNNER_TEMP/ci-source/cleanup-source.py"
             python3 "$RUNNER_TEMP/ci-source/cleanup-source.py" --cleanup-containers
           fi
           complete=false
@@ -2334,18 +2541,15 @@ jobs:
         run: |
           sha="$(cat "$RUNNER_TEMP/ci-source/source.sha")"
           test "$sha" = "$GITHUB_SHA"
-          git show "$sha:tools/ci_source_archive.py" > "$RUNNER_TEMP/ci-source/repair-source.py"
+          git show "$sha:tools/ci/ci_source_archive.py" > "$RUNNER_TEMP/ci-source/repair-source.py"
           if timeout --kill-after=15s 120s python3 "$RUNNER_TEMP/ci-source/repair-source.py"; then
             echo "complete=true" >> "$GITHUB_OUTPUT"
           else
             echo "complete=false" >> "$GITHUB_OUTPUT"
           fi
-      - uses: actions/download-artifact@v8.0.2
-        if: steps.source-cache.outputs.complete != 'true' && steps.source-repair.outputs.complete != 'true'
-        with:
-          digest-mismatch: error
-          name: ci-source-${{ needs.prepare-source.outputs.artifact-key }}
-          path: ${{ runner.temp }}/ci-source
+      - *source_transport_4
+      - *source_transport_5
+      - *source_transport_6
       - name: Restore and verify this run's exact source commit
         run: |
           sha="$(cat "$RUNNER_TEMP/ci-source/source.sha")"
@@ -2434,11 +2638,17 @@ jobs:
       queue: max
     steps:
       # Reuse the runner's verified Git objects before transferring a full tree.
-      - uses: actions/download-artifact@v8.0.2
-        with:
-          digest-mismatch: error
-          name: ci-source-incremental-${{ needs.prepare-source.outputs.artifact-key }}
-          path: ${{ runner.temp }}/ci-source
+      - *source_transport_1
+      - *source_transport_2
+      - *source_transport_3
+      - name: Preserve the verified incremental coverage bootstrap
+        id: coverage-bootstrap
+        run: |
+          test "$(cat "$RUNNER_TEMP/ci-source/source.sha")" = "$GITHUB_SHA"
+          test -s "$RUNNER_TEMP/ci-source/source.pack"
+          bootstrap="$(mktemp -d "$RUNNER_TEMP/fq-coverage-bootstrap.XXXXXXXX")"
+          cp "$RUNNER_TEMP/ci-source/source.sha" "$RUNNER_TEMP/ci-source/source.pack" "$bootstrap/"
+          echo "path=$bootstrap" >> "$GITHUB_OUTPUT"
       - name: Check whether cached Git objects complete the source tree
         id: source-cache
         run: |
@@ -2449,7 +2659,7 @@ jobs:
           fi
           git index-pack --stdin < "$RUNNER_TEMP/ci-source/source.pack"
           if [ "$RUNNER_ENVIRONMENT" = self-hosted ]; then
-            git show "$sha:tools/ci_source_archive.py" > "$RUNNER_TEMP/ci-source/cleanup-source.py"
+            git show "$sha:tools/ci/ci_source_archive.py" > "$RUNNER_TEMP/ci-source/cleanup-source.py"
             python3 "$RUNNER_TEMP/ci-source/cleanup-source.py" --cleanup-containers
           fi
           complete=false
@@ -2467,18 +2677,15 @@ jobs:
         run: |
           sha="$(cat "$RUNNER_TEMP/ci-source/source.sha")"
           test "$sha" = "$GITHUB_SHA"
-          git show "$sha:tools/ci_source_archive.py" > "$RUNNER_TEMP/ci-source/repair-source.py"
+          git show "$sha:tools/ci/ci_source_archive.py" > "$RUNNER_TEMP/ci-source/repair-source.py"
           if timeout --kill-after=15s 120s python3 "$RUNNER_TEMP/ci-source/repair-source.py"; then
             echo "complete=true" >> "$GITHUB_OUTPUT"
           else
             echo "complete=false" >> "$GITHUB_OUTPUT"
           fi
-      - uses: actions/download-artifact@v8.0.2
-        if: steps.source-cache.outputs.complete != 'true' && steps.source-repair.outputs.complete != 'true'
-        with:
-          digest-mismatch: error
-          name: ci-source-${{ needs.prepare-source.outputs.artifact-key }}
-          path: ${{ runner.temp }}/ci-source
+      - *source_transport_4
+      - *source_transport_5
+      - *source_transport_6
       - name: Restore and verify this run's exact source commit
         run: |
           sha="$(cat "$RUNNER_TEMP/ci-source/source.sha")"
@@ -2516,14 +2723,23 @@ jobs:
           if [ "$GITHUB_EVENT_NAME" = pull_request ]; then
             marker="$marker and not slow"
           fi
+          plan_root="$(mktemp -d "$RUNNER_TEMP/fq-coverage-plan.XXXXXXXX")"
           python -m pytest --collect-only -q -m "$marker" -p tools.ci.pytest_shard \
-            --fq-write-coverage-plan "$RUNNER_TEMP/coverage-plan" \
+            --fq-write-coverage-plan "$plan_root/plan" \
             --fq-coverage-plan-count "$FQ_COVERAGE_SHARDS"
+          echo "path=$plan_root/plan" >> "$GITHUB_OUTPUT"
+      - name: Bundle the verified incremental source with the coverage plan
+        env:
+          FQ_COVERAGE_BOOTSTRAP: ${{ steps.coverage-bootstrap.outputs.path }}
+          FQ_COVERAGE_PLAN: ${{ steps.plan.outputs.path }}
+        run: |
+          test "$(cat "$FQ_COVERAGE_BOOTSTRAP/source.sha")" = "$GITHUB_SHA"
+          cp "$FQ_COVERAGE_BOOTSTRAP/source.sha" "$FQ_COVERAGE_BOOTSTRAP/source.pack" "$FQ_COVERAGE_PLAN/"
       - uses: ./.github/actions/upload-artifact
         timeout-minutes: 6
         with:
           name: coverage-plan-${{ github.sha }}
-          path: ${{ runner.temp }}/coverage-plan/
+          path: ${{ steps.plan.outputs.path }}/
           if-no-files-found: error
 
   coverage-shard:
@@ -2531,7 +2747,8 @@ jobs:
     runs-on: >-
       ${{ fromJSON(
         (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository)
-        && (matrix.a800 && '["self-hosted","linux","x64","flagquantum-cpu","flagquantum-a800-cpu"]'
+        && (matrix.runner && format('["self-hosted","linux","x64","flagquantum-cpu","{0}"]', matrix.runner)
+          || matrix.a800 && '["self-hosted","linux","x64","flagquantum-cpu","flagquantum-a800-cpu"]'
           || '["self-hosted","linux","x64","flagquantum-cpu"]') || '["ubuntu-latest"]'
       ) }}
     permissions:
@@ -2558,10 +2775,29 @@ jobs:
     steps:
       # Reuse the runner's verified Git objects before transferring a full tree.
       - uses: actions/download-artifact@v8.0.2
+        id: source-incremental-download
+        timeout-minutes: 1
+        continue-on-error: true
         with:
           digest-mismatch: error
-          name: ci-source-incremental-${{ needs.prepare-source.outputs.artifact-key }}
+          name: coverage-plan-${{ github.sha }}
           path: ${{ runner.temp }}/ci-source
+      - uses: actions/download-artifact@v8.0.2
+        id: source-incremental-retry
+        if: ${{ !cancelled() && steps.source-incremental-download.outcome == 'failure' }}
+        timeout-minutes: 2
+        with:
+          digest-mismatch: error
+          name: coverage-plan-${{ github.sha }}
+          path: ${{ runner.temp }}/ci-source-incremental-retry
+      - *source_transport_3
+      - name: Preserve the verified coverage plan before source fallback
+        id: coverage-plan-stage
+        run: |
+          test "$(cat "$RUNNER_TEMP/ci-source/source.sha")" = "$GITHUB_SHA"
+          plan="$(mktemp -d "$RUNNER_TEMP/fq-coverage-plan.XXXXXXXX")"
+          cp "$RUNNER_TEMP/ci-source/plan.json" "$RUNNER_TEMP/ci-source/"shard-*.txt "$plan/"
+          echo "path=$plan" >> "$GITHUB_OUTPUT"
       - name: Check whether cached Git objects complete the source tree
         id: source-cache
         run: |
@@ -2572,7 +2808,7 @@ jobs:
           fi
           git index-pack --stdin < "$RUNNER_TEMP/ci-source/source.pack"
           if [ "$RUNNER_ENVIRONMENT" = self-hosted ]; then
-            git show "$sha:tools/ci_source_archive.py" > "$RUNNER_TEMP/ci-source/cleanup-source.py"
+            git show "$sha:tools/ci/ci_source_archive.py" > "$RUNNER_TEMP/ci-source/cleanup-source.py"
             python3 "$RUNNER_TEMP/ci-source/cleanup-source.py" --cleanup-containers
           fi
           complete=false
@@ -2590,18 +2826,15 @@ jobs:
         run: |
           sha="$(cat "$RUNNER_TEMP/ci-source/source.sha")"
           test "$sha" = "$GITHUB_SHA"
-          git show "$sha:tools/ci_source_archive.py" > "$RUNNER_TEMP/ci-source/repair-source.py"
+          git show "$sha:tools/ci/ci_source_archive.py" > "$RUNNER_TEMP/ci-source/repair-source.py"
           if timeout --kill-after=15s 120s python3 "$RUNNER_TEMP/ci-source/repair-source.py"; then
             echo "complete=true" >> "$GITHUB_OUTPUT"
           else
             echo "complete=false" >> "$GITHUB_OUTPUT"
           fi
-      - uses: actions/download-artifact@v8.0.2
-        if: steps.source-cache.outputs.complete != 'true' && steps.source-repair.outputs.complete != 'true'
-        with:
-          digest-mismatch: error
-          name: ci-source-${{ needs.prepare-source.outputs.artifact-key }}
-          path: ${{ runner.temp }}/ci-source
+      - *source_transport_4
+      - *source_transport_5
+      - *source_transport_6
       - name: Restore and verify this run's exact source commit
         run: |
           sha="$(cat "$RUNNER_TEMP/ci-source/source.sha")"
@@ -2632,15 +2865,10 @@ jobs:
           python -c "import torch; assert torch.version.cuda is None"
           python -c "import jax; assert jax.default_backend() == 'cpu'"
           python -c "from pyscf import ao2mo, gto, scf"
-      - uses: ./.github/actions/download-artifact
-        id: coverage-plan-download
-        timeout-minutes: 6
-        with:
-          name: coverage-plan-${{ github.sha }}
       - name: Run this exact coverage partition (pull requests)
         if: github.event_name == 'pull_request'
         env:
-          FQ_COVERAGE_PLAN: ${{ steps.coverage-plan-download.outputs.path }}
+          FQ_COVERAGE_PLAN: ${{ steps.coverage-plan-stage.outputs.path }}
         run: |
           mkdir -p "$RUNNER_TEMP/fq-coverage"
           export COVERAGE_FILE="$RUNNER_TEMP/fq-coverage/.coverage.${{ matrix.shard }}"
@@ -2652,7 +2880,7 @@ jobs:
       - name: Run this exact coverage partition (integration revisions)
         if: github.event_name != 'pull_request'
         env:
-          FQ_COVERAGE_PLAN: ${{ steps.coverage-plan-download.outputs.path }}
+          FQ_COVERAGE_PLAN: ${{ steps.coverage-plan-stage.outputs.path }}
         run: |
           mkdir -p "$RUNNER_TEMP/fq-coverage"
           export COVERAGE_FILE="$RUNNER_TEMP/fq-coverage/.coverage.${{ matrix.shard }}"
@@ -2681,6 +2909,7 @@ jobs:
     permissions:
       contents: read
       packages: read
+      actions: read
     env:
       FQ_COVERAGE_SHARDS: ${{ needs.coverage-plan.outputs.count }}
     if: ${{ !cancelled() }}
@@ -2692,11 +2921,9 @@ jobs:
     steps:
       - name: Require every coverage shard to pass
         run: test '${{ needs.coverage-shard.result }}' = success
-      - uses: actions/download-artifact@v8.0.2
-        with:
-          digest-mismatch: error
-          name: ci-source-incremental-${{ needs.prepare-source.outputs.artifact-key }}
-          path: ${{ runner.temp }}/ci-source
+      - *source_transport_1
+      - *source_transport_2
+      - *source_transport_3
       - name: Check whether cached Git objects complete the source tree
         id: source-cache
         run: |
@@ -2707,7 +2934,7 @@ jobs:
           fi
           git index-pack --stdin < "$RUNNER_TEMP/ci-source/source.pack"
           if [ "$RUNNER_ENVIRONMENT" = self-hosted ]; then
-            git show "$sha:tools/ci_source_archive.py" > "$RUNNER_TEMP/ci-source/cleanup-source.py"
+            git show "$sha:tools/ci/ci_source_archive.py" > "$RUNNER_TEMP/ci-source/cleanup-source.py"
             python3 "$RUNNER_TEMP/ci-source/cleanup-source.py" --cleanup-containers
           fi
           complete=false
@@ -2725,18 +2952,15 @@ jobs:
         run: |
           sha="$(cat "$RUNNER_TEMP/ci-source/source.sha")"
           test "$sha" = "$GITHUB_SHA"
-          git show "$sha:tools/ci_source_archive.py" > "$RUNNER_TEMP/ci-source/repair-source.py"
+          git show "$sha:tools/ci/ci_source_archive.py" > "$RUNNER_TEMP/ci-source/repair-source.py"
           if timeout --kill-after=15s 120s python3 "$RUNNER_TEMP/ci-source/repair-source.py"; then
             echo "complete=true" >> "$GITHUB_OUTPUT"
           else
             echo "complete=false" >> "$GITHUB_OUTPUT"
           fi
-      - uses: actions/download-artifact@v8.0.2
-        if: steps.source-cache.outputs.complete != 'true' && steps.source-repair.outputs.complete != 'true'
-        with:
-          digest-mismatch: error
-          name: ci-source-${{ needs.prepare-source.outputs.artifact-key }}
-          path: ${{ runner.temp }}/ci-source
+      - *source_transport_4
+      - *source_transport_5
+      - *source_transport_6
       - name: Restore and verify this run's exact source commit
         run: |
           sha="$(cat "$RUNNER_TEMP/ci-source/source.sha")"
@@ -2761,12 +2985,18 @@ jobs:
           require-cached: ${{ runner.environment == 'self-hosted' }}
       - name: Verify the locked coverage tool
         run: python -c "from coverage import Coverage; print(Coverage.__module__)"
-      - uses: ./.github/actions/download-artifact
+      - name: Download complete coverage inputs with bounded concurrency
         id: coverage-data
-        timeout-minutes: 6
-        with:
-          pattern: coverage-shard-*-${{ github.sha }}
-          merge-multiple: true
+        timeout-minutes: 4
+        env:
+          GH_TOKEN: ${{ github.token }}
+          FQ_COVERAGE_HEAD: ${{ github.event.pull_request.head.sha || github.sha }}
+        run: |
+          timeout --kill-after=10s 240s python3 -I tools/ci/ci_coverage_artifacts.py \
+            --run-id "$GITHUB_RUN_ID" --attempt "$GITHUB_RUN_ATTEMPT" \
+            --head-sha "$FQ_COVERAGE_HEAD" --source-sha "$GITHUB_SHA" \
+            --count "$FQ_COVERAGE_SHARDS" --output "$RUNNER_TEMP/fq-coverage-inputs"
+          echo "path=$RUNNER_TEMP/fq-coverage-inputs" >> "$GITHUB_OUTPUT"
       - name: Validate complete coverage inputs
         env:
           FQ_COVERAGE_INPUTS: ${{ steps.coverage-data.outputs.path }}
@@ -2828,11 +3058,9 @@ jobs:
     permissions:
       contents: read
     steps:
-      - uses: actions/download-artifact@v8.0.2
-        with:
-          digest-mismatch: error
-          name: ci-source-incremental-${{ needs.prepare-source.outputs.artifact-key }}
-          path: ${{ runner.temp }}/ci-source
+      - *source_transport_1
+      - *source_transport_2
+      - *source_transport_3
       - name: Check whether cached Git objects complete the source tree
         id: source-cache
         run: |
@@ -2843,7 +3071,7 @@ jobs:
           fi
           git index-pack --stdin < "$RUNNER_TEMP/ci-source/source.pack"
           if [ "$RUNNER_ENVIRONMENT" = self-hosted ]; then
-            git show "$sha:tools/ci_source_archive.py" > "$RUNNER_TEMP/ci-source/cleanup-source.py"
+            git show "$sha:tools/ci/ci_source_archive.py" > "$RUNNER_TEMP/ci-source/cleanup-source.py"
             python3 "$RUNNER_TEMP/ci-source/cleanup-source.py" --cleanup-containers
           fi
           complete=false
@@ -2861,18 +3089,15 @@ jobs:
         run: |
           sha="$(cat "$RUNNER_TEMP/ci-source/source.sha")"
           test "$sha" = "$GITHUB_SHA"
-          git show "$sha:tools/ci_source_archive.py" > "$RUNNER_TEMP/ci-source/repair-source.py"
+          git show "$sha:tools/ci/ci_source_archive.py" > "$RUNNER_TEMP/ci-source/repair-source.py"
           if timeout --kill-after=15s 120s python3 "$RUNNER_TEMP/ci-source/repair-source.py"; then
             echo "complete=true" >> "$GITHUB_OUTPUT"
           else
             echo "complete=false" >> "$GITHUB_OUTPUT"
           fi
-      - uses: actions/download-artifact@v8.0.2
-        if: steps.source-cache.outputs.complete != 'true' && steps.source-repair.outputs.complete != 'true'
-        with:
-          digest-mismatch: error
-          name: ci-source-${{ needs.prepare-source.outputs.artifact-key }}
-          path: ${{ runner.temp }}/ci-source
+      - *source_transport_4
+      - *source_transport_5
+      - *source_transport_6
       - name: Restore and verify this run's exact source commit
         run: |
           sha="$(cat "$RUNNER_TEMP/ci-source/source.sha")"
@@ -2940,6 +3165,9 @@ jobs:
       - pre-commit
       - prepare-source
       - quality
+      - quality-style
+      - quality-provenance
+      - quality-evidence-origins
       - native-fermion
       - cpu-core
       - cpu-core-3-12-tests
@@ -2956,6 +3184,9 @@ jobs:
       - pennylane-optional
       - dependency-bounds
       - package
+      - package-manylinux
+      - package-installed
+      - package-qec-installed
       - release-wheel-platform
       - distributed-cpu
       - distributed-cpu-shard

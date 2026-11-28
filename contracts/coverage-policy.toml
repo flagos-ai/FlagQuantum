@@ -1,7 +1,7 @@
 # Coverage policy enforced by tools/check_coverage.py.
 #
 # Modules excluded from measurement entirely (optional-dependency kernels and
-# the benchmark CLI) are omitted in .coveragerc instead; this file only carries
+# the benchmark CLI) are omitted in pyproject.toml instead; this file only carries
 # floors for packages that are measured.
 #
 # [global].min        — overall line-coverage floor (percentage).

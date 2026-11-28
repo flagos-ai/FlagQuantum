@@ -3,7 +3,7 @@ from pathlib import Path
 
 import pytest
 
-from tools.check_dependency_policy import load_toml
+from tools.architecture.check_dependency_policy import load_toml
 from tools.ci.ci_tier import CI_TIERS
 
 pytestmark = pytest.mark.unit
@@ -41,6 +41,12 @@ NUMBER_WORDS = {
     "twenty-five": 25,
     "twenty-six": 26,
     "twenty-seven": 27,
+    "twenty-eight": 28,
+    "twenty-nine": 29,
+    "thirty": 30,
+    "thirty-one": 31,
+    "thirty-two": 32,
+    "thirty-three": 33,
 }
 
 
@@ -95,22 +101,11 @@ def test_testing_manual_lists_current_commands():
 
 
 def _registered_markers() -> list[str]:
-    """Read the marker names declared in pytest.ini's ``markers`` block."""
-    declarers = ("    ", "\t")
-    markers: list[str] = []
-    in_block = False
-    for line in _read("pytest.ini").splitlines():
-        if line.strip() == "markers =":
-            in_block = True
-            continue
-        if not in_block:
-            continue
-        if not line.startswith(declarers) or ":" not in line:
-            if line.strip():
-                break
-            continue
-        markers.append(line.strip().split(":", 1)[0].strip())
-    return markers
+    """Read marker names from the single project configuration authority."""
+    declarations = load_toml(Path("pyproject.toml"))["tool"]["pytest"]["ini_options"][
+        "markers"
+    ]
+    return [marker.split(":", 1)[0].strip() for marker in declarations]
 
 
 def test_testing_manual_documents_every_marker_with_proof_boundary():

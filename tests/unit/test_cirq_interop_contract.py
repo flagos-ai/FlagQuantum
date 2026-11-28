@@ -4,7 +4,7 @@ from pathlib import Path
 
 import pytest
 
-from tools.check_cirq_interop_contract import contract_errors, load_toml
+from tools.validation.check_cirq_interop_contract import contract_errors, load_toml
 
 pytestmark = pytest.mark.unit
 ROOT = Path(__file__).resolve().parents[2]
@@ -13,7 +13,7 @@ ROOT = Path(__file__).resolve().parents[2]
 def _inputs() -> tuple[dict, dict]:
     return (
         load_toml(ROOT / "contracts" / "cirq-interop-contract.toml"),
-        load_toml(ROOT / "dependency-policy.toml"),
+        load_toml(ROOT / "config" / "dependency-policy.toml"),
     )
 
 

@@ -72,7 +72,7 @@ jobs:
       - name: Build source distribution
         run: python -m build --sdist --no-isolation
       - name: Verify source distribution
-        run: python tools/verify_distribution_artifacts.py dist
+        run: python tools/release/verify_distribution_artifacts.py dist
       - uses: actions/upload-artifact@v4
         with:
           name: flagquantum-release-sdist
@@ -113,7 +113,7 @@ jobs:
         with:
           output-dir: wheelhouse
       - name: Verify wheel contents
-        run: python tools/verify_distribution_artifacts.py wheelhouse
+        run: python tools/release/verify_distribution_artifacts.py wheelhouse
       - uses: actions/upload-artifact@v4
         with:
           name: flagquantum-release-${{ matrix.artifact }}
@@ -142,6 +142,6 @@ jobs:
           path: dist
           merge-multiple: true
       - name: Verify the complete release matrix
-        run: python tools/verify_distribution_artifacts.py --release-matrix dist
+        run: python tools/release/verify_distribution_artifacts.py --release-matrix dist
       - name: Publish verified distributions to PyPI
         uses: pypa/gh-action-pypi-publish@release/v1

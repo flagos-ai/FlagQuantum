@@ -52,7 +52,7 @@ eligible jobs have started or completed; tasks are not automatically subdivided.
    enforcement. The existing ruleset already requires that aggregate.
 4. Remove only the merge-queue rule from the existing ruleset, preserving its
    strict aggregate requirement and empty bypass list. The reviewed target
-   configuration is `ci/pr-gate-main.json`; update the existing ruleset instead
+   configuration is `tools/ci/pr-gate-main.json`; update the existing ruleset instead
    of creating a second rule authority.
 5. Enable ordinary repository auto-merge. Preserve merge authorization for
    existing queued PRs when converting them to ordinary auto-merge; do not enable

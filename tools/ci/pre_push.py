@@ -93,7 +93,7 @@ def checks(python_executable: str) -> tuple[Check, ...]:
         ),
         Check(
             "dependency policy",
-            (python_executable, "tools/check_dependency_policy.py"),
+            (python_executable, "tools/architecture/check_dependency_policy.py"),
         ),
         Check(
             "Amazon Braket circuit interoperability contract",
@@ -101,7 +101,7 @@ def checks(python_executable: str) -> tuple[Check, ...]:
         ),
         Check(
             "Cirq interoperability contract",
-            (python_executable, "tools/check_cirq_interop_contract.py"),
+            (python_executable, "tools/validation/check_cirq_interop_contract.py"),
         ),
         Check(
             "CUDA-Q export contract",
@@ -190,7 +190,7 @@ def checks(python_executable: str) -> tuple[Check, ...]:
         ),
         Check(
             "internal multi-level IR contract",
-            (python_executable, "tools/check_multi_level_ir_contract.py"),
+            (python_executable, "tools/validation/check_multi_level_ir_contract.py"),
         ),
         Check(
             "realtime messaging contract",

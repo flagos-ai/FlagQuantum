@@ -51,7 +51,7 @@ def test_kaiwu_draft_is_not_exported_from_stable_or_parent_facades() -> None:
 
 
 def test_kaiwu_draft_has_no_capability_maturity_entry() -> None:
-    with (ROOT / "capability-maturity.toml").open("rb") as stream:
+    with (ROOT / "config" / "capability-maturity.toml").open("rb") as stream:
         capabilities = tomllib.load(stream)["capabilities"]
 
     assert not any(

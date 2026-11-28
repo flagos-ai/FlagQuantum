@@ -65,7 +65,7 @@ names appear in the Stable Core snapshot.
 The seven rules this boundary must keep -- level entry and exit, value identity,
 linearity, joins, failure categories, round trip, and rejection -- are declared in
 `contracts/multi-level-ir-internal-v1-candidate.json`, read back by
-`tools/check_multi_level_ir_contract.py`, and exercised by
+`tools/validation/check_multi_level_ir_contract.py`, and exercised by
 `tests/unit/test_multi_level_ir_contract.py`. The gate reads every `.py` under
 this package except the public `__init__.py`, so a refusal that moves into a
 level package is still checked against the declared vocabulary.
@@ -88,12 +88,12 @@ code, raise it, declare it, and let the gate confirm both directions.
 4. Run:
 
 ```bash
-python tools/check_multi_level_ir_contract.py
+python tools/validation/check_multi_level_ir_contract.py
 python -m pytest tests/unit/test_multi_level_ir_contract.py -q
 python tools/ci/ci_tier.py pr-runtime
 ```
 
-`tools/check_multi_level_ir_contract.py` fails if a declared code is never
+`tools/validation/check_multi_level_ir_contract.py` fails if a declared code is never
 raised somewhere in the boundary, if a raised code is not declared, if a code's
 declared level disagrees with the level the boundary raises it at, or if a
 recorded `flagquantum.circuit_ir` payload no longer survives a round trip. The

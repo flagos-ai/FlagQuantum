@@ -77,7 +77,7 @@ contract test, and run:
 python -m pytest tests/team/core tests/api_contract \
   tests/integration/test_cpu_vertical_slice.py -q
 python tools/architecture/check_architecture.py
-python tools/check_dependency_policy.py
+python tools/architecture/check_dependency_policy.py
 ```
 
 Before changing an exported type, serialized schema, IR version, or protected

@@ -96,7 +96,7 @@ above and the platform's capabilities is visible rather than implied.
 | Validity checks | disabled |
 
 The only enforcement statement anywhere in the repository is
-`dependency-policy.toml`, which sets `security_updates = "expedited"` under `[updates]`.
+`config/dependency-policy.toml`, which sets `security_updates = "expedited"` under `[updates]`.
 That is a policy for how quickly a dependency bump is merged, not a detection or
 reporting mechanism.
 
@@ -104,7 +104,7 @@ reporting mechanism.
 
 A new dependency's security posture is reviewed with its supply chain under
 `docs/development/DEPENDENCY_POLICY.md`. A security fix is merged on the expedited
-schedule in `dependency-policy.toml` rather than the monthly cadence, and it does not
+schedule in `config/dependency-policy.toml` rather than the monthly cadence, and it does not
 wait for a documentation or capability update.
 
 This file is a protected integration path (`config/team-ownership.toml`). Changing the reported

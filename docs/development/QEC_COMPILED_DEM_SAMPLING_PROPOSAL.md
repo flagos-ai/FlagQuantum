@@ -210,7 +210,7 @@ Any new build/test failure, timeout, unavailable resource, source/hash mismatch 
 `PY` must name the verified interpreter; run from the new branch root. `EVIDENCE` is an owned fresh directory outside the repository. These commands are acceptance targets and have not been run against a new implementation.
 
 ```bash
-python tools/check_dependency_policy.py
+python tools/architecture/check_dependency_policy.py
 python -m pytest tests/qec/test_compiled_dem_sampler.py tests/unit/test_compiled_dem_sampler_budget.py tests/unit/test_embedded_dem_sampler_source_lock.py -q -x
 python -m pytest tests/team/simulation/test_compiled_dem_sampler_conformance.py tests/qec/test_dem_sampling.py tests/qec/test_dem_error_ids.py tests/qec/test_correlated_circuit_noise.py tests/qec/test_shot_data_reading.py tests/qec/test_shot_data_writing.py -q -x
 python -m ruff check flagquantum/qec/dem/model.py flagquantum/qec/execution/dem_sampling.py flagquantum/simulation/stabilizer/_dem_sampling.py tests/qec/test_compiled_dem_sampler.py tests/team/simulation/test_compiled_dem_sampler_conformance.py tests/unit/test_compiled_dem_sampler_budget.py tests/unit/test_embedded_dem_sampler_source_lock.py examples/qec/compiled_dem_sampler.py

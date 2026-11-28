@@ -2,14 +2,14 @@
 set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-REPO_ROOT="$(cd "${SCRIPT_DIR}/.." && pwd)"
+REPO_ROOT="$(cd "${SCRIPT_DIR}/../.." && pwd)"
 PYTHON_BIN="${PYTHON_BIN:-python3}"
 VENV_DIR="${VENV_DIR:-${REPO_ROOT}/.venv}"
 INSTALL_JAX=0
 
 usage() {
     cat <<'EOF'
-Usage: tools/setup_flagquantum_dev_env.sh [--with-jax]
+Usage: tools/development/setup_flagquantum_dev_env.sh [--with-jax]
 
 Creates a dedicated local virtual environment for FlagQuantum development at
 .venv/ and installs the project in editable mode with development dependencies.

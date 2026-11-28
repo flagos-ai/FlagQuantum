@@ -1,5 +1,28 @@
 # Independent structure migration
 
+## Current qualified baseline and next complete package
+
+PR [#1354](https://github.com/flagos-ai/FlagQuantum/pull/1354), head
+`f46fccce160da3efaadaeee73c13c5e3ecb7ad8c`, independently qualifies the complete
+[named-result ownership package](migration/runtime-named-result-ownership.md):
+430 successful checks, three existing conditions, all original CPU/scientific
+reports and 394 test partitions below 600 seconds. Its full tree is carried
+unchanged before this package. Quality, one dependency-bounds cell and package
+remain above that preference and are recorded explicitly.
+
+The next [query/aggregation closure](migration/runtime-query-aggregation-retirement.md)
+removes the remaining two prepared Runtime relays and retains protected public
+locators. The accompanying [CI execution graph](migration/ci-gate-parallelism.md)
+parallelizes complete quality/package acceptance and uses fresh dependency-bound
+environments on existing BW runners. Integration declarations precede owner
+implementations. The ledger adds one real partial executor-relay retirement;
+same-module private deletion/rename is not falsely counted as a file move.
+Actual source/default/native-installed original-outcome acceptance and this
+package's own exact-head CI remain required. Incoming #1084, native/developer
+packaging and repository-root G0 remain open; historical inputs and inventories
+below retain their original scope.
+
+
 The implementation now covers the independently auditable structure migration,
 including product modules, development tools and repository configuration. The
 allocator move in commit `08549f62` was the first package, not the scope limit.
@@ -45,7 +68,7 @@ Repeat the overlap and consumer audit if either input advances before integratio
 | Registration | Circuit spelling/method installation lives in `compiler/construction/operator_registration.py`; immutable registry semantics stay in Core. |
 | Algorithms | Existing main implementations are grouped into primitives, chemistry, many body, search, estimation, optimization, optimizers, linear algebra, quantum ML and error mitigation. Generic Hamiltonians belong to Primitives; spin models belong to Many Body; PCA and SVD belong to Linear Algebra. |
 | Frontends | Torch capture lives in `compiler/frontends/torch/`; structured Python capture lives in `compiler/frontends/_structured/`. Existing formats remain in their already authoritative owners. |
-| Services | The package maintains published entry points. Preparation belongs to Compiler; plan inspection/preflight to Runtime; ground-state/research workflows to Algorithms; Qmod adaptation to Ecosystem; synthesis composition/program/readout to Synth. The northbound capabilities aggregation belongs to `_api.py`. |
+| Services | The package maintains published entry points. Preparation belongs to Compiler; plan inspection/preflight to Runtime; ground-state/research workflows to Algorithms; Qmod adaptation to Ecosystem; synthesis composition/program to Synth and bounded named-result readout to Runtime. The northbound capabilities aggregation belongs to `_api.py`. |
 | Deployment | Remote owns package models and submission validation; Compiler owns routing evidence; Runtime owns deployment planning, dynamic sealing/rematch and measured count extraction. The old package is a facade. |
 | JAX numerics | Statevector, MPS and tensor-network numerical modules live below their engines' `jax/` directories. Shared JAX primitives live in `simulation/numerics/jax.py`. |
 | CPU adjoint numerics | Pure CX permutation/adjoint and scalar rotation VJP/seed functions live in Simulation. Runtime retains policy, shard state, communication, deferred execution and lifecycle dispatch. |
@@ -84,10 +107,10 @@ the frozen PR snapshot while its consumers are reconciled.
 | Drawer | #1084 substantially adds/changes diagrams, symbols, viewers and assets. Consolidate the integrated renderer family and asset paths together. |
 | Native CPU ABI and build closure | `setup.py` keeps the current native module name/source paths. #1084 changes `MANIFEST.in`, installation/source-manifest tests and distribution verification. Relocate native sources only with the integrated ABI, wheel, sdist and installed-artifact acceptance. |
 | Benchmarking and testing distribution | #1084 changes benchmarking implementations and introduces testing-tool consumers. The maintained benchmark console entry lives in `pyproject.toml`, which #1084 also changes. Move into the optional developer distribution together with metadata, installed entry points and independent-wheel tests. |
-| Root `ci/` data and remaining policies | #1084 consumers include `.github/workflows/local-gpu.yml`, lane-dependency tests, Compiler documentation, CI and evidence documentation. Dependency policy itself is modified. Move these JSON/TOML files with all integrated readers; no duplicate policy files are introduced. |
-| Compose and container closure | The PR tree's `.github/workflows/publish-dev-container.yml` refers to `compose.dev.yaml`. Its presence matters even if that file is unchanged from the PR base. Move Compose with workflow filters, project directory/name, build context, bind mounts and environment behavior verified. |
-| Standalone source bootstrap | CI downloads `tools/ci_source_archive.py` and executes it before the repository exists. Keep its standalone implementation until the #1084 CI download/filter closure moves atomically; an import facade cannot bootstrap an absent package. |
-| Existing root tools directly modified by #1084 | `check_cirq_interop_contract.py`, `check_dependency_policy.py`, `check_multi_level_ir_contract.py`, and `verify_distribution_artifacts.py` retain their current implementations. The PR additionally introduces `audit_register_component_scope.py` and `tools/development/`; place those against the integrated source. |
+| Root data and dependency policy | Maturity/origin and dependency policies are in `config/`; all three root CI JSON files are in `tools/ci/`, with unchanged data and synchronized default consumers. Historical contracts/evidence and arbitrary explicit policy arguments are preserved. Standalone bootstrap and directly coupled tooling remain unfinished. See the [dependency policy declaration](migration/dependency-policy-location.md). |
+| Compose and container closure | Implemented in `docker/compose.dev.yaml` with explicit repository project directory in every documented command. Both workflow filters and ownership are synchronized. Latest incoming retains the same YAML/README/Dockerfile and an old-base publication workflow already evolved by main; retain this migration at reconciliation. See the [Integration declaration](migration/development-compose-location.md). This is no longer a deferred family. |
+| Standalone source bootstrap | `tools/ci/ci_source_archive.py` is the unchanged standalone implementation. Pre-checkout API fetches, object repair, all callers, complete incremental-pack ancestors and fallback fixtures use its canonical location, without a package-import facade. See the [Integration declaration](migration/root-tool-ownership.md). |
+| Existing tools directly modified by #1084 | Current dependency, Cirq, multi-level IR and distribution-verifier implementations move to architecture, validation and release owners with every operational caller synchronized. Incoming semantic changes and new development tools remain separate integrated-source work; no old-root forwarder is retained. |
 | Rust | Implementation, dependencies and experiments wait for #1084 closeout and architecture acceptance. Existing Rust priorities, boundaries and numerical/performance acceptance remain unchanged. |
 
 A file retaining its current owner because it implements orchestration is not an

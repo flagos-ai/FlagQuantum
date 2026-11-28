@@ -18,11 +18,13 @@ from __future__ import annotations
 
 import ast
 import fnmatch
+import json
 from pathlib import Path
 
 import pytest
 import yaml
 
+from tools.architecture.check_dependency_policy import load_toml
 from tools.ci.ci_tier import CI_TIERS
 
 pytestmark = pytest.mark.unit
@@ -142,7 +144,41 @@ def _tests(tree: ast.Module) -> list[tuple[str, set[str], int]]:
 
 
 def _test_files() -> list[Path]:
-    return sorted((ROOT / "tests").rglob("test_*.py"))
+    # This explicit upstream suite was outside testpaths before relocation.
+    # Keep every original default test in the CI reachability check.
+    reference = ROOT / "tests/reference/qualtran"
+    conftest = ast.parse((ROOT / "tests/conftest.py").read_text(encoding="utf-8"))
+    ignored = [
+        ast.literal_eval(node.value)
+        for node in conftest.body
+        if isinstance(node, ast.Assign)
+        and any(
+            isinstance(target, ast.Name) and target.id == "collect_ignore"
+            for target in node.targets
+        )
+    ]
+    assert ignored == [["reference/qualtran"]]
+    moves = json.loads(
+        (
+            ROOT / "docs/development/migration/independent-structure-moves.json"
+        ).read_text()
+    )["moves"]
+    relocated = {
+        row["new"]
+        for row in moves
+        if row["old"].startswith("tools/qualtran_parity/test_")
+        and not row.get("partial")
+        and row.get("compatibility") == "none"
+    }
+    explicit = {
+        path.relative_to(ROOT).as_posix() for path in reference.rglob("test_*.py")
+    }
+    assert explicit and explicit == relocated
+    return sorted(
+        path
+        for path in (ROOT / "tests").rglob("test_*.py")
+        if not path.is_relative_to(reference)
+    )
 
 
 def test_every_test_is_reachable_by_a_ci_lane() -> None:
@@ -167,20 +203,12 @@ def test_every_test_is_reachable_by_a_ci_lane() -> None:
 
 def test_lane_selectors_are_registered_markers() -> None:
     """A selector the workflows use must also be a declared marker."""
-    registered = set()
-    for line in (ROOT / "pytest.ini").read_text(encoding="utf-8").splitlines():
-        stripped = line.strip()
-        if (
-            stripped
-            and ":" in stripped
-            and not stripped.startswith(("[", "#", "markers"))
-        ):
-            registered.add(stripped.split(":", 1)[0].strip())
-        elif stripped.endswith("="):
-            registered.add(stripped.rstrip("=").strip())
-
+    declarations = load_toml(ROOT / "pyproject.toml")["tool"]["pytest"]["ini_options"][
+        "markers"
+    ]
+    registered = {marker.split(":", 1)[0].strip() for marker in declarations}
     for selector in LANE_SELECTORS | ACCEL_LANE:
-        assert selector in registered, f"{selector} is not declared in pytest.ini"
+        assert selector in registered, f"{selector} is not declared in pyproject.toml"
 
 
 # A selector says a lane selects a test; it says nothing about whether the lane

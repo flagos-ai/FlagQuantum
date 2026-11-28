@@ -10,7 +10,7 @@ from urllib.error import HTTPError, URLError
 
 import pytest
 
-from tools import ci_source_archive as source
+from tools.ci import ci_source_archive as source
 
 pytestmark = pytest.mark.unit
 

@@ -146,7 +146,7 @@ memory. All cases are single-process CPU comparisons with
 ```bash
 python -m pytest tests/benchmark_contract/test_training_comparison.py -q
 python tools/architecture/check_architecture.py
-python tools/check_dependency_policy.py
+python tools/architecture/check_dependency_policy.py
 ```
 
 The focused tests use a known dimer/ground-energy oracle, independent numerical

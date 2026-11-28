@@ -137,7 +137,7 @@ fakes do not replace the real-upstream tests. Run:
 python -m pytest tests/unit/test_openfermion_native_boundary.py tests/integration/test_openfermion_interop.py -q
 python -m pytest tests/unit/test_openfermion_conversion.py -m openfermion -q
 python tools/architecture/check_architecture.py
-python tools/check_dependency_policy.py
+python tools/architecture/check_dependency_policy.py
 ```
 
 The existing optional workflow runs real-upstream checks on Python 3.10 and

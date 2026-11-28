@@ -43,7 +43,7 @@ same recorded SHA still fails. Six malformed-metadata controls retain refusal.
 Run the existing contributor path:
 
 ```sh
-python tools/ci_source_archive.py --help
+python tools/ci/ci_source_archive.py --help
 python -m pytest tests/unit/test_ci_source_archive.py -q
 ```
 

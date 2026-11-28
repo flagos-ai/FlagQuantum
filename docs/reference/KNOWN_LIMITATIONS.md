@@ -2,7 +2,7 @@
 # Known limitations
 
 Do not edit this generated region. Capability boundaries come from
-[`capability-maturity.toml`](../../capability-maturity.toml).
+[`capability-maturity.toml`](../../config/capability-maturity.toml).
 
 | Capability | Current level | Limitation |
 | --- | --- | --- |

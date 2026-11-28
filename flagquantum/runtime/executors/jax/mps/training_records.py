@@ -6,9 +6,6 @@ from collections.abc import Mapping
 from dataclasses import dataclass
 from typing import Any
 
-from ..release_policy import (
-    attach_mps_backward_readiness as _attach_mps_backward_readiness,
-)
 from ..runtime_environment import _jax_array_nbytes
 from .evidence import _build_mps_backward_resource_evidence
 
@@ -214,7 +211,9 @@ class JAXShardedMPSTrainingPlan:
             "full_mps_reconstruction_allowed_for_claimable_backward": False,
             "silent_statevector_fallback_allowed": False,
         }
-        return _attach_mps_backward_readiness(payload)
+        from flagquantum.runtime.audit.mps_readiness import _attach_mps_runtime_summary
+
+        return _attach_mps_runtime_summary(payload)
 
 
 @dataclass(frozen=True)
@@ -371,7 +370,9 @@ class JAXShardedMPSParameterFlowPlan:
             "single_workload_sharding_required": True,
             "rank_local_jax_kernel_allowed_for_capacity_claim": False,
         }
-        return _attach_mps_backward_readiness(payload)
+        from flagquantum.runtime.audit.mps_readiness import _attach_mps_runtime_summary
+
+        return _attach_mps_runtime_summary(payload)
 
 
 @dataclass

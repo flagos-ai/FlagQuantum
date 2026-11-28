@@ -7,9 +7,6 @@ from typing import Any
 
 from flagquantum.simulation.mps.jax import pullbacks as _mps_numerics
 
-from ..release_policy import (
-    attach_mps_backward_readiness as _attach_mps_backward_readiness,
-)
 from ..runtime_environment import _require_jax
 from .evidence import _summarize_minimal_mps_measured_runtime_evidence
 
@@ -442,4 +439,6 @@ def _execute_minimal_mps_sharded_backward(
         "gradient_blockers": blockers,
         "blockers": blockers,
     }
-    return _attach_mps_backward_readiness(payload)
+    from flagquantum.runtime.audit.mps_readiness import _attach_mps_runtime_summary
+
+    return _attach_mps_runtime_summary(payload)

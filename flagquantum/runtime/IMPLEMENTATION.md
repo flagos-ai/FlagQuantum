@@ -83,7 +83,7 @@ For a small local execution change, modify one Runtime owner and run:
 python -m pytest tests/integration/test_cpu_vertical_slice.py \
   tests/team/runtime -q
 python tools/architecture/check_architecture.py
-python tools/check_dependency_policy.py
+python tools/architecture/check_dependency_policy.py
 ```
 
 Keep ordinary changes inside Runtime. If a change also requires Compiler

@@ -248,7 +248,7 @@ python -m pytest -q \
   tests/test_algorithm_examples.py::test_examples_readme_names_every_example_that_does_not_use_the_root_alias
 python -m examples.qec.terminal_measurement_conversion
 python tools/architecture/check_architecture.py
-python tools/check_dependency_policy.py
+python tools/architecture/check_dependency_policy.py
 python tools/docs/check_docs_links.py
 python tools/docs/docs_source_of_truth.py --check
 python tools/release/check_qec_installed_profiles.py --dist-dir dist --report-dir /tmp/qec-installed-reports

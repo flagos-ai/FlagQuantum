@@ -25,6 +25,13 @@ copy of the same facts:
 
 from __future__ import annotations
 
+import sys as _entry_sys
+from pathlib import Path as _EntryPath
+
+if __package__ in (None, ""):
+    _entry_sys.path.insert(0, str(_EntryPath(__file__).resolve().parents[2]))
+
+
 import argparse
 import ast
 import importlib
@@ -34,8 +41,9 @@ from typing import Any
 
 import flagquantum as fq
 from flagquantum.core.ir import IR_VERSION, CircuitIR
+from tools.architecture.source_relocations import source_path
 
-ROOT = Path(__file__).resolve().parents[1]
+ROOT = Path(__file__).resolve().parents[2]
 CONTRACT = ROOT / "contracts" / "multi-level-ir-internal-v1-candidate.json"
 BOUNDARY = ROOT / "flagquantum" / "core" / "ir" / "levels.py"
 BOUNDARY_MODULE = "flagquantum.core.ir.levels"
@@ -279,7 +287,7 @@ def _resolve_authority(name: str) -> str | None:
     """Return an error when one declared authority does not exist here."""
 
     if "/" in name or name.endswith((".json", ".md", ".toml", ".py")):
-        return None if (ROOT / name).exists() else f"{name!r} does not exist"
+        return None if source_path(ROOT, name).exists() else f"{name!r} does not exist"
     parts = name.split(".")
     for cut in range(len(parts), 0, -1):
         try:

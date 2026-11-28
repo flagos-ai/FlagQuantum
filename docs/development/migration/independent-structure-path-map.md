@@ -446,7 +446,7 @@ Each row names the authoritative owner. Partial rows move only the listed defini
 | algorithms | `flagquantum/algorithms/core.py` | `flagquantum/algorithms/many_body/spin.py` | implementation moved; public or #1084-dependent facade justified in inventory |
 | runtime/telemetry-and-trajectories | `flagquantum/runtime/trajectories/result.py` | `flagquantum/runtime/results/trajectories.py` | implementation moved; public or #1084-dependent facade justified in inventory |
 | runtime/telemetry-and-trajectories | `flagquantum/runtime/executors/mps/profiling.py` | `flagquantum/runtime/observability/mps.py` | entry removed; callers updated |
-| simulation/numerics | `flagquantum/runtime/executors/statevector/reverse_adjoint_cx.py` | `flagquantum/simulation/statevector/cx_adjoint.py` | partial: `apply_cpu_compact_cx_adjoint_segment`, `apply_cpu_cx_adjoint_index`, `apply_cpu_cx_adjoint_segment`, `cpu_cx_permutation_images`, `cpu_cx_permutation_index` |
+| simulation/numerics | `flagquantum/runtime/executors/statevector/reverse_adjoint_cx.py` | `flagquantum/simulation/statevector/cx_adjoint.py` | partial: `apply_cpu_compact_cx_adjoint_segment`, `apply_cpu_cx_adjoint_index`, `apply_cpu_cx_adjoint_segment`, `cpu_cx_permutation_index` |
 | simulation/numerics | `flagquantum/runtime/executors/statevector/forward.py` | `flagquantum/simulation/statevector/adjoint.py` | partial: `_is_diagonal_instruction` |
 | simulation/numerics | `flagquantum/runtime/executors/statevector/reverse_adjoint_kernels.py` | `flagquantum/simulation/statevector/adjoint.py` | partial: `_complex_cross`, `_fused_single_process_cpu_reversible_vjp`, `_pair_components`, `_single_process_cpu_pauli_rotation_gradient` |
 | simulation/numerics | `flagquantum/runtime/executors/statevector/reverse_observable.py` | `flagquantum/simulation/statevector/adjoint.py` | partial: `seed_adjoint` |
@@ -583,3 +583,64 @@ Each row names the authoritative owner. Partial rows move only the listed defini
 | runtime-mps-local-numerics | `flagquantum/runtime/executors/jax/mps/backward.py` | `flagquantum/simulation/mps/jax/pullbacks.py` | partial: Actual RY sites, local Z contractions and local derivative computation; Runtime keeps rank exchange/timing |
 | runtime-mps-local-numerics | `flagquantum/runtime/executors/jax/mps/canonicalization.py` | `flagquantum/simulation/mps/jax/pullbacks.py` | partial: Direct RY Z/derivative for actual owner-rank optimizer updates; Runtime keeps SGD and collective |
 | runtime-mps-local-numerics | `flagquantum/runtime/executors/jax/mps/pullbacks.py` | `flagquantum/simulation/mps/jax/pullbacks.py` | partial: Actual local scores that feed received VJP cotangents; evidence-only tensor allocations stay Runtime |
+
+The [Simulation direct-relay retirement](simulation-direct-relay-retirement.md) removes seven redundant internal definitions. Their callers use the existing local, observable, and native permutation owners directly; the surviving tensor-network modules remain authoritative for their other operations.
+
+## Development Compose location
+
+| Group | Previous path | Authoritative path | Scope |
+| --- | --- | --- | --- |
+| development-compose-location | `compose.dev.yaml` | `docker/compose.dev.yaml` | Unchanged YAML; old root file removed, explicit repository project directory preserves all relative-path and project behavior; workflow filters and ownership synchronized. |
+
+## Root policy configuration
+
+| Group | Previous path | Authoritative path | Scope |
+| --- | --- | --- | --- |
+| root-policy-configuration | `capability-maturity.toml` | `config/capability-maturity.toml` | Unchanged data, actual readers updated, root file removed; versioned authority names and explicit custom declarations paths preserved. |
+| root-policy-configuration | `evidence-revision-origins.toml` | `config/evidence-revision-origins.toml` | Unchanged data, actual readers updated, root file removed; versioned authority names and explicit custom declarations paths preserved. |
+
+## CI data location
+
+| Group | Previous path | Authoritative path | Scope |
+| --- | --- | --- | --- |
+| ci-data-location | `ci/pr-gate-main.json` | `tools/ci/pr-gate-main.json` | Unchanged data, actual readers synchronized, root file removed; historical contract and evidence preserved. |
+| ci-data-location | `ci/flagos_cuda_reference.lock.json` | `tools/ci/flagos_cuda_reference.lock.json` | Unchanged data, actual readers synchronized, root file removed; historical contract and evidence preserved. |
+| ci-data-location | `ci/domestic_single_card_attestation.template.json` | `tools/ci/domestic_single_card_attestation.template.json` | Unchanged data, actual readers synchronized, root file removed; historical contract and evidence preserved. |
+
+## Dependency policy location
+
+| Group | Previous path | Authoritative path | Scope |
+| --- | --- | --- | --- |
+| dependency-policy-location | `dependency-policy.toml` | `config/dependency-policy.toml` | Unchanged data, actual defaults/cache/filter updated, root file removed; frozen contracts, diagnostics, historical records and explicit custom paths preserved. |
+
+## Remaining root-tool ownership
+
+| Group | Previous path | Authoritative path | Scope |
+| --- | --- | --- | --- |
+| root-tool-ownership | `tools/ci_source_archive.py` | `tools/ci/ci_source_archive.py` | Actual implementation moved, all operational callers synchronized, old path removed; frozen source identifiers are metadata only. |
+| root-tool-ownership | `tools/check_dependency_policy.py` | `tools/architecture/check_dependency_policy.py` | Actual implementation moved, all operational callers synchronized, old path removed; frozen source identifiers are metadata only. |
+| root-tool-ownership | `tools/check_cirq_interop_contract.py` | `tools/validation/check_cirq_interop_contract.py` | Actual implementation moved, all operational callers synchronized, old path removed; frozen source identifiers are metadata only. |
+| root-tool-ownership | `tools/check_multi_level_ir_contract.py` | `tools/validation/check_multi_level_ir_contract.py` | Actual implementation moved, all operational callers synchronized, old path removed; frozen source identifiers are metadata only. |
+| root-tool-ownership | `tools/verify_distribution_artifacts.py` | `tools/release/verify_distribution_artifacts.py` | Actual implementation moved, all operational callers synchronized, old path removed; frozen source identifiers are metadata only. |
+| root-tool-ownership | `tools/setup_flagquantum_dev_env.sh` | `tools/development/setup_flagquantum_dev_env.sh` | Actual implementation moved, all operational callers synchronized, old path removed; frozen source identifiers are metadata only. |
+
+## Test and reference ownership
+
+| tests | `tools/qualtran_parity/benchmarks/README.md` | `benchmarks/qualtran/README.md` | old file removed; explicit/default selection preserved |
+| tests | `tools/qualtran_parity/benchmarks/compare-dynamic-select-results.jsonl` | `artifacts/benchmarks/qualtran/compare-dynamic-select-results.jsonl` | old file removed; explicit/default selection preserved |
+| tests | `tools/qualtran_parity/benchmarks/compare_dynamic_select.py` | `benchmarks/qualtran/compare_dynamic_select.py` | old file removed; explicit/default selection preserved |
+| tests | `tools/qualtran_parity/benchmarks/same-circuit-results.jsonl` | `artifacts/benchmarks/qualtran/same-circuit-results.jsonl` | old file removed; explicit/default selection preserved |
+| tests | `tools/qualtran_parity/benchmarks/same_circuit_speed.py` | `benchmarks/qualtran/same_circuit_speed.py` | old file removed; explicit/default selection preserved |
+| tests | `tools/qualtran_parity/clifford_t_counts.py` | `tests/reference/qualtran/clifford_t_counts.py` | old file removed; explicit/default selection preserved |
+| tests | `tools/qualtran_parity/test_native_pauli_lcu_walk.py` | `tests/reference/qualtran/test_native_pauli_lcu_walk.py` | old file removed; explicit/default selection preserved |
+| tests | `tools/qualtran_parity/test_pauli_lcu_prepare.py` | `tests/reference/qualtran/test_pauli_lcu_prepare.py` | old file removed; explicit/default selection preserved |
+| tests | `tools/qualtran_parity/test_pauli_lcu_walk_qualtran.py` | `tests/reference/qualtran/test_pauli_lcu_walk_qualtran.py` | old file removed; explicit/default selection preserved |
+| tests | `tools/qualtran_parity/test_select_pauli_lcu_qualtran.py` | `tests/reference/qualtran/test_select_pauli_lcu_qualtran.py` | old file removed; explicit/default selection preserved |
+| tests | `tools/qualtran_parity/test_select_sparse_qualtran.py` | `tests/reference/qualtran/test_select_sparse_qualtran.py` | old file removed; explicit/default selection preserved |
+| tests | `tools/qualtran_parity/test_select_thc.py` | `tests/reference/qualtran/test_select_thc.py` | old file removed; explicit/default selection preserved |
+| tests | `tools/qualtran_parity/test_selected_majorana_qualtran.py` | `tests/reference/qualtran/test_selected_majorana_qualtran.py` | old file removed; explicit/default selection preserved |
+| tests | `tools/qualtran_parity/test_thc_qrom_qualtran.py` | `tests/reference/qualtran/test_thc_qrom_qualtran.py` | old file removed; explicit/default selection preserved |
+| tests | `tools/qualtran_parity/test_thc_rotations.py` | `tests/reference/qualtran/test_thc_rotations.py` | old file removed; explicit/default selection preserved |
+| tests | `conftest.py` | `tests/conftest.py` | old file removed; explicit/default selection preserved |
+| tests | `pytest.ini` | `pyproject.toml` | old file removed; explicit/default selection preserved |
+| tests | `.coveragerc` | `pyproject.toml` | old file removed; explicit/default selection preserved |

@@ -2,7 +2,6 @@
 
 from __future__ import annotations
 
-import configparser
 import json
 import xml.etree.ElementTree as ET
 from pathlib import Path
@@ -20,7 +19,7 @@ pytestmark = pytest.mark.unit
 
 ROOT = Path(__file__).resolve().parents[2]
 POLICY = ROOT / "contracts" / "coverage-policy.toml"
-COVERAGERC = ROOT / ".coveragerc"
+PROJECT_CONFIG = ROOT / "pyproject.toml"
 
 
 def test_global_floor_rejects_coverage_below_the_floor():
@@ -262,8 +261,6 @@ def test_a_measured_line_cannot_be_counted_twice(tmp_path):
 
 
 def test_raw_coverage_data_is_portable_across_shard_runners() -> None:
-    config = configparser.ConfigParser()
-    config.read(COVERAGERC, encoding="utf-8")
-
-    assert config.get("run", "source") == "flagquantum"
-    assert config.getboolean("run", "relative_files") is True
+    config = load_toml(PROJECT_CONFIG)["tool"]["coverage"]["run"]
+    assert config["source"] == ["flagquantum"]
+    assert config["relative_files"] is True

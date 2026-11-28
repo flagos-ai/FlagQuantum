@@ -365,7 +365,9 @@ def test_the_entry_names_this_route_in_its_limitations() -> None:
     except ModuleNotFoundError:  # pragma: no cover - the 3.10 interpreter
         import tomli as tomllib
 
-    maturity = tomllib.loads((ROOT / "capability-maturity.toml").read_text("utf-8"))
+    maturity = tomllib.loads(
+        (ROOT / "config" / "capability-maturity.toml").read_text("utf-8")
+    )
     limitations = maturity["capabilities"]["density_matrix_execution"]["limitations"]
     assert "mid-circuit measurement" in limitations
     # The old absolute claim is what this change falsified, so it stays out.

@@ -171,5 +171,5 @@ an isolated copy so an adapter cannot mutate process-wide contract state.
 ```bash
 python -m pytest tests/team/services tests/test_service_preflight.py -q
 python tools/architecture/check_architecture.py
-python tools/check_dependency_policy.py
+python tools/architecture/check_dependency_policy.py
 ```
