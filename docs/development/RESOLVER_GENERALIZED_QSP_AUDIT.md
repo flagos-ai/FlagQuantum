@@ -11,7 +11,7 @@ no numerical phase recursion or external object enters Compiler. The factory
 consumes the surviving U/P/Q/negative_power/precision fields, preserving the
 original ascending coefficient order and precision/(len(P)+1) allocation.
 
-The shared phase component takes complete native ordinary U and exact inverse
+The shared phase component takes explicitly owned native ordinary U and exact inverse
 Programs, the actual source-selected positive controlled inverse, the existing
 negative forward predicate Program, and ordered SU2 Programs. All U target
 ports are caller-owned THRU registers, with their original names, dtypes and
@@ -131,3 +131,27 @@ reflection/codecs, unspecified child owners and broader original SDK failures.
 Q-0654/Q-0655 and Q-0866/Q-0876 are not closed by this constructor delivery.
 Pending 118/119/124/126/127 are unchanged. There is no CI wait, scientific
 installation, ReadTheDocs, G3 transition or PR merge.
+
+## Logical dependency closure, 2026-11-28
+
+The component now admits typed source leaf declarations without fabricating a
+body. Empty modules and physical-context modules remain invalid; required
+through-port, signal, inverse and control signature checks remain in place.
+Physical binding still rejects reachable missing bodies. Unused declarations do
+not prevent binding a genuinely complete reachable branch: the positive inverse
+branch is exercised against the full original complex operator, while a branch
+that reaches the missing bare inverse is refused.
+
+`test_gqsp_logical_source_closure.py` covers actual source THCRotations U at
+Laurent powers 0/1/2/5, available control-wrapper calls and exact SU2 definitions.
+The separately declared QEC models are, in category order And/Clifford/rotation/
+measurement: 104/160/9/104, 106/161/9/106, 108/162/9/108, and 108/162/9/108.
+The last row additionally has 81 Toffoli. All source/native logical peaks are14.
+These are models, not measured primitive inventories. Existing 18 executable
+primitive/model rows remain authoritative. Seeded three-target matrix cases
+extend the same executable constructor path without changing its atom synthesis.
+
+The complete-file review in GENERALIZED_QSP_FILE_AUDIT.md supersedes the earlier
+Q-0654/Q-0655 open disposition under the approved faithful-source rule. Whole
+serializer parents Q-0866/Q-0876 remain open. Source defects and unspecified
+execution owners are retained, not silently repaired or priced as zero gates.

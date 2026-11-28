@@ -77,3 +77,39 @@ children, controls, operands, feedback and full amplitudes use the accepted
 provider evidence. Physical synthesis prices remain caller-owned. The symbolic
 factory precision quirk is retained and explicitly exposed. These dispositions
 preserve the original acceptance requirements.
+
+## Complete migration acceptance review, 2026-11-28
+
+This review supersedes the earlier open-parent disposition under the explicitly
+approved faithful-migration closure rule. Q-0654 and Q-0655 are accepted once the
+batch receipt below is published. Issue #860's three original skips, degenerate
+root failures and original serialization xfails remain source defects, with
+the original inputs and receipts retained; they are not correctness certificates.
+
+The remaining native implementation gap was logical composition above a genuinely
+undecomposable U. The unchanged source successfully builds
+`GeneralizedQSP(THCRotations(2,4,8), P=(0,1), Q=(0,0))` with three calls. The
+published native baseline f2d387e79 refused it before composition. The shared
+component now retains typed declarations while physical binding still refuses
+missing bodies. Available negative-control wrappers and SU2 children are fully
+preserved, not replaced by opaque higher-level placeholders. Four Laurent powers
+0/1/2/5 compare the actual source root and all available descendants, every
+operand and return, exact source SU2 parameters, source-free reconstruction,
+seven-category models and logical peak 14. No whole physical inventory or
+numerical cleanup is claimed for the opaque THC unitary.
+
+The executable path additionally covers a seeded three-target matrix U at
+powers 0/1/5, using the existing arbitrary-width matrix atom owner. Complete
+complex operators, coherent spectators, reversed operands, append/JSON and clean
+private work match the unchanged source. This does not assert a MatrixGate QEC
+synthesis model. Existing scalar, packed/shaped, entangling and measured U
+execution evidence remains separate and is reused. A supplied exact inverse or
+control role is never inferred from a matching signature.
+
+The frozen source/test blobs above and real Kickmix Simulator are checked in
+`test_gqsp_logical_source_closure.py`. The original complete non-notebook source
+receipt remains 135 passed, three source skips and three source xfails, including
+all original slow numerical cases. The final G2 receipt records concentrated
+regressions in both SDK profiles, strict checks and independent primitive/model
+accounts. Q-0540's actual Hubbard composition and generic controlled-Hamiltonian
+ownership remain a separate open parent; no closure is inferred for it.

@@ -57,15 +57,18 @@ def generalized_qsp_component_program(
     *,
     negative_power: int = 0,
 ) -> ProgramRecord:
-    """Retain source calls, exact child cleanup and scalar-carrier ownership."""
+    """Retain source calls, explicit inverse roles and scalar-carrier ownership.
+
+    A source leaf may be a typed declaration. Logical composition preserves
+    that call; physical binding still requires its body. Supplied inverse and
+    control roles are the owner's responsibility, not inferred from signatures.
+    """
     modules = (unitary, inverse, positive_inverse, negative_forward, *rotations)
     if any(
-        module.physical_context is not None
-        or not module.functions
-        or any(not function.blocks for function in module.functions)
+        module.physical_context is not None or not module.functions
         for module in modules
     ):
-        raise ValueError("GQSP requires complete logical native child Programs")
+        raise ValueError("GQSP requires nonempty logical native child Programs")
     ports = unitary.functions[0].registers
     if (
         ports is None

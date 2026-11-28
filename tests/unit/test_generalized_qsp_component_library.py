@@ -377,7 +377,7 @@ def test_all_original_factories_keep_typed_calls_exact_phases_and_full_complex_e
     _check(source, program, monkeypatch)
 
 
-@pytest.mark.parametrize("kind", ("matrix1", "matrix2", "zpow", "cnot"))
+@pytest.mark.parametrize("kind", ("matrix1", "matrix2", "matrix3", "zpow", "cnot"))
 @pytest.mark.parametrize("power", (0, 1, 5))
 def test_matrix_and_actual_measured_z_power_children_keep_all_histories_and_private_work(
     kind: str, power: int, locked_source: Any, monkeypatch: pytest.MonkeyPatch
@@ -569,8 +569,29 @@ def test_invalid_or_missing_phase_and_exact_child_ownership_fails_explicitly(
             ).values()
         )
     )
-    with pytest.raises(ValueError, match="complete logical"):
-        incomplete("invalid", None, arguments)
+    logical = incomplete("main", None, arguments)
+    assert isinstance(logical, ProgramRecord)
+    assert verify_program_record(logical) == ()
+    # This branch invokes only the supplied complete controlled U, not bare U
+    # or its inverse. Unused declarations must not block physical execution.
+    from tests.unit.test_multiplexed_source_binding import logical_operator
+
+    bound = bind_register_program(logical, ((0,), (1,)), clean=(2, 3))
+    original = import_module("qualtran.bloqs.qsp.generalized_qsp").GeneralizedQSP(
+        import_module("qualtran.bloqs.basic_gates.x_basis").XGate(),
+        P=arguments["P"],
+        Q=arguments["Q"],
+    )
+    torch.testing.assert_close(
+        logical_operator(bound.circuit, 2),
+        torch.as_tensor(cirq.unitary(original), dtype=torch.complex128),
+        atol=8e-11,
+        rtol=0,
+    )
+    needs_inverse = incomplete("main", None, {**arguments, "negative_power": 2})
+    assert isinstance(needs_inverse, ProgramRecord)
+    with pytest.raises(ValueError, match="requires component bodies"):
+        bind_register_program(needs_inverse, ((0,), (1,)), clean=(2, 3))
 
 
 @pytest.mark.parametrize("power", (0, 1, 5))
