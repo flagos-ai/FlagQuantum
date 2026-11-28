@@ -19,7 +19,7 @@ newest release. The upstream pin matches
 [`PROVENANCE.toml`](../../third_party/openfermion/PROVENANCE.toml).
 The [migration record](OPENFERMION_NATIVE_MIGRATION.md),
 [graph encoding record](FERMION_HUBBARD_GRAPH_ENCODINGS.md) and authoritative
-[`capability-maturity.toml`](../../capability-maturity.toml) retain their roles.
+[`capability-maturity.toml`](../../config/capability-maturity.toml) retain their roles.
 This audit proposes work; it changes no contract, capability or acceptance level.
 The independent [graph closeout PR #1177](https://github.com/flagos-ai/FlagQuantum/pull/1177)
 updates the matrix and recorded baseline. Both changes start from the accepted

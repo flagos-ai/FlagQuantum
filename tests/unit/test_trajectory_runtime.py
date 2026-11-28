@@ -8,7 +8,6 @@ import flagquantum.noise as fqn
 import flagquantum.runtime as fqr
 from flagquantum.compiler import lower_noise_model
 from flagquantum.core.operators.channels import bit_flip_channel
-from flagquantum.runtime.executors.mps.noisy import merge_noisy_mps_results
 from flagquantum.runtime.trajectories import (
     MPSMonteCarloResult,
     TensorWelford,
@@ -20,6 +19,7 @@ from flagquantum.runtime.trajectories import (
     owned_trajectory_ids,
     save_trajectory_checkpoint,
 )
+from flagquantum.runtime.trajectories.mps import merge_noisy_mps_results
 
 pytestmark = pytest.mark.unit
 

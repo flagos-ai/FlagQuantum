@@ -545,9 +545,9 @@ class DistributedStatevectorPlan:
         return trace_distributed_statevector_plan(self)
 
     def validate(self) -> StatevectorTraceReport:
-        from .planning import validate_distributed_statevector_plan
+        from .planning import trace_distributed_statevector_plan
 
-        return validate_distributed_statevector_plan(self)
+        return trace_distributed_statevector_plan(self)
 
     def execute_dry_run(self) -> StatevectorExecutorReport:
         from .local_execution import execute_distributed_statevector_dry_run

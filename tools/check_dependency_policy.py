@@ -15,7 +15,7 @@ except ModuleNotFoundError:  # pragma: no cover - Python 3.10 compatibility
     import tomli as tomllib
 
 ROOT = Path(__file__).resolve().parents[1]
-POLICY = ROOT / "dependency-policy.toml"
+POLICY = ROOT / "config" / "dependency-policy.toml"
 PYPROJECT = ROOT / "pyproject.toml"
 EXPECTED_SCHEMA = "flagquantum_dependency_policy_v2"
 EXPECTED_INTEROP_EXTRAS = ("braket", "cirq", "pennylane", "quafu", "qiskit")

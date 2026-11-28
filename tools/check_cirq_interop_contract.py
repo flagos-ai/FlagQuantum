@@ -20,7 +20,7 @@ from flagquantum.ecosystem.cirq.conversion import _CIRQ_SYMBOL_TO_FLAGQUANTUM
 
 ROOT = Path(__file__).resolve().parents[1]
 CONTRACT = ROOT / "contracts" / "cirq-interop-contract.toml"
-POLICY = ROOT / "dependency-policy.toml"
+POLICY = ROOT / "config" / "dependency-policy.toml"
 CONVERSION = ROOT / "flagquantum/ecosystem/cirq/conversion.py"
 EXPECTED_VERSIONS = ["1.6.1", "1.7.0"]
 EXPECTED_SEMANTICS = {

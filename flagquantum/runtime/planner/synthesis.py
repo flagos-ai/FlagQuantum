@@ -28,7 +28,7 @@ from flagquantum.runtime.execution_plan_contract import (
     plan_to_dict,
 )
 from flagquantum.runtime.results import ExecutionResult
-from flagquantum.runtime.results.mps import native_mps
+from flagquantum.runtime.results.adapters import native_mps
 
 
 class ExecutionContractError(ValueError):

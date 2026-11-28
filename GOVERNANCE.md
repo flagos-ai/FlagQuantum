@@ -35,7 +35,7 @@ as a claim. `docs/development/INTEGRATION_WORKFLOW.md` records the measurements.
 | Ordinary change | A domain's internal implementation, its tests, and its documentation. | The required checks on the pull request, merged by the maintainer |
 | Protected surface | `AGENTS.md`, `config/architecture.toml`, `config/team-ownership.toml`, `contracts/**`, `.github/**`, `tools/**`, `pyproject.toml`, `flagquantum/core/ir/**` | Integration owner. A separate integration change, before the team implementation proceeds |
 | Stable Core API | The 34 exports in `docs/public_api_v1.json` | An API change proposal plus recorded authorization, per `AGENTS.md` |
-| Capability level | A level in `capability-maturity.toml` | Evidence that satisfies `tools/validation/check_capability_maturity.py`, approved by Integration |
+| Capability level | A level in `config/capability-maturity.toml` | Evidence that satisfies `tools/validation/check_capability_maturity.py`, approved by Integration |
 | Release | `flagquantum/version.py`, tags, release notes | Maintainer |
 
 The distinction that matters is the second row. `tools/architecture/check_team_scope.py` refuses a
@@ -163,7 +163,7 @@ hand-maintaining it would not be.
 ## Security
 
 Vulnerability reporting, supported versions, and scope are in [SECURITY.md](SECURITY.md).
-Security fixes are merged on the expedited schedule recorded in `dependency-policy.toml`
+Security fixes are merged on the expedited schedule recorded in `config/dependency-policy.toml`
 rather than the monthly dependency cadence.
 
 ## Amending this document

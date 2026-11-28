@@ -27,7 +27,7 @@ from flagquantum.ecosystem.pennylane.conversion import _PENNYLANE_TO_FLAGQUANTUM
 
 ROOT = Path(__file__).resolve().parents[2]
 CONTRACT = ROOT / "contracts" / "pennylane-interop-contract.toml"
-POLICY = ROOT / "dependency-policy.toml"
+POLICY = ROOT / "config" / "dependency-policy.toml"
 CONVERSION = ROOT / "flagquantum/ecosystem/pennylane/conversion.py"
 
 

@@ -1,6 +1,6 @@
 # Capability maturity
 
-`capability-maturity.toml` is the authoritative, machine-validated capability
+`config/capability-maturity.toml` is the authoritative, machine-validated capability
 matrix. Marketing text, benchmark summaries, and release notes must not assign
 a stronger status than this matrix.
 
@@ -51,7 +51,7 @@ depends on. A revision is obtainable when this repository holds the commit and a
 of this repository reaches it, because a clone and a plain fetch obtain exactly the
 commits the refs they fetch reach; of the sixty-three distinct revisions recorded
 under those roots, one is obtainable. Every other revision must be declared in
-`evidence-revision-origins.toml`, which names the origin a reader can obtain it
+`config/evidence-revision-origins.toml`, which names the origin a reader can obtain it
 from. Asking only whether the object was in the database was not enough:
 forty revisions are unreachable from every ref, so a clone obtains none of
 them, and thirty-one of the forty are absent from this checkout's object database as
@@ -98,7 +98,7 @@ the method here reads a later count than the one written down.
 
 Adding `docs/development/evidence/` accounted for the largest group of those pairs
 rather than only reporting it. All fourteen unreferenced revisions that root's
-artifacts record are declared in `evidence-revision-origins.toml` -- five written out
+artifacts record are declared in `config/evidence-revision-origins.toml` -- five written out
 in full by the four Jiuding records that did so when the root was added, and nine that
 the field-name rule reached afterwards -- so the change states the
 unreferenced-object class fourteen entries larger than the walk alone would have.
@@ -118,7 +118,7 @@ then served twenty of twenty further attempts. What supports the class is the
 successes, so the method counts only attempts in which the ref advertisement succeeds
 immediately before and after the fetch. All twenty-five reached three counted fetches
 that way; under the earlier method four of them had been recorded below three, which
-reads as objects the server may already have dropped. `evidence-revision-origins.toml`
+reads as objects the server may already have dropped. `config/evidence-revision-origins.toml`
 states the method and its result. No check re-runs it, because the checks in this
 repository do not use the network, so this is the one claim behind the table that
 rests on a stated method and a recorded count rather than on a green check.
@@ -152,7 +152,7 @@ comparison record under `benchmarks/results/` -- is no longer outside:
 `benchmarks/results/comparison/FLAGQUANTUM_QISKIT_AER_CPU_ARM64_20260923.md` and
 `benchmarks/results/comparison/CUDAQ_BACKEND_COMPARE_A800_20260930.md` are asked about
 the three revisions they name, `aaa3a70c698dc629c37baa2719607444aa3b6381` among them,
-and the three are declared in `evidence-revision-origins.toml` against the files that
+and the three are declared in `config/evidence-revision-origins.toml` against the files that
 name them. Which file type a revision is written in no longer decides whether a reader
 is told what it is.
 
@@ -243,7 +243,7 @@ next person who widens it. The field-name rule is what makes that boundary
 expressible: a root may now be added once its revision-named fields are accounted
 for, and this root's are not this repository's to account for. `ci/` is left out for a
 different reason and does not wait on that work:
-`ci/flagos_cuda_reference.lock.json` records
+`tools/ci/flagos_cuda_reference.lock.json` records
 `2e00b393cf80088706b460a187aef185d3a283f4`, an external dependency already declared
 for the artifacts under `artifacts/`, but two
 validators read that file as an input, and a lock file pins an installation rather

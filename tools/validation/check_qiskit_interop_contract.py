@@ -27,7 +27,7 @@ from flagquantum.core.operators.schema import OPERATOR_SCHEMAS
 
 ROOT = Path(__file__).resolve().parents[2]
 CONTRACT = ROOT / "contracts" / "qiskit-interop-contract.toml"
-DEPENDENCY_POLICY = ROOT / "dependency-policy.toml"
+DEPENDENCY_POLICY = ROOT / "config" / "dependency-policy.toml"
 CONVERSION = ROOT / "flagquantum" / "ecosystem" / "qiskit" / "conversion.py"
 EXPECTED_SCHEMA = "flagquantum_qiskit_interop_contract_v1"
 EXPECTED_SEMANTICS = {

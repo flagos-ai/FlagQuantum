@@ -32,10 +32,10 @@ from flagquantum.simulation.tensor_network import (
 from flagquantum.simulation.tensor_network.contraction import (
     contract_nodes_with_byte_budget,
 )
-from flagquantum.simulation.tensor_network.entrypoints import (
+from flagquantum.simulation.tensor_network.local import build_local_tensor_network
+from flagquantum.simulation.tensor_network.observables import (
     tensor_network_expectation_ps,
 )
-from flagquantum.simulation.tensor_network.local import build_local_tensor_network
 
 pytestmark = pytest.mark.unit
 

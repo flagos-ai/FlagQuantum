@@ -14,7 +14,7 @@ ROOT = Path(__file__).resolve().parents[2]
 def _inputs() -> tuple[dict, dict]:
     return (
         load_toml(ROOT / "contracts" / "qiskit-interop-contract.toml"),
-        load_toml(ROOT / "dependency-policy.toml"),
+        load_toml(ROOT / "config" / "dependency-policy.toml"),
     )
 
 

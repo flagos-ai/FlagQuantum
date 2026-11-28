@@ -10,6 +10,7 @@ import torch
 if TYPE_CHECKING:
     from flagquantum.core.ir import CircuitIR
     from flagquantum.runtime.training.module import Module
+    from flagquantum.simulation.mps.state import MPSState
 
     from . import ExecutionResult
 
@@ -113,3 +114,10 @@ __all__ = ("LiveRuntimeSummary",)
 
 
 # Preserve historical import identities for pickles and public introspection.
+
+
+def native_mps(result: ExecutionResult) -> MPSState | None:
+    from flagquantum.simulation.mps.state import MPSState
+
+    state = result.native()
+    return state if isinstance(state, MPSState) else None

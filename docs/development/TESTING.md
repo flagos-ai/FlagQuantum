@@ -199,14 +199,14 @@ CUDA guard without the `gpu` marker, so the CPU lanes selected and skipped them
 while the accelerator lane never selected them at all. The fourth closes the
 hole the second leaves: a probe for a package the policy declares nowhere is not
 "no lane installs this" but "no lane can be wired to install it", so the answer
-has to be recorded in `dependency-policy.toml` rather than implied by silence.
+has to be recorded in `config/dependency-policy.toml` rather than implied by silence.
 The fifth applies the same reasoning to the variable that gates an opt-in device
 run: no lane sets one, so the table under "Opt-In Device Runs" is where it has to
 be recorded.
 Add an extra to an install line, or a marker to a selector; do not let the skip
 absorb the difference.
 
-What counts as an optional integration comes from `dependency-policy.toml`, so
+What counts as an optional integration comes from `config/dependency-policy.toml`, so
 the check cannot drift from the policy. A probe for a package the policy declares
 nowhere is not outside it — that is the case the fourth invariant reports,
 because no lane can be wired to install what nothing declares.
@@ -228,7 +228,7 @@ push leaves the machine, the push gate runs:
 - the strict type check of the whole package, and of the CI tooling;
 - capability maturity, required-check policy, and lazy-import validation;
 - evidence revision provenance: the revisions the walked evidence artifacts
-  record, against the declaration in `evidence-revision-origins.toml`;
+  record, against the declaration in `config/evidence-revision-origins.toml`;
 - multi-team ownership: the policy, and the classification of every path the
   branch changes relative to `origin/main`;
 - `pr-default`, `pr-runtime`, and `pr-distributed`.
@@ -554,7 +554,7 @@ pushes run the installed-wheel acceptance job instead of another full matrix;
 manual full validation remains available. See [the PR and main policy](CI_MERGE_QUEUE.md).
 
 GPU and multi-node tiers must run on explicitly provisioned environments.
-The checked-in `ci.yml` defines twenty-seven jobs:
+The checked-in `ci.yml` defines thirty-three jobs:
 
 - `pre-commit`: source-file hygiene hooks, using the same action as the manual
   diagnostics workflow;
@@ -564,11 +564,14 @@ The checked-in `ci.yml` defines twenty-seven jobs:
   commit and the presence of every required tree object, reuse their existing Git objects, and
   download the complete pack when the cache is incomplete;
 
-- `quality`: Ruff and Black over `flagquantum/`, `tests/`, and `tools/`, the
-  strict type check of the whole package and of the CI tooling, plus
-  dependency-policy synchronization, architecture-boundary, generated-document,
-  capability-maturity, evidence-revision-origin, Braket/Cirq/CUDA-Q/Qiskit/
-  PennyLane interoperability contracts, and repository-hygiene checks;
+- `quality`: strict type checks of the whole package and CI tooling,
+  dependency-policy synchronization, architecture boundaries, generated documents,
+  capability maturity, Braket/Cirq/CUDA-Q/Qiskit/PennyLane interoperability
+  contracts, and repository hygiene;
+- `quality-style`: repository language, Ruff, Black, and legacy root API checks;
+- `quality-provenance`: the existing performance-evidence provenance tests;
+- `quality-evidence-origins`: recorded evidence revision origin validation.
+  All four quality jobs retain full Git history for their existing checks;
 - `native-fermion`: independent Ubuntu source installations on Python 3.10 and
   3.12, testing the native fermion workflow without optional science packages
   before installing PySCF and requiring three real RHF cases to pass;
@@ -621,17 +624,24 @@ The checked-in `ci.yml` defines twenty-seven jobs:
 - `pennylane-optional`: the IR-only contract, complex128 QuantumScript
   semantics, and explicit local `lightning.qubit` statevector/shot execution
   against the minimum 0.44.1 and latest 0.45.1 supported lanes;
-- `dependency-bounds`: the oldest supported Python and Torch line beside the
-  newest, so a declared lower bound is exercised rather than assumed;
-- `package`: wheel/sdist construction, forbidden-content inspection, and a
-  commit/environment/checksum manifest;
+- `dependency-bounds`: all seven Python/Torch compatibility cells on fresh
+  isolated environments in the existing BW pool, with the same Torch bounds and
+  complete core dependency resolution; installed SDK dependencies are not inherited;
+- `package`: reproducible wheel/sdist construction, forbidden-content inspection,
+  a commit/environment/checksum manifest, and the distribution artifact;
+- `package-manylinux`: independent construction, runtime tests, and content
+  verification of the publishable manylinux wheel on the existing toolchain;
+- `package-installed`: older-Torch, bounded cold-wheel, and sdist acceptance
+  using the producer's exact distribution artifact with archive digest checking;
+- `package-qec-installed`: all existing real wheel/sdist QEC profiles using that
+  same producer artifact, with evidence retained on failure;
 - `release-wheel-platform`: the exact release-wheel route on macOS arm64 and
   Windows amd64, including native compilation, runtime smoke tests, repaired
   wheel inspection, and uploadable-artifact verification;
 - `distributed-cpu-shard`: partitions of the `pr-distributed` tier — CPU
   distributed semantics and release-contract checks — run separately from the core matrix;
 - `coverage-plan`: one complete collection of the maintained coverage selection,
-  partitioned in bounded file batches into at most 192 nonempty trusted PR/manual shards or 16 hosted shards;
+  partitioned in bounded file batches into at most 256 nonempty shards, with hosted fork jobs retaining their existing admission buckets;
 - `coverage-shard`: execute the explicit node list for each planned partition
   under the unchanged marker expression on separate runners;
 - `coverage`: the required aggregation gate, which combines all raw coverage
@@ -664,15 +674,16 @@ CPU and coverage lanes remain responsible for repository-wide collection.
 
 The pull-request `pre-commit` job runs only source-hygiene hooks. Ruff,
 Black, mypy, architecture, generated-contract, and repository-wide policy
-checks are owned by the `quality` job and are not repeated in a second full
-project environment. The local pre-commit configuration remains broader so a
+checks are owned by `quality`, `quality-style`, `quality-provenance`, and
+`quality-evidence-origins`; every original check remains required by
+`ci-complete`. Each job prepares its own environment. The local pre-commit configuration remains broader so a
 developer still gets those checks before pushing.
 
 Trusted core and runtime suites use the qualified A800 image caches. The
 locked core images still prove the absence of NumPy and optional frameworks.
 Quality and online SDK downloads use hosted runners. Coverage and distributed
 CPU work use the locked coverage image on the generic CPU pool.
-Trusted manual CI runs use the same qualified CPU pool and 192-partition coverage
+Trusted manual CI runs use the same qualified CPU pool and 256-partition coverage
 plan as same-repository pull requests. Fork pull requests retain hosted runners
 and 16 partitions. Manual runs continue to include slow tests; the runner choice
 does not change the collected selection, time limits, or coverage thresholds.
@@ -1082,8 +1093,10 @@ never become a skipped required check when a run is cancelled.
 Network-dependent SDK jobs share hosted groups 1, 2, 4, and 7. Fork PR runtime,
 Python 3.12 unit tests, and Python compatibility checks use hosted groups 3, 5,
 and 6 respectively. Trusted core/runtime jobs use independent self-hosted groups.
-Quality keeps group 0; Linux packaging uses group 6 and the Windows/macOS
-builds use groups 3/5. Long builds cannot occupy the quality group. The
+The core `quality` job keeps group 0; its style, provenance, and evidence-origin
+jobs use groups 1, 2, and 3. Linux package jobs use groups 4/5, while Windows/macOS
+builds use groups 3/5. Development containers retain groups 6/7. Those builds
+cannot occupy the core quality group. The
 repository-wide hosted ceiling remains eight.
 
 CI and GPU artifact uploads retry a transient service failure at most twice,
@@ -1096,8 +1109,9 @@ from replacing another job artifact.
 ### Filling the existing CPU allocation
 
 The `coverage-plan` job collects the original marker selection once, then assigns
-file batches of at most 16 tests by estimated duration to at most 192 nonempty shards for trusted
-PRs and trusted manual runs (16 on hosted fork runs). Each selected node appears exactly once in the
+file batches of at most 16 tests by estimated duration to at most 256 nonempty shards.
+Trusted PRs and manual runs use the admitted self-hosted pools; fork jobs use the
+existing bounded hosted buckets. Each selected node appears exactly once in the
 plan. Coverage data stays under the runner temporary directory, outside the
 source tree copied by mutation tests. Shards verify the source SHA and content digest before running their explicit
 node list. Keeping bounded file batches together avoids full-repository collection on every

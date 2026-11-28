@@ -26,7 +26,7 @@ ROOT = Path(__file__).resolve().parents[2]
 
 def forbidden_imports() -> tuple[str, ...]:
     policy = tomllib.loads(
-        (ROOT / "dependency-policy.toml").read_text(encoding="utf-8")
+        (ROOT / "config" / "dependency-policy.toml").read_text(encoding="utf-8")
     )
     return tuple(policy["import_policy"]["core_forbidden_imports"])
 

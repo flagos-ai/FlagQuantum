@@ -91,7 +91,9 @@ def test_strict_runtime_identity_matches_v2_lock(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     lock = json.loads(
-        (ROOT / "ci" / "flagos_cuda_reference.lock.json").read_text(encoding="utf-8")
+        (ROOT / "tools" / "ci" / "flagos_cuda_reference.lock.json").read_text(
+            encoding="utf-8"
+        )
     )
     monkeypatch.setattr(
         RUNTIME_VALIDATOR.platform, "python_version", lambda: lock["python"]
