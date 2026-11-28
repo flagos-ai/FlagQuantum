@@ -30,8 +30,14 @@ from ..algorithms.primitives.elliptic_curve_addition_products import (
 from ..algorithms.primitives.elliptic_curve_addition_slope import (
     addition_slope_signature,
 )
+from ..algorithms.primitives.elliptic_curve_fixed_point import (
+    fixed_point_addition_signature,
+)
 from ..compiler.formats.legacy_basis_vector_factories import basis_vector_factories
-from ..compiler.formats.legacy_component_arguments import ControlSpecification
+from ..compiler.formats.legacy_component_arguments import (
+    AffinePointArgument,
+    ControlSpecification,
+)
 from ..compiler.formats.legacy_component_resolution import (
     ComponentFactory,
     ResolvedArgument,
@@ -80,6 +86,7 @@ from ..core.ir.program.registers import Register
 from ..core.ir.program.signatures import Signature
 from ..core.value_math import SymbolicInt
 from ..errors import SerializationError
+from ._elliptic_curve_window_control_library import controlled_curve_window_addition
 
 _KINDS = (
     "_ECAddStepOne",
@@ -294,6 +301,26 @@ def elliptic_curve_control_factories() -> dict[str, ComponentFactory]:
         registers: tuple[Register, ...] | None,
         arguments: Mapping[str, ResolvedArgument],
     ) -> FunctionRecord:
+        if kind == "ECWindowAddR":
+            if (
+                not {"n", "R", "add_window_size"} <= arguments.keys()
+                or arguments.keys() - {"n", "R", "add_window_size", "mul_window_size"}
+                or not isinstance(arguments["R"], AffinePointArgument)
+            ):
+                raise SerializationError(
+                    "Invalid curve window control constructor fields"
+                )
+            width = _integer(arguments, "n")
+            window = _integer(arguments, "add_window_size")
+            _integer({"window": arguments.get("mul_window_size", 1)}, "window")
+            signature = fixed_point_addition_signature(width, window)
+            if registers is not None and registers != tuple(signature):
+                raise SerializationError(
+                    "Invalid curve window control reference signature"
+                )
+            result = FunctionRecord(name, (), registers=tuple(signature))
+            recipes[result] = kind, dict(arguments)
+            return result
         allowed = {"n", "mod"} | (
             {"window_size"} if kind not in {"_ECAddStepOne", "_ECAddStepSix"} else set()
         )
@@ -316,6 +343,26 @@ def elliptic_curve_control_factories() -> dict[str, ComponentFactory]:
         if child not in recipes:
             raise SerializationError("Missing curve control constructor context")
         kind, arguments = recipes[child]
+        if kind == "ECWindowAddR":
+            width = _integer(arguments, "n")
+            window = _integer(arguments, "add_window_size")
+            if type(window) is not int:
+                raise SerializationError(
+                    "Symbolic curve address window cannot decompose"
+                )
+            point = arguments["R"]
+            assert isinstance(point, AffinePointArgument)
+            mul_window = _integer(
+                {"window": arguments.get("mul_window_size", 1)}, "window"
+            )
+            program = controlled_curve_window_addition(
+                width,
+                point,
+                window,
+                addition=controlled_curve_addition(width, int(point.mod), mul_window),
+            )
+            program = _rename_program(program, child.name + "_positive")
+            return program, _stored_control_adder(program.functions[0])
         width, modulus = (_integer(arguments, key) for key in ("n", "mod"))
         window = _integer(
             {"window_size": arguments.get("window_size", 1)}, "window_size"
@@ -349,10 +396,15 @@ def elliptic_curve_control_factories() -> dict[str, ComponentFactory]:
         return _rename_program(program, name)
 
     return {
+        "qualtran.bloqs.cryptography.ecc.ec_add_r.ECWindowAddR": partial(
+            reference, "ECWindowAddR"
+        ),
         **{
             "qualtran.bloqs.cryptography.ecc.ec_add." + kind: partial(reference, kind)
             for kind in (*_KINDS, "ECAdd")
         },
         "qualtran._infra.controlled.Controlled": controlled,
-        **controlled_via_and_factories(control_system=positive),
+        **controlled_via_and_factories(
+            control_system=positive, allow_symbolic_targets=True
+        ),
     }

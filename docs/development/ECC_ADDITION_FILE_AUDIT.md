@@ -530,3 +530,28 @@ And/And-adjoint. The independent original qubit-model estimates are 37 for
 coordinates, 29 for products and 44 for the root; these are model estimates,
 not measured physical peaks or a complete gate inventory. Windowed controlled
 addition and symbolic-modulus composition remain open source-success bindings.
+
+### Controlled windowed parent and symbolic target predicates
+
+The available ECWindowAddR control retains all five calls: address Join,
+controlled lookup, controlled ECAdd, controlled matching erasure and address
+Split. The ECAdd child must match the complete accepted six-call owner before
+its arithmetic/refusal certificates are reused. Outer scalar control and inner
+address/flag ports are distinct. Finite point-table construction uses the existing
+source-faithful owner, including modular-inverse failures and retained bank
+shapes. Symbolic n with finite address width uses the original zero-block shape.
+
+Positive and negative scalar outer controls preserve this available parent for
+symbolic data words. The compiler predicate catalogue allows an explicit logical
+owner opt-in for symbolic targets, with concrete controls; default catalogues
+still retain unresolved declarations. This does not admit physical symbolic
+binding. Source address-window symbols themselves fail during array allocation.
+Original depth-one serialization of symbolic table object arrays fails with
+allow_pickle=False; depth-zero transport remains available. Symbol assumptions
+lost by the original codec are not silently claimed to round-trip.
+
+Controlled QROAM lookup and erasure genuinely reject non-THRU ports. Full quantum
+primitive inventories, amplitudes and work-zero remain unavailable at this
+source frontier; no synthetic physical certificate replaces those refusals.
+Fixed-n symbolic-modulus arithmetic composition and remaining constructor
+contexts still prevent full ec_add.py/ec_add_r.py parent acceptance.

@@ -347,3 +347,14 @@ Its control-only constructor catalogue uses ordinary child declarations as
 metadata references; plain forward execution retains the existing addition
 catalogue. Reachable controlled bodies never replace an available source layer
 with an opaque parent. The original ComponentLibrary retains constructor fields.
+
+`_elliptic_curve_window_control_library.py` binds the five-call windowed parent
+to exact table signatures and the complete six-call controlled curve child.
+The scalar outer flag remains separate from the MSB address array. Concrete
+tables are evaluated by the existing point-table owner; failed modular inverses
+are not replaced by shape-only metadata. Symbolic n uses the original zero-block
+shape rule. Lookup/erasure controls remain genuine non-THRU source refusals.
+The curve catalogue explicitly opts into compiler-owned predicate composition
+for logical symbolic targets; other catalogues retain their declaration default.
+Run `tests/unit/test_ecc_window_controlled.py` for the source/transport boundary,
+including the original symbolic-array serialization failure at source depth one.
