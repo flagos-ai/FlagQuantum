@@ -10,6 +10,8 @@ from typing import Any, cast
 
 import numpy as np
 
+from flagquantum.ecosystem.cirq._sparse_chemistry_library import sparse_cy_profile
+
 from ..compiler.formats.legacy_qroam_factories import qroam_factories
 from ..compiler.formats.legacy_qubitization_walk_factories import ExactPair, WalkContext
 from ..compiler.formats.legacy_word_factories import _rename_program
@@ -21,6 +23,9 @@ from ..compiler.registers.lookup.qroam_bank_unitary_component import (
 from ..compiler.registers.lookup.source_qroam_clean import QroamCleanTable
 from ..compiler.registers.lookup.sparse_chemistry_select_component import (
     sparse_select_component_pair,
+)
+from ..compiler.registers.lookup.sparse_selection_control import (
+    generic_sparse_select_program,
 )
 from ..compiler.registers.preparation.block_encoding_component import (
     select_block_component_program,
@@ -191,6 +196,20 @@ def capture_sparse_walk_context(
     original = Signature(_signature(foreign.signature))
     if literal_source:
         junk = ()
+    source_positive_blocks = None
+    if literal_source:
+        generic_inverse = generic_sparse_select_program(
+            int(block.select.num_spin_orb),
+            adjoint=True,
+            cy_profile=sparse_cy_profile(),
+        )
+        literal_inverse = ComponentProgramBuilder(
+            Signature(_signature(positive_source.adjoint().signature))
+        )
+        inverse_record = literal_inverse.finalize(
+            literal_inverse.call_program(generic_inverse, literal_inverse.inputs)
+        )
+        source_positive_blocks = positive_forward, inverse_record
     return WalkContext(
         Signature((*original, *junk)),
         ordinary_blocks,
@@ -198,4 +217,5 @@ def capture_sparse_walk_context(
         positive_blocks,
         (positive_reflection, positive_reflection),
         original,
+        positive_source_block_pair=source_positive_blocks,
     )
