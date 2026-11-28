@@ -10,7 +10,9 @@ from typing import Any, cast
 
 import numpy as np
 
+from ..compiler.formats.legacy_qroam_factories import qroam_factories
 from ..compiler.formats.legacy_qubitization_walk_factories import ExactPair, WalkContext
+from ..compiler.formats.legacy_word_factories import _rename_program
 from ..compiler.registers.component_adjoint import adjoint_component_calls
 from ..compiler.registers.component_builder import ComponentProgramBuilder
 from ..compiler.registers.lookup.qroam_bank_unitary_component import (
@@ -24,6 +26,7 @@ from ..compiler.registers.preparation.block_encoding_component import (
     select_block_component_program,
 )
 from ..compiler.registers.preparation.prepared_reflection_component import (
+    literal_prepared_reflection_program,
     prepared_reflection_program,
 )
 from ..compiler.registers.preparation.sparse_chemistry_prepare_component import (
@@ -37,7 +40,9 @@ from ..errors import SerializationError
 from ._default_linear_combination_oracles import _signature
 
 
-def capture_sparse_walk_context(source: object) -> WalkContext:
+def capture_sparse_walk_context(
+    source: object, *, literal_source: bool = False
+) -> WalkContext:
     """Retain actual source order while explicitly extending bank ownership.
 
     Original source RIGHT preparation banks become caller-owned signal words
@@ -45,6 +50,10 @@ def capture_sparse_walk_context(source: object) -> WalkContext:
     context has additional ports and is not the original source constructor
     signature. Default source factories and their model-only inverse remain
     unchanged. No SDK object is retained in the returned context.
+
+    The explicit literal profile keeps RIGHT banks and the original bodyless
+    eraser, narrow reflection and source ABI. It does not infer a unitary
+    extension or replace unavailable source gates with native erasure gates.
     """
     from qualtran import CtrlSpec
     from qualtran.bloqs.block_encoding.lcu_block_encoding import SelectBlockEncoding
@@ -93,11 +102,43 @@ def capture_sparse_walk_context(source: object) -> WalkContext:
         Register(reg.name, reg.dtype, shape=reg.shape)
         for reg in _signature(prepare.signature)
     )
-    preparation = sparse_prepare_component_pair(
-        Signature(through),
-        int(prepare.num_non_zero),
-        qroam_bank_unitary_pair(table, tuple(int(n) for n in lookup.target_bitsizes)),
-    )
+    if literal_source:
+        owners = qroam_factories(reserve_workspace=False)
+        forward = owners["qualtran.bloqs.data_loading.qroam_clean.QROAMClean"](
+            "sparse_source_lookup",
+            None,
+            {
+                "data_or_shape": table.datasets,
+                "selection_bitsizes": tuple(int(n) for n in lookup.selection_bitsizes),
+                "target_bitsizes": tuple(int(n) for n in lookup.target_bitsizes),
+                "log_block_sizes": table.log_block_sizes,
+            },
+        )
+        assert isinstance(forward, ProgramRecord)
+        inverse = owners[
+            "qualtran.bloqs.data_loading.qroam_clean.QROAMCleanAdjointWrapper"
+        ](
+            "sparse_source_lookup_inverse",
+            None,
+            {
+                "qroam_clean": forward.functions[0],
+                "log_block_sizes": table.log_block_sizes,
+            },
+        )
+        assert isinstance(inverse, ProgramRecord)
+        preparation = sparse_prepare_component_pair(
+            Signature(_signature(prepare.signature)),
+            int(prepare.num_non_zero),
+            (_rename_program(forward, "main"), _rename_program(inverse, "main")),
+        )
+    else:
+        preparation = sparse_prepare_component_pair(
+            Signature(through),
+            int(prepare.num_non_zero),
+            qroam_bank_unitary_pair(
+                table, tuple(int(n) for n in lookup.target_bitsizes)
+            ),
+        )
     selection = sparse_select_component_pair(int(block.select.num_spin_orb))
     block_signature = Signature(_signature(block.signature))
     ordinary_blocks: ExactPair = (
@@ -129,6 +170,14 @@ def capture_sparse_walk_context(source: object) -> WalkContext:
     )
 
     def reflect(controlled: bool) -> ProgramRecord:
+        if literal_source:
+            return literal_prepared_reflection_program(
+                *preparation,
+                names,
+                control_value=1 if controlled else None,
+                global_phase=-1,
+                scalar_phase=None if controlled else scalar_phase_program(pi),
+            )
         return prepared_reflection_program(
             *preparation,
             names,
@@ -140,6 +189,8 @@ def capture_sparse_walk_context(source: object) -> WalkContext:
 
     ordinary_reflection, positive_reflection = reflect(False), reflect(True)
     original = Signature(_signature(foreign.signature))
+    if literal_source:
+        junk = ()
     return WalkContext(
         Signature((*original, *junk)),
         ordinary_blocks,
