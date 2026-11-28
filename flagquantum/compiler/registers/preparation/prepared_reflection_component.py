@@ -31,6 +31,62 @@ def prepared_reflection_program(
     scalar_phase: ProgramRecord | None = None,
     signal_junk_names: tuple[str, ...] | None = None,
 ) -> ProgramRecord:
+    """Compose through PREPARE pairs with explicit private or retained junk.
+
+    Callers own exact inverse and private-cleanup proofs. Retained junk stays
+    caller-owned; uncontrolled phases require an explicit scalar owner.
+    """
+    return _reflection_program(
+        prepare,
+        unprepare,
+        selection_names,
+        control_value=control_value,
+        global_phase=global_phase,
+        scalar_phase=scalar_phase,
+        signal_junk_names=signal_junk_names,
+        source_right_junk=False,
+    )
+
+
+def literal_prepared_reflection_program(
+    prepare: ProgramRecord,
+    unprepare: ProgramRecord,
+    selection_names: tuple[str, ...],
+    *,
+    control_value: int | None = None,
+    global_phase: complex = 1,
+    scalar_phase: ProgramRecord | None = None,
+) -> ProgramRecord:
+    """Retain original RIGHT-junk lifetimes without asserting physical cleanup.
+
+    The source allocates junk before the consuming PREPARE inverse, produces
+    fresh RIGHT outputs in PREPARE and frees them afterwards. This is a logical
+    source profile, not a unitary extension or an arbitrary-signal cleanup proof.
+    Missing source leaf bodies must still refuse physical binding.
+    """
+    return _reflection_program(
+        prepare,
+        unprepare,
+        selection_names,
+        control_value=control_value,
+        global_phase=global_phase,
+        scalar_phase=scalar_phase,
+        signal_junk_names=None,
+        source_right_junk=True,
+    )
+
+
+def _reflection_program(
+    prepare: ProgramRecord,
+    unprepare: ProgramRecord,
+    selection_names: tuple[str, ...],
+    *,
+    control_value: int | None = None,
+    global_phase: complex = 1,
+    scalar_phase: ProgramRecord | None = None,
+    signal_junk_names: tuple[str, ...] | None = None,
+    source_right_junk: bool,
+) -> ProgramRecord:
     """Own junk words and call exact unprepare, mark-zero and prepare stages.
 
     Supplied first functions are entries with identical THRU ports. Selection
@@ -59,15 +115,31 @@ def prepared_reflection_program(
     if not isclose(abs(global_phase), 1, rel_tol=0, abs_tol=1e-12):
         raise ValueError("Reflection global phase must be a unit coefficient")
     ports = prepare.functions[0].registers
-    if (
+    inverse_ports = unprepare.functions[0].registers
+    if source_right_junk:
+        if (
+            ports is None
+            or inverse_ports is None
+            or any(reg.side == RegisterSide.LEFT for reg in ports)
+            or tuple(Signature(inverse_ports).lefts())
+            != tuple(Signature(ports).adjoint().lefts())
+            or tuple(Signature(inverse_ports).rights())
+            != tuple(Signature(ports).adjoint().rights())
+        ):
+            raise ValueError(
+                "Literal reflection requires matching directional PREPARE ports"
+            )
+    elif (
         ports is None
-        or ports != unprepare.functions[0].registers
+        or ports != inverse_ports
         or any(reg.side != RegisterSide.THRU for reg in ports)
     ):
         raise ValueError("Reflection requires matching through PREPARE inverse ports")
+    assert ports is not None
     by_name = {reg.name: reg for reg in ports}
     if len(set(selection_names)) != len(selection_names) or any(
-        name not in by_name for name in selection_names
+        name not in by_name or by_name[name].side != RegisterSide.THRU
+        for name in selection_names
     ):
         raise ValueError("Reflection requires distinct declared selection names")
     selections = tuple(by_name[name] for name in selection_names)
@@ -190,13 +262,27 @@ def prepared_reflection_program(
         }
         state.update(signal)
     else:
-        for reg in junk:
-            for word in np.asarray(state.pop(reg.name)).flat:
-                assert isinstance(word, RegisterBinding)
-                builder.free(word)
-    if control_value is None:
+        groups = (
+            (
+                tuple(reg for reg in junk if reg.side == RegisterSide.THRU),
+                tuple(reg for reg in junk if reg.side == RegisterSide.RIGHT),
+            )
+            if source_right_junk
+            else (junk,)
+        )
+        for position, group in enumerate(groups):
+            for reg in group:
+                for word in np.asarray(state.pop(reg.name)).flat:
+                    assert isinstance(word, RegisterBinding)
+                    builder.free(word)
+            if source_right_junk and position == 0 and control_value is None:
+                # Source Cirq capture consumes old RIGHT handles in the inverse.
+                # Fresh RIGHT outputs follow the phase target in its live map.
+                assert isinstance(target, RegisterBinding)
+                builder.free(target)
+    if control_value is None and not source_right_junk:
         assert isinstance(target, RegisterBinding)
         builder.free(target)
-    else:
+    elif control_value is not None:
         state["control"] = target
     return builder.finalize(state)

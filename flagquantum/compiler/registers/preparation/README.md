@@ -94,3 +94,10 @@ block composition reuse `adjoint_component_program`; specialized source SF
 one-body direction keeps its unchanged body. Numerical children stay with their
 owners. `tests/unit/test_factorization_source_closure.py` covers complete source
 calls and final returns; existing library tests cover selected physical children.
+
+`prepared_reflection_component.literal_prepared_reflection_program` preserves
+source RIGHT-junk consume/produce/free lifetimes. It shares zero marking and
+phase construction with the existing through profile, without asserting a
+unitary bank extension or arbitrary-signal cleanup. Missing preparation leaves
+still refuse physical binding. See the THC walk audit and
+`tests/unit/test_thc_walk_source_context.py` for exact original connections.
