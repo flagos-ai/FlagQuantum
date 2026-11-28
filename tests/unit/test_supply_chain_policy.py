@@ -2,6 +2,7 @@ from pathlib import Path
 
 import pytest
 
+from tools.architecture.check_dependency_policy import load_toml
 from tools.release.validate_sbom import sbom_errors
 
 pytestmark = pytest.mark.unit
@@ -10,7 +11,9 @@ ROOT = Path(__file__).resolve().parents[2]
 
 def test_ci_has_coverage_security_and_sbom_gates():
     workflow = (ROOT / ".github/workflows/ci.yml").read_text()
-    coverage_config = (ROOT / ".coveragerc").read_text()
+    coverage_config = load_toml(ROOT / "pyproject.toml")["tool"]["coverage"]["run"][
+        "omit"
+    ]
     assert "python tools/ci/check_coverage.py" in workflow
     assert "flagquantum/benchmarking/*" in coverage_config
     assert "flagquantum/simulation/kernels/triton/*" in coverage_config

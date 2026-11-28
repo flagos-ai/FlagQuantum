@@ -58,7 +58,7 @@ DEVELOPMENT_DOC_FILES_REVIEW_THRESHOLD = 200
 DEFAULT_MAX_RESULT_BYTES = 23_700_000
 DEFAULT_MAX_RESULT_FILES = 285
 CANONICAL_RESULT_DIRECTORIES = {"comparison", "local", "scalability", "smoke"}
-ARTIFACT_CONTAINER_DIRECTORIES = {"development"}
+ARTIFACT_CONTAINER_DIRECTORIES = {"development", "benchmarks"}
 PACKAGE_ROOT_FILES = {
     "__init__.py",
     "_api.py",

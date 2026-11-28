@@ -40,7 +40,6 @@ protected_paths = [
     # Release, deployment, and repository-level configuration. No development
     # team owns these; a change here is coordinated by Integration.
     "docker/**",
-    ".coveragerc",
     ".dockerignore",
     ".env.example",
     ".gitattributes",
@@ -59,13 +58,12 @@ protected_paths = [
     "MANIFEST.in",
     "README.md",
     "SECURITY.md",
-    "conftest.py",
+    "tests/conftest.py",
     # The declaration table `tools/release/check_evidence_revisions.py` reads. It records
     # which revisions of the checked-in evidence are obtainable and which are not,
     # so an edit to it changes what the repository discloses about its own
     # evidence rather than what one team implements -- the same class as
     # `capability-maturity.toml` above.
-    "pytest.ini",
     "setup.py",
     # Attribution and source provenance for the native fermionic migration.
     "third_party/openfermion/**",

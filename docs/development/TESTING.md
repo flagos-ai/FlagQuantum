@@ -176,7 +176,7 @@ raises `ImportError: cannot allocate memory in static TLS block` once the rest o
 the test tree has been imported, and importing it first only moves the failure to
 `qiskit_aer.libs/libgomp-*.so`. pytest reports that as a collection error, which
 aborts the lane outright. The Triton kernels are omitted from measurement in
-`.coveragerc`, so installing the extra there would buy no coverage. The
+`pyproject.toml`, so installing the extra there would buy no coverage. The
 expression excludes both markers, and the `qiskit-optional` and
 `triton-optional` jobs remain the lanes that run those tests.
 

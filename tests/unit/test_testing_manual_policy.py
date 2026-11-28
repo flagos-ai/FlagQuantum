@@ -101,22 +101,11 @@ def test_testing_manual_lists_current_commands():
 
 
 def _registered_markers() -> list[str]:
-    """Read the marker names declared in pytest.ini's ``markers`` block."""
-    declarers = ("    ", "\t")
-    markers: list[str] = []
-    in_block = False
-    for line in _read("pytest.ini").splitlines():
-        if line.strip() == "markers =":
-            in_block = True
-            continue
-        if not in_block:
-            continue
-        if not line.startswith(declarers) or ":" not in line:
-            if line.strip():
-                break
-            continue
-        markers.append(line.strip().split(":", 1)[0].strip())
-    return markers
+    """Read marker names from the single project configuration authority."""
+    declarations = load_toml(Path("pyproject.toml"))["tool"]["pytest"]["ini_options"][
+        "markers"
+    ]
+    return [marker.split(":", 1)[0].strip() for marker in declarations]
 
 
 def test_testing_manual_documents_every_marker_with_proof_boundary():

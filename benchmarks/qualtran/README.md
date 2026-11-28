@@ -5,8 +5,8 @@ Cirq Core 1.4.0, NumPy 1.26.4 and PyTorch 2.13.0.
 
 ```sh
 export OMP_NUM_THREADS=1 OPENBLAS_NUM_THREADS=1 PYTHONPATH=.
-python tools/qualtran_parity/benchmarks/compare_dynamic_select.py --shots 32
-python tools/qualtran_parity/benchmarks/same_circuit_speed.py
+python benchmarks/qualtran/compare_dynamic_select.py --shots 32
+python benchmarks/qualtran/same_circuit_speed.py
 ```
 
 The JSONL files record local ARM64 CPU timings at FlagQuantum commit
@@ -26,3 +26,7 @@ respectively. FlagQuantum batched sampling took 18.56 ms. The shared
 circuit comparison uses a different input, so the two ratios are not
 a quantitative attribution of the decomposition effect. These are CPU
 simulator timings for a small workload, not hardware estimates.
+
+The original JSONL records are preserved byte-for-byte in
+`artifacts/benchmarks/qualtran/`; their source commit and local-only scope remain
+unchanged. These scripts are explicit developer benchmarks, not default CI tests.

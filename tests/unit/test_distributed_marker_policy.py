@@ -2,6 +2,8 @@ from pathlib import Path
 
 import pytest
 
+from tools.architecture.check_dependency_policy import load_toml
+
 pytestmark = pytest.mark.unit
 
 
@@ -10,14 +12,18 @@ def _read(path: str) -> str:
 
 
 def test_registers_distributed_marker_split():
-    text = _read("pytest.ini")
-
-    assert "    distributed:" in text
-    assert "    distributed_cpu:" in text
-    assert "    distributed_accel:" in text
-    assert "    distributed_launch:" in text
-    assert "    distributed_multinode:" in text
-    assert "    gpu:" in text
+    declarations = load_toml(Path("pyproject.toml"))["tool"]["pytest"]["ini_options"][
+        "markers"
+    ]
+    registered = {marker.split(":", 1)[0].strip() for marker in declarations}
+    assert {
+        "distributed",
+        "distributed_cpu",
+        "distributed_accel",
+        "distributed_launch",
+        "distributed_multinode",
+        "gpu",
+    } <= registered
 
 
 def test_cpu_distributed_layer_contains_statevector_fail_closed_coverage():

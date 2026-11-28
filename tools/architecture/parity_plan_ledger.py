@@ -54,7 +54,7 @@ except ModuleNotFoundError:  # pragma: no cover - Python 3.10 compatibility
 
 REPO_ROOT = Path(__file__).resolve().parents[2]
 LEDGER_PATH = REPO_ROOT / "contracts" / "parity-pr-plan-ledger.toml"
-PYTEST_CONFIG_PATH = REPO_ROOT / "pytest.ini"
+PYTEST_CONFIG_PATH = REPO_ROOT / "pyproject.toml"
 
 EXPECTED_SCHEMA = "flagquantum_parity_pr_plan_ledger_v1"
 
@@ -90,7 +90,7 @@ def _gate_vocabulary() -> frozenset[str]:
     """The names a ``gate_tier`` entry may use.
 
     Two real sources rather than a third list: ``tools/ci/ci_tier.py`` owns the tier
-    names a workflow runs, and ``pytest.ini`` owns the marker names a lane
+    names a workflow runs, and ``pyproject.toml`` owns the marker names a lane
     selects. A row may name either, because a row is proved by a tier script or
     by a marker lane, and the plan's own column already mixes the two.
     """
@@ -99,17 +99,13 @@ def _gate_vocabulary() -> frozenset[str]:
         sys.path.insert(0, str(REPO_ROOT))
     from tools.ci.ci_tier import CI_TIERS
 
-    markers: set[str] = set()
-    in_block = False
-    for line in PYTEST_CONFIG_PATH.read_text().splitlines():
-        if line.strip().startswith("markers"):
-            in_block = True
-            continue
-        if in_block:
-            if not line.strip() or not line.startswith("    "):
-                in_block = False
-                continue
-            markers.add(line.strip().split(":", 1)[0].strip())
+    configuration = tomllib.loads(PYTEST_CONFIG_PATH.read_text())
+    declarations = configuration["tool"]["pytest"]["ini_options"]["markers"]
+    if not isinstance(declarations, list) or not all(
+        isinstance(marker, str) for marker in declarations
+    ):
+        raise ValueError("Pytest markers in pyproject.toml must be a list of strings")
+    markers = {marker.split(":", 1)[0].strip() for marker in declarations}
     return frozenset(CI_TIERS) | frozenset(markers)
 
 

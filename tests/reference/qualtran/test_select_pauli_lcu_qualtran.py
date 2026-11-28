@@ -14,7 +14,7 @@ from flagquantum.algorithms.primitives.multiplexers.pauli_select import (
 from flagquantum.compiler.lowering.deferred_operations import (
     lower_select_pauli_lcu_to_gates,
 )
-from tools.qualtran_parity.clifford_t_counts import clifford_t_counts
+from tests.reference.qualtran.clifford_t_counts import clifford_t_counts
 
 
 @pytest.mark.parametrize(

@@ -623,3 +623,24 @@ The [Simulation direct-relay retirement](simulation-direct-relay-retirement.md) 
 | root-tool-ownership | `tools/check_multi_level_ir_contract.py` | `tools/validation/check_multi_level_ir_contract.py` | Actual implementation moved, all operational callers synchronized, old path removed; frozen source identifiers are metadata only. |
 | root-tool-ownership | `tools/verify_distribution_artifacts.py` | `tools/release/verify_distribution_artifacts.py` | Actual implementation moved, all operational callers synchronized, old path removed; frozen source identifiers are metadata only. |
 | root-tool-ownership | `tools/setup_flagquantum_dev_env.sh` | `tools/development/setup_flagquantum_dev_env.sh` | Actual implementation moved, all operational callers synchronized, old path removed; frozen source identifiers are metadata only. |
+
+## Test and reference ownership
+
+| tests | `tools/qualtran_parity/benchmarks/README.md` | `benchmarks/qualtran/README.md` | old file removed; explicit/default selection preserved |
+| tests | `tools/qualtran_parity/benchmarks/compare-dynamic-select-results.jsonl` | `artifacts/benchmarks/qualtran/compare-dynamic-select-results.jsonl` | old file removed; explicit/default selection preserved |
+| tests | `tools/qualtran_parity/benchmarks/compare_dynamic_select.py` | `benchmarks/qualtran/compare_dynamic_select.py` | old file removed; explicit/default selection preserved |
+| tests | `tools/qualtran_parity/benchmarks/same-circuit-results.jsonl` | `artifacts/benchmarks/qualtran/same-circuit-results.jsonl` | old file removed; explicit/default selection preserved |
+| tests | `tools/qualtran_parity/benchmarks/same_circuit_speed.py` | `benchmarks/qualtran/same_circuit_speed.py` | old file removed; explicit/default selection preserved |
+| tests | `tools/qualtran_parity/clifford_t_counts.py` | `tests/reference/qualtran/clifford_t_counts.py` | old file removed; explicit/default selection preserved |
+| tests | `tools/qualtran_parity/test_native_pauli_lcu_walk.py` | `tests/reference/qualtran/test_native_pauli_lcu_walk.py` | old file removed; explicit/default selection preserved |
+| tests | `tools/qualtran_parity/test_pauli_lcu_prepare.py` | `tests/reference/qualtran/test_pauli_lcu_prepare.py` | old file removed; explicit/default selection preserved |
+| tests | `tools/qualtran_parity/test_pauli_lcu_walk_qualtran.py` | `tests/reference/qualtran/test_pauli_lcu_walk_qualtran.py` | old file removed; explicit/default selection preserved |
+| tests | `tools/qualtran_parity/test_select_pauli_lcu_qualtran.py` | `tests/reference/qualtran/test_select_pauli_lcu_qualtran.py` | old file removed; explicit/default selection preserved |
+| tests | `tools/qualtran_parity/test_select_sparse_qualtran.py` | `tests/reference/qualtran/test_select_sparse_qualtran.py` | old file removed; explicit/default selection preserved |
+| tests | `tools/qualtran_parity/test_select_thc.py` | `tests/reference/qualtran/test_select_thc.py` | old file removed; explicit/default selection preserved |
+| tests | `tools/qualtran_parity/test_selected_majorana_qualtran.py` | `tests/reference/qualtran/test_selected_majorana_qualtran.py` | old file removed; explicit/default selection preserved |
+| tests | `tools/qualtran_parity/test_thc_qrom_qualtran.py` | `tests/reference/qualtran/test_thc_qrom_qualtran.py` | old file removed; explicit/default selection preserved |
+| tests | `tools/qualtran_parity/test_thc_rotations.py` | `tests/reference/qualtran/test_thc_rotations.py` | old file removed; explicit/default selection preserved |
+| tests | `conftest.py` | `tests/conftest.py` | old file removed; explicit/default selection preserved |
+| tests | `pytest.ini` | `pyproject.toml` | old file removed; explicit/default selection preserved |
+| tests | `.coveragerc` | `pyproject.toml` | old file removed; explicit/default selection preserved |

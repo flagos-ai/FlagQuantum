@@ -1,4 +1,4 @@
-# flagquantum/conftest.py
+# Repository test environment
 import os
 
 # Must be set before any imports
@@ -15,3 +15,6 @@ if os.environ.get("PYTEST_DEBUG_CONFIG"):
     print(f"OMP_NUM_THREADS={os.environ.get('OMP_NUM_THREADS')}")
     print(f"MKL_NUM_THREADS={os.environ.get('MKL_NUM_THREADS')}")
     print("=" * 60)
+
+# Optional upstream comparisons retain their existing explicit invocation.
+collect_ignore = ["reference/qualtran"]

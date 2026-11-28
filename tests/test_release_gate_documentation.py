@@ -2,6 +2,8 @@ from pathlib import Path
 
 import pytest
 
+from tools.architecture.check_dependency_policy import load_toml
+
 pytestmark = pytest.mark.unit
 
 TIERED_MARKERS = {
@@ -18,11 +20,13 @@ TIERED_MARKERS = {
 
 
 def test_registers_tiered_pytest_markers():
-    text = Path("pytest.ini").read_text(encoding="utf-8")
-
-    assert "--strict-markers" in text
+    configuration = load_toml(Path("pyproject.toml"))["tool"]["pytest"]["ini_options"]
+    assert "--strict-markers" in configuration["addopts"]
+    registered = {
+        marker.split(":", 1)[0].strip() for marker in configuration["markers"]
+    }
     for marker in TIERED_MARKERS:
-        assert f"    {marker}:" in text
+        assert marker in registered
 
 
 def test_testing_policy_documents_marker_boundaries():

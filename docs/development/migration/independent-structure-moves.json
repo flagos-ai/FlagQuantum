@@ -10686,6 +10686,139 @@
       "source_kind": "Existing development setup shell program; original commands and options preserved, repository-root calculation adjusted for its physical location.",
       "compatibility": "none",
       "retirement": "Old executable/import path removed; actual callers and fixtures use the canonical owner. Versioned authority/source identifiers remain in the existing exact relocation metadata, without an executable facade."
+    },
+    {
+      "old": "tools/qualtran_parity/benchmarks/README.md",
+      "new": "benchmarks/qualtran/README.md",
+      "symbols": [],
+      "compatibility": "none"
+    },
+    {
+      "old": "tools/qualtran_parity/benchmarks/compare-dynamic-select-results.jsonl",
+      "new": "artifacts/benchmarks/qualtran/compare-dynamic-select-results.jsonl",
+      "symbols": [],
+      "compatibility": "none"
+    },
+    {
+      "old": "tools/qualtran_parity/benchmarks/compare_dynamic_select.py",
+      "new": "benchmarks/qualtran/compare_dynamic_select.py",
+      "symbols": [
+        "measure"
+      ],
+      "compatibility": "none"
+    },
+    {
+      "old": "tools/qualtran_parity/benchmarks/same-circuit-results.jsonl",
+      "new": "artifacts/benchmarks/qualtran/same-circuit-results.jsonl",
+      "symbols": [],
+      "compatibility": "none"
+    },
+    {
+      "old": "tools/qualtran_parity/benchmarks/same_circuit_speed.py",
+      "new": "benchmarks/qualtran/same_circuit_speed.py",
+      "symbols": [
+        "convert"
+      ],
+      "compatibility": "none"
+    },
+    {
+      "old": "tools/qualtran_parity/clifford_t_counts.py",
+      "new": "tests/reference/qualtran/clifford_t_counts.py",
+      "symbols": [
+        "clifford_t_counts"
+      ],
+      "compatibility": "none"
+    },
+    {
+      "old": "tools/qualtran_parity/test_native_pauli_lcu_walk.py",
+      "new": "tests/reference/qualtran/test_native_pauli_lcu_walk.py",
+      "symbols": [
+        "test_native_pauli_lcu_walk"
+      ],
+      "compatibility": "none"
+    },
+    {
+      "old": "tools/qualtran_parity/test_pauli_lcu_prepare.py",
+      "new": "tests/reference/qualtran/test_pauli_lcu_prepare.py",
+      "symbols": [
+        "test_pauli_lcu_prepare"
+      ],
+      "compatibility": "none"
+    },
+    {
+      "old": "tools/qualtran_parity/test_pauli_lcu_walk_qualtran.py",
+      "new": "tests/reference/qualtran/test_pauli_lcu_walk_qualtran.py",
+      "symbols": [
+        "test_pauli_lcu_walk_qualtran"
+      ],
+      "compatibility": "none"
+    },
+    {
+      "old": "tools/qualtran_parity/test_select_pauli_lcu_qualtran.py",
+      "new": "tests/reference/qualtran/test_select_pauli_lcu_qualtran.py",
+      "symbols": [
+        "test_select_pauli_lcu_qualtran_parity"
+      ],
+      "compatibility": "none"
+    },
+    {
+      "old": "tools/qualtran_parity/test_select_sparse_qualtran.py",
+      "new": "tests/reference/qualtran/test_select_sparse_qualtran.py",
+      "symbols": [
+        "test_select_sparse_qualtran"
+      ],
+      "compatibility": "none"
+    },
+    {
+      "old": "tools/qualtran_parity/test_select_thc.py",
+      "new": "tests/reference/qualtran/test_select_thc.py",
+      "symbols": [
+        "test_select_thc_complex_amplitudes_and_workspace"
+      ],
+      "compatibility": "none"
+    },
+    {
+      "old": "tools/qualtran_parity/test_selected_majorana_qualtran.py",
+      "new": "tests/reference/qualtran/test_selected_majorana_qualtran.py",
+      "symbols": [
+        "test_qualtran_coherent_majorana_parity"
+      ],
+      "compatibility": "none"
+    },
+    {
+      "old": "tools/qualtran_parity/test_thc_qrom_qualtran.py",
+      "new": "tests/reference/qualtran/test_thc_qrom_qualtran.py",
+      "symbols": [
+        "test_qualtran_v070_component_decompositions",
+        "test_qualtran_add_gate_sequence_and_complex_amplitudes"
+      ],
+      "compatibility": "none"
+    },
+    {
+      "old": "tools/qualtran_parity/test_thc_rotations.py",
+      "new": "tests/reference/qualtran/test_thc_rotations.py",
+      "symbols": [
+        "test_thc_rotations_complex_amplitudes_and_inverse"
+      ],
+      "compatibility": "none"
+    },
+    {
+      "old": "conftest.py",
+      "new": "tests/conftest.py",
+      "symbols": [],
+      "compatibility": "none"
+    },
+    {
+      "old": "pytest.ini",
+      "new": "pyproject.toml",
+      "symbols": [],
+      "compatibility": "none"
+    },
+    {
+      "old": ".coveragerc",
+      "new": "pyproject.toml",
+      "symbols": [],
+      "compatibility": "none"
     }
   ],
   "retired_namespace_parents": [
