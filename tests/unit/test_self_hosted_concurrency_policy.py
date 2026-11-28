@@ -17,7 +17,11 @@ def test_self_hosted_jobs_have_no_matrix_parallelism_limit() -> None:
             route = str(job.get("runs-on", ""))
             if "self-hosted" not in route and not any(
                 label in route
-                for label in ("flagquantum-a100-cpu", "flagquantum-cpu-general")
+                for label in (
+                    "flagquantum-a100-cpu",
+                    "flagquantum-cpu-general",
+                    "flagquantum-bw1100-cpu",
+                )
             ):
                 continue
             found.append((path.name, name))
@@ -34,7 +38,7 @@ def test_self_hosted_cpu_capacity_groups_do_not_serialize_ready_work() -> None:
             "jobs"
         ].items():
             route = str(job.get("runs-on", ""))
-            if "fromJSON(" in route:
+            if "fromJSON(" in route or "flagquantum-bw1100-cpu" in route:
                 guard = (
                     "github.event_name != 'pull_request' || "
                     "github.event.pull_request.head.repo.full_name == github.repository"
@@ -88,5 +92,10 @@ def test_self_hosted_cpu_capacity_groups_do_not_serialize_ready_work() -> None:
         "coverage-shard",
         "dependency-bounds",
         "distributed-cpu-shard",
-        "prepare-source",
     } <= set(found)
+    for workflow in ("ci.yml", "local-gpu.yml"):
+        publisher = yaml.safe_load((WORKFLOWS / workflow).read_text())["jobs"][
+            "prepare-source"
+        ]
+        assert publisher["runs-on"] == "ubuntu-latest"
+        assert publisher["concurrency"] == {"group": "flagquantum-gh-5", "queue": "max"}

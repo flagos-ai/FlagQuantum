@@ -91,7 +91,7 @@ def test_large_benchmark_authority_uses_its_dedicated_audit() -> None:
 
 def test_generated_capability_catalog_supports_goal_based_discovery():
     maturity = DOCS.tomllib.loads(
-        (ROOT / "capability-maturity.toml").read_text(encoding="utf-8")
+        (ROOT / "config" / "capability-maturity.toml").read_text(encoding="utf-8")
     )
     rendered = DOCS.render_capabilities(maturity)
     assert "## Find a capability by goal" in rendered
@@ -119,7 +119,7 @@ def test_quick_start_label_names_what_the_target_is():
 
 def test_rendered_catalog_never_calls_a_guide_an_example():
     maturity = DOCS.tomllib.loads(
-        (ROOT / "capability-maturity.toml").read_text(encoding="utf-8")
+        (ROOT / "config" / "capability-maturity.toml").read_text(encoding="utf-8")
     )
     rendered = DOCS.render_capabilities(maturity)
     for label in ("Run example", "quick example"):
@@ -147,7 +147,7 @@ def test_rendered_catalog_never_calls_a_guide_an_example():
 
 def test_detail_rows_link_their_own_capability():
     maturity = DOCS.tomllib.loads(
-        (ROOT / "capability-maturity.toml").read_text(encoding="utf-8")
+        (ROOT / "config" / "capability-maturity.toml").read_text(encoding="utf-8")
     )
     rendered = DOCS.render_capabilities(maturity)
     detail_targets = [

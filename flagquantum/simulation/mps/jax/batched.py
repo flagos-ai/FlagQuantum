@@ -7,6 +7,14 @@ from typing import Any
 from flagquantum.simulation.mps.models import MpsSplitInfo, MpsSplitMethod
 
 
+def jax_mps_initial_batched_site(batch_size: int, dtype: Any) -> Any:
+    """Create the rank-four all-zero MPS site without selecting a device."""
+    import jax.numpy as jnp
+
+    tensor = jnp.zeros((int(batch_size), 1, 2, 1), dtype=dtype)
+    return tensor.at[:, 0, 0, 0].set(jnp.asarray(1.0 + 0.0j, dtype=dtype))
+
+
 def jax_mps_apply_one_batched(tensor: Any, matrix: Any) -> Any:
     import jax.numpy as jnp
 

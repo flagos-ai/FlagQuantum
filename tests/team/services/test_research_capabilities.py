@@ -98,7 +98,7 @@ def test_manifest_keeps_operation_and_provider_identity_separate() -> None:
 
 def test_every_manifest_binding_resolves_to_production_maturity_authority() -> None:
     maturity = tomllib.loads(
-        (_ROOT / "capability-maturity.toml").read_text(encoding="utf-8")
+        (_ROOT / "config" / "capability-maturity.toml").read_text(encoding="utf-8")
     )["capabilities"]
 
     for candidate in search_research_capabilities():

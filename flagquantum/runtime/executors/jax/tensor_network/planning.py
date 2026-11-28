@@ -50,9 +50,9 @@ def _tensor_network_plan(
     max_intermediate_size: int | None,
     sliced_labels: Sequence[int] | None,
 ) -> JAXDistributedQuantumPlan:
-    from .....simulation.tensor_network.entrypoints import build_tensor_network
+    from flagquantum.simulation.tensor_network.local import build_local_tensor_network
 
-    contraction_plan = build_tensor_network(ir, bsz=bsz, device="cpu")
+    contraction_plan = build_local_tensor_network(ir, bsz=bsz, device="cpu")
     slicing = contraction_plan.slicing_plan(
         max_intermediate_size=max_intermediate_size,
         sliced_labels=sliced_labels,

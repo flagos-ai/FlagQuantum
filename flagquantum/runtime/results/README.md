@@ -1,12 +1,14 @@
 # Execution results
 
-Owns execution result objects, result adapters, MPS result handling and measured execution records. Preserve existing result schemas, public export identity and serialization. Do not perform numerical execution, construct circuits or select resources here.
+Owns execution result objects, native-result adapters, bounded named-result views and measured execution records. Preserve existing result schemas, public export identity and serialization. Do not perform numerical execution, construct circuits or select resources here.
 
 Allowed dependencies: Core models, Runtime result protocols, existing tensor types
 and direct Simulation sampling kernels behind published result methods.
 
-Published entry points: fq.run results and existing result extraction functions. Historical import paths are forwarding facades;
-the implementation in this directory is authoritative. See the
+Published entry points are fq.run results and existing result extraction methods.
+The complete named reader lives in `readout.py`, and native MPS type admission
+shares `adapters.py`. No private Synth reader or MPS result-module facade remains.
+Only explicitly recorded public compatibility paths survive. See the
 [relocation ledger](../../../docs/development/INDEPENDENT_STRUCTURE_MIGRATION.md)
 for compatibility ownership and removal gates.
 
@@ -18,7 +20,7 @@ for compatibility ownership and removal gates.
 
    ```sh
    python -m pytest tests/unit/test_structure_import_compatibility.py -q
-   python tools/check_architecture.py
+   python tools/architecture/check_architecture.py
    ```
 
 CPU tests establish behavior and fixture conformance; physical hardware and

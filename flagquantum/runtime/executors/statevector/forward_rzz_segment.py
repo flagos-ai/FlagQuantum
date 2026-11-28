@@ -13,6 +13,7 @@ from ....simulation.native_cpu import (
     native_cpu_shared_rzz_forward_fusion_available,
 )
 from ....simulation.native_cpu.rotation import native_cpu_forward_rotation_tile_qubits
+from ....simulation.statevector import operations as _statevector_operations
 
 
 def _following_rotation_block(
@@ -40,7 +41,9 @@ def _following_rotation_block(
         if wire in sweep.plan.sharded_qubits:
             break
         if wire == active_wire:
-            block_matrices[-1] = sweep.matrices[cursor] @ block_matrices[-1]
+            block_matrices[-1] = _statevector_operations._compose_gate_matrices(
+                (block_matrices[-1], sweep.matrices[cursor])
+            )
         else:
             if wire in block_wires or len(block_wires) == (
                 native_cpu_forward_rotation_tile_qubits(sweep.plan.n_qubits)

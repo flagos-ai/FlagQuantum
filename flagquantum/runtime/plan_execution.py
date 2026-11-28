@@ -16,6 +16,7 @@ from flagquantum.compute.local.cpu_target_capabilities import (
 )
 from flagquantum.runtime.results import ExecutionResult
 
+from ..core.classical_control import is_classical_control_instruction
 from ..core.ir import CircuitIR, MeasurementNode
 from ..core.runtime_config import RuntimeConfig
 from ..core.target_capabilities import (
@@ -30,7 +31,6 @@ from ..core.target_capabilities import (
     TargetIdentity,
 )
 from ..errors import CapabilityError, ExecutionError, FlagQuantumError
-from .dynamic._conditions import instruction_is_dynamic
 from .execution_plan import ExecutionPlan
 from .execution_plan_contract import (
     ExecutionPlanContractError,
@@ -343,7 +343,8 @@ def execute_plan(
         _require_mapping("ExecutionPlan.program", payload["program"])
     )
     if any(
-        instruction_is_dynamic(instruction) for instruction in source_ir.instructions
+        is_classical_control_instruction(instruction)
+        for instruction in source_ir.instructions
     ):
         if decision["device"] == "cpu" and decision["backend"] == "pytorch":
             _require_local_cpu_capabilities(
