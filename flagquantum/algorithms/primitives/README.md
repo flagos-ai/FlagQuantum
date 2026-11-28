@@ -228,3 +228,12 @@ adjoints. Hubbard owns coordinate conventions and composition. The controlled
 SELECT root retains its relative phase and all eleven original calls. See
 `docs/development/HUBBARD_SELECT_STORED_GRAPH_AUDIT.md` for source boundaries,
 small all-history evidence and separate literal/model resource accounts.
+
+
+Factorization signatures keep raw logical precision declarations beside strict
+concrete helpers. `factorization_source_formula.py` reuses concrete child models
+and replaces only source-variable category/storage terms, including symbolic
+comparison dispatch. It does not choose a backend or execute a statevector.
+Run `tests/unit/test_factorization_source_closure.py` for constructor, exact
+source-direction and model changes, then the existing SF/DF model/library tests.
+Opaque source declarations do not imply a physical circuit.

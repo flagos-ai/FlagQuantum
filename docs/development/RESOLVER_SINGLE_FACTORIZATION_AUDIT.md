@@ -80,3 +80,20 @@ Both complete seven-category and peak estimates match original owners.
 has three opaque definitions and block five; whole primitive inventories are
 unavailable, not zero. Q-0405 remains open. No original bug is silently fixed
 or waived and no alpha/epsilon value is invented.
+
+## Complete factorization source closure (2026-11-28)
+
+The [shared factorization closure](RESOLVER_DOUBLE_FACTORIZATION_AUDIT.md#complete-factorization-source-closure-2026-11-28)
+adds the original SF block GenericAdjoint, symbolic precision declarations and
+source-success symbolic one-body/block estimates. Imported child identities keep
+outer preparation directions distinct. The original specialized one-body
+adjoint retains the same nine-call body and its asymmetric blocking metadata;
+the existing return permutation, second outer rot_aa connection and omitted
+reflection control remain literal. Unknown inverse constructors still refuse.
+
+The new scenario test is `tests/unit/test_factorization_source_closure.py`.
+Original numerical optimizer failures and missing physical SELECT/prepare leaves
+remain separate from source logical/model acceptance. Existing full-complex
+selected reflection, every small raw measurement history, private cleanup and
+actual 77-instruction/12-T-family/three-measurement inventory are reused.
+No whole-root physical execution or alpha/epsilon value is invented.

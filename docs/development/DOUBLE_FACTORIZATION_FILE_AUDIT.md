@@ -165,3 +165,12 @@ ran. The separate permitted local-kernel run retains the original notebook and
 source bytes and passes. The accepted concentrated regression uses its own
 `g2-df-encoding-foreign-accepted-` logs. An earlier interrupted regression and
 initial source-protocol assertion failures remain separate diagnostic receipts.
+
+
+## Complete source disposition (2026-11-28)
+
+The [complete constructor and dependency closure](RESOLVER_DOUBLE_FACTORIZATION_AUDIT.md#complete-factorization-source-closure-2026-11-28) supersedes the earlier missing generic inverse and symbolic declaration paths.
+Original absent bodies, unavailable queries and reproduced defects remain
+explicit under the approved faithful-source rule. Whole-root physical inventory
+and numerical execution remain unavailable. Acceptance requires the batch checks
+and verified publication.

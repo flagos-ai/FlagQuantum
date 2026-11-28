@@ -86,3 +86,11 @@ Neither builder evaluates a statevector or selects a backend. Algorithms owns
 signatures/models and Ecosystem owns decoded source constructors. Use
 `tests/unit/test_momentum_source_declarations.py` as the logical change path and
 `tests/unit/test_uniform_preparation_component.py` for executable child cleanup.
+
+
+Factorization call inverses use explicit imported identities because opaque
+forward/inverse leaves may have identical signatures. DF one-body/block and SF
+block composition reuse `adjoint_component_program`; specialized source SF
+one-body direction keeps its unchanged body. Numerical children stay with their
+owners. `tests/unit/test_factorization_source_closure.py` covers complete source
+calls and final returns; existing library tests cover selected physical children.

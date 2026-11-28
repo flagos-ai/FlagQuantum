@@ -84,3 +84,12 @@ Q-0405 remains open for the end-to-end source-to-physical boundary.
 The locked source alpha
 and epsilon getters are both unimplemented and remain explicitly
 outside the verified numerical contract.
+
+
+## Complete source disposition (2026-11-28)
+
+The [complete constructor and dependency closure](RESOLVER_SINGLE_FACTORIZATION_AUDIT.md#complete-factorization-source-closure-2026-11-28) supersedes the earlier missing generic inverse and symbolic declaration paths.
+Original absent bodies, unavailable queries and reproduced defects remain
+explicit under the approved faithful-source rule. Whole-root physical inventory
+and numerical execution remain unavailable. Acceptance requires the batch checks
+and verified publication.

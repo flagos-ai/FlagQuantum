@@ -301,3 +301,10 @@ infers unknown leaf semantics or stores global state. Compiler owns graph
 reversal and specialized exact uniform/exchange inverse bodies. The shortest
 change path is `tests/unit/test_first_quantization_source_closure.py`, followed
 by the existing ordinary/projectile root library tests.
+
+
+SF/DF constructors reuse scoped explicit source adjoint pairs. Logical symbolic
+precision is retained before physical admission. Failed zero-port source bodies
+stay declarations; unavailable alpha/epsilon and absent leaf circuits are never
+filled by coefficient-driven implementations. The factorization source closure
+scenario test is the shortest change path.
