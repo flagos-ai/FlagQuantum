@@ -45,3 +45,11 @@ environment. Check typed outputs, recursive primitive operands and feedback,
 complex amplitudes, private cleanup and actual versus modeled resources.
 For the window root, use `tests/unit/test_elliptic_curve_window_components.py`.
 For the phase roots, use `tests/unit/test_elliptic_curve_phase_components.py`.
+
+`controlled_elliptic_curve_addition_program` threads an explicit outer control
+through six already-controlled stage owners. The outer control is separate from
+the original exceptional-point flag named ctrl, so stage-local control names
+can differ without changing their data or LEFT/RIGHT ownership. Available parent
+calls remain stored even when a child genuinely refuses decomposition.
+Run `tests/unit/test_ecc_controlled_stages.py` for exact original call operands,
+complete reused arithmetic definitions and the actual refusal frontier.

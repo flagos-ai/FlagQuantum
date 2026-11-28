@@ -484,3 +484,49 @@ primitive inventories and model comparisons therefore remain authoritative.
 Source model estimates for symbolic graphs remain separate from unavailable
 emitted primitives. Full ECC parent acceptance still requires its available
 higher controlled contexts and remaining constructor boundaries in NEXT_G2.md.
+
+## Controlled arithmetic stages and six-call root
+
+The coordinate and product controllers use the original canonical stage layouts
+with explicit controlled child owners. At width three they retain 24 and 28
+calls; the general counts are 2n+18 and 3n+19. Original word-copy CNOT calls
+become atomic Toffoli under the new outer scalar control. Modular add/subtract,
+doubling, their exact supported inverses and comparison dependencies reuse the
+accepted source-faithful owners. Complete Always(Add/inverse) definitions are
+certified before their existing phase/feedback evidence is reused; independent
+inverse Split schedules inside that unchanged owner are not claimed globally
+ordinal-identical.
+
+Original controlled IntState and dirty Montgomery outputs genuinely refuse
+non-THRU ports. They retain exact live modulus, rounded index history and
+LEFT/RIGHT direction. Temporary ordinary declarations only supply the canonical
+stage layout and are removed after control propagation. Every reachable missing
+body is checked against an actual original decomposition failure. The control
+constructor catalogue separately carries unused ordinary constructor references
+as metadata; it does not claim plain forward bodies or physical execution for
+those references. The existing forward catalogue remains their execution owner.
+
+Concrete dirty-multiplier preconditions preserve the original assertion order:
+odd modulus greater than one, 2p-1 < 2**n, then divisibility of n by the window.
+Zero windows retain the original division failure. Valid tests include multiple
+windows and a whole-word window, plus the original symbolic window expression.
+Concrete nondivisible windows are not presented as successful source bodies.
+
+The controlled ECAdd root retains six calls and threads its outer control
+separately from stage-local flag ports. Four controlled directional stages
+remain actual source refusals. Symbolic n and failed child constructors retain
+this available parent even when coordinate/product stages themselves cannot
+expand. Fixed n with symbolic p is different: the original controlled arithmetic
+stages still expand, so their current missing native composition is explicitly
+open and is not relabeled an upstream refusal. Constructor transport covers
+source depths zero/one, SDK-free reconstruction and the original negative
+outer predicate wrapper.
+
+Full controlled ECC primitives, amplitudes and work-zero cannot be claimed
+while these source-refused leaves remain. Accepted shared finite arithmetic,
+exact adjoints and atomic Toffoli phase/feedback evidence are reused separately.
+For n=3,p=3,window=1 the original QEC gate-model queries also fail on controlled
+And/And-adjoint. The independent original qubit-model estimates are 37 for
+coordinates, 29 for products and 44 for the root; these are model estimates,
+not measured physical peaks or a complete gate inventory. Windowed controlled
+addition and symbolic-modulus composition remain open source-success bindings.

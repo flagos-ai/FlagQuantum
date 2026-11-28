@@ -336,3 +336,14 @@ inside these symbolic stages. Numerical execution and source pricing are not
 inferred from a typed declaration. Run
 `tests/unit/test_ecc_symbolic_modulus_stages.py` for constructor argument recording,
 source call/operand checks and complete delegate certificates.
+
+`_elliptic_curve_control_library.py` binds controlled coordinate/product stages
+and the six-call curve-addition root from explicit source constructor fields.
+It uses shared arithmetic controllers and compiler-owned stage layouts. Genuine
+controlled state/multiplier and directional stage failures remain declarations.
+Symbolic widths and failed child constructors retain the available root layer;
+available symbolic-modulus arithmetic control remains an explicit native gap.
+Its control-only constructor catalogue uses ordinary child declarations as
+metadata references; plain forward execution retains the existing addition
+catalogue. Reachable controlled bodies never replace an available source layer
+with an opaque parent. The original ComponentLibrary retains constructor fields.
