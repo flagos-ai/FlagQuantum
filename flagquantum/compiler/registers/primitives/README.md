@@ -2,6 +2,15 @@
 
 This package owns boolean/classical/quantum gate dispatch, temporary AND, controlled swaps, measurement cleanup.
 
+`controlled_y_component.py` retains the distinct controlled CY source views:
+Cirq's q-array CY uses controlled half-X/CZ/half-X calls; scalar CYGate uses
+the shared packed-control helper. Both own one restored predicate through the
+existing measured erasure. Atomic half-X phases reuse `pauli_rotation.py`.
+Run `tests/unit/test_generic_controlled_y_component.py` for complete complex
+operators, all small histories, emitted inventories and separate source models.
+Cirq 1.6's generic ControlledGate(Y) six-call decomposition is a third source
+profile; semantic equality with it is not three-call graph equality.
+
 `ising_component.py` stores the periodic Ising X/ZZ Split/call/Join paths with
 existing rotation and CNOT dependencies. The caller supplies the ordered system;
 this owner allocates no work and performs no numerical execution. Run
