@@ -6,11 +6,9 @@ from collections.abc import Sequence
 from dataclasses import replace
 from typing import Any
 
+from flagquantum.simulation.native_cpu.permutation import compact_cx_permutation_images
 from flagquantum.simulation.statevector.cx_adjoint import (
     apply_cpu_cx_adjoint_segment as apply_cpu_cx_adjoint_segment,
-)
-from flagquantum.simulation.statevector.cx_adjoint import (
-    cpu_cx_permutation_images as cpu_cx_permutation_images,
 )
 from flagquantum.simulation.statevector.cx_adjoint import (
     cpu_cx_permutation_index as cpu_cx_permutation_index,
@@ -38,7 +36,7 @@ def apply_or_defer_cpu_cx_adjoint_segment(
     controls = tuple(qubits[0] for qubits in reversed(segment_qubits))
     targets = tuple(qubits[1] for qubits in reversed(segment_qubits))
     if sweep.policy.low_memory_cpu_cx:
-        images = cpu_cx_permutation_images(
+        images = compact_cx_permutation_images(
             controls,
             targets,
             sweep.plan.n_qubits,
@@ -75,7 +73,7 @@ def apply_or_defer_cpu_cx_adjoint_segment(
         and native_cpu_cx_rotation_adjoint_fusion_available()
     ):
         if use_compact_cpu_cx_mapping(sweep.plan.n_qubits):
-            sweep.pending_cpu_cx_images = cpu_cx_permutation_images(
+            sweep.pending_cpu_cx_images = compact_cx_permutation_images(
                 controls,
                 targets,
                 sweep.plan.n_qubits,

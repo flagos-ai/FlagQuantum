@@ -1,0 +1,20 @@
+{
+  "repository": "https://github.com/actions/upload-artifact",
+  "commit": "ea165f8d65b6e75b540449e92b4886f43607fa02",
+  "license": "MIT",
+  "scope": "The same upload implementation already used by the bounded artifact wrapper; raw upstream files, not a replacement SDK.",
+  "files": {
+    "LICENSE": {
+      "git_blob": "a67dca8b4f65d6bd351f6b1e333ce2cd84d843a5",
+      "sha256": "3e855ffa704114a51628ef8f0bf3aeb41728adf9d9070e263bf58aa5640b0eb5"
+    },
+    "action.yml": {
+      "git_blob": "2a0ecf19e8d0087dd2e5d1785dcf764811e79fae",
+      "sha256": "29b21270ff44638a165ea12abb4481796770c629e513217af7b4df1aa3821177"
+    },
+    "dist/upload/index.js": {
+      "git_blob": "89238fa3eb49937ea82c5d82006ee1fc6c6abaae",
+      "sha256": "0165b8a75330f3228f2c7a234b4ff8a107b9139c2b519147f4c8e9fe99b262d8"
+    }
+  }
+}

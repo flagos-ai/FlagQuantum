@@ -8,11 +8,11 @@ repos:
       - id: trailing-whitespace
         # LPPL requires distributing its license text verbatim. Its original
         # bytes are verified by the drawer resource integrity test.
-        exclude: ^(benchmarks/results/|assets/readme/.*\.svg$|flagquantum/drawer/tex/licenses/yquant\.txt$)
+        exclude: ^(benchmarks/results/|assets/readme/.*\.svg$|flagquantum/drawer/tex/licenses/yquant\.txt$|\.github/actions/upload-artifact/vendor/(action\.yml|LICENSE|dist/upload/index\.js)$)
       - id: end-of-file-fixer
         # Preserve pinned upstream bytes, including absent final newlines.
         exclude: >-
-          ^(benchmarks/results/|flagquantum/drawer/tex/(yquant[^/]*\.(sty|tex)|licenses/yquant\.txt)$|flagquantum/simulation/stabilizer/csrc/vendor/stim\-1\.16\.0/LICENSE$|flagquantum/qec/decoders/csrc/vendor/pymatching-2\.4\.0/src/pymatching/sparse_blossom/arena\.h$)
+          ^(benchmarks/results/|flagquantum/drawer/tex/(yquant[^/]*\.(sty|tex)|licenses/yquant\.txt)$|flagquantum/simulation/stabilizer/csrc/vendor/stim\-1\.16\.0/LICENSE$|flagquantum/qec/decoders/csrc/vendor/pymatching-2\.4\.0/src/pymatching/sparse_blossom/arena\.h$|\.github/actions/upload-artifact/vendor/(action\.yml|LICENSE|dist/upload/index\.js)$)
       - id: check-docstring-first
       - id: check-yaml
       - id: debug-statements

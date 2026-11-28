@@ -88,7 +88,7 @@ def run_jax_sharded_tensor_network(
 ) -> JAXShardedTensorNetworkResult:
     """Execute JAX tensor-network contraction with slice tasks sharded by rank."""
 
-    from .....simulation.tensor_network.entrypoints import build_tensor_network
+    from flagquantum.simulation.tensor_network.local import build_local_tensor_network
 
     torch = _require_torch()
     policy = _resolve_policy(
@@ -117,7 +117,7 @@ def run_jax_sharded_tensor_network(
     torch_dtype = _torch_complex_dtype(complex_bytes)
     jax_dtype = _jax_complex_dtype(complex_bytes)
     jax_device = _resolve_jax_device(device)
-    plan = build_tensor_network(
+    plan = build_local_tensor_network(
         circuit_or_ir,
         bsz=bsz,
         device="cpu",

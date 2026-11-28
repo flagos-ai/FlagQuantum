@@ -316,3 +316,302 @@ Ubuntu in bucket 2, preserving the same complete requirements snapshot, strict
 no-resolver audit, sixty-second request timeout, eight-minute audit step, Bandit,
 SBOM checks and twenty-minute total safety budget. This correction changes its
 execution placement rather than weakening the audit or increasing its timeout.
+
+
+## Qualified parent and artifact SDK follow-up
+
+Parent PR 1344 head `f3329a61bf9f867647f93b5cd2eb81789dc03109` passes
+432 checks with four conditional skips; all three applicable workflows succeed
+on attempt 1. Its actual source tree and all 384 original CPU report artifacts
+are retained and verified. Runtime executes the original 14,260 selected nodes
+once; coverage executes the 38,468 planned nodes once. Main CI job timestamps
+show a peak of 213 overlapping assigned jobs.
+
+| Group | Partitions | Maximum whole-job seconds | Jobs above 600 seconds |
+| --- | ---: | ---: | ---: |
+| Runtime | 128 | 759 | 4 |
+| Coverage | 256 | 832 | 6 |
+| Python 3.12 unit | 4 | 451 | 0 |
+| Distributed CPU | 6 | 571 | 0 |
+
+Those durations include setup, tests and upload, excluding queue time. A green
+correctness gate does not establish the remaining elapsed-time target. Several
+late artifact steps spend 203–331 seconds fetching/preparing the official action
+and uploading reports. The existing bounded upload wrapper now uses the same
+pinned official SDK locally. Its raw upstream metadata, MIT license, bundle,
+Git object identities and SHA-256 values are retained under the wrapper's
+`vendor/` directory. The three-attempt graph, final failure, service protocol,
+inputs, outputs, overwrite and retention semantics remain unchanged. Source
+restoration must include the complete local action before the first upload;
+regression tests restore its exact entry point and bytes from a fresh archive.
+The SDK is absent from the inspected Python source distribution and wheel.
+Real successor CI upload/download and source-binding acceptance remain pending.
+
+The native-fermion Python 3.12 job on `fq-a100-cpu10` started at 14:15:20 UTC
+and reached its real-driver test step at 14:49:46 UTC: 34 minutes 26 seconds
+before scientific execution. This lane intentionally installs fresh certified
+science dependencies, so it now uses hosted Ubuntu networking in existing
+bounded buckets 3 and 4. Both original Python/Torch/PySCF/h5py combinations,
+fresh isolated environments, exact source restoration, real RHF tests and the
+45-minute finite safety budget remain unchanged. The hosted ceiling stays at
+eight shared groups. This routing change still needs actual CI timing evidence.
+
+The remaining five compute-heavy coverage outliers already own sole-test slots
+and twelve admitted threads: the complete Maxwell case spends 635 seconds in
+its call; four projection-embedding cases each spend 695–734 seconds repeating
+the module fixture. Additional fan-out alone cannot shorten them. Their original
+workloads, complete amplitudes, optimizer budgets and assertions remain intact;
+fixture/resource optimization requires separate measured verification.
+
+
+## Source publication placement
+
+The first successor head `b9b4ad6da30217ff53fd707684e1f2123dfba9ec`
+reached a source-preparation network tail before any CPU partition could start.
+Main CI run `46027287200`, source job `140601846799` on
+`fq-bw1100-11-cpu13`, spent 15:43:04–15:46:50 UTC in API restoration and
+then entered the existing Git checkout fallback. Its original job remains
+observed until superseded by this concrete routing correction; log evidence
+must determine the exact restoration error, rather than attributing it to the
+new SDK without proof.
+
+Both main and GPU source publishers now use hosted Ubuntu in the existing
+shared bucket 5. Source publication needs Git/GitHub networking rather than a
+scientific image or private accelerator. The existing hosted checkout path,
+read-only permissions, credential persistence prohibition, HTTP/1.1 setting,
+30-minute finite budget, exact-commit packing, unique per-run artifact keys,
+source digest checks and complete/incremental consumers remain unchanged.
+Trusted and fork sources both remain on hosted publication capacity. Scientific
+CPU/GPU consumers keep their existing qualified routes and source checks.
+The eight-group hosted ceiling is unchanged. Actual new-head publication and
+whole-job timing still require CI verification.
+
+
+## Ordinary single-GPU placement and frozen campaigns
+
+At successor head `2d77f841`, ordinary `one-gpu-local` failed twice on the 171
+host before scientific execution because no physical device satisfied the
+existing idle threshold. Original jobs `140609266692` and `140615033371`
+remain failed evidence. The same commit's two-GPU job `140609268286` passed on
+172, with its digest-verified original hardware artifact recording NVIDIA
+A800-SXM4-80GB devices, driver 580.126.20, Torch 2.13.0+cu130, and actual
+selected devices 0 and 1. No GPU process was stopped or reconfigured.
+
+Ordinary single-GPU CI now uses this already provisioned A800 172 host.
+The precision-frontier and QNG-ablation manual inputs still select the original
+171 host and physical device zero; their frozen commands and environments do
+not change. Single- and two-GPU CI retain the same accelerator concurrency lock,
+so their real computations and measurements cannot overlap. The one-GPU
+20-minute budget, idle memory/utilization thresholds, all correctness tests,
+benchmark warmups/repetitions/inner loops, performance evaluation and evidence
+collection remain unchanged. This is a resource-placement change, not a relaxed
+admission check or a performance/scalability promotion. The new head must pass
+the original single-GPU tests and measurement gate on the selected hardware.
+
+
+## Spread serial embedding fixtures without changing scientific work
+
+The original four projection-embedding reports each used 761–803 process CPU
+seconds in 698–737 wall seconds: about 1.09 cores despite a twelve-core
+admission. Their utilization of that allowance was about nine percent. The
+Maxwell report differs: 4,561 process CPU seconds in 638 wall seconds uses about
+7.15 cores, so it retains its existing A800 placement. These measurements are
+original parent-run evidence, not predictions relabeled as new timings.
+
+In the successor run, the final embedding partition did not start until
+16:21:11 UTC, even after nearly all other pools finished. Four unchanged full
+embedding cases now use four distinct, online and idle, positively qualified
+BW registrations: cpu16 on hosts 10, 11, 12 and 14. Their existing source-bound
+qualification receipt covers all four locked images, including coverage-py3.12.
+The planner refuses the override if that profile or any target receipt is
+missing. Only already-sole partitions receive the override; mixed partitions
+keep their existing placement. Other heavy cases and all Maxwell work remain
+under the existing A800 rule.
+
+The five-field plan schema, every selected node and per-shard digest, full
+chemistry/state/energy/100-query optimizer workflows, assertions, independent
+references, coverage policy and finite timeouts remain unchanged. The matrix
+adds a private explicit selector; forks still use hosted capacity and all
+self-hosted cached-image/resource checks stay enabled. Resource admission must
+report the BW service's actual four-core budget rather than the A800 allowance.
+No service, label, quota, dependency or numerical algorithm is changed. Actual
+whole-job timing and all original scientific results on these targets remain
+required before calling the bottleneck resolved.
+
+
+## Rootless preparation and full-width placement
+
+Offline environment preparation reads the complete Docker security-options
+query before selecting the container user. Under `pipefail`, a producer writing
+after `grep -q` has already matched can receive SIGPIPE and make a positive
+rootless match appear false. A query failure now stops preparation rather than
+selecting a host UID without knowing the daemon's identity. Rootless container
+UID zero maps to the unprivileged daemon user; it does not grant host root.
+The original failed preparation and deterministic regression outcomes are
+retained separately from successful verification.
+
+The complete wide-state glued-trees oracle has an existing qualified BW slot,
+just as the four serial embedding workloads do. It remains a sole test with its
+original full amplitudes, width, oracle and finite budget. Qualification still
+checks the locked coverage profile and exact runner selector; trust rules,
+resource shares and other heavy A800 routes are unchanged. No service, runner
+label, image or quota is modified. The placement must be accepted through the
+new head's actual scientific result, resource report and entire job duration;
+a cache qualification or scheduling replay alone cannot certify performance.
+
+
+## Follow-up after qualified PR #1346: fermion encoding assembly
+
+PR #1346 head `77f4e2d3b1e9a7851991f9ed58ff3e1b29685301` passed
+432 checks with four unchanged conditional skips, on the first attempt of all
+three workflows. All 384 raw CPU reports are retained. Runtime128 accounts for
+14,260 original nodes and coverage256 for 38,518 selected nodes once. Their
+whole-job maxima are 539 and 747 seconds respectively, with five scientific
+singletons still above 600 seconds. Maxwell takes 691 seconds after waiting
+999 seconds from plan readiness. Green CI is not ten-minute acceptance.
+
+The original PBE job's 300-second stack is inside fermion encoding's repeated
+full Pauli-sum canonicalization. The follow-up replaces only that accumulated
+sum rebuild, inside the existing Algorithms encoder, with updates to the
+factors touched by each original image. Ladder mapping, per-image addition
+order, leading complex zero, finite rejection, exact-zero removal, final
+canonical ordering, public signature and result type remain unchanged. There
+is no new dependency, export, package, native ABI, compatibility layer or Rust.
+
+Before activation, a temporary definition preserved all 59 original complete
+encoder outcomes and six overflow/cancellation outcomes from the independently
+installed prerequisite. The nine additional contract/Fock-reference cases pass
+on the unchanged original implementation. The representative local 16-mode,
+1,024-source-term diagnostic takes 3.03 seconds originally and 0.088 seconds
+with the proposed fold; this is not a full chemistry or Linux performance claim.
+Formal source, installed-candidate, full original independent PBE workflows and
+exact published-head CI acceptance remain required. No original scientific
+input, optimizer budget, marker, oracle or timeout is changed.
+
+The original complete 17-qubit, 2,383-operation Maxwell walk also retains
+identical complete output bytes across fifteen local executions using one,
+two, four, eight and twelve threads. Local differences are small and do not
+qualify a Linux thread-policy change. The isolated counter fixture is likewise
+insufficient to attribute the full Maxwell runtime to statistics. Retain the
+original scientific workflow while investigating its actual Linux cost.
+
+The actual candidate now passes all 65 original outcomes, including exact
+coefficient bytes and overflow/refusal results, from both source and its own
+new native installation. The full actual-source default selection passes
+21,896 tests with 852 conditional skips in 488 seconds including startup.
+All 22,739 earlier cases remain and all nine additional cases pass. One
+previously passing historical Git-revision lookup is skipped by its existing
+60-second environment guard; neither that test nor its bound was changed, and
+its raw reason is retained. The complete fermion unit suite passes 568/1,
+and all seventeen native integration/training modules pass 164 tests. The
+installed suite has exactly the same 733 outcomes, 732 passed and one missing
+optional HDF5 dependency, with all 523 loaded product modules verified from
+its own installation. Both native extensions load there, and all 1,265 product
+Python files match source, wheel and installation. The golden native energy
+example still reports 1.300000 for all three encodings.
+
+Candidate wheel SHA-256:
+`c6db9050d0939e0a0294ba6baf2444351bf6c575123b6b1d70fd9efc49327dd7`.
+All eleven quality gates and the applicable fixed hooks pass. This local
+qualification does not establish the four full original PBE timings or the new
+published-head CI; those remain mandatory. The latest #1084 increment through
+`d4802f79b864b3ae25c3e03efc66f6c06ab6dfb8` has sixteen SHA-verified
+paths and no candidate overlap; both relocation ledgers retain the same
+seventeen unfiltered changed-incoming diagnoses. Integrated G0 remains open.
+
+
+## CPU Toffoli layout follow-up after PR #1349
+
+PR #1349 qualified commit `b0e5856c2335acfcad9a662edbd8378148de0f65` on
+all three workflows at attempt 1: 432 successful checks and four existing
+conditional skips. Its 384 original CPU reports preserve 14,260 Runtime and
+38,540 coverage selection nodes once. Whole executed job maxima were Runtime
+540 seconds, unit 423 seconds and distributed CPU 426 seconds. Only Maxwell
+remained above 600 seconds, at 705 seconds; it waited another 873 seconds
+after the coverage plan was ready.
+
+The follow-up changes only the existing Simulation CPU Toffoli calculation.
+For medium state vectors, grouping untouched axes bounds the indexing rank and
+swapping two cached target views halves the temporary amplitude buffer. The
+owned non-gradient path copies one target half, then exchanges the two views.
+The differentiable path clones the admitted input before either write. Every
+caller continues to use the same Simulation defining function, with its original
+signature, input admission, dtype, output shape and buffer-ownership rules.
+
+The direct-axis layout remains for fewer than twelve qubits and for twenty or
+more qubits. Local calibration found grouped views slower for the smallest
+states and for the measured four-thread large streaming case. Both layouts
+are permanent numerical choices in the same owner. These local timings do not
+qualify the Linux full workload or establish a universal hardware crossover.
+
+Before changing the implementation, 891 complete original outcomes were retained
+from the qualified independent native installation, including raw tensor and
+gradient bytes, strides, conjugation, input mutation, storage aliasing and
+public admission refusals. The actual modified source reproduces all of them
+exactly. The 62 existing independent dense/gradient/ownership references and
+24 added seventeen-qubit batched-layout/gradient cases pass on both the original
+and the modified source. The new cases use the existing generic matrix action
+and the unchanged Toffoli matrix as their independent numerical oracle.
+
+An independent, immutable-source hardware check of the unchanged original
+Maxwell node on the qualified BW17 CPU16 four-CPU/24-GiB profile passed all
+original assertions, but took 940 seconds including preparation. Its container
+reached its 24-GiB hard limit with 12,794 max-limit events and no OOM kills.
+This result does not justify moving Maxwell to BW for the ten-minute goal.
+It does not isolate which construction, compilation or execution allocation
+caused that pressure. Source files were hash-verified before and after the
+read-only test phase, with no temporary numerical override.
+
+The final complete source default selection passes 21,921 tests with 864
+conditional skips in 410 seconds including startup. All 22,785 collected cases
+remain: the earlier 22,761 and the 24 added independent references. One
+historical Git-revision check changes from its existing environment skip to a
+pass; no previously passing case regresses. The relevant native/backend and
+complex-matrix integration modules pass all 188 cases. Together with the 86
+Toffoli cases, the independently installed native wheel passes the same 274
+cases, and reproduces all 891 complete original outcomes exactly.
+
+All 1,265 product Python files match source, wheel and installation, both native
+extensions load from that installation, and all 532 loaded product providers
+resolve there. The BMM test fixture now locates its unchanged kernel through
+the loaded package, allowing the same assertions to run outside the repository.
+Initial source-relative fixture errors and sandbox local-interface failures
+were retained; the full installed selection passed after correcting those test
+environment constraints. No optional dependency resolution is claimed.
+Candidate wheel SHA-256:
+`6c7dcc3b2cea9de23523ed9078fb31ccca93c70b59cfba85ac3c36ece7ffb2ea`.
+
+The follow-up still requires its own exact-head CI with the full original
+scientific node and coverage; the predecessor's green checks do not qualify
+this change or establish its Linux performance. Original
+widths, amplitudes, phases, optimizer budgets, draws, clocks, markers, tolerances,
+assertions, safety limits and coverage thresholds remain unchanged. Native
+source and ABI remain unchanged; no definition relocation is recorded. Rust
+remains deferred until the incoming branch and architecture migration close.
+
+## Completed CPU layout qualification
+
+PR #1350 head `864605d88a8d9658f0838edbcb2d06ac5442929a` passes all three
+workflows at attempt 1: 432 successful checks and four existing conditional
+skips. Actual test merge `462e410374565f5a27dbee1828aec542cf175cbe` has the
+identical source and packaged tree. All 384 original CPU reports are retained
+and digest-verified. Runtime preserves 14,260 nodes across 128 partitions;
+coverage preserves 38,564 across 256 partitions, adding only the 24 reviewed
+references to the previous 38,540. All 83 previous scientific singletons retain
+their original isolation and existing call phases. All 24 new references and
+the preceding thirteen ownership cases have actual CI call phases.
+
+Whole executed job maxima, including setup/upload and excluding queue, are
+Runtime 508 seconds, unit 458 seconds, distributed CPU 413 seconds and coverage
+592 seconds. The unchanged complete Maxwell node is 568 seconds, versus the
+previous 705; its scientific call is 478.321 seconds, versus 619.122. These are
+observations from the named runs, not universal performance or scalability
+claims. Queueing remains separate. The serial quality and package jobs take
+1,120 and 638 seconds; the test-partition result does not imply every job or the
+entire workflow is below ten minutes. No runner services, labels, quotas or
+scientific workloads were changed.
+
+The follow-up Runtime direct-seam retirement is recorded in
+[its migration record](runtime-direct-seam-retirement.md). It must qualify its
+own source, installed artifact and exact-head CI independently. Incoming G0,
+the remaining ownership review and Rust retain their existing closeout gates.

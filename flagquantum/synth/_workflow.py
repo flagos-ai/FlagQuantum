@@ -86,8 +86,8 @@ from flagquantum.runtime.planner.synthesis import (
     _inspect_execution_with_resources,
 )
 from flagquantum.runtime.results import ExecutionResult
-from flagquantum.synth._readout import Distribution
-from flagquantum.synth._readout import probabilities as _probabilities
+from flagquantum.runtime.results.readout import Distribution
+from flagquantum.runtime.results.readout import probabilities as _probabilities
 
 # Preserve the Qmod spelling for the captured Python operations.
 qft = program_types.qft

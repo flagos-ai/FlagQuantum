@@ -87,11 +87,11 @@ from flagquantum.runtime.executors.tensor_network.sharded_kernels import (
 from flagquantum.runtime.executors.tensor_network.sliced_reverse import (
     execute_sliced_tn_explicit_reverse,
 )
-from flagquantum.simulation.tensor_network.entrypoints import (
-    build_tensor_network,
+from flagquantum.simulation.tensor_network.local import build_local_tensor_network
+from flagquantum.simulation.tensor_network.models import TensorNetworkContractionPlan
+from flagquantum.simulation.tensor_network.observables import (
     build_tensor_network_expectation,
 )
-from flagquantum.simulation.tensor_network.models import TensorNetworkContractionPlan
 
 pytestmark = pytest.mark.unit
 
@@ -99,7 +99,7 @@ pytestmark = pytest.mark.unit
 def _plan() -> TensorNetworkContractionPlan:
     circuit = fq.Circuit(4)
     circuit.h(0).cx(0, 3).ry(1, theta=0.2).rzz(2, 3, theta=-0.4)
-    return build_tensor_network(circuit)
+    return build_local_tensor_network(circuit)
 
 
 def test_distributed_tn_dag_is_deterministic_and_planning_only():
