@@ -52,3 +52,9 @@ python3 -I tools/ci/ci_coverage_artifacts.py --help
 ```
 
 See the [transport repair declaration](../../docs/development/migration/ci-coverage-artifact-transport.md).
+
+All source-artifact handoffs in CI and the local GPU workflow have bounded,
+independent retries before checkout. A successful retry replaces the canonical
+input directory; the abandoned partial attempt stays separate. Git SHA/tree/blob
+and complete-source verification remain mandatory. Identical step definitions
+use standard YAML anchors. See the [source transport declaration](../../docs/development/migration/source-transport-bounds.md).

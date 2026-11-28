@@ -1279,3 +1279,12 @@ Use `python3 -I tools/ci/ci_coverage_artifacts.py --help` to inspect the command
 without downloading data. Run `python -m pytest tests/unit/test_ci_coverage_artifacts.py -q` to exercise concurrency, refusal, retry and credential handling locally.
 The original #1360 aggregation failure remains recorded; a passing test shard is
 not a passing coverage policy or whole-workflow qualification.
+
+Source-artifact downloads before checkout also have explicit bounds: one minute
+for incremental inputs, two for full inputs, and one independent two-minute
+retry. Only successful retries are promoted to the canonical directory; first
+attempts remain separate. Existing Git source-identity, object-closure and complete
+checkout checks still gate every test. Standard YAML anchors reuse identical
+step definitions. The existing serial BW recipient for invalid embedding angles
+moves to the qualified BW2 cpu16 service after BW14 cpu16 became unavailable;
+the four-CPU/24-GiB admission and complete workload remain unchanged.

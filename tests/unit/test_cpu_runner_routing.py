@@ -280,7 +280,12 @@ def test_network_dependent_sdks_do_not_wait_for_the_preinstalled_pool() -> None:
             "flagquantum-gh-7",
         }
         assert job["timeout-minutes"] <= 30
-        assert not any(step.get("continue-on-error") for step in job["steps"])
+        assert not any(
+            step.get("continue-on-error")
+            and step.get("id")
+            not in ("source-incremental-download", "source-full-download")
+            for step in job["steps"]
+        )
 
     assert not any(
         "pip download" in step.get("run", "") for step in jobs["jax-optional"]["steps"]
@@ -302,7 +307,10 @@ def test_sdk_jobs_use_accepted_fixed_capacity() -> None:
         )
         assert installer["timeout-minutes"] == 8
         assert not any(
-            step.get("continue-on-error") for step in job["steps"]
+            step.get("continue-on-error")
+            and step.get("id")
+            not in ("source-incremental-download", "source-full-download")
+            for step in job["steps"]
         ), "SDK preparation must fail closed"
 
 

@@ -191,7 +191,7 @@ def test_cpu_pytest_tiers_use_sixteen_bounded_work_stealing_workers() -> None:
         download = next(
             step
             for step in _steps("ci.yml", job)
-            if step.get("uses") == "actions/download-artifact@v8.0.2" and step.get("if")
+            if step.get("id") == "source-full-download"
         )
         assert download["with"]["digest-mismatch"] == "error"
         assert (

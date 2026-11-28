@@ -36,7 +36,7 @@ _SERIAL_BW_RUNNERS: dict[str, str] = {
     _EMBEDDING_TEST
     + "test_actual_full_optimizer_budget_and_unrepaired_estimates": "fq-bw1100-12-cpu16-validation",
     _EMBEDDING_TEST
-    + "test_invalid_singles_angles_fail_before_execution": "fq-bw1100-14-cpu16-validation",
+    + "test_invalid_singles_angles_fail_before_execution": "fq-bw1100-2-cpu16-validation",
     # Keep the complete memory-intensive state oracle on a qualified BW slot.
     "tests/integration/test_synthesis_glued_trees_notebook.py::"
     "test_wide_full_state_at_original_first_time": "fq-bw1100-17-cpu16-validation",
