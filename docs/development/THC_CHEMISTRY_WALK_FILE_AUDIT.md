@@ -68,3 +68,67 @@ format, ownership, architecture, IR, and public API checks passed.
 Q-0416 and Q-0421 close the native tutorial utilities and complete
 tutorial. Q-0422 retains the original erase and narrow-reflection
 limits, and the physical rotation networks remain caller-supplied.
+
+## Literal source factory dependency ownership
+
+`ecosystem._thc_walk_component_library.capture_thc_walk_context` captures the
+actual coefficient-factory object into owned `WalkContext` records. It preserves
+the particular source object's set-derived port order, integer lookup columns,
+RIGHT output lifetimes and explicit SELECT direction. No source object remains
+in the returned context. Compiler consumes these records after capture without
+Qualtran, Cirq or Kickmix. The source factory's original normalization and
+blocking remain unchanged. Pure source gate/peak queries now accept the existing
+`PrepareTHCChemistry` owner without constructing fictitious Givens networks.
+
+The blocked small factory has one block call, fifteen SELECT calls, seventeen
+PREPARE calls and forty ordinary reflection calls. Positive reflection has
+thirty-six calls. All comparable operands, producers and output connections
+match the unmodified source. The literal reflection consumes allocated RIGHT
+junk in inverse PREPARE, produces fresh RIGHT junk in PREPARE, and frees THRU
+junk, the phase target and RIGHT junk in source order. This preserves a logical
+graph; it does not prove that an invalid source clean Free is executable.
+
+The positive block's forward specialized SELECT leaves its external control as
+a bystander. Its owned inverse reverses that actual stored forward graph. The
+source's direct `Controlled.adjoint()` recipe instead invokes a generic
+controlled inverse SELECT with a `ctrl` port. Those are distinct source paths:
+we do not claim the stored inverse equals the latter constructor or that the
+source specialization is a correct controlled unitary.
+
+Zero-block source PREPARE fails on `junk_target0_`; its reflection stays an
+explicit bodyless header. Rotation, comparator and QROAM eraser leaves have no
+original physical decomposition. Physical binding refuses at those leaves;
+whole-factory primitive counts and amplitude evidence are unavailable, not
+zero. Corrected mathematical eight-bit walk amplitudes and measured erasure
+remain separate previously accepted evidence.
+
+The actual 152-spin-orbital, rank-450 source example and its complete native
+context passed: two walk calls, one block call, fifteen SELECT calls, seventeen
+PREPARE calls and 660 reflection calls. Native capture took 197.68 seconds; the
+complete source connection and valid-Program probe took 438.93 seconds (443.68
+seconds including process startup/teardown). The native reflection carries
+18,360 definitions. No dense statevector or whole physical primitive count was
+claimed for this graph.
+
+Two earlier bounded 280-second attempts exceeded their budget. Interruption
+localized repeated normalization of the complete QROM inside generic adjoint
+matching. PREPARE now records explicit inverse recipes at each actual imported
+call; the ordinary forward Program is unchanged. Four entire forward Programs
+match the published baseline, and their inverse reachable graphs are compared
+up to function names. QROM and successful call-port admission reuse also preserve
+24 complete Programs against the old builder and old lookup implementation.
+The final source-backed suites exercise every literal PREPARE call and return.
+The large receipt precedes the equivalent recipe-recording refactor; the final
+small full-graph and baseline comparisons cover that refactor explicitly.
+
+Small source gate/peak categories reuse the accepted THC budget comparisons.
+The actual large original resource comparison was interrupted after 269.48
+seconds while the source created Soquets; no completed large peak or gate budget
+comparison is claimed. This construction limit remains separate from native
+emitted counts and from the successful actual large logical context.
+
+Q-0422 closes the complete original coefficient-to-walk factory and direct
+source dependencies under faithful-source acceptance. Q-0658 remains open for
+the distinct generic positive Controlled.adjoint constructor path. Source
+rotation/eraser/comparator absence, invalid sentinel/clean Free and the narrow
+signal reflection remain explicit source boundaries, not repaired source code.

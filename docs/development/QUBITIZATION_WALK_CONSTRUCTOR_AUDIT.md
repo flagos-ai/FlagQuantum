@@ -76,3 +76,15 @@ The constructor catalogue count must not increase solely from these witnesses.
 Large-example exact child ownership, retained-source-ABI disposition and
 remaining constructor coverage still require acceptance. G2 remains active;
 this batch neither enters G3 nor authorizes merging the integration PR.
+
+## THC source context and the remaining control-direction boundary
+
+`capture_thc_walk_context` now owns the actual THC factory children and narrow
+RIGHT-junk reflection rather than substituting a corrected signal extension.
+See `THC_CHEMISTRY_WALK_FILE_AUDIT.md` and
+`tests/unit/test_thc_walk_source_context.py`. Its positive pair reverses the
+stored specialized forward graph. The source's separate
+`Controlled(SelectBlockEncoding).adjoint()` constructor changes specialization
+to a generic controlled inverse SELECT. That literal constructor path remains
+unclaimed; successful ordinary THC factory capture does not close Q-0658 by
+itself. Whole physical gates remain unavailable at the original opaque leaves.

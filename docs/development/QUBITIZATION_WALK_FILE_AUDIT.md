@@ -131,3 +131,10 @@ chemistry source owners and their actual contexts before claiming this root
 closed. Retained signal junk remains live, and lossy source-ABI binding is
 refused. Neither slow-test completion nor the small replacement fixture closes
 that separate implementation obligation.
+
+The THC factory now has a literal native dependency owner separate from the
+corrected mathematical operation. Its original RIGHT-junk lifetimes, narrow
+reflection and opaque physical leaves are retained. The specialized positive
+forward graph inverse and the source's distinct generic Controlled.adjoint
+constructor must not be conflated. The latter is an explicit remaining source
+constructor gap under Q-0658; see `QUBITIZATION_WALK_CONSTRUCTOR_AUDIT.md`.
