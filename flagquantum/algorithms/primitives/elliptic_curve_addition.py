@@ -7,7 +7,6 @@
 
 from collections.abc import Hashable
 from dataclasses import dataclass
-from typing import cast
 
 from ...circuit import Circuit
 from ...compiler._component_trace.call_graph import (
@@ -20,10 +19,7 @@ from ...core.ir.program.registers import Register
 from ...core.ir.program.signatures import Signature
 from ...core.value_math import SymbolicInt
 from ...dynamic import DynamicCircuit
-from ...simulation.montgomery_values import (
-    integer_to_montgomery_value,
-    montgomery_to_integer_value,
-)
+from ...simulation.elliptic_curve_values import elliptic_curve_addition_values
 from .elliptic_curve_addition_cleanup import EllipticCurveAdditionCleanup
 from .elliptic_curve_addition_coordinates import EllipticCurveAdditionCoordinates
 from .elliptic_curve_addition_finish import EllipticCurveAdditionFinish
@@ -34,7 +30,6 @@ from .elliptic_curve_addition_model import (
 )
 from .elliptic_curve_addition_products import EllipticCurveAdditionProducts
 from .elliptic_curve_addition_slope import EllipticCurveAdditionSlope
-from .elliptic_curve_point import ECPoint
 from .elliptic_curve_window_product import CurveWindowProduct
 
 
@@ -118,24 +113,8 @@ class EllipticCurveAddition:
         The tangent determines the curve coefficient. The decomposition's
         arithmetic and clean-release promises have separate execution evidence.
         """
-        tangent, left_y, left_x = (
-            cast(int, montgomery_to_integer_value(value, self.width, self.modulus))
-            for value in (lam_r, b, a)
-        )
-        curve_a = (tangent * 2 * left_y - 3 * left_x**2) % self.modulus
-        right_x, right_y = (
-            cast(int, montgomery_to_integer_value(value, self.width, self.modulus))
-            for value in (x, y)
-        )
-        result = ECPoint(left_x, left_y, self.modulus, curve_a) + ECPoint(
-            right_x, right_y, self.modulus, curve_a
-        )
-        return (
-            a,
-            b,
-            cast(int, integer_to_montgomery_value(result.x, self.width, self.modulus)),
-            cast(int, integer_to_montgomery_value(result.y, self.width, self.modulus)),
-            lam_r,
+        return elliptic_curve_addition_values(
+            self.width, self.modulus, a, b, x, y, lam_r
         )
 
     def workspace_requirements(self) -> tuple[int, int]:

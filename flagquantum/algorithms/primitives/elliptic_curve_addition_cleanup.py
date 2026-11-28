@@ -35,6 +35,7 @@ from ...core.ir.program.registers import Register, RegisterSide
 from ...core.ir.program.signatures import Signature
 from ...core.value_math import SymbolicInt
 from ...dynamic import DynamicCircuit
+from ...simulation.elliptic_curve_values import addition_cleanup_values
 from .elliptic_curve_window_product import CurveWindowProduct
 
 
@@ -90,12 +91,7 @@ class EllipticCurveAdditionCleanup:
         self, ctrl: int, a: int, b: int, x: int, y: int, lam_r: int, lam: int
     ) -> tuple[int, int, int, int, int, int]:
         """Return source coordinate restoration after consuming the slope value."""
-        if ctrl == 1:
-            x = (a - x) % self.modulus
-            y = (y - b) % self.modulus
-        else:
-            x = (x + a) % self.modulus
-        return ctrl, a, b, x, y, lam_r
+        return addition_cleanup_values(self.modulus, ctrl, a, b, x, y, lam_r, lam)
 
     def workspace_requirements(self) -> tuple[int, int]:
         n = self.width

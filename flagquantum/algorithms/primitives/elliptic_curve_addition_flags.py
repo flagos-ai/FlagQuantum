@@ -23,6 +23,7 @@ from ...core.ir.program.registers import Register, RegisterSide
 from ...core.ir.program.signatures import Signature
 from ...core.value_math import SymbolicInt
 from ...dynamic import DynamicCircuit
+from ...simulation.elliptic_curve_values import addition_flags_values
 
 _FLAG_NAMES = ("f1", "f2", "f3", "f4", "ctrl")
 _COORDINATE_NAMES = ("a", "b", "x", "y")
@@ -88,12 +89,7 @@ class EllipticCurveAdditionFlags:
         self, a: int, b: int, x: int, y: int
     ) -> tuple[int, int, int, int, int, int, int, int, int]:
         """Return the original four predicates and combined control with the words."""
-        f1 = int(a == x)
-        f2 = int(b == -y % self.modulus)
-        f3 = int(a == b == 0)
-        f4 = int(x == y == 0)
-        ctrl = int(f2 == f3 == f4 == 0)
-        return f1, f2, f3, f4, ctrl, a, b, x, y
+        return addition_flags_values(self.modulus, a, b, x, y)
 
     def workspace_requirements(self) -> tuple[int, int]:
         """Return the reused quantum and classical workspace sizes."""

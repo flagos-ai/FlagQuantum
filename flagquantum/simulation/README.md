@@ -1033,3 +1033,21 @@ leases. The field inverse example composes these owners before literal append;
 literal product padding exercises the same analysis. Run
 `tests/unit/test_clean_release_analysis.py` and
 `tests/unit/test_field_inverse_literal.py` for the shortest change-and-test path.
+
+## Elliptic-curve numerical values
+
+`elliptic_curve_values.py` owns the six stage callbacks, complete affine-addition
+callback and shared point value formula. It reuses the Montgomery numerical
+owner and imports no Algorithms, Compiler or reference SDK. Inputs are raw
+stored integers; outputs follow source right-port order, including RIGHT flags
+and slope and the absence of consumed LEFT fields. Physical operation classes
+in Algorithms delegate to these same functions while retaining their existing
+quantum admission, binding and scratch requirements.
+
+Direct value callbacks also cover valid source numerical domains such as
+width2/modulus3 that cannot satisfy the quantum product's extra width promise.
+A returned value supplies no gate stream or workspace cleanup certificate.
+Run `tests/unit/test_ecc_classical_value_owner.py` and
+`tests/unit/test_elliptic_curve_classical_file.py` with locked references. Point
+object identity returns remain in the Algorithms wrapper; Simulation owns only
+the coordinate values, casts and original arithmetic failures.

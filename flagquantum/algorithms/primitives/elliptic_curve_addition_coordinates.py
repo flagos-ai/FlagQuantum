@@ -33,6 +33,7 @@ from ...core.ir.program.registers import Register
 from ...core.ir.program.signatures import Signature
 from ...core.value_math import SymbolicInt
 from ...dynamic import DynamicCircuit
+from ...simulation.elliptic_curve_values import addition_coordinates_values
 from .elliptic_curve_window_product import CurveWindowProduct
 
 
@@ -85,10 +86,7 @@ class EllipticCurveAdditionCoordinates:
         self, ctrl: int, a: int, b: int, x: int, y: int, lam: int
     ) -> tuple[int, int, int, int, int, int]:
         """Evaluate the source controlled coordinate callback."""
-        if ctrl == 1:
-            x = (x + 3 * a) % self.modulus
-            y = 0
-        return ctrl, a, b, x, y, lam
+        return addition_coordinates_values(self.modulus, ctrl, a, b, x, y, lam)
 
     def workspace_requirements(self) -> tuple[int, int]:
         """Reserve independent product history and controlled arithmetic work."""

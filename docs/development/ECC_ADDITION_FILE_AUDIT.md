@@ -380,3 +380,23 @@ without reference edits in g2-ecc-complete-refusals-20261128.json. They cannot
 certify a clean controlled gate stream. Parent closure still requires individual
 review of native invocation breadth and any successful source numerical domain;
 this resource module alone does not automatically accept the source parents.
+
+## Numerical invocation and symbolic root gaps found during closure
+
+Read-only source-success/native-failure probes found numerical callbacks at
+n2/mod3, n3/mod5 and n3/mod7 blocked by the physical CurveWindowProduct constructor.
+Simulation now owns all seven pure value functions plus shared affine point
+addition, independently of those gate-width promises. Existing operation classes
+reuse these functions; their physical guards remain unchanged. The point wrapper
+retains the original identity-object returns and inconsistent-curve diagnostic.
+All source right-port orders, consumed fields, numeric casts and inverse failures
+are retained. These numerical paths emit zero primitives and measurements and
+carry no private quantum workspace.
+
+The existing504 original callback tuples still pass for all seven owners. New
+narrow-word profiles compare every point pair on the recorded small curves,
+all seven actual source callbacks and SDK-free evaluation. An explicit failed
+inverse is preserved. Complete existing flat physical traces and binding wires
+remain equal against f765ed390 after delegation. Point lookup/constructor,
+classical, parameterized model and package regressions are concentrated together;
+unchanged large quantum channel certificates are reused.

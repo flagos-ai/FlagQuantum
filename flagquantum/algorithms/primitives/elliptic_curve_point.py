@@ -11,6 +11,7 @@ from typing import SupportsIndex, cast
 
 from ...core.value_math import SymbolicInt
 from ...core.value_parameters import is_symbolic_value
+from ...simulation.elliptic_curve_values import affine_point_add_values
 
 
 @dataclass(frozen=True)
@@ -45,17 +46,9 @@ class ECPoint:
         if other == identity:
             return self
 
-        if self == other:
-            numerator = 3 * self.x**2 + self.curve_a
-            denominator = 2 * self.y
-        else:
-            numerator = other.y - self.y
-            denominator = other.x - self.x
-
-        inverse = pow(int(denominator % self.mod), -1, int(self.mod))
-        slope = ((numerator % self.mod) * inverse) % self.mod
-        x = (slope**2 - self.x - other.x) % self.mod
-        y = (slope * (self.x - x) - self.y) % self.mod
+        x, y = affine_point_add_values(
+            (self.x, self.y), (other.x, other.y), self.mod, self.curve_a
+        )
         return ECPoint(x, y, self.mod, self.curve_a)
 
     def __mul__(self, scalar: SymbolicInt) -> "ECPoint":

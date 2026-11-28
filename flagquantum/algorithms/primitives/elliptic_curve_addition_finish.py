@@ -25,6 +25,7 @@ from ...core.ir.program.registers import Register, RegisterSide
 from ...core.ir.program.signatures import Signature
 from ...core.value_math import SymbolicInt
 from ...dynamic import DynamicCircuit
+from ...simulation.elliptic_curve_values import addition_finish_values
 
 
 def addition_finish_signature(width: SymbolicInt) -> Signature:
@@ -91,13 +92,7 @@ class EllipticCurveAdditionFinish:
         y: int,
     ) -> tuple[int, int, int, int]:
         """Preserve the source infinity selection and opposite-point override."""
-        if f4 == 1:
-            x = a
-            y = b
-        if f1 and f2:
-            x = 0
-            y = 0
-        return a, b, x, y
+        return addition_finish_values(f1, f2, f3, f4, ctrl, a, b, x, y)
 
     def workspace_requirements(self) -> tuple[int, int]:
         n = self.width
