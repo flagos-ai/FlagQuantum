@@ -43,7 +43,7 @@ free-form dictionaries, or forwarding layers solely to remove imports.
 | `fq.plan()` / `flagquantum.runtime.planner.plan()` | Produces stable `ExecutionPlan` with program/options/environment/compiler fingerprints and final decisions | Runtime owns planning policy; `compilation` temporarily holds shared plan artifacts |
 | `flagquantum.runtime.execution.run()` | Programs call `plan()` first; plans go directly to `execute_plan()` | Convenience orchestration combines compilation requests and execution attempts |
 | `run_native()` / `run_distributed()` | Compatibility entry points call `compiler.compile()`, `select_execution_mode()`, `plan_advanced()` internally | Historical coupling; eventually accept executable plans or explicitly request Compiler services |
-| `flagquantum.runtime.planner_adapter` | Exposes capability queries and JAX training planning to Compiler | Sole declared narrow Compiler-to-Runtime seam; keep query-only |
+| `flagquantum.runtime.planner` and its `training_preflight` | Runtime consumes canonical backend configuration and JAX training queries directly | Planning now lives in Runtime; the obsolete internal `planner_adapter` module is removed, with no Compiler-to-Runtime forwarding seam |
 
 ### 2.2 One Execution
 

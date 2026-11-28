@@ -1,5 +1,28 @@
 # Independent structure migration
 
+## Current qualified baseline and next complete package
+
+PR [#1354](https://github.com/flagos-ai/FlagQuantum/pull/1354), head
+`f46fccce160da3efaadaeee73c13c5e3ecb7ad8c`, independently qualifies the complete
+[named-result ownership package](migration/runtime-named-result-ownership.md):
+430 successful checks, three existing conditions, all original CPU/scientific
+reports and 394 test partitions below 600 seconds. Its full tree is carried
+unchanged before this package. Quality, one dependency-bounds cell and package
+remain above that preference and are recorded explicitly.
+
+The next [query/aggregation closure](migration/runtime-query-aggregation-retirement.md)
+removes the remaining two prepared Runtime relays and retains protected public
+locators. The accompanying [CI execution graph](migration/ci-gate-parallelism.md)
+parallelizes complete quality/package acceptance and uses fresh dependency-bound
+environments on existing BW runners. Integration declarations precede owner
+implementations. The ledger adds one real partial executor-relay retirement;
+same-module private deletion/rename is not falsely counted as a file move.
+Actual source/default/native-installed original-outcome acceptance and this
+package's own exact-head CI remain required. Incoming #1084, native/developer
+packaging and repository-root G0 remain open; historical inputs and inventories
+below retain their original scope.
+
+
 The implementation now covers the independently auditable structure migration,
 including product modules, development tools and repository configuration. The
 allocator move in commit `08549f62` was the first package, not the scope limit.
@@ -45,7 +68,7 @@ Repeat the overlap and consumer audit if either input advances before integratio
 | Registration | Circuit spelling/method installation lives in `compiler/construction/operator_registration.py`; immutable registry semantics stay in Core. |
 | Algorithms | Existing main implementations are grouped into primitives, chemistry, many body, search, estimation, optimization, optimizers, linear algebra, quantum ML and error mitigation. Generic Hamiltonians belong to Primitives; spin models belong to Many Body; PCA and SVD belong to Linear Algebra. |
 | Frontends | Torch capture lives in `compiler/frontends/torch/`; structured Python capture lives in `compiler/frontends/_structured/`. Existing formats remain in their already authoritative owners. |
-| Services | The package maintains published entry points. Preparation belongs to Compiler; plan inspection/preflight to Runtime; ground-state/research workflows to Algorithms; Qmod adaptation to Ecosystem; synthesis composition/program/readout to Synth. The northbound capabilities aggregation belongs to `_api.py`. |
+| Services | The package maintains published entry points. Preparation belongs to Compiler; plan inspection/preflight to Runtime; ground-state/research workflows to Algorithms; Qmod adaptation to Ecosystem; synthesis composition/program to Synth and bounded named-result readout to Runtime. The northbound capabilities aggregation belongs to `_api.py`. |
 | Deployment | Remote owns package models and submission validation; Compiler owns routing evidence; Runtime owns deployment planning, dynamic sealing/rematch and measured count extraction. The old package is a facade. |
 | JAX numerics | Statevector, MPS and tensor-network numerical modules live below their engines' `jax/` directories. Shared JAX primitives live in `simulation/numerics/jax.py`. |
 | CPU adjoint numerics | Pure CX permutation/adjoint and scalar rotation VJP/seed functions live in Simulation. Runtime retains policy, shard state, communication, deferred execution and lifecycle dispatch. |

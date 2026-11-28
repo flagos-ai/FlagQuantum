@@ -21,7 +21,7 @@ from flagquantum.runtime.executors.tensor_network.distributed_sliced_reverse imp
 from flagquantum.runtime.executors.tensor_network.sliced_tasks import (
     plan_distributed_tn_slice_tasks,
 )
-from flagquantum.simulation.tensor_network.entrypoints import (
+from flagquantum.simulation.tensor_network.observables import (
     build_tensor_network_expectation,
 )
 

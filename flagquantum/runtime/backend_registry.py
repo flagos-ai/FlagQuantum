@@ -283,10 +283,6 @@ def get_backend_capabilities(
     return registry[key]
 
 
-def set_active_backend(name: str = "pytorch") -> BackendCapabilities:
-    return get_backend_capabilities(name)
-
-
 def get_active_backend() -> str:
     return str(get_runtime_config().backend)
 
@@ -474,7 +470,6 @@ __all__ = [
     "resolve_backend_executor",
     "resolve_device",
     "resolve_dtype",
-    "set_active_backend",
     "unregister_backend",
     "with_accelerators",
 ]
