@@ -42,7 +42,7 @@ runs:
   steps:
   - id: first
     if: ${{ !cancelled() }}
-    uses: actions/upload-artifact@v4
+    uses: ./.github/actions/upload-artifact/vendor
     continue-on-error: true
     with:
       name: ${{ inputs.name }}
@@ -54,7 +54,7 @@ runs:
       include-hidden-files: ${{ inputs.include-hidden-files }}
   - id: second
     if: ${{ !cancelled() && steps.first.outcome == 'failure' }}
-    uses: actions/upload-artifact@v4
+    uses: ./.github/actions/upload-artifact/vendor
     continue-on-error: true
     with:
       name: ${{ inputs.name }}
@@ -66,7 +66,7 @@ runs:
       include-hidden-files: ${{ inputs.include-hidden-files }}
   - id: third
     if: ${{ !cancelled() && steps.second.outcome == 'failure' }}
-    uses: actions/upload-artifact@v4
+    uses: ./.github/actions/upload-artifact/vendor
     with:
       name: ${{ inputs.name }}
       path: ${{ inputs.path }}

@@ -2298,7 +2298,9 @@ def test_the_parity_row_no_longer_denies_the_subsystem_route() -> None:
 
     # The entry the row names is the algebra's own, it exists, and it names the
     # algebra rather than the route that consumes it.
-    registered = tomllib.loads((root / "capability-maturity.toml").read_text())
+    registered = tomllib.loads(
+        (root / "config" / "capability-maturity.toml").read_text()
+    )
     capabilities = registered["capabilities"]
     assert row["maturity_ref"] == "superoperator_algebra"
     capability = capabilities["superoperator_algebra"]

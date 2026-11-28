@@ -31,7 +31,7 @@ except ModuleNotFoundError:  # pragma: no cover - Python 3.10 compatibility
 
 REPOSITORY_ROOT = Path(__file__).resolve().parents[2]
 
-_POLICY = REPOSITORY_ROOT / "dependency-policy.toml"
+_POLICY = REPOSITORY_ROOT / "config" / "dependency-policy.toml"
 
 
 def lane_of(version: str) -> str:

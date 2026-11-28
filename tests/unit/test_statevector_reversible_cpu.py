@@ -142,3 +142,44 @@ def test_public_explicit_matrix_keeps_its_action_instead_of_the_fixed_cpu_gate(
     monkeypatch.setattr(operations, "_apply_toffoli_cpu", reject_fixed_gate)
     torch.testing.assert_close(circuit.state(), expected, rtol=0, atol=0)
     torch.testing.assert_close(initial, torch.arange(8).to(dtype), rtol=0, atol=0)
+
+
+@pytest.mark.parametrize("wires", ((0, 8, 16), (8, 16, 0), (16, 0, 8)))
+@pytest.mark.parametrize("dtype", (torch.complex64, torch.complex128))
+@pytest.mark.parametrize("layout", ("contiguous", "transposed"))
+@pytest.mark.parametrize("requires_grad", (False, True))
+def test_cpu_toffoli_preserves_large_batched_layout_and_gradient(
+    wires: tuple[int, int, int],
+    dtype: torch.dtype,
+    layout: str,
+    requires_grad: bool,
+) -> None:
+    generator = torch.Generator().manual_seed(57319)
+    width = 1 << 17
+    state = (
+        (
+            torch.randn(3, width, dtype=dtype, generator=generator)
+            if layout == "contiguous"
+            else torch.randn(width, 3, dtype=dtype, generator=generator).T
+        )
+        .detach()
+        .requires_grad_(requires_grad)
+    )
+    before = state.detach().clone()
+    reference = before.clone().requires_grad_(requires_grad)
+    # The private call explicitly admits owned storage; the public chain tests
+    # independently protect caller inputs at the execution boundary.
+    actual = _apply_toffoli_cpu(state, wires, 17, inplace=True)
+    expected = _apply_matrix_layout(reference, TOFFOLI_MATRIX.to(dtype), wires, 17)
+    torch.testing.assert_close(actual, expected, rtol=0, atol=0)
+    assert (actual.data_ptr() == state.data_ptr()) is (not requires_grad)
+    if requires_grad:
+        torch.testing.assert_close(state, before, rtol=0, atol=0)
+        weights = torch.randn(actual.shape, dtype=dtype, generator=generator)
+        actual_gradient = torch.autograd.grad((actual * weights).real.sum(), state)[0]
+        reference_gradient = torch.autograd.grad(
+            (expected * weights).real.sum(), reference
+        )[0]
+        torch.testing.assert_close(actual_gradient, reference_gradient, rtol=0, atol=0)
+    else:
+        torch.testing.assert_close(state, expected, rtol=0, atol=0)

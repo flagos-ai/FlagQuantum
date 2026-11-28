@@ -49,7 +49,9 @@ def _dependency_policy() -> dict:
         import tomllib
     except ModuleNotFoundError:  # pragma: no cover - Python 3.10
         import tomli as tomllib
-    return tomllib.loads((ROOT / "dependency-policy.toml").read_text(encoding="utf-8"))
+    return tomllib.loads(
+        (ROOT / "config" / "dependency-policy.toml").read_text(encoding="utf-8")
+    )
 
 
 def test_framework_neutral_report_is_machine_readable_and_fail_closed() -> None:

@@ -41,6 +41,12 @@ NUMBER_WORDS = {
     "twenty-five": 25,
     "twenty-six": 26,
     "twenty-seven": 27,
+    "twenty-eight": 28,
+    "twenty-nine": 29,
+    "thirty": 30,
+    "thirty-one": 31,
+    "thirty-two": 32,
+    "thirty-three": 33,
 }
 
 

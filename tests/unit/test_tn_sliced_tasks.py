@@ -14,10 +14,10 @@ from flagquantum.runtime.executors.tensor_network.sliced_reverse import (
 from flagquantum.runtime.executors.tensor_network.sliced_tasks import (
     plan_distributed_tn_slice_tasks,
 )
-from flagquantum.simulation.tensor_network.entrypoints import (
+from flagquantum.simulation.tensor_network.models import TensorNetworkSlicingPlan
+from flagquantum.simulation.tensor_network.observables import (
     build_tensor_network_expectation,
 )
-from flagquantum.simulation.tensor_network.models import TensorNetworkSlicingPlan
 
 pytestmark = pytest.mark.unit
 

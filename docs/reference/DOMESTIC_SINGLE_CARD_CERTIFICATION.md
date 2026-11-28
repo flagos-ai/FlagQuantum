@@ -12,7 +12,7 @@ Torch-FL and the machine provisioner own physical-device detection, vendor
 runtime integration, and the audit that maps `flagos:0` to the physical card.
 FlagQuantum contains no vendor names, SDK imports, or vendor-specific dispatch.
 It accepts only a provisioner-owned attestation matching
-[`ci/domestic_single_card_attestation.template.json`](../../ci/domestic_single_card_attestation.template.json).
+[`tools/ci/domestic_single_card_attestation.template.json`](../../tools/ci/domestic_single_card_attestation.template.json).
 
 The attestation must identify the vendor, model, architecture, device UUID or
 serial, driver, vendor runtime, Torch-FL revision, immutable container digest,

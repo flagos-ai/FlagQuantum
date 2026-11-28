@@ -27,7 +27,7 @@ from pathlib import Path
 from typing import Any
 
 ROOT = Path(__file__).resolve().parents[2]
-DEFAULT_ENVIRONMENT_LOCK = ROOT / "ci" / "flagos_cuda_reference.lock.json"
+DEFAULT_ENVIRONMENT_LOCK = ROOT / "tools" / "ci" / "flagos_cuda_reference.lock.json"
 
 
 def _sha256(path: Path) -> str:

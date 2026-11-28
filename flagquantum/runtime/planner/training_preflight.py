@@ -50,9 +50,11 @@ def collect_distributed_training_preflight(
     statevector_blockers: tuple[str, ...] = ()
     statevector_claim_allowed = False
     try:
-        from ..planner_adapter import plan_jax_statevector_training
+        from ..executors.jax.statevector.training import (
+            plan_jax_sharded_statevector_training,
+        )
 
-        training = plan_jax_statevector_training(
+        statevector_training = plan_jax_sharded_statevector_training(
             ir,
             world_size=world_size,
             local_world_size=local_world_size,
@@ -63,7 +65,7 @@ def collect_distributed_training_preflight(
             inspect_devices=inspect_devices,
             assume_devices_ready=assume_devices_ready,
         )
-        statevector_summary = training.summary()
+        statevector_summary = statevector_training.summary()
         statevector_blockers = tuple(
             str(item) for item in statevector_summary.get("blockers", ())
         )
@@ -77,9 +79,9 @@ def collect_distributed_training_preflight(
     mps_summary: Mapping[str, Any] | None = None
     mps_blockers: tuple[str, ...] = ()
     try:
-        from ..planner_adapter import plan_jax_mps_training
+        from ..executors.jax.mps.planning import plan_jax_sharded_mps_training
 
-        training = plan_jax_mps_training(
+        mps_training = plan_jax_sharded_mps_training(
             ir,
             world_size=world_size,
             local_world_size=local_world_size,
@@ -92,7 +94,7 @@ def collect_distributed_training_preflight(
             inspect_devices=inspect_devices,
             assume_devices_ready=assume_devices_ready,
         )
-        mps_summary = training.summary()
+        mps_summary = mps_training.summary()
         mps_blockers = tuple(
             dict.fromkeys(
                 (

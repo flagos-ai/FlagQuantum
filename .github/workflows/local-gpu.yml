@@ -32,9 +32,8 @@ jobs:
   prepare-source:
     outputs:
       artifact-key: ${{ steps.pack-source.outputs.artifact-key }}
-    runs-on: ${{ fromJSON((github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository) && '["self-hosted","linux","x64","flagquantum-cpu"]' || '["ubuntu-latest"]') }}
-    # Cold migration trees can require up to 2,048 verified API objects.
-    # Keep ten minutes for checkout fallback, packing and artifact upload.
+    runs-on: ubuntu-latest
+    # Source publication needs GitHub networking, not scientific CPU resources.
     timeout-minutes: 30
     env:
       GIT_CONFIG_COUNT: "1"
@@ -43,7 +42,7 @@ jobs:
     permissions:
       contents: read
     concurrency:
-      group: flagquantum-${{ (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository) && format('self-hosted-{0}-prepare-source-{1}', github.run_id, strategy.job-index || 0) || 'gh' }}-5
+      group: flagquantum-gh-5
       queue: max
     steps:
       - name: Restore verified source through the GitHub API
@@ -154,7 +153,8 @@ jobs:
   one-gpu-local:
     if: ${{ !inputs.validate_pool && !inputs.validate_mc550_pool }}
     needs: prepare-source
-    runs-on: [self-hosted, linux, gpu, flagquantum-local, a800-171]
+    runs-on: ${{ fromJSON((inputs.qng_ablation || inputs.precision_frontier) && '["self-hosted","linux","gpu","flagquantum-local","a800-171"]' || '["self-hosted","linux","gpu","flagquantum-local","a800-172"]') }}
+    # Ordinary CI uses the qualified 172 host; frozen manual campaigns keep 171.
     # The multi-node lane uses both A800 hosts. Keep their local and scheduled
     # jobs in one group until that lane can reserve both hosts independently.
     concurrency:

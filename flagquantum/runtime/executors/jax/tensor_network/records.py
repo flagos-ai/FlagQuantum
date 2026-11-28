@@ -10,9 +10,6 @@ from ....distributed.backend_policy import DistributedBackendPolicy
 from ..common import communication_tier as _communication_tier
 from ..common import validate_observable_qubits as _validate_observable_qubits
 from ..planning_core import JAXDistributedQuantumPlan
-from ..release_policy import (
-    attach_evidence_contract as _attach_distributed_evidence_contract,
-)
 from ..runtime_environment import (
     _jax_array_nbytes,
     _require_torch,
@@ -235,7 +232,11 @@ class JAXShardedTensorNetworkResult:
             "jax_distributed_plan": self.jax_plan.summary(),
             "rank_local_jax_kernel_allowed_for_capacity_claim": False,
         }
-        return _attach_distributed_evidence_contract(payload)
+        from flagquantum.runtime.audit.statistics import (
+            attach_distributed_evidence_contract,
+        )
+
+        return attach_distributed_evidence_contract(payload)
 
 
 @dataclass
@@ -367,7 +368,11 @@ class JAXSlicedTensorNetworkGradientResult:
             ),
             "jax_distributed_plan": self.jax_plan.summary(),
         }
-        return _attach_distributed_evidence_contract(payload)
+        from flagquantum.runtime.audit.statistics import (
+            attach_distributed_evidence_contract,
+        )
+
+        return attach_distributed_evidence_contract(payload)
 
 
 @dataclass
@@ -512,4 +517,8 @@ class JAXSlicedTensorNetworkParameterGradientResult:
             "estimated_transfer_bytes": int(estimated_transfer),
             "jax_distributed_plan": self.jax_plan.summary(),
         }
-        return _attach_distributed_evidence_contract(payload)
+        from flagquantum.runtime.audit.statistics import (
+            attach_distributed_evidence_contract,
+        )
+
+        return attach_distributed_evidence_contract(payload)

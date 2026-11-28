@@ -14,6 +14,8 @@ Other self-hosted hardware remains available only through its existing triggers.
 from __future__ import annotations
 
 import ast
+import json
+import re
 import subprocess
 from pathlib import Path
 
@@ -28,6 +30,8 @@ WORKFLOWS = ROOT / ".github" / "workflows"
 # The multi-node lane uses both A800 hosts, so their jobs still share a group.
 # The A100 validation host is independent and must not wait for the A800 pair.
 ACCELERATOR_GROUP = "flagquantum-accelerator"
+
+ONE_GPU_ROUTE = '${{ fromJSON((inputs.qng_ablation || inputs.precision_frontier) && \'["self-hosted","linux","gpu","flagquantum-local","a800-171"]\' || \'["self-hosted","linux","gpu","flagquantum-local","a800-172"]\') }}'
 
 A800_CPU_ROUTE = '${{ fromJSON((github.event_name != \'pull_request\' || github.event.pull_request.head.repo.full_name == github.repository) && \'["self-hosted","linux","x64","flagquantum-cpu"]\' || \'["ubuntu-latest"]\') }}'
 
@@ -64,13 +68,7 @@ COVERAGE_CPU_ROUTE = (
     ") }}"
 )
 
-HEAVY_COVERAGE_CPU_ROUTE = (
-    "${{ fromJSON(\n"
-    "  (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository)\n"
-    '  && (matrix.a800 && \'["self-hosted","linux","x64","flagquantum-cpu","flagquantum-a800-cpu"]\'\n'
-    '    || \'["self-hosted","linux","x64","flagquantum-cpu"]\') || \'["ubuntu-latest"]\'\n'
-    ") }}"
-)
+HEAVY_COVERAGE_CPU_ROUTE = '${{ fromJSON(\n  (github.event_name != \'pull_request\' || github.event.pull_request.head.repo.full_name == github.repository)\n  && (matrix.runner && format(\'["self-hosted","linux","x64","flagquantum-cpu","{0}"]\', matrix.runner)\n    || matrix.a800 && \'["self-hosted","linux","x64","flagquantum-cpu","flagquantum-a800-cpu"]\'\n    || \'["self-hosted","linux","x64","flagquantum-cpu"]\') || \'["ubuntu-latest"]\'\n) }}'
 
 TRUSTED_CPU_ROUTE = (
     "${{ (github.event_name != 'pull_request' || "
@@ -168,6 +166,12 @@ def _jobs(path: Path) -> dict[str, dict[str, object]]:
 
 def _runs_on(job: dict[str, object]) -> tuple[str, ...]:
     value = job.get("runs-on")
+    if isinstance(value, str) and value == ONE_GPU_ROUTE:
+        # Inspect both concrete hosts; an expression must not hide a GPU lane.
+        alternatives = re.findall(r"'(\[[^']+\])'", value)
+        return tuple(
+            sorted({label for row in alternatives for label in json.loads(row)})
+        )
     if isinstance(value, str):
         return (value,)
     assert isinstance(value, list), f"unexpected runs-on: {value!r}"
@@ -607,6 +611,14 @@ def test_one_gpu_gate_selects_idle_devices_or_refuses_contention(
 
 def test_one_gpu_gate_inherits_selection_and_preserves_frozen_campaigns() -> None:
     job = _jobs(WORKFLOWS / "local-gpu.yml")["one-gpu-local"]
+    assert job["runs-on"] == ONE_GPU_ROUTE
+    assert job["concurrency"] == {"group": ACCELERATOR_GROUP, "queue": "max"}
+    assert (
+        _jobs(WORKFLOWS / "local-gpu.yml")["two-gpu-distributed-required"][
+            "concurrency"
+        ]
+        == job["concurrency"]
+    )
     steps = {step.get("name"): step for step in job["steps"]}
     selector = steps["Select one idle physical GPU"]
     behavior = steps["One-GPU local behavior"]
