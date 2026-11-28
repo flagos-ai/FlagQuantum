@@ -24,28 +24,14 @@ from ..bits.bitwise_component_control import (
     _toffoli_function,
 )
 from ..comparison._component_gates import comparison_bit_functions
-from ..component_builder import BindingCollection, ComponentProgramBuilder
-from ..component_control import ControlAdder, control_component_program
+from ..component_control import (
+    ControlAdder,
+    component_program_control_adder,
+    control_component_program,
+)
 from ..component_definition_match import matches_component_definition
 from ..control.component_bookkeeping import bookkeeping_scalar_control_adder
 from .modular_doubling_component import modular_doubling_program
-
-
-def _call_controlled(record: ProgramRecord) -> ControlAdder:
-    registers = record.functions[0].registers
-    assert registers is not None
-    control_name = registers[0].name
-
-    def add(
-        builder: ComponentProgramBuilder,
-        control: BindingCollection,
-        values: dict[str, BindingCollection],
-    ) -> tuple[BindingCollection, tuple[BindingCollection, ...]]:
-        outputs = builder.call_program(record, {control_name: control, **values})
-        successor = outputs.pop(control_name)
-        return successor, tuple(outputs.values())
-
-    return add
 
 
 def controlled_modular_doubling_program(
@@ -94,7 +80,7 @@ def controlled_modular_doubling_program(
             continue
         for original, controlled in templates:
             if matches_component_definition(record, name, original):
-                adders[name] = _call_controlled(controlled)
+                adders[name] = component_program_control_adder(controlled)
                 break
         else:
             for gate, adder in gates.items():

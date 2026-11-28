@@ -25,31 +25,45 @@ def positive_controlled_multi_z_program(values: tuple[int, ...]) -> ProgramRecor
     The source generic root calls one ControlledViaAnd(Z) with two clauses;
     it does not replace that call with a flattened control-array wrapper.
     """
+    return _positive_controlled_multi_pauli_program(values, "z")
+
+
+def positive_controlled_multi_x_program(values: tuple[int, ...]) -> ProgramRecord:
+    """Retain the source merged scalar/array control call around MultiControlX."""
+    return _positive_controlled_multi_pauli_program(values, "x")
+
+
+def _positive_controlled_multi_pauli_program(
+    values: tuple[int, ...], axis: Literal["x", "z"]
+) -> ProgramRecord:
     if not values or any(
         type(value) is not int or value not in (0, 1) for value in values
     ):
         raise ValueError(
-            "Controlled MultiControlZ requires nonempty binary activations"
+            f"Controlled MultiControl{axis.upper()} requires nonempty binary activations"
         )
     bit = quantum_bit_type()
-    z = bit_gate_function(
-        "z", (Register("q", bit),), CircuitIR(1, (Instruction("z", (0,)),))
+    target_gate = bit_gate_function(
+        axis, (Register("q", bit),), CircuitIR(1, (Instruction(axis, (0,)),))
     )
-    cz = bit_gate_function(
-        "positive_z",
-        tuple(Signature.build(q1=1, q2=1)),
-        CircuitIR(2, (Instruction("cz", (0, 1)),)),
+    control_name, target_name = ("q1", "q2") if axis == "z" else ("ctrl", "target")
+    controlled_gate = bit_gate_function(
+        f"positive_{axis}",
+        (Register(control_name, bit), Register(target_name, bit)),
+        CircuitIR(2, (Instruction(f"c{axis}", (0, 1)),)),
     )
-    body = ComponentProgramBuilder(Signature.build(q=1), (z, cz))
-    target = body.call_dict(z.name, body.inputs)["q"]
+    body = ComponentProgramBuilder(Signature.build(q=1), (target_gate, controlled_gate))
+    target = body.call_dict(target_gate.name, body.inputs)["q"]
 
     def add(
         builder: ComponentProgramBuilder,
         control: BindingCollection,
         arguments: dict[str, BindingCollection],
     ) -> tuple[BindingCollection, tuple[BindingCollection, ...]]:
-        outputs = builder.call_dict(cz.name, {"q1": control, "q2": arguments["q"]})
-        return outputs["q1"], (outputs["q2"],)
+        outputs = builder.call_dict(
+            controlled_gate.name, {control_name: control, target_name: arguments["q"]}
+        )
+        return outputs[control_name], (outputs[target_name],)
 
     combined = control_component_via_predicate(
         body.finalize({"q": target}),

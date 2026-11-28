@@ -187,3 +187,11 @@ controlled MultiControlZ reuses the existing combined-clause predicate owner.
 Private conjunction work is restored and measurement-erased by those owners.
 The generic path is distinct from a source operation's specialized control
 recipe; source constructors may choose different bodies for those paths.
+
+`positive_controlled_multi_x_program` and its Z counterpart preserve a separate
+outer scalar control and the original inner control array. They share one
+merged-predicate construction rather than flattening those source ports.
+The common Program-control callback imports an explicitly selected owner's
+complete helper closure; it does not infer semantics from port signatures.
+Existing controlled Z and doubling Programs are definition-identical after
+that construction reuse.

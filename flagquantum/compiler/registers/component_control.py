@@ -171,6 +171,32 @@ def _stored_control_adder(function: FunctionRecord) -> ControlAdder:
     return add
 
 
+def component_program_control_adder(record: ProgramRecord) -> ControlAdder:
+    """Import an explicitly selected controlled owner and thread its first port.
+
+    The owner supplies the control semantics and ordered outputs. Unlike the
+    stored-function adder, this callback imports its complete helper closure.
+    """
+    if not record.functions or not record.functions[0].registers:
+        raise ValueError("Controlled owner requires a typed entry and control port")
+    root = record.functions[0]
+    assert root.registers is not None
+    control_name = root.registers[0].name
+
+    def add(
+        builder: ComponentProgramBuilder,
+        control: BindingCollection,
+        values: dict[str, BindingCollection],
+    ) -> tuple[BindingCollection, tuple[BindingCollection, ...]]:
+        outputs = builder.call_program(
+            record, {control_name: control, **values}, entry=root.name
+        )
+        successor = outputs.pop(control_name)
+        return successor, tuple(outputs.values())
+
+    return add
+
+
 def control_component_hierarchy(
     record: ProgramRecord,
     controlled: Mapping[str, ControlAdder],
