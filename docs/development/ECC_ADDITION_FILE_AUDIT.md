@@ -447,3 +447,40 @@ dependencies retain their existing complete owners and their acceptance evidence
 No symbolic-window primitive inventory, amplitude or physical cleanup is inferred
 from this logical interface. The complete-file parent remains open until the
 other actual symbolic-modulus dependencies are closed.
+## Complete fixed-width symbolic modulus stage composition
+
+All five remaining ordinary stage constructors now retain their available
+source bodies at fixed width with an unresolved modulus: slope, coordinates,
+products, cleanup and finish. At width 5 their root call counts are
+28/28/34/18/65, followed by the same six-call ECAdd root. Flags retain their
+previous twenty-call implementation. Stage wiring reuses shared modular
+addition/subtraction/negation, doubling and Kaliski owners; it introduces no
+separate numerical algorithm. An independent constructor-call observer checks
+the actual kind, width, modulus, multiplication window and exact direction
+against the locked source child constructors.
+
+Every unchanged child is certified against its complete finite counterpart
+only when the original child constructors are equal. Changed arithmetic and
+inverse children require complete shared-owner certificates, including the
+original codec metadata view where applicable. The exact symbolic ModAdd
+adjoint has its own source-parent proof. New symbolic multiplier declarations
+retain recoverable live modulus metadata and exact history width; both source
+directions genuinely refuse decomposition. Kaliski's actual sixth-step and
+constant refusals remain at their real descendants, not at its available root.
+No physical state, all-history cleanup or primitive count is fabricated for an
+unbound modulus.
+
+The existing format guard incorrectly rejected a live Split/Join whose
+Montgomery bit width was concrete but modulus was symbolic. Approved Proposal
+130 permits this raw-storage view; the qualifier now matches the original
+bit-size rule. Full source identity operators, entangled complex states,
+reversed wires, zero workspace and normal append verify the view, while the
+original fixed-point/bounded and unknown-width constructor refusals remain.
+
+Complete finite ECAdd Programs with 7649/7761 definitions and window Programs
+with 7675/7715 definitions are unchanged from the publication baseline. Their
+existing complex amplitudes, applicable measurement branches, zero work,
+primitive inventories and model comparisons therefore remain authoritative.
+Source model estimates for symbolic graphs remain separate from unavailable
+emitted primitives. Full ECC parent acceptance still requires its available
+higher controlled contexts and remaining constructor boundaries in NEXT_G2.md.

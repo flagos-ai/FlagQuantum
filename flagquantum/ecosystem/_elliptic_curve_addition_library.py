@@ -40,14 +40,10 @@ from ..compiler.formats.legacy_component_resolution import (
 from ..compiler.formats.legacy_controlled_factories import controlled_via_and_factories
 from ..compiler.formats.legacy_fixed_gate_factories import fixed_gate_factories
 from ..compiler.formats.legacy_modular_addition_factories import _integer
-from ..compiler.formats.legacy_modular_multiplication_factories import (
-    modular_multiplication_factories,
-)
 from ..compiler.formats.legacy_modular_subtraction_factories import (
     modular_subtraction_factories,
 )
 from ..compiler.formats.legacy_word_factories import _rename_program
-from ..compiler.formats.montgomery_port_views import restore_montgomery_ports
 from ..compiler.registers.bits.bitwise_component import bitwise_word_program
 from ..compiler.registers.bits.bitwise_component_control import (
     controlled_bitwise_word_program,
@@ -81,35 +77,15 @@ from ..compiler.registers.elliptic_curve.addition_products_component import (
 from ..compiler.registers.elliptic_curve.addition_slope_component import (
     addition_slope_program,
 )
-from ..compiler.registers.modular.controlled_modular_addition_component import (
-    controlled_modular_addition_program,
-)
-from ..compiler.registers.modular.controlled_modular_negation_component import (
-    controlled_modular_negation_program,
-)
-from ..compiler.registers.modular.controlled_modular_subtraction_component import (
-    controlled_modular_subtraction_program,
-)
-from ..compiler.registers.modular.modular_addition_component import (
-    modular_addition_program,
-)
-from ..compiler.registers.modular.modular_doubling_component import (
-    modular_doubling_program,
-)
-from ..compiler.registers.modular.modular_inverse_component import (
-    modular_inverse_program,
-)
-from ..compiler.registers.modular.modular_subtraction_component import (
-    modular_subtraction_program,
-)
-from ..compiler.registers.modular.montgomery_multiplication_component import (
-    montgomery_multiplication_program,
-)
 from ..core.ir.program import FunctionRecord, ProgramRecord
 from ..core.ir.program.register_types import montgomery_register_type, quantum_bit_type
 from ..core.ir.program.registers import Register, RegisterType
-from ..core.value_math import SymbolicInt
 from ..errors import SerializationError
+from ._elliptic_curve_arithmetic_library import (
+    curve_inverse_program,
+    curve_modular_program,
+    curve_multiplication_program,
+)
 
 
 def _flags(
@@ -164,65 +140,6 @@ def elliptic_curve_addition_factories() -> dict[str, ComponentFactory]:
     }
 
 
-def _without_modulus(program: ProgramRecord) -> ProgramRecord:
-    registers = program.functions[0].registers
-    assert registers is not None
-    return restore_montgomery_ports(
-        program,
-        tuple(
-            (
-                Register(
-                    register.name,
-                    montgomery_register_type(register.bitsize),
-                    register.shape_symbolic,
-                    register.side,
-                )
-                if register.dtype.encoding == "montgomery"
-                else register
-            )
-            for register in registers
-        ),
-    )
-
-
-def _multiplication(
-    width: int, window: SymbolicInt, modulus: int, *, adjoint: bool = False
-) -> ProgramRecord:
-    if type(window) is int:
-        return _without_modulus(
-            montgomery_multiplication_program(width, window, modulus, adjoint=adjoint)
-        )
-    factory = modular_multiplication_factories()[
-        "qualtran.bloqs.mod_arithmetic.mod_multiplication.DirtyOutOfPlaceMontgomeryModMul"
-    ]
-    arguments: dict[str, ResolvedArgument] = {
-        "bitsize": width,
-        "window_size": window,
-        "mod": modulus,
-        "uncompute": adjoint,
-    }
-    declaration = factory("multiply", None, arguments)
-    assert isinstance(declaration, FunctionRecord) and not declaration.blocks
-    assert declaration.registers is not None
-    # The source codec omits Montgomery modulus metadata, but keeps the exact
-    # symbolic history width and directional ports. Ask the existing factory
-    # to validate that source view instead of inserting a synthetic Cast body.
-    ports = tuple(
-        Register(
-            r.name,
-            (
-                montgomery_register_type(r.dtype.num_qubits)
-                if r.dtype.encoding == "montgomery"
-                else r.dtype
-            ),
-            r.shape_symbolic,
-            r.side,
-        )
-        for r in declaration.registers
-    )
-    return _program(factory("multiply", ports, arguments))
-
-
 def _slope(
     name: str,
     registers: tuple[Register, ...] | None,
@@ -241,7 +158,7 @@ def _slope(
     signature = addition_slope_signature(width)
     if registers is not None and registers != tuple(signature):
         raise SerializationError("Invalid original curve addition slope signature")
-    if type(width) is not int or type(modulus) is not int:
+    if type(width) is not int:
         return FunctionRecord(name, (), registers=tuple(signature))
     dtype = montgomery_register_type(width)
     zero = basis_vector_factories()["qualtran.bloqs.basic_gates.z_basis.IntState"](
@@ -251,18 +168,18 @@ def _slope(
     program = addition_slope_program(
         signature,
         zero=zero_program,
-        subtract=modular_subtraction_program(dtype, modulus),
-        controlled_subtract=controlled_modular_subtraction_program(dtype, modulus),
-        inverse=_without_modulus(modular_inverse_program(width, modulus)),
-        multiply=_multiplication(width, window, modulus),
+        subtract=curve_modular_program("ModSub", dtype, modulus),
+        controlled_subtract=curve_modular_program("CModSub", dtype, modulus),
+        inverse=curve_inverse_program(width, modulus),
+        multiply=curve_multiplication_program(width, window, modulus),
         equals=equality_program(dtype),
         select_general=multi_control_x_program((0, 1, 1)),
         select_tangent=multi_control_x_program((1, 1, 1)),
         controlled_equals=controlled_equality_program(dtype, control_value=0),
-        multiply_adjoint=_multiplication(width, window, modulus, adjoint=True),
-        inverse_adjoint=_without_modulus(
-            modular_inverse_program(width, modulus, adjoint=True)
+        multiply_adjoint=curve_multiplication_program(
+            width, window, modulus, adjoint=True
         ),
+        inverse_adjoint=curve_inverse_program(width, modulus, adjoint=True),
     )
     return _rename_program(program, name)
 
@@ -290,7 +207,7 @@ def _arithmetic_stage(
     )(width)
     if registers is not None and registers != tuple(signature):
         raise SerializationError("Invalid original curve arithmetic signature")
-    if type(width) is not int or type(modulus) is not int:
+    if type(width) is not int:
         return FunctionRecord(name, (), registers=tuple(signature))
     dtype = montgomery_register_type(width)
     zero = basis_vector_factories()["qualtran.bloqs.basic_gates.z_basis.IntState"](
@@ -301,21 +218,25 @@ def _arithmetic_stage(
         "cnot", None, {}
     )
     cnot_program = cnot if isinstance(cnot, ProgramRecord) else ProgramRecord((cnot,))
-    multiply = _multiplication(width, window, modulus)
-    multiply_adjoint = _multiplication(width, window, modulus, adjoint=True)
+    multiply = curve_multiplication_program(width, window, modulus)
+    multiply_adjoint = curve_multiplication_program(
+        width, window, modulus, adjoint=True
+    )
     if kind == "coordinates":
         program = addition_coordinates_program(
             signature,
             multiply=multiply,
             multiply_adjoint=multiply_adjoint,
-            controlled_subtract=controlled_modular_subtraction_program(dtype, modulus),
+            controlled_subtract=curve_modular_program("CModSub", dtype, modulus),
             zero=zero_program,
             cnot=cnot_program,
-            double=modular_doubling_program(dtype, modulus),
-            add=modular_addition_program(width, modulus),
-            controlled_add=controlled_modular_addition_program(dtype, modulus),
-            add_adjoint=modular_addition_program(width, modulus, adjoint=True),
-            double_adjoint=modular_doubling_program(dtype, modulus, adjoint=True),
+            double=curve_modular_program("ModDbl", dtype, modulus),
+            add=curve_modular_program("ModAdd", dtype, modulus),
+            controlled_add=curve_modular_program("CModAdd", dtype, modulus),
+            add_adjoint=curve_modular_program("ModAdd", dtype, modulus, adjoint=True),
+            double_adjoint=curve_modular_program(
+                "ModDbl", dtype, modulus, adjoint=True
+            ),
         )
     else:
         program = addition_products_program(
@@ -324,7 +245,7 @@ def _arithmetic_stage(
             cnot=cnot_program,
             multiply=multiply,
             multiply_adjoint=multiply_adjoint,
-            subtract=modular_subtraction_program(dtype, modulus),
+            subtract=curve_modular_program("ModSub", dtype, modulus),
         )
     return _rename_program(program, name)
 
@@ -379,22 +300,22 @@ def _cleanup(
     signature = addition_cleanup_signature(width)
     if registers is not None and registers != tuple(signature):
         raise SerializationError("Invalid original curve slope cleanup signature")
-    if type(width) is not int or type(modulus) is not int:
+    if type(width) is not int:
         return FunctionRecord(name, (), registers=tuple(signature))
     dtype = montgomery_register_type(width)
     graph = addition_cleanup_program(
         signature,
-        inverse=_without_modulus(modular_inverse_program(width, modulus)),
-        multiply=_multiplication(width, window, modulus),
+        inverse=curve_inverse_program(width, modulus),
+        multiply=curve_multiplication_program(width, window, modulus),
         select=multi_control_x_program((1, 1)),
         clear_slope=_clear_slope(dtype),
-        multiply_adjoint=_multiplication(width, window, modulus, adjoint=True),
-        inverse_adjoint=_without_modulus(
-            modular_inverse_program(width, modulus, adjoint=True)
+        multiply_adjoint=curve_multiplication_program(
+            width, window, modulus, adjoint=True
         ),
-        controlled_negate=controlled_modular_negation_program(dtype, modulus),
-        add=modular_addition_program(width, modulus),
-        controlled_subtract=controlled_modular_subtraction_program(dtype, modulus),
+        inverse_adjoint=curve_inverse_program(width, modulus, adjoint=True),
+        controlled_negate=curve_modular_program("CModNeg", dtype, modulus),
+        add=curve_modular_program("ModAdd", dtype, modulus),
+        controlled_subtract=curve_modular_program("CModSub", dtype, modulus),
     )
     return _rename_program(graph, name)
 
@@ -412,7 +333,7 @@ def _finish(
     signature = addition_finish_signature(width)
     if registers is not None and registers != tuple(signature):
         raise SerializationError("Invalid original curve flag cleanup signature")
-    if type(width) is not int or type(modulus) is not int:
+    if type(width) is not int:
         return FunctionRecord(name, (), registers=tuple(signature))
     dtype = montgomery_register_type(width)
     gates = fixed_gate_factories()
@@ -440,8 +361,8 @@ def _finish(
                 "zero", None, {}
             )
         ),
-        controlled_subtract=controlled_modular_subtraction_program(dtype, modulus),
-        controlled_add=controlled_modular_addition_program(dtype, modulus),
+        controlled_subtract=curve_modular_program("CModSub", dtype, modulus),
+        controlled_add=curve_modular_program("CModAdd", dtype, modulus),
         equals_pair=equality_program(montgomery_register_type(2 * width)),
         zero_pair=multi_control_x_program((0,) * (2 * width)),
         conjunction=conjunction_program((0,) * (2 * width)),

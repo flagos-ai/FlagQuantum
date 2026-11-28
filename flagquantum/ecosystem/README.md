@@ -326,3 +326,13 @@ Run `tests/unit/test_hubbard_walk_source_context.py` for the two original exampl
 all four directional/control graphs, and the actual degree-127 Hamiltonian root.
 The latter captures SDK coefficient payloads and derives phases natively; native
 coefficient-model acceptance is a separate existing numerical test obligation.
+The curve stage constructor adapter separates arithmetic ownership in
+`_elliptic_curve_arithmetic_library.py` from stage wiring in
+`_elliptic_curve_addition_library.py`. Concrete inputs keep their accepted shared
+Programs. Fixed-width unresolved moduli retain every available stage body and
+the six-call ECAdd root; only actual source-refused multiplier/inverse/constant
+descendants remain unbound. Recoverable live Montgomery metadata is retained
+inside these symbolic stages. Numerical execution and source pricing are not
+inferred from a typed declaration. Run
+`tests/unit/test_ecc_symbolic_modulus_stages.py` for constructor argument recording,
+source call/operand checks and complete delegate certificates.
