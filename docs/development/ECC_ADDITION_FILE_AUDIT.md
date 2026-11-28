@@ -344,3 +344,39 @@ Q-0457 and Q-0460 remain open. The callback matrix completes the original slow
 logical domain. It does not remove the modulus-5 dirty-release and coordinate
 counterexamples, wider-window primitive differences, independent symbolic
 aggregate model gap or external graph execution boundaries.
+
+## Parameterized source resource declarations, 2026-11-28
+
+The Algorithms-owned `elliptic_curve_addition_model.py` now implements all seven
+build_call_graph responsibilities. It preserves concrete versus HasLength control
+patterns, Montgomery dtype metadata, separate moduli, multiplication windows,
+forward/uncompute identities, exact Adjoint wrappers and complete structured
+CtrlSpec array shapes/values. No new resource node class or IR schema is added;
+the common SymbolicCallGraph owns traversal and aggregation. The existing
+EllipticCurveAddition operation consumes this model through source_call_graph;
+the label-only tutorial graph is preserved exactly.
+
+Six concrete/symbolic profiles compare every ordered direct declaration for all
+seven owners, including symbolic integer constants. Independent symbolic leaf
+prices verify weighted aggregation. All seven QEC categories additionally agree
+with original root/stage queries when their leaf price policy is explicitly
+supplied. Those reference rates are declared conformance inputs, not a claim of
+independent native default Montgomery pricing. Symbolic width/concrete window
+one succeeds upstream; symbolic window itself currently raises TypeError in its
+QEC query. An available source formula is not relabeled as an absent body.
+
+Two complete existing flat append traces (n3/mod3 and n4/mod5) retain every
+instruction and physical binding wire against published f765ed390. Typed
+Compiler bodies and Ecosystem constructors are unchanged, so their 175/165 SDK,
+145 integration, all-branch complex/cleanup, 27 frozen dependency and nine exact
+Program receipts remain applicable. New graph queries emit no physical gates,
+measurements or workspace. Existing typed primitive and declared category tables
+above remain separate.
+
+The complete controlled ECWindow root has five source calls, but its generic
+controlled RIGHT-output QROAM child explicitly refuses decomposition. Scalar
+ECAddR has no source body or QEC decomposition. These refusals were re-observed
+without reference edits in g2-ecc-complete-refusals-20261128.json. They cannot
+certify a clean controlled gate stream. Parent closure still requires individual
+review of native invocation breadth and any successful source numerical domain;
+this resource module alone does not automatically accept the source parents.

@@ -242,3 +242,25 @@ Opaque source declarations do not imply a physical circuit.
 the existing THC source budgets from a preparation owner without requiring
 physical Givens networks. These are model queries; literal source dependency
 capture and actual emitted gates remain separate evidence.
+
+`EllipticCurveAddition.source_call_graph()` uses the shared parameterized model
+in `elliptic_curve_addition_model.py`. The root and all six source stage formulas
+retain width, modulus, window, exact adjoint and encoded control identities.
+`elliptic_curve_addition_parameterized_graph` also supports symbolic metadata
+without constructing a physical operation. The existing label-only tutorial
+graph remains unchanged. For example:
+
+```python
+from flagquantum.algorithms.primitives.elliptic_curve_addition import EllipticCurveAddition
+
+graph = EllipticCurveAddition(3, 3).source_call_graph()
+assert graph.root == ("ECAdd", 3, 3, 1)
+assert len(graph.direct_calls) > 6
+```
+
+Price leaves explicitly with `graph.estimate_leaf_cost(price_by_leaf.__getitem__)`.
+Unpriced modular declarations are not zero-cost operations. Reference leaf
+prices in conformance tests are explicit policy inputs, not independent native
+default QEC pricing or primitive instruction counts. Start with
+`tests/unit/test_ecc_addition_model.py`; the ECC source audit retains the
+separate physical, classical and source-defect certificates.

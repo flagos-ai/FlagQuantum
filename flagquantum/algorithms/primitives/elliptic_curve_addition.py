@@ -5,6 +5,7 @@
 
 """Bind all six stages of reversible affine elliptic-curve addition."""
 
+from collections.abc import Hashable
 from dataclasses import dataclass
 from typing import cast
 
@@ -27,6 +28,10 @@ from .elliptic_curve_addition_cleanup import EllipticCurveAdditionCleanup
 from .elliptic_curve_addition_coordinates import EllipticCurveAdditionCoordinates
 from .elliptic_curve_addition_finish import EllipticCurveAdditionFinish
 from .elliptic_curve_addition_flags import EllipticCurveAdditionFlags
+from .elliptic_curve_addition_model import (
+    _STAGE_NAMES,
+    elliptic_curve_addition_parameterized_graph,
+)
 from .elliptic_curve_addition_products import EllipticCurveAdditionProducts
 from .elliptic_curve_addition_slope import EllipticCurveAdditionSlope
 from .elliptic_curve_point import ECPoint
@@ -41,15 +46,7 @@ def elliptic_curve_addition_signature(width: SymbolicInt) -> Signature:
 
 def elliptic_curve_addition_source_graph() -> SymbolicCallGraph[str]:
     """Declare the six direct calls shared by symbolic and concrete instances."""
-    stages = (
-        "ECAddStepOne",
-        "ECAddStepTwo",
-        "ECAddStepThree",
-        "ECAddStepFour",
-        "ECAddStepFive",
-        "ECAddStepSix",
-    )
-    return symbolic_call_graph("ECAdd", {"ECAdd": dict.fromkeys(stages, 1)})
+    return symbolic_call_graph("ECAdd", {"ECAdd": dict.fromkeys(_STAGE_NAMES, 1)})
 
 
 @dataclass(frozen=True)
@@ -88,6 +85,12 @@ class EllipticCurveAddition:
     @property
     def source_signature(self) -> Signature:
         return elliptic_curve_addition_signature(self.width)
+
+    def source_call_graph(self) -> SymbolicCallGraph[Hashable]:
+        """Return parameterized source estimates, separately from emitted gates."""
+        return elliptic_curve_addition_parameterized_graph(
+            self.width, self.modulus, self.window
+        )
 
     def _stages(self) -> tuple[
         EllipticCurveAdditionFlags,
