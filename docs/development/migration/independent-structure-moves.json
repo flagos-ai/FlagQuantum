@@ -8164,7 +8164,6 @@
       "new": "flagquantum/simulation/statevector/cx_adjoint.py",
       "split_symbols": [
         "cpu_cx_permutation_index",
-        "cpu_cx_permutation_images",
         "apply_cpu_cx_adjoint_index",
         "apply_cpu_cx_adjoint_segment",
         "apply_cpu_compact_cx_adjoint_segment"
@@ -8174,13 +8173,13 @@
         "apply_cpu_compact_cx_adjoint_segment",
         "apply_cpu_cx_adjoint_index",
         "apply_cpu_cx_adjoint_segment",
-        "cpu_cx_permutation_images",
         "cpu_cx_permutation_index"
       ],
       "same_import_path": false,
       "retired_reexports": [
         "apply_cpu_compact_cx_adjoint_segment",
-        "apply_cpu_cx_adjoint_index"
+        "apply_cpu_cx_adjoint_index",
+        "cpu_cx_permutation_images"
       ],
       "remaining_imports": "used by this implementation; not a historical forwarding interface"
     },
@@ -10364,6 +10363,69 @@
       ],
       "retirement": "All operational callers use the existing defining owner directly, at the original lazy invocation stage. No replacement wrapper or compatibility added.",
       "compatibility": "none"
+    },
+    {
+      "group": "simulation-direct-relay-retirement",
+      "old": "flagquantum/simulation/statevector/cx_adjoint.py",
+      "new": "flagquantum/simulation/native_cpu/permutation.py",
+      "symbols": [],
+      "partial": true,
+      "source_kind": "Retired internal argument delegation; the existing authoritative implementation is unchanged.",
+      "retired_private_members": [
+        "cpu_cx_permutation_images"
+      ],
+      "retirement": "All operational callers use the existing defining owner directly. State methods retain local imports after original validation and admission. No replacement wrapper or compatibility added."
+    },
+    {
+      "group": "simulation-direct-relay-retirement",
+      "old": "flagquantum/simulation/tensor_network/entrypoints.py",
+      "new": "flagquantum/simulation/tensor_network/local.py",
+      "symbols": [],
+      "partial": true,
+      "source_kind": "Retired internal argument delegation; the existing authoritative implementation is unchanged.",
+      "retired_private_members": [
+        "build_tensor_network"
+      ],
+      "retirement": "All operational callers use the existing defining owner directly. State methods retain local imports after original validation and admission. No replacement wrapper or compatibility added."
+    },
+    {
+      "group": "simulation-direct-relay-retirement",
+      "old": "flagquantum/simulation/tensor_network/entrypoints.py",
+      "new": "flagquantum/simulation/tensor_network/observables.py",
+      "symbols": [],
+      "partial": true,
+      "source_kind": "Retired internal argument delegation; the existing authoritative implementation is unchanged.",
+      "retired_private_members": [
+        "build_tensor_network_expectation",
+        "build_tensor_network_hamiltonian_expectation",
+        "build_tensor_network_hamiltonian_expectations",
+        "tensor_network_expectation_ps"
+      ],
+      "retirement": "All operational callers use the existing defining owner directly. State methods retain local imports after original validation and admission. No replacement wrapper or compatibility added."
+    },
+    {
+      "group": "simulation-direct-relay-retirement",
+      "old": "flagquantum/simulation/tensor_network/state.py",
+      "new": "flagquantum/simulation/tensor_network/observables.py",
+      "symbols": [],
+      "partial": true,
+      "source_kind": "Retired internal argument delegation; the existing authoritative implementation is unchanged.",
+      "retired_private_members": [
+        "tensor_network_expectation_ps"
+      ],
+      "retirement": "All operational callers use the existing defining owner directly. State methods retain local imports after original validation and admission. No replacement wrapper or compatibility added."
+    },
+    {
+      "group": "simulation-direct-relay-retirement",
+      "old": "flagquantum/runtime/executors/tensor_network/execution.py",
+      "new": "flagquantum/simulation/tensor_network/local.py",
+      "symbols": [],
+      "partial": true,
+      "retired_reexports": [
+        "build_tensor_network"
+      ],
+      "source_kind": "Retired internal imported builder binding; Runtime calls the existing defining builder by its canonical name.",
+      "retirement": "Current callers use build_local_tensor_network; no forwarding alias retained."
     }
   ],
   "retired_namespace_parents": [

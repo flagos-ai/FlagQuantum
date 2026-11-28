@@ -3,8 +3,12 @@
 Prerequisite: qualified PR [#1350](https://github.com/flagos-ai/FlagQuantum/pull/1350),
 `864605d88a8d9658f0838edbcb2d06ac5442929a`. The main-based carry commit
 `376ee2fb2e229af17931095feddf637172cc0121` has exactly that qualified tree.
-Status: complete source and own native installed-artifact acceptance passed.
-The new published head must pass its own exact-head CI.
+Status: PR #1351 head `c96e63362807b04adb083d656d8086aea50d8f3f` passed
+all three applicable workflows on their first attempts: 432 successful checks
+and four existing conditional skips. All 384 CPU partition reports were
+retained and verified. Maximum whole-job times were Runtime 531 seconds and
+coverage 585 seconds, including preparation and upload but excluding queue.
+This qualifies that exact head; later heads require their own CI.
 
 ## Canonical callers and deleted delegation
 

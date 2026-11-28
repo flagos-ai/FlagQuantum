@@ -19,7 +19,7 @@ from flagquantum.runtime.executors.tensor_network.multi_axis_sharding import (
     execute_multi_axis_tn_target_cone,
     plan_multi_axis_tn_peak_sharding,
 )
-from flagquantum.simulation.tensor_network.entrypoints import (
+from flagquantum.simulation.tensor_network.observables import (
     build_tensor_network_expectation,
 )
 

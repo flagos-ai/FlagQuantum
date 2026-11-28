@@ -44,13 +44,13 @@ def test_sliced_gradient_uses_replaced_graph_and_local_reduction(
     def build(theta):
         return fq.Circuit(2).ry(0, theta=theta[0]).rx(1, theta=theta[1]).cx(0, 1)
 
-    from flagquantum.simulation.tensor_network.entrypoints import (
-        build_tensor_network,
+    from flagquantum.simulation.tensor_network.local import build_local_tensor_network
+    from flagquantum.simulation.tensor_network.observables import (
         build_tensor_network_expectation,
     )
 
     plan = build_tensor_network_expectation(
-        build_tensor_network(build(parameters)), z=(0,)
+        build_local_tensor_network(build(parameters)), z=(0,)
     )
     counts = Counter(label for node in plan.nodes for label in node.labels)
     sliced_label = next(

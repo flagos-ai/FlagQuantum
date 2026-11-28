@@ -50,13 +50,13 @@ def _static_expectation_plan_for_parameterized_tn(
     observable_qubits: Sequence[int] | None,
     hamiltonian_terms: Sequence[tuple[float, Sequence[tuple[int, str]]]],
 ) -> Any:
-    from .....simulation.tensor_network.entrypoints import (
-        build_tensor_network,
+    from flagquantum.simulation.tensor_network.local import build_local_tensor_network
+    from flagquantum.simulation.tensor_network.observables import (
         build_tensor_network_expectation,
     )
 
     torch_dtype = _torch_complex_dtype(complex_bytes)
-    base = build_tensor_network(circuit, bsz=bsz, device="cpu", dtype=torch_dtype)
+    base = build_local_tensor_network(circuit, bsz=bsz, device="cpu", dtype=torch_dtype)
     normalized = str(observable)
     if normalized in {"z", "z_sum"}:
         qubits = (
@@ -217,7 +217,7 @@ def jax_sliced_tensor_network_value_and_grad(
     being implied by node-level VJP coverage.
     """
 
-    from .....simulation.tensor_network.entrypoints import build_tensor_network
+    from flagquantum.simulation.tensor_network.local import build_local_tensor_network
 
     torch = _require_torch()
     jax, _ = _require_jax()
@@ -246,7 +246,9 @@ def jax_sliced_tensor_network_value_and_grad(
         complex_bytes = 16 if dtype == torch.complex128 else 8
     torch_dtype = _torch_complex_dtype(complex_bytes)
     jax_dtype = _jax_complex_dtype(complex_bytes)
-    plan = build_tensor_network(circuit_or_ir, bsz=bsz, device="cpu", dtype=torch_dtype)
+    plan = build_local_tensor_network(
+        circuit_or_ir, bsz=bsz, device="cpu", dtype=torch_dtype
+    )
     slicing = plan.slicing_plan(
         max_intermediate_size=max_intermediate_size, sliced_labels=sliced_labels
     )
