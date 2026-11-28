@@ -119,3 +119,21 @@ domains remain open. The source cvs-display/physical-activation discrepancy and
 empty-array conversion refusal are not waived. Whole-root physical binding
 explicitly refuses missing bodies. Registration is 227/303; Q-0382, Q-0866 and
 Q-0876 remain open. No original source is modified or PR merged.
+
+## Complete top-level logical source closure (2026-11-28)
+
+The [shared top-level closure](RESOLVER_FIRST_QUANTIZATION_ROOT_AUDIT.md#complete-top-level-logical-source-closure-2026-11-28)
+adds the projectile four-call PREPARE and twenty-six-call SELECT at symbolic
+widths, with exact outer GenericAdjoint construction and explicit child pairs.
+Zero electron widths retain the original successful outer calls while the
+failed exchange Split body stays an opaque declaration. Typed allocations keep
+original widths and clean-release obligations; they assert no numerical cleanup.
+
+The literal recursive mu inverse defect, unavailable whole-root physical leaves,
+source cvs drawing/all-one execution difference and empty-control model failure
+remain source boundaries. Corrected native control/adjoint models remain separate.
+`first_quantization_preparation_formula.py` now composes original symbolic
+PREPARE categories and complete forward bystanders. Original inverse peak and
+symbolic SELECT cost failures are retained. The new scenario test is
+`tests/unit/test_first_quantization_source_closure.py`. Complete source acceptance
+still requires the batch checks and verified publication.

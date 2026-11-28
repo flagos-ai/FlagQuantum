@@ -93,3 +93,11 @@ SELECT/nuclear dependencies. See [the constructor audit](RESOLVER_FIRST_QUANTIZA
 for normalization, exact register domains, shared projectile replacement and
 separate model/physical evidence. Q-0388 remains open for its opaque whole-root
 physical path; this addition does not change the earlier tutorial acceptance.
+
+
+## Complete source disposition (2026-11-28)
+
+The [complete logical closure](RESOLVER_FIRST_QUANTIZATION_ROOT_AUDIT.md#complete-top-level-logical-source-closure-2026-11-28) supersedes the earlier missing constructor and generic inverse paths.
+Remaining opaque physical bodies and reproduced source defects are retained
+under the approved faithful-source acceptance rule. No whole-root physical
+execution or cleanup is claimed.

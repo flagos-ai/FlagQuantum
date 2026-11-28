@@ -292,3 +292,12 @@ The existing recursive decomposition resource entry has a different grain and
 is unchanged. Controlled SDK scalar coefficients reuse the existing native global-phase cost
 owner, preserving the principal angle and predicate controls. Uncontrolled
 phase stays free. Neither model query emits gates or makes a body executable.
+
+
+First-quantization root, kinetic and potential adapters retain source-success
+logical graphs separately from physical lowering. `_source_constructor_adjoints.py`
+keeps explicit forward/inverse constructor pairs within one resolution; it never
+infers unknown leaf semantics or stores global state. Compiler owns graph
+reversal and specialized exact uniform/exchange inverse bodies. The shortest
+change path is `tests/unit/test_first_quantization_source_closure.py`, followed
+by the existing ordinary/projectile root library tests.

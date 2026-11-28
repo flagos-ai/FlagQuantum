@@ -382,3 +382,12 @@ Ecosystem owns constructor decoding. Models do not imply physical leaf bodies.
 The shortest change path is `tests/unit/test_momentum_source_declarations.py`;
 run it with the locked reference dependencies, then the existing Nu and potential
 library tests. Keep actual uniform-child measurements separate from root models.
+
+
+`first_quantization_preparation_formula.py` composes ordinary/projectile
+four-child source estimates and live bystanders, including symbolic widths.
+Existing concrete public signature helpers keep their validation while shared
+private declarations retain logical source metadata. Use
+`tests/unit/test_first_quantization_source_closure.py` for complete top-level
+constructor and model changes. Symbolic SELECT models that fail in the original
+Split chain remain unavailable; model queries do not imply executable bodies.

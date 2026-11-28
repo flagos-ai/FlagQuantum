@@ -71,3 +71,41 @@ bodyless TUV, IJ, power, SELECT T/UV and nuclear leaves are not manufactured.
 Generic root adjoints, symbolic/invalid physical sizes, one-bit signed-conversion
 peak failure and prior nested nu failures remain explicit and unwaived.
 Constructor union 233/303 describes registrations only, not accepted parents.
+
+## Complete top-level logical source closure (2026-11-28)
+
+The final source-success gap is implemented by shared raw declaration helpers,
+the existing typed PREPARE/SELECT owners and scoped constructor adjoint pairs.
+Concrete public signature APIs retain their original validation. Symbolic
+momentum width no longer prevents a four-call PREPARE or outer twenty-call
+ordinary / twenty-six-call projectile SELECT. Zero-width exchanges retain an
+opaque declaration where the original Split body fails. The original ordinary
+zero-width PREPARE itself fails and remains a header. No failed child becomes an
+identity circuit. SELECT allocation/free uses its original typed descriptor;
+physical allocation still requires resolved sizes.
+
+Generic source adjoints now bind to explicit owner pairs, including exact
+kinetic uniform unpreparation, Nu/UV inverses, exchanged-word inverse graphs and
+the original self-adjoint axis CSwap. Unknown constructor inverses still fail.
+Scoped context is shared by kinetic and both root adapters, with no global
+registry or new user API. Opaque forward/inverse leaves retain distinct names.
+The source projectile recursive mu inverse defect remains visible inside UV.
+
+`tests/unit/test_first_quantization_source_closure.py` compares complete node,
+producer, operand, port and output connections in both directions against the
+unchanged source. It also verifies zero/symbolic failure boundaries and separate
+PREPARE category/peak formulas. Source SELECT recursive symbolic Split failures
+and unavailable symbolic category/peak queries remain failures; they are not
+estimated using a substituted decomposition. The source-free ordinary and
+projectile formula composes the same four child budgets and live bystanders.
+Projectile inverse categories remain available while its peak query fails.
+
+Previously accepted concrete exchange complex operators, measurement histories,
+private-work restoration, source controls and actual primitive inventories are
+reused. Missing source TUV/IJ/power/SELECT/nuclear bodies still prevent whole-root
+primitive and full-amplitude execution. Source model counts are separate from
+measured child circuits. Source plus_t remains a through bystander, PREPARE l
+keeps its original bound discrepancy and cvs drawing does not change original
+all-one control execution. The corrected native controls/adjoint model remain
+separate capabilities. The two parent source files are eligible for faithful
+closure after complete checks and publication; no G3 or automatic merge.
