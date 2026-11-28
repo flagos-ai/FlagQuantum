@@ -843,7 +843,14 @@ def test_all_source_stage_symbolic_declarations_and_invalid_fields(kind: str) ->
     factories = elliptic_curve_addition_factories()
     graph = resolve_component_program(library, 0, factories)
     assert verify_program_record(graph) == ()
-    assert not graph.functions[0].blocks
+    if kind == "root":
+        assert len(graph.functions[0].blocks[0].operations) == 6
+        assert sum(not f.blocks for f in graph.functions) == 6
+        assert _named_inputs(_native_trace(graph)) == _named_inputs(
+            _source_trace(SourceCalls, source.decompose_bloq())
+        )
+    else:
+        assert not graph.functions[0].blocks
     key = "qualtran.bloqs.cryptography.ecc.ec_add." + (
         "ECAdd" if kind == "root" else "_ECAddStep" + kind
     )
@@ -863,14 +870,12 @@ def test_unchanged_original_examples_declarations_or_complete_six_call_root(
         _library(source, 0), 0, elliptic_curve_addition_factories()
     )
     assert verify_program_record(graph) == ()
-    if name == "_ec_add":
-        assert not graph.functions[0].blocks
-    else:
+    if name == "_ec_add_small":
         assert (source.n, source.mod, source.window_size) == (5, 7, 1)
-        assert len(graph.functions[0].blocks[0].operations) == 6
-        assert _named_inputs(_native_trace(graph)) == _named_inputs(
-            _source_trace(SourceCalls, source.decompose_bloq())
-        )
+    assert len(graph.functions[0].blocks[0].operations) == 6
+    assert _named_inputs(_native_trace(graph)) == _named_inputs(
+        _source_trace(SourceCalls, source.decompose_bloq())
+    )
 
 
 def test_wide_window_source_reduction_counterexample_remains_in_typed_path() -> None:

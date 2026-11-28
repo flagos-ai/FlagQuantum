@@ -435,8 +435,6 @@ def _root(
     signature = elliptic_curve_addition_signature(width)
     if registers is not None and registers != tuple(signature):
         raise SerializationError("Invalid original curve addition signature")
-    if type(width) is not int or type(modulus) is not int or type(window) is not int:
-        return FunctionRecord(name, (), registers=tuple(signature))
     scalar = {"n": width, "mod": modulus}
     windowed = {**scalar, "window_size": window}
     stages = (

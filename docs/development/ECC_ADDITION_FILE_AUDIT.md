@@ -400,3 +400,19 @@ inverse is preserved. Complete existing flat physical traces and binding wires
 remain equal against f765ed390 after delegation. Point lookup/constructor,
 classical, parameterized model and package regressions are concentrated together;
 unchanged large quantum channel certificates are reused.
+
+A second source probe found that symbolic n has a valid six-call ECAdd root even
+though each of its six stage decompositions explicitly refuses symbolic n. The
+Ecosystem root factory now retains those six typed calls and the six truthful
+stage declarations instead of replacing the whole root by an empty header.
+Original serialized depths0/1, operand predecessors, body refusal and SDK-free
+resolution compare directly. This creates no physical symbolic execution.
+
+The broader symbolic probe also identifies available stage bodies for fixed n
+with symbolic modulus or symbolic multiplication window. Existing factories
+still leave those stage declarations bodyless. Their20/28/28/34/18/65available
+calls need native logical dependency closure. Those are real native gaps, not
+upstream defects or a basis for parent acceptance. Q-0457 and Q-0460 therefore
+remain open while this batch publishes the completed value and model owners.
+The source controlled window root has available calls above a non-THRU QROAM
+refusal; preserve available logical layers separately from absent physical leaves.
