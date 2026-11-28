@@ -9,20 +9,22 @@ from functools import partial
 
 import numpy as np
 
-from ..algorithms.first_quantization import momentum_exchange_signature
+from ..algorithms.first_quantization import _momentum_exchange_declaration
 from ..algorithms.first_quantization_projectile import (
-    projectile_prepare_signature,
+    _projectile_prepare_declaration,
+    _projectile_select_declaration,
+    _projectile_select_t_declaration,
+    _projectile_select_uv_declaration,
     projectile_prepare_tuv_signature,
-    projectile_select_signature,
-    projectile_select_t_signature,
-    projectile_select_uv_signature,
 )
 from ..algorithms.first_quantization_resource_model import source_prepare_ij_signature
 from ..compiler.formats.legacy_component_resolution import (
     ComponentFactory,
     ResolvedArgument,
 )
+from ..compiler.formats.legacy_modular_addition_factories import _integer
 from ..compiler.formats.legacy_word_factories import _rename_program
+from ..compiler.registers.component_adjoint import adjoint_component_calls
 from ..compiler.registers.control.projectile_selection_component import (
     projectile_selection_program,
 )
@@ -40,9 +42,10 @@ from ..core.ir.program.register_types import opaque_register_type, quantum_bit_t
 from ..core.ir.program.registers import Register
 from ..core.ir.program.signatures import Signature
 from ..errors import SerializationError
-from ._kinetic_preparation_library import kinetic_preparation_factories
+from ._kinetic_preparation_library import _kinetic, kinetic_preparation_factories
 from ._nu_preparation_library import _finite
-from ._potential_preparation_library import potential_preparation_factories
+from ._potential_preparation_library import _potential, potential_preparation_factories
+from ._source_constructor_adjoints import constructor_adjoint_factories
 
 _BASE = "qualtran.bloqs.chemistry.pbc.first_quantization."
 _ROOT_FIELDS = {"num_bits_p", "num_bits_n", "eta", "num_atoms", "lambda_zeta"}
@@ -84,6 +87,8 @@ def _leaf(
     name: str,
     registers: tuple[Register, ...] | None,
     arguments: Mapping[str, ResolvedArgument],
+    *,
+    adjoint: bool = False,
 ) -> FunctionRecord | ProgramRecord:
     required = _LEAF_FIELDS[kind]
     optional = (
@@ -93,28 +98,34 @@ def _leaf(
     )
     if not required <= arguments.keys() or arguments.keys() - required - optional:
         raise SerializationError("Invalid projectile source leaf fields")
-    sizes = {field: _finite(arguments, field) for field in required}
+    sizes = {field: _integer(arguments, field) for field in required}
     if kind == "PrepareTUVSuperpositions":
         if "num_bits_rot_aa" in arguments:
-            _finite(arguments, "num_bits_rot_aa")
+            _integer(arguments, "num_bits_rot_aa")
         if type(arguments.get("is_adjoint", False)) not in (bool, int):
             raise SerializationError(
                 "Projectile term direction requires a boolean or integer"
             )
         signature = projectile_prepare_tuv_signature()
     elif kind == "UniformSuperpostionIJFirstQuantization":
-        signature = source_prepare_ij_signature(sizes["eta"])
+        signature = source_prepare_ij_signature(_finite(arguments, "eta"))
     elif kind == "SelectTFirstQuantizationWithProj":
-        signature = projectile_select_t_signature(sizes["num_bits_n"])
+        signature = _projectile_select_t_declaration(sizes["num_bits_n"])
     else:
-        signature = projectile_select_uv_signature(
+        signature = _projectile_select_uv_declaration(
             sizes["num_bits_p"],
             sizes["num_bits_n"],
-            sizes["num_atoms"],
+            _finite(arguments, "num_atoms"),
             sizes["num_bits_nuc_pos"],
         )
     return _finish(
-        FunctionRecord(name, (), registers=tuple(signature)), name, registers
+        FunctionRecord(
+            name,
+            (),
+            registers=tuple(signature.adjoint()) if adjoint else tuple(signature),
+        ),
+        name,
+        registers,
     )
 
 
@@ -123,12 +134,14 @@ def _exchange(
     name: str,
     registers: tuple[Register, ...] | None,
     arguments: Mapping[str, ResolvedArgument],
+    *,
+    adjoint: bool = False,
 ) -> FunctionRecord | ProgramRecord:
     required = {"num_bits_p", "eta"} | ({"num_bits_n", "cvs"} if controlled else set())
     if arguments.keys() != required:
         raise SerializationError("Invalid shaped exchange constructor fields")
-    width, particles = _finite(arguments, "num_bits_p"), _finite(arguments, "eta")
-    signature = momentum_exchange_signature(particles, width)
+    width, particles = _integer(arguments, "num_bits_p"), _finite(arguments, "eta")
+    signature = _momentum_exchange_declaration(particles, width)
     if controlled:
         raw = arguments["cvs"]
         if isinstance(raw, int):
@@ -137,7 +150,7 @@ def _exchange(
             raise SerializationError("Projectile cvs requires an integer or vector")
         if any(not isinstance(value, (int, np.integer, np.bool_)) for value in raw):
             raise SerializationError("Projectile exchange requires integer cvs")
-        n = _finite(arguments, "num_bits_n")
+        n = _integer(arguments, "num_bits_n")
         signature = Signature(
             (
                 Register("ctrl", quantum_bit_type(), shape=(len(raw),)),
@@ -145,8 +158,25 @@ def _exchange(
                 Register("junk", opaque_register_type(n), shape=(3,)),
             )
         )
+    if (
+        type(width) is not int
+        or width == 0
+        or particles < 2
+        or (controlled and (type(n) is not int or n < width))
+    ):
+        return _finish(
+            FunctionRecord(
+                name,
+                (),
+                registers=tuple(signature.adjoint()) if adjoint else tuple(signature),
+            ),
+            name,
+            registers,
+        )
     return _finish(
-        momentum_exchange_program(signature, controlled=controlled), name, registers
+        momentum_exchange_program(signature, controlled=controlled, adjoint=adjoint),
+        name,
+        registers,
     )
 
 
@@ -155,6 +185,8 @@ def _root(
     name: str,
     registers: tuple[Register, ...] | None,
     arguments: Mapping[str, ResolvedArgument],
+    *,
+    adjoint: bool = False,
 ) -> FunctionRecord | ProgramRecord:
     if (
         not arguments.keys() >= _ROOT_FIELDS
@@ -162,18 +194,20 @@ def _root(
     ):
         raise SerializationError("Invalid projectile root constructor fields")
     recipe: dict[str, ResolvedArgument] = {**_DEFAULTS, **arguments}
-    sizes = {field: _finite(recipe, field) for field in recipe}
-    p, n, eta, atoms, m = (
-        sizes[field]
-        for field in ("num_bits_p", "num_bits_n", "eta", "num_atoms", "m_param")
+    sizes = {field: _integer(recipe, field) for field in recipe}
+    p, n = sizes["num_bits_p"], sizes["num_bits_n"]
+    eta, atoms, m = (
+        _finite(recipe, field) for field in ("eta", "num_atoms", "m_param")
     )
 
-    def leaf(kind: str) -> ProgramRecord:
+    def leaf(kind: str, inverse: bool = False) -> ProgramRecord:
         fields = _LEAF_FIELDS[kind]
         values: dict[str, ResolvedArgument] = {field: sizes[field] for field in fields}
         if kind == "PrepareTUVSuperpositions":
             values["num_bits_rot_aa"] = sizes["num_bits_rot_aa"]
-        record = _leaf(kind, kind, None, values)
+        record = _leaf(
+            kind, kind + ("_adjoint" if inverse else ""), None, values, adjoint=inverse
+        )
         assert isinstance(record, FunctionRecord)
         return ProgramRecord((record,))
 
@@ -215,7 +249,7 @@ def _root(
             else ProgramRecord((potential,))
         )
         record = first_quantization_preparation_program(
-            projectile_prepare_signature(n, eta, atoms, m),
+            _projectile_prepare_declaration(n, eta, atoms, m),
             (
                 leaf("PrepareTUVSuperpositions"),
                 leaf("UniformSuperpostionIJFirstQuantization"),
@@ -233,26 +267,147 @@ def _root(
         electron = _exchange(
             False, "electron_exchange", None, {"num_bits_p": p, "eta": eta}
         )
-        assert isinstance(controlled, ProgramRecord) and isinstance(
-            electron, ProgramRecord
+        controlled = (
+            controlled
+            if isinstance(controlled, ProgramRecord)
+            else ProgramRecord((controlled,))
+        )
+        electron = (
+            electron
+            if isinstance(electron, ProgramRecord)
+            else ProgramRecord((electron,))
+        )
+        axis = (
+            controlled_swap_program(n)
+            if type(n) is int and n > 0
+            else ProgramRecord(
+                (
+                    FunctionRecord(
+                        "axis_exchange",
+                        (),
+                        registers=(
+                            Register("ctrl", quantum_bit_type()),
+                            Register("x", opaque_register_type(n)),
+                            Register("y", opaque_register_type(n)),
+                        ),
+                    ),
+                )
+            )
         )
         record = projectile_selection_program(
-            projectile_select_signature(p, n, eta, atoms, m),
+            _projectile_select_declaration(p, n, eta, atoms, m),
             {
                 "controlled_exchange": controlled,
                 "electron_exchange": electron,
-                "axis_exchange": controlled_swap_program(n),
+                "axis_exchange": axis,
                 "kinetic": leaf("SelectTFirstQuantizationWithProj"),
                 "potential": leaf("SelectUVFirstQuantizationWithProj"),
             },
             sizes["num_bits_nuc_pos"],
         )
+    pairs: tuple[tuple[ProgramRecord, ProgramRecord], ...]
+    if adjoint:
+        if not select:
+            kinetic_inverse = _kinetic(
+                "PrepareTFirstQuantizationWithProj",
+                "kinetic_adjoint",
+                None,
+                {
+                    field: sizes[field]
+                    for field in ("num_bits_p", "num_bits_n", "eta", "num_bits_rot_aa")
+                },
+                adjoint=True,
+            )
+            potential_inverse = _potential(
+                True,
+                "potential_adjoint",
+                None,
+                {
+                    field: sizes[field]
+                    for field in (
+                        "num_bits_p",
+                        "num_bits_n",
+                        "eta",
+                        "num_atoms",
+                        "m_param",
+                        "lambda_zeta",
+                        "num_bits_nuc_pos",
+                    )
+                },
+                adjoint=True,
+            )
+            assert isinstance(potential_inverse, ProgramRecord)
+            pairs = (
+                (
+                    leaf("PrepareTUVSuperpositions"),
+                    leaf("PrepareTUVSuperpositions", True),
+                ),
+                (
+                    leaf("UniformSuperpostionIJFirstQuantization"),
+                    leaf("UniformSuperpostionIJFirstQuantization", True),
+                ),
+                (
+                    kinetic_program,
+                    (
+                        ProgramRecord((kinetic_inverse,))
+                        if isinstance(kinetic_inverse, FunctionRecord)
+                        else kinetic_inverse
+                    ),
+                ),
+                (potential_program, potential_inverse),
+            )
+        else:
+            assert isinstance(controlled, ProgramRecord) and isinstance(
+                electron, ProgramRecord
+            )
+            controlled_inverse = _exchange(
+                True,
+                "controlled_exchange_adjoint",
+                None,
+                {"num_bits_p": p, "num_bits_n": n, "eta": eta, "cvs": (0,)},
+                adjoint=True,
+            )
+            electron_inverse = _exchange(
+                False,
+                "electron_exchange_adjoint",
+                None,
+                {"num_bits_p": p, "eta": eta},
+                adjoint=True,
+            )
+            pairs = (
+                (
+                    controlled,
+                    (
+                        controlled_inverse
+                        if isinstance(controlled_inverse, ProgramRecord)
+                        else ProgramRecord((controlled_inverse,))
+                    ),
+                ),
+                (
+                    electron,
+                    (
+                        electron_inverse
+                        if isinstance(electron_inverse, ProgramRecord)
+                        else ProgramRecord((electron_inverse,))
+                    ),
+                ),
+                (axis, axis),
+                (
+                    leaf("SelectTFirstQuantizationWithProj"),
+                    leaf("SelectTFirstQuantizationWithProj", True),
+                ),
+                (
+                    leaf("SelectUVFirstQuantizationWithProj"),
+                    leaf("SelectUVFirstQuantizationWithProj", True),
+                ),
+            )
+        record = adjoint_component_calls(record, pairs)
     return _finish(record, name, registers)
 
 
 def projectile_component_factories() -> dict[str, ComponentFactory]:
     """Bind the complete source root file and its explicit direct declarations."""
-    return {
+    owners = {
         _BASE
         + "projectile.select_and_prepare.PrepareTUVSuperpositions": partial(
             _leaf, "PrepareTUVSuperpositions"
@@ -283,3 +438,9 @@ def projectile_component_factories() -> dict[str, ComponentFactory]:
             _root, True
         ),
     }
+
+    inverses = {
+        key: partial(factory.func, *factory.args, **factory.keywords, adjoint=True)
+        for key, factory in owners.items()
+    }
+    return constructor_adjoint_factories(owners, inverses)
