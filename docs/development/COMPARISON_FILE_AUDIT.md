@@ -368,3 +368,38 @@ findings have no affected consumer and no checker waiver. Receipts use
 Q-0180 is accepted under the approved complete faithful-migration rule.
 Q-0181's already accepted full original test responsibility is reused. Publication
 is tracked separately in the integration ledger and verified batch receipt.
+
+## Additional source controls for ECC dependencies
+
+The ordinary controlled linear comparator preserves 49 unsigned or 27 signed
+calls at width three, in both directions. Its one-bit base case retains the
+single Controlled(MultiControlX) call with separate scalar and array controls.
+The additional control on CLinearDepthGreaterThan preserves 25 unsigned or
+17 signed calls, both inner polarities and the supported unsigned inverse.
+Shared bitwise and multi-control descendants retain full available bodies.
+Only complete definition matches select child owners; signatures are not an
+arithmetic identity. Constructor reconstruction supports stored source depth
+zero/one, reference-free resolution and the negative outer predicate wrapper.
+
+Original Controlled(And) and Controlled(And-adjoint) reject non-THRU target
+ports. Original controlled out-of-place adders and sign extensions reject the
+same directional boundary. The new parents retain declarations at those exact
+leaves and fail physical binding. They do not fabricate primitive counts,
+amplitudes, measured cleanup or a numerical implementation beyond that boundary.
+The previously recorded signed CLinear inverse port-name defect remains rejected.
+The complete executable ordinary one-bit base case is checked independently:
+original primitive/feedback stream, complete complex operator, entangled
+spectator, every measurement history, zero work and circuit.append execution.
+Literal primitive counts and the original QEC model remain separate evidence.
+
+The shared controlled X/Z predicate construction and imported control-adder
+callback replace duplicated construction. Five complete existing controlled Z
+and modular doubling Programs are literally identical to ac795c0eb; unchanged
+phase, feedback, work and resource evidence is reused only after that equality.
+
+For the executable one-bit ordinary controlled comparator the measured stream
+is H=6,T=4,CX=13,Tdg=4,S=2,X=4,measurement=2,CZ=2,reset=2.
+The separate source model is And=2,Toffoli=0,Clifford=7,measurement=2,
+T-equivalent=8,peak qubits=6. The four measurement histories preserve the full
+complex operator and return both private work bits to zero, including an
+entangled spectator. Source-refused wider roots have no measured full inventory.

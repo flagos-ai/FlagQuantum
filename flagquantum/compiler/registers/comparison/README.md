@@ -60,3 +60,14 @@ compute/erase and one-bit leaves. It preserves signed overflow behavior rather
 than replacing the source inverse with a mathematical comparison. The complete
 signed three-bit source operator and unsigned branch/cleanup checks are in
 `tests/unit/test_ecc_arithmetic_adjoints.py`.
+
+`controlled_linear_component.py` owns literal additional positive controls on
+ordinary and already-controlled linear comparisons. It selects exact child
+owners from complete stored definitions, preserving source operand order,
+bitwise controls, merged multi-control predicates and exact inverse direction.
+Non-THRU controlled And, out-of-place adder and sign-extension constructors
+remain declarations only where the original decomposition refuses them. Their
+parents remain inspectable but physical binding fails. Width-one ordinary
+comparison has a complete executable predicate body; run
+`tests/unit/test_controlled_linear_source.py` for its complete complex operator,
+entangled spectator, all measurement histories and normal append execution.
