@@ -148,3 +148,14 @@ The source constructor adapter and controlled curve-stage bindings share it.
 The wrapper's separate concrete parity, capacity and divisibility assertions
 retain their original order and messages; the metadata-only implementation
 signature does not silently apply those wrapper constraints to other classes.
+
+The constructor adapter `formats/legacy_symbolic_modular_controls.py` reuses
+the same arithmetic control dependencies for finite-width, unresolved moduli.
+It preserves all 17/14/5/15 parent calls and exact inverse dispatch. Symbolic
+AddK leaves retain their original decomposition refusal; their expressions and
+directions come from the explicit source constructor context. Distinct load and
+unload declarations have identical ABI and must be bound by their named shell
+roles. `_control_calls` accepts those explicit declaration adders separately
+from complete-body matching. Unknown declarations are never identified by ABI.
+Run `tests/unit/test_symbolic_additional_modular_controls.py` for constructor
+argument observation, source operands, inverse roles and refusal boundaries.

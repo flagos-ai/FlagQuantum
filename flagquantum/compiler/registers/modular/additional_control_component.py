@@ -5,6 +5,7 @@
 
 """Retain source control specializations across modular arithmetic calls."""
 
+from collections.abc import Mapping
 from dataclasses import replace
 
 import numpy as np
@@ -78,11 +79,16 @@ def _specialized_addition_adder(program: ProgramRecord) -> ControlAdder:
 
 
 def _control_calls(
-    record: ProgramRecord, owners: tuple[tuple[ProgramRecord, ControlAdder], ...]
+    record: ProgramRecord,
+    owners: tuple[tuple[ProgramRecord, ControlAdder], ...],
+    *,
+    declarations: Mapping[str, ControlAdder] | None = None,
 ) -> ProgramRecord:
     x_gate, cx_gate = comparison_bit_functions()
     functions = {function.name: function for function in record.functions}
-    adders: dict[str, ControlAdder] = {}
+    adders: dict[str, ControlAdder] = dict(declarations or {})
+    if any(name not in functions or functions[name].blocks for name in adders):
+        raise ValueError("Explicit unresolved control owners require declared callees")
     for operation in record.functions[0].blocks[0].operations:
         assert operation.callee is not None
         name = operation.callee
@@ -120,27 +126,22 @@ def _control_calls(
     )
 
 
-def additional_modular_addition_program(
+def _modular_addition_control_dependencies(
     dtype: RegisterType,
-    modulus: int,
     *,
     control_value: int | None = None,
     adjoint: bool = False,
-) -> ProgramRecord:
-    """Add one positive scalar control to ModAdd or CModAdd and its inverse.
-
-    None selects ordinary ModAdd and requires its exact Montgomery descriptor.
-    Zero/one selects the original CModAdd polarity. Words remain MSB first;
-    bookkeeping, Add-to-CAdd and three-call CAdd reduction follow source owners.
-    Actual source-refused controlled comparator leaves remain unbound.
-    """
+) -> tuple[
+    RegisterType,
+    RegisterType,
+    ProgramRecord,
+    ControlAdder,
+    ProgramRecord,
+    ProgramRecord,
+]:
+    """Reuse exact arithmetic control specializations independently of modulus."""
     width = executable_register_width(dtype)
     if control_value is None:
-        if dtype != montgomery_register_type(width, modulus):
-            raise ValueError(
-                "Ordinary ModAdd requires its source Montgomery descriptor"
-            )
-        record = modular_addition_program(width, modulus, adjoint=adjoint)
         word, wide = montgomery_register_type(width), montgomery_register_type(
             width + 1
         )
@@ -155,9 +156,6 @@ def additional_modular_addition_program(
         comparison = linear_greater_program(width, adjoint=adjoint)
         controlled_compare = controlled_linear_greater_program(width, adjoint=adjoint)
     else:
-        record = controlled_modular_addition_program(
-            dtype, modulus, control_value=control_value, adjoint=adjoint
-        )
         word, wide = unsigned_register_type(width), unsigned_register_type(width + 1)
         addition = controlled_addition_program(
             word, wide, control_value=control_value, adjoint=adjoint
@@ -181,6 +179,39 @@ def additional_modular_addition_program(
         controlled_compare = nested_controlled_greater_program(
             word, control_value=control_value, adjoint=adjoint
         )
+    return word, wide, addition, controlled_add, comparison, controlled_compare
+
+
+def additional_modular_addition_program(
+    dtype: RegisterType,
+    modulus: int,
+    *,
+    control_value: int | None = None,
+    adjoint: bool = False,
+) -> ProgramRecord:
+    """Add one positive scalar control to ModAdd or CModAdd and its inverse.
+
+    None selects ordinary ModAdd and requires its exact Montgomery descriptor.
+    Zero/one selects the original CModAdd polarity. Words remain MSB first;
+    bookkeeping, Add-to-CAdd and three-call CAdd reduction follow source owners.
+    Actual source-refused controlled comparator leaves remain unbound.
+    """
+    width = executable_register_width(dtype)
+    if control_value is None:
+        if dtype != montgomery_register_type(width, modulus):
+            raise ValueError(
+                "Ordinary ModAdd requires its source Montgomery descriptor"
+            )
+        record = modular_addition_program(width, modulus, adjoint=adjoint)
+    else:
+        record = controlled_modular_addition_program(
+            dtype, modulus, control_value=control_value, adjoint=adjoint
+        )
+    word, wide, addition, controlled_add, comparison, controlled_compare = (
+        _modular_addition_control_dependencies(
+            dtype, control_value=control_value, adjoint=adjoint
+        )
+    )
     pattern = (-modulus) % (1 << (width + 1))
     owners = (
         (addition, controlled_add),

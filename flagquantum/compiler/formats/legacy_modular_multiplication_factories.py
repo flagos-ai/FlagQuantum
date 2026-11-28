@@ -281,11 +281,23 @@ def modular_multiplication_factories(
                 and spec.clauses[0][1].item() == 1
                 and isinstance(dtype, RegisterType)
                 and type(dtype.num_qubits) is int
-                and type(modulus) is int
-            ):
-                result = controlled_modular_doubling_program(
-                    dtype, modulus, adjoint=direction
+                and (
+                    type(modulus) is int
+                    or (isinstance(modulus, sympy.Expr) and modulus.free_symbols)
                 )
+            ):
+                if isinstance(modulus, sympy.Expr):
+                    from .legacy_symbolic_modular_controls import (
+                        symbolic_controlled_modular_doubling_program,
+                    )
+
+                    result = symbolic_controlled_modular_doubling_program(
+                        dtype, modulus, adjoint=direction
+                    )
+                else:
+                    result = controlled_modular_doubling_program(
+                        dtype, modulus, adjoint=direction
+                    )
                 if registers is not None and registers != result.functions[0].registers:
                     result = restore_montgomery_ports(result, registers)
                 return _rename_program(result, name)
@@ -300,10 +312,22 @@ def modular_multiplication_factories(
             raise SerializationError("Missing modular doubling predicate context")
         values, direction = recipes[child]
         dtype, modulus = values["dtype"], _integer(values, "mod")
-        if not isinstance(dtype, RegisterType) or type(modulus) is not int:
-            raise SerializationError("Controlled doubling requires a concrete modulus")
+        if not isinstance(dtype, RegisterType):
+            raise SerializationError("Controlled doubling requires its source dtype")
+        if isinstance(modulus, sympy.Expr):
+            from .legacy_symbolic_modular_controls import (
+                symbolic_controlled_modular_doubling_program,
+            )
+
+            program = symbolic_controlled_modular_doubling_program(
+                dtype, modulus, adjoint=direction
+            )
+        else:
+            program = controlled_modular_doubling_program(
+                dtype, modulus, adjoint=direction
+            )
         module = _rename_program(
-            controlled_modular_doubling_program(dtype, modulus, adjoint=direction),
+            program,
             child.name + "_positive",
         )
         return module, _stored_control_adder(module.functions[0])
