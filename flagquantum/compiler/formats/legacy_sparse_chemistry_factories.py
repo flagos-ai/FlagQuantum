@@ -5,14 +5,19 @@
 """Resolve source sparse SELECT with independently owned exact inverse recipes."""
 
 from collections.abc import Mapping
+from typing import Literal
 
 from ...core.ir.program import FunctionRecord, ProgramRecord
 from ...core.ir.program.registers import Register
 from ...errors import SerializationError
 from ..registers.component_control import ControlAdder, _stored_control_adder
+from ..registers.control.specialized_component_control import (
+    specialized_component_control_system,
+)
 from ..registers.lookup.sparse_chemistry_select_component import (
     sparse_select_component_pair,
 )
+from ..registers.lookup.sparse_selection_control import generic_sparse_select_program
 from .legacy_component_arguments import ControlSpecification
 from .legacy_component_resolution import ComponentFactory, ResolvedArgument
 from .legacy_controlled_factories import controlled_via_and_factories
@@ -20,11 +25,13 @@ from .legacy_word_factories import _rename_program
 
 
 def sparse_chemistry_factories(
-    *, adjoint_factory: ComponentFactory | None = None
+    *,
+    adjoint_factory: ComponentFactory | None = None,
+    cy_profile: Literal["cirq", "scalar"] = "cirq",
 ) -> dict[str, ComponentFactory]:
     """Bind the constructor and generic adjoint without importing source classes."""
     pairs: dict[FunctionRecord, tuple[ProgramRecord, ProgramRecord]] = {}
-    roles: dict[FunctionRecord, tuple[int, bool, bool]] = {}
+    roles: dict[FunctionRecord, tuple[int, bool, int | None]] = {}
     predicates: dict[
         FunctionRecord, tuple[FunctionRecord, ControlSpecification, bool]
     ] = {}
@@ -60,23 +67,32 @@ def sparse_chemistry_factories(
         record = store(
             name, registers, sparse_select_component_pair(size, control_value=control)
         )
-        roles[record.functions[0]] = size, False, control is not None
+        roles[record.functions[0]] = size, False, control
         return record
 
     def positive(
         child: FunctionRecord, *, inverse: bool = False
     ) -> tuple[ProgramRecord, ControlAdder]:
-        if child not in roles or roles[child][2]:
+        if child not in roles:
             raise SerializationError(
                 "Missing sparse SELECT control context for an uncontrolled root"
             )
-        size, generic_inverse, _ = roles[child]
+        size, generic_inverse, existing_control = roles[child]
         if generic_inverse:
-            raise SerializationError(
-                "Source generic controlled sparse adjoint reaches undecomposable Controlled(And)"
+            module = generic_sparse_select_program(
+                size,
+                control_value=existing_control,
+                adjoint=not inverse,
+                cy_profile=cy_profile,
             )
-        pair = sparse_select_component_pair(size, control_value=1)
-        record = _rename_program(pair[int(inverse)], child.name + "_positive")
+        else:
+            pair = sparse_select_component_pair(size, control_value=1)
+            module = pair[int(inverse)]
+        record = _rename_program(module, child.name + "_positive")
+        if existing_control is not None and not generic_inverse:
+            return specialized_component_control_system(
+                record, "control", existing_control, 1, record.functions[0].name
+            )
         return record, _stored_control_adder(record.functions[0])
 
     via_and = controlled_via_and_factories(control_system=positive)[

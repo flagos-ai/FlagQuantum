@@ -1,5 +1,17 @@
 # Table lookup and selection
 
+`majorana_control_component.py` propagates an added scalar control through
+the existing source-ordered Majorana calls. Bookkeeping passes it unchanged;
+fixed gates and CY use their actual specializations. Directional Controlled(And)
+retains the source signature and explicit decomposition refusal. The source CY
+view is supplied by Ecosystem, never selected by importing an SDK here.
+`sparse_selection_control.py` composes four such Majorana owners and the shared
+atomic controlled phase, preserving the five-call generic Sparse SELECT root.
+The caller owns MSB words and original controls; existing child owners allocate
+and erase predicates. These owners store graphs, not numerical kernels or
+backend decisions. Run `tests/unit/test_majorana_generic_control.py` for source
+calls and operands, SDK profiles, missing-body boundaries and logical peaks.
+
 `hubbard_majorana_component.py` and `hubbard_spin_up_component.py` own typed
 Hubbard coordinate traversal and target partitioning, reusing existing Majorana
 and selected-Pauli components. Algorithms preserves numerical validation and

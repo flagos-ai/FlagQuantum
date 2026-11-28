@@ -1,9 +1,20 @@
 """Resolve original sparse SELECT constructors and both exact directions."""
 
 import sys
+from importlib import import_module
 from unittest.mock import patch
 
 import pytest
+
+from tests._reference_dependencies import unavailable_reference
+
+try:
+    import_module("numpy")
+    import_module("cirq")
+    import_module("qualtran")
+    import_module("kickmix")
+except ModuleNotFoundError as _reference_import_error:
+    unavailable_reference(_reference_import_error)
 
 from flagquantum import Circuit
 from flagquantum.algorithms.primitives._block_binding import _BoundBlockOperation
@@ -14,7 +25,6 @@ from flagquantum.core.ir.program import verify_program_record
 from flagquantum.ecosystem.cirq._sparse_chemistry_library import (
     sparse_chemistry_library_factories,
 )
-from flagquantum.errors import SerializationError
 from tests.unit.test_component_hierarchy_control import compare_layers
 from tests.unit.test_default_linear_combination_oracles import bind
 from tests.unit.test_hubbard_hamiltonian_gqsp import _source_sparse_branch
@@ -61,10 +71,16 @@ def test_grouped_control_source_bystander_and_inverse_order(
                     or (len(op.qubits) <= 3 and cirq.has_unitary(op)),
                 )
             )
-        with pytest.raises(SerializationError, match="undecomposable Controlled"):
-            resolve_component_program(
-                _library(source, 0), 0, sparse_chemistry_library_factories()
-            )
+        record = resolve_component_program(
+            _library(source, 0), 0, sparse_chemistry_library_factories()
+        )
+        compare_layers(record, source, atomic_leaves(record))
+        from tests.unit.test_sparse_chemistry_prepare_component import (
+            bind_used_workspace,
+        )
+
+        with pytest.raises(ValueError, match="requires component bodies"):
+            bind_used_workspace(record, allow_workspace_outputs=True)
         return
     record = resolve_component_program(
         _library(source, 0), 0, sparse_chemistry_library_factories()
@@ -129,3 +145,37 @@ def test_original_constructor_depths_exact_calls_and_sdk_free_append(
                 _BoundBlockOperation(bound.circuit.instructions, bound.circuit.n_wires)
             )
             assert circuit.to_ir().instructions == bound.circuit.instructions
+
+
+@pytest.mark.parametrize("existing", (0, 1))
+@pytest.mark.parametrize("direction", ("forward", "before", "after"))
+def test_preexisting_control_polarities_and_grouped_control_orders(
+    existing: int,
+    direction: str,
+) -> None:
+    from qualtran import Adjoint, CtrlSpec
+    from qualtran.bloqs.chemistry.sparse.select_bloq import SelectSparse
+    from qualtran.bloqs.mcmt.controlled_via_and import ControlledViaAnd
+
+    from tests.unit.test_sparse_chemistry_prepare_component import bind_used_workspace
+
+    original = SelectSparse(4, existing)
+    source = ControlledViaAnd(
+        Adjoint(original) if direction == "before" else original,
+        CtrlSpec(cvs=(1, 0)),
+    )
+    if direction == "after":
+        source = Adjoint(source)
+    record = resolve_component_program(
+        _library(source, 0), 0, sparse_chemistry_library_factories()
+    )
+    compare_layers(record, source, atomic_leaves(record))
+    if direction == "before":
+        with pytest.raises(ValueError, match="requires component bodies"):
+            bind_used_workspace(record, allow_workspace_outputs=True)
+    else:
+        bound, _ = bind(record)
+        circuit = Circuit(bound.circuit.n_wires).append(
+            _BoundBlockOperation(bound.circuit.instructions, bound.circuit.n_wires)
+        )
+        assert circuit.to_ir().instructions == bound.circuit.instructions
