@@ -221,3 +221,30 @@ def test_distribution_quarantine_covers_models_datasets_and_generated_files():
 def test_lazy_import_budget_and_optional_jax_absence():
     samples = sample_imports(3)
     assert max(samples) < 0.5
+
+
+def test_pinned_upload_bundle_size_ceiling_is_path_specific_and_bounded(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    import tools.architecture.check_repository_hygiene as hygiene
+
+    relative = Path(".github/actions/upload-artifact/vendor/dist/upload/index.js")
+    bundle = tmp_path / relative
+    bundle.parent.mkdir(parents=True)
+    ceiling = hygiene.ALLOWED_LARGE_FILES[relative]
+    bundle.write_bytes(b"x" * ceiling)
+    monkeypatch.setattr(hygiene, "tracked_files", lambda root: (bundle,))
+    assert not violations(tmp_path, max_file_bytes=DEFAULT_MAX_FILE_BYTES)
+    with bundle.open("ab") as stream:
+        stream.write(b"x")
+    assert any(
+        "tracked file exceeds" in error
+        for error in violations(tmp_path, max_file_bytes=DEFAULT_MAX_FILE_BYTES)
+    )
+    other = bundle.with_name("other.js")
+    bundle.rename(other)
+    monkeypatch.setattr(hygiene, "tracked_files", lambda root: (other,))
+    assert any(
+        "tracked file exceeds" in error
+        for error in violations(tmp_path, max_file_bytes=DEFAULT_MAX_FILE_BYTES)
+    )
