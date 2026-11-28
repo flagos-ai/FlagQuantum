@@ -246,3 +246,39 @@ independent model evidence remain authoritative at unchanged numerical owners.
 All 48 definitions are accounted for. Q-0573 is eligible for faithful-source
 acceptance after verified publication and final checks. Global constructor/SDK
 qualification remains separately tracked; no source failure is silently repaired.
+## Fixed-width symbolic modulus constructor closure
+
+The iteration, private algorithm and public Kaliski wrapper now retain all
+available source layers at a concrete Python integer width and unresolved
+modulus. Their literal call counts are ten, `2*n+14` and `2*n+27`. Generic
+iteration/algorithm adjoints reverse the existing call graph using explicit
+exact child owners; the public uncompute path retains its directional history
+and original allocations/releases. The actual sixth-step source guard rejects
+symbolic modulus, while its parents do not. Only that sixth step and four
+unresolved AddK/XorK definitions remain bodyless. No parent refusal is invented.
+
+The first five step implementations and full half-comparator are reused only
+after complete definition certificates. Their accepted primitive, feedback,
+complex-state and clean-work proofs apply unchanged. Independent Split/CNOT
+creation schedules inside these existing exact inverses are not represented as
+false global ordinal identity. All newly composed available parent calls and
+operands are compared against unmodified source decomposition. Metadata Cast
+bridges are separately certified, and source serialization depths 0/1 reuse
+traversal only after complete reachable definitions match. Function sharing,
+ports, order and every field except names/unreachable definitions must agree.
+
+Unbound physical binding deliberately refuses missing source bodies. Source
+estimation still works and is separate from emitted primitive measurements:
+
+| Width 3 source model, either direction | And | CSwap | Clifford | Measurements | T-equivalent | Peak qubits | Measured primitives |
+| --- | ---: | ---: | ---: | ---: | ---: | ---: | --- |
+| Iteration | 29 | 14 | 208 | 29 | 214 | 24 | Unavailable while modulus is unbound |
+| Private algorithm | 176 | 84 | 1286 | 176 | 1292 | 34 | Unavailable while modulus is unbound |
+| Public Kaliski wrapper | 176 | 84 | 1286 | 176 | 1292 | 34 | Unavailable while modulus is unbound |
+
+The source QEC convention assigns four T gates per And/Toffoli and seven per
+CSwap. These are source model assumptions, not independently measured native
+gate counts or proof that unknown constants have executable bodies. Sixteen
+complete finite Programs remain definition-identical to the published baseline;
+finite source-stream, amplitude, measurement-branch and work-zero acceptance
+remains applicable. The original all-ones correction-loader failure is retained.
