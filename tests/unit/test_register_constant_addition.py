@@ -261,7 +261,7 @@ def reference_arithmetic_gates(
                 )
             )
             return tuple(bound.all_operations())
-        if cirq_style:
+        if cirq_style or preserve_components:
             from qualtran._infra.adjoint import Adjoint
             from qualtran._infra.gate_with_registers import split_qubits
             from qualtran.bloqs.mcmt.and_bloq import MultiAnd

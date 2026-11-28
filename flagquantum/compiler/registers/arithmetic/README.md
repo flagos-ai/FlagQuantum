@@ -219,3 +219,15 @@ uses the same bound primitive IR. Run
 primitive/feedback comparisons, all small raw histories, complex states, zero
 work and constructor replacement. Source modeled Toffoli costs stay separate
 from emitted atomic CCX and Clifford/T counts.
+
+`specialized_controlled_addition_component` retains the original three-call
+conjunction/CAdd/erasure specialization for ordered arrays of at least two
+controls. It preserves both control polarities and the exact positive CAdd
+inverse. `additional_inverse_control_component` owns the different source path
+for Controlled(Adjoint(Add/CAdd)): generic call propagation, atomic Toffoli and
+actual source-refused controlled And declarations. It must not substitute the
+forward specialization for that generic inverse path. One-wire Add operands
+remain scalar as in the original Cirq importer. Run
+`tests/unit/test_specialized_controlled_addition_source.py` for complete source
+layers, primitive feedback, complex operators, all small measurement histories,
+entangled spectators, zero work and ordinary append execution.
