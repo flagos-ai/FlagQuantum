@@ -88,6 +88,8 @@ def _selection(
     name: str,
     registers: tuple[Register, ...] | None,
     arguments: Mapping[str, ResolvedArgument],
+    *,
+    adjoint: bool = False,
 ) -> FunctionRecord | ProgramRecord:
     required = {"num_mu", "num_spin_orb", "num_bits_theta", "keep_bitsize"}
     if not required <= arguments.keys() or arguments.keys() - (
@@ -141,15 +143,62 @@ def _selection(
             phase1 if isinstance(phase1, ProgramRecord) else ProgramRecord((phase1,)),
             phase2 if isinstance(phase2, ProgramRecord) else ProgramRecord((phase2,)),
         ),
+        adjoint=adjoint,
     )
     return _rename_program(program, name)
 
 
-def thc_selection_factories() -> dict[str, ComponentFactory]:
+def thc_selection_factories(
+    *, adjoint_factory: ComponentFactory | None = None
+) -> dict[str, ComponentFactory]:
     """Bind both THC classes and their direct first-system-bit phase wrapper."""
+    pairs: dict[FunctionRecord, tuple[ProgramRecord, ProgramRecord]] = {}
+
+    def store(
+        name: str,
+        registers: tuple[Register, ...] | None,
+        pair: tuple[ProgramRecord, ProgramRecord],
+    ) -> ProgramRecord:
+        forward, inverse = pair
+        if registers is not None and registers != forward.functions[0].registers:
+            raise SerializationError("Invalid literal THC SELECT signature")
+        result = _rename_program(forward, name)
+        pairs[result.functions[0]] = result, inverse
+        return result
+
+    def selection(
+        name: str,
+        registers: tuple[Register, ...] | None,
+        arguments: Mapping[str, ResolvedArgument],
+    ) -> FunctionRecord | ProgramRecord:
+        forward = _selection(name, registers, arguments)
+        if isinstance(forward, FunctionRecord):
+            return forward
+        inverse = _selection(name + "_inverse", None, arguments, adjoint=True)
+        assert isinstance(inverse, ProgramRecord)
+        return store(name, registers, (forward, inverse))
+
+    def adjoint(
+        name: str,
+        registers: tuple[Register, ...] | None,
+        arguments: Mapping[str, ResolvedArgument],
+    ) -> FunctionRecord | ProgramRecord:
+        child = arguments.get("subbloq")
+        if (
+            arguments.keys() == {"subbloq"}
+            and isinstance(child, FunctionRecord)
+            and child in pairs
+        ):
+            forward, inverse = pairs[child]
+            return store(name, registers, (inverse, forward))
+        if adjoint_factory is not None:
+            return adjoint_factory(name, registers, arguments)
+        raise SerializationError("Missing literal THC SELECT inverse context")
+
     prefix = "qualtran.bloqs.chemistry."
     return {
         prefix + "thc.select_bloq.THCRotations": _rotations,
-        prefix + "thc.select_bloq.SelectTHC": _selection,
+        prefix + "thc.select_bloq.SelectTHC": selection,
         prefix + "black_boxes.ApplyControlledZs": _phase,
+        "qualtran._infra.adjoint.Adjoint": adjoint,
     }

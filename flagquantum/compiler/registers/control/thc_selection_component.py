@@ -12,6 +12,7 @@ from ....core.ir.program.register_bindings import RegisterBinding
 from ....core.ir.program.register_types import quantum_bit_type
 from ....core.ir.program.registers import Register
 from ....core.ir.program.signatures import Signature
+from ..component_adjoint import adjoint_component_program
 from ..component_builder import BindingCollection, ComponentProgramBuilder
 from ..component_gate_function import bit_gate_function
 
@@ -23,6 +24,8 @@ def thc_selection_program(
     flag_swap: ProgramRecord,
     address_swap: ProgramRecord,
     phases: tuple[ProgramRecord, ProgramRecord],
+    *,
+    adjoint: bool = False,
 ) -> ProgramRecord:
     """Compose the complete source root with four explicitly directional leaves.
 
@@ -33,16 +36,18 @@ def thc_selection_program(
     """
     builder = ComponentProgramBuilder(signature, rotations)
     state: dict[str, BindingCollection] = dict(builder.inputs)
+    self_adjoint: set[str] = set()
 
     def swap(program: ProgramRecord, control: str, left: str, right: str) -> None:
-        result = builder.call_program(
-            program,
+        entry = builder.import_program(program, entry=program.functions[0].name)
+        self_adjoint.add(entry)
+        result = builder.call_dict(
+            entry,
             {
                 "ctrl": state.pop(control),
                 "x": state.pop(left),
                 "y": state.pop(right),
             },
-            entry=program.functions[0].name,
         )
         state.update({control: result["ctrl"], left: result["x"], right: result["y"]})
 
@@ -64,13 +69,14 @@ def thc_selection_program(
         )
 
     def phase(program: ProgramRecord, controls: tuple[str, ...]) -> None:
-        result = builder.call_program(
-            program,
+        entry = builder.import_program(program, entry=program.functions[0].name)
+        self_adjoint.add(entry)
+        result = builder.call_dict(
+            entry,
             {
                 "ctrls": tuple(state.pop(name) for name in controls),
                 "system": state.pop("sys_b"),
             },
-            entry=program.functions[0].name,
         )
         output = result["ctrls"]
         assert isinstance(output, np.ndarray)
@@ -102,4 +108,17 @@ def thc_selection_program(
     data = state.pop("data")
     assert isinstance(data, RegisterBinding)
     builder.free(data)
-    return builder.finalize(state)
+    record = builder.finalize(state)
+    if not adjoint:
+        return record
+    mapping = {name: name for name in (*self_adjoint, x.name)}
+    mapping.update(
+        {rotations[index].name: rotations[index ^ 1].name for index in range(4)}
+    )
+    operations = record.functions[0].blocks[0].operations
+    # The source's shared angle allocation is its second call and its release
+    # is last. Pair those actual imported identities, not equal opaque headers.
+    allocate, release = operations[1].callee, operations[-1].callee
+    assert allocate is not None and release is not None
+    mapping[allocate], mapping[release] = release, allocate
+    return adjoint_component_program(record, mapping)

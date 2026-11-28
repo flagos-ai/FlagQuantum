@@ -77,6 +77,16 @@ def factories() -> dict[str, ComponentFactory]:
     }
 
 
+@pytest.mark.parametrize("control", (None, 0, 1))
+def test_literal_select_exact_inverse_constructor(
+    source_module: Any, control: int | None
+) -> None:
+    source = source_module.SelectTHC(2, 4, 8, 8, control_val=control)
+    record = resolve_component_program(_library(source.adjoint(), 0), 0, factories())
+    assert verify_program_record(record) == ()
+    compare_layers(record, source.adjoint(), atomic_leaves(record))
+
+
 @pytest.mark.parametrize(
     "values", [(2, 4, 8, 1), (10, 8, 12, 10), (1, 2, 2, 1), (2, 3, 1, 1)]
 )
