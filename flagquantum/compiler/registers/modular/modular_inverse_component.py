@@ -10,6 +10,7 @@ from ....core.ir.program.register_bindings import RegisterBinding
 from ....core.ir.program.register_types import montgomery_register_type
 from ....core.ir.program.registers import Register, RegisterSide, RegisterType
 from ....core.ir.program.signatures import Signature
+from ....core.value_math import SymbolicInt
 from ..component_builder import ComponentProgramBuilder
 from .inversion.inverse_algorithm_component import inverse_algorithm_program
 
@@ -24,6 +25,17 @@ def modular_inverse_program(
     exact forward image. Temporary words clear only on that promised domain.
     """
     algorithm = inverse_algorithm_program(width, modulus, adjoint=adjoint)
+    return modular_inverse_component_program(width, modulus, algorithm, adjoint=adjoint)
+
+
+def modular_inverse_component_program(
+    width: int, modulus: SymbolicInt, algorithm: ProgramRecord, *, adjoint: bool = False
+) -> ProgramRecord:
+    """Keep directional history ports and inline the explicit source algorithm.
+
+    Histories belong to the caller. Private words retain exact source releases;
+    an unavailable descendant never grants a physical cleanup or price claim.
+    """
     word = montgomery_register_type(width, modulus)
     side = RegisterSide.LEFT if adjoint else RegisterSide.RIGHT
     builder = ComponentProgramBuilder(
