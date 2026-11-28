@@ -4,7 +4,7 @@
 
 """Source draw order and rejection sampling for native declared-width values."""
 
-from collections.abc import Iterator
+from collections.abc import Iterator, MutableSequence
 
 from ..core._fixed_width_integer import FixedWidthInteger
 from ..core._fixed_width_modular import is_coprime
@@ -49,18 +49,42 @@ def sample_striped_modulo(
     Tuple index selects an LSB-first value bit. Each uint64 holds that bit
     across 64 lanes. The caller retains ownership of the consumed draw stream.
     """
-    if not modulus.width or not modulus.bit(modulus.width - 1):
+    words = [0] * (2 * modulus.width)
+    _sample_striped_modulo_into(modulus, draws, words, 0, modulus.width)
+    return tuple(words[: modulus.width]), tuple(words[modulus.width :])
+
+
+def _sample_striped_modulo_into(
+    modulus: FixedWidthInteger,
+    draws: Iterator[int],
+    words: MutableSequence[int],
+    output_offset: int,
+    scratch_offset: int,
+) -> None:
+    """Execute the source mutation order in caller-owned, possibly shared spans.
+
+    Offsets select width-sized spans in one little-endian word allocation.
+    Overlap retains the source numerical defect. A full-batch overlapping
+    memcpy has no portable source semantics and is rejected before copying.
+    """
+    width = modulus.width
+    if not width or not modulus.bit(width - 1):
         raise ValueError("Striped modulus must fill its declared width")
-    output = [0] * modulus.width
-    buffer = [0] * modulus.width
+    if any(
+        type(offset) is not int or offset < 0 or offset + width > len(words)
+        for offset in (output_offset, scratch_offset)
+    ):
+        raise ValueError("Striped buffer span is outside its word allocation")
+    for bit in range(width):
+        words[output_offset + bit] = 0
     total = 0
     while total < 64:
         is_less_than = 0
         saw_difference = 0
-        for bit in reversed(range(modulus.width)):
+        for bit in reversed(range(width)):
             word = next(draws)
             require_word(word)
-            buffer[bit] = word
+            words[scratch_offset + bit] = word
             if modulus.bit(bit):
                 is_less_than |= ~word & ~saw_difference & WORD_MASK
                 saw_difference |= ~word & WORD_MASK
@@ -68,13 +92,17 @@ def sample_striped_modulo(
                 saw_difference |= word
         gained = is_less_than.bit_count()
         if gained == 64:
-            return tuple(buffer), tuple(buffer)
-        for bit in range(modulus.width):
-            output[bit] = (
-                (output[bit] << gained) | extract_bits(buffer[bit], is_less_than)
+            if abs(output_offset - scratch_offset) < width:
+                raise ValueError("Source full-batch memcpy overlaps its scratch span")
+            for bit in range(width):
+                words[output_offset + bit] = words[scratch_offset + bit]
+            return
+        for bit in range(width):
+            words[output_offset + bit] = (
+                (words[output_offset + bit] << gained)
+                | extract_bits(words[scratch_offset + bit], is_less_than)
             ) & WORD_MASK
         total += gained
-    return tuple(output), tuple(buffer)
 
 
 def sample_modular_integer(

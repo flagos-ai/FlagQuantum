@@ -82,3 +82,14 @@ This rule is applied individually, not as a blanket source-defect waiver.
 After publication, the workspace parent ledger, stage overview and PR evidence
 must record these nine decisions together. All other parent decisions remain
 unchanged. G2 continues; this review neither merges the PR nor starts G3.
+
+
+### Subsequent implementation: K-0315 mutable sampling spans
+
+The former genuine gap is closed by the shared mutable-span sampling kernel.
+Both exact and partial output/scratch overlap preserve literal source writes,
+including the original 11-invalid-lane witness. The existing immutable sampler
+uses that same kernel. All 419 additional original-source backing-allocation and
+next-draw observations match. Overlapping full-batch memcpy remains undefined
+in C++ and is refused explicitly; this boundary is not a missing defined path.
+See [the complete sampler audit](STRIPED_MODULAR_SAMPLING_AUDIT.md).

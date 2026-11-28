@@ -14,8 +14,8 @@ length is the declared modulus width. Bit k of each lane j is stored in
 
 The modulus must have positive declared width and its highest declared bit set.
 Original span-size checks become construction invariants of the returned tuples.
-Native immutable outputs have independent owned snapshots. Original mutable
-buffer aliases require separate observation. The existing physical initialization consumer has its own seeded Python Random
+Native immutable outputs have independent owned snapshots. The shared private
+mutable-span kernel also represents caller-owned overlapping storage. The existing physical initialization consumer has its own seeded Python Random
 contract. Exact simulator-engine binding belongs to its complete source intake.
 Source early full-batch replacement, partial-batch extraction, retained last 64
 accepted samples and final RNG position require exact observation. Original
@@ -28,7 +28,8 @@ The sole source function and header declaration map to sample_striped_modulo in
 Simulation. It reuses Core extract_bits and the existing mt19937_64 iterator.
 The function's descending bit traversal, strict less-than masks, extraction
 order, partial accumulation and early full-batch replacement match the original.
-Both returned tuples retain their final source contents. The original out/buf
+Both returned tuples retain their final source contents. The immutable entry
+allocates disjoint spans and calls the same mutable-span kernel. The original out/buf
 size failures have explicit unchanged-source observations. Native sizes are
 construction invariants of the immutable result.
 
@@ -43,13 +44,29 @@ input state and exact zero phase after a CX pair.
 
 ## Retained source defect and ownership boundary
 
-An isolated original call with out and buf aliased, width 4, modulus 9, seed 0 returns
-11 of 64 samples outside the promised range. The original header lists size and
-full-capacity requirements but omits disjointness. The receipt is
-ftqc-reference-env/g2-striped-alias-source-20261122.log. Native immutable output
-and scratch snapshots have independent ownership. This explicit representation
-adaptation prevents a caller-created writable alias. K-0315 remains open for the
-source alias-contract defect. The original source remains unchanged.
+An isolated original call with out and buf aliased, width 4, modulus 9, seed 0
+returns 11 of 64 samples outside the promised range. The header lists size and
+full-capacity requirements but omits disjointness. The native shared kernel
+`_sample_striped_modulo_into` now preserves this literal numerical defect,
+including partial overlap in both directions. It takes an immutable modulus,
+caller-owned draw iterator, mutable word allocation and output/scratch offsets.
+Each span has the declared width. It zeroes output before descending random
+writes, then accumulates ascending output bits in place; an earlier output write
+can therefore change a later scratch read. No staging copy hides this ordering.
+The existing immutable entry delegates to this kernel with disjoint spans and
+retains its signature and immutable snapshots. No new public export is added.
+
+The source full-batch branch uses memcpy. Overlapping nonempty spans in that
+branch have undefined C++ behavior, including identical pointers. The private
+kernel explicitly refuses this branch rather than inventing source semantics.
+The refusal occurs after the same draws and scratch writes, before the copy.
+Non-overlapping full-batch copies retain the original result. Span admission is
+validated before writes; caller allocation outside the spans is untouched.
+
+K-0315 now has its complete source responsibility implemented. The numerical
+alias defect and undefined-copy boundary remain documented under the approved
+faithful-migration closure rule. These are not claims of uniform sampling for
+overlapping buffers or of equivalence to undefined behavior.
 
 The physical Random-based initialization belongs to the separate complete
 simulator source scope. This batch supplies the source scalar draw-driven sampler and its
@@ -67,7 +84,8 @@ stateful iterations. Final output, scratch and next draw match original C++.
 The observations and source goal are separate. The
 [2026-11-28 review](G2_FUNCTIONAL_MIGRATION_DISPOSITIONS.md) accepts K-0317's
 complete independent-buffer workload migration, with performance still unmet.
-K-0315's separate writable-alias contract remains open.
+K-0315's mutable-span implementation is verified below; its original overlap
+numerical defect remains a separate follow-up.
 
 Regeneration uses tests/unit/fixtures/generate_striped_modular_sampling.py with
 `--source-root`, `--corpus` and `--output`. Seven frozen blobs are checked before building
@@ -85,3 +103,33 @@ integer batch audit. Initial fixture setup attempted a zero-width hex parse
 before the sampler refusal check. The native test now checks that parse within
 the expected refusal, and the oracle constructs the empty modulus directly to
 exercise the original sampler's own validation.
+
+
+## Shared mutable-span closure (2026-11-28)
+
+The additional generator `generate_striped_sampling_aliases.py` verifies the
+same seven frozen blobs, then compiles the original implementation unchanged
+with AddressSanitizer and UndefinedBehaviorSanitizer. Its wrapper only supplies
+storage and detects a would-be overlapping memcpy before invoking undefined
+behavior; it does not replace the sampling implementation. The 419 observations
+cover widths 1/2/4/8/17, eight seeds, one and three repeated calls, identical
+spans, offsets in both directions, independent spans, and boundary sentinels.
+Every full backing allocation and next random word matches native execution.
+The historical modulus-9 witness retains exactly 11 invalid lanes. Explicit
+native zero-draw cases exercise refusal of all overlapping full-batch forms.
+
+The existing 744 source observations and 640,000-sample distribution check run
+through the replacement kernel, as do current spin/lifecycle/workload consumers.
+Their independent-buffer output, scratch and draw position remain unchanged.
+Classical scratch ownership remains width-sized spans in caller storage; the
+immutable convenience path allocates two width-sized spans. Sampling emits zero
+quantum primitives, measurements or work qubits and has no quantum cost model.
+Previously recorded source timings, native timings and unmet goal stay distinct.
+
+Current batch verification: 187 concentrated sampler/spin/lifecycle/workload
+checks and 82 local integration checks pass without skips. Strict typing covers
+all three changed Python files. Black, Ruff, Simulation scope (including both
+fixture sources), architecture, IR/API, required checks, Cirq interoperability,
+English, local links and whitespace pass. Fresh sanitizer-enabled fixture
+regeneration reproduces all 419 records byte-for-byte. Existing unchanged-source
+744-case and original two-test evidence is reused for the same numerical owner.
