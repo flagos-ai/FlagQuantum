@@ -22,6 +22,7 @@ from ..compiler.formats.legacy_component_resolution import (
 )
 from ..compiler.formats.legacy_exchange_factories import exchange_factories
 from ..compiler.formats.legacy_fixed_gate_factories import fixed_gate_factories
+from ..compiler.formats.legacy_modular_addition_factories import _integer
 from ..compiler.formats.legacy_word_factories import _rename_program
 from ..compiler.registers.preparation.identity_preparation_component import (
     identity_preparation_program,
@@ -37,8 +38,10 @@ from ..core.ir.program import FunctionRecord, ProgramRecord
 from ..core.ir.program.register_types import opaque_register_type
 from ..core.ir.program.registers import Register
 from ..core.ir.program.signatures import Signature
+from ..core.value_math import SymbolicInt
 from ..errors import SerializationError
 from ._nu_preparation_library import _finite
+from ._source_constructor_adjoints import constructor_adjoint_factories
 
 _BASE = "qualtran.bloqs.chemistry.sf."
 _FIELDS = {
@@ -80,11 +83,11 @@ def _declaration(name: str, signature: Signature) -> ProgramRecord:
     return ProgramRecord((FunctionRecord(name, (), registers=tuple(signature)),))
 
 
-def _one_body(values: Mapping[str, int]) -> ProgramRecord:
-    aux, spin = values["num_aux"], values["num_spin_orb"]
+def _one_body(values: Mapping[str, SymbolicInt]) -> ProgramRecord:
+    aux, spin = _finite(values, "num_aux"), _finite(values, "num_spin_orb")
     signature = source_single_factorization_one_body_signature(aux, spin)
     width = (spin // 2 - 1).bit_length()
-    if width == 0:
+    if width == 0 or aux == 0:
         return _declaration("one_body", signature)
     inner = source_single_factorization_inner_prepare_signature(aux, spin)
     hadamard = fixed_gate_factories()["qualtran.bloqs.basic_gates.hadamard.Hadamard"](
@@ -111,11 +114,13 @@ def _one_body(values: Mapping[str, int]) -> ProgramRecord:
     )
 
 
-def _block(values: Mapping[str, int]) -> ProgramRecord:
-    aux, spin = values["num_aux"], values["num_spin_orb"]
+def _block(
+    values: Mapping[str, SymbolicInt], *, adjoint: bool = False
+) -> ProgramRecord:
+    aux, spin = _finite(values, "num_aux"), _finite(values, "num_spin_orb")
     signature = source_single_factorization_block_signature(aux, spin)
     width = (spin // 2 - 1).bit_length()
-    if width == 0:
+    if width == 0 or aux == 0:
         return _declaration("block", signature)
     selections = tuple(
         Register(f"reg{i}_", opaque_register_type(n))
@@ -139,6 +144,7 @@ def _block(values: Mapping[str, int]) -> ProgramRecord:
             "one_body": _one_body(body_values),
             "reflection": reflection,
         },
+        adjoint=adjoint,
     )
 
 
@@ -147,6 +153,8 @@ def _constructor(
     name: str,
     registers: tuple[Register, ...] | None,
     arguments: Mapping[str, ResolvedArgument],
+    *,
+    adjoint: bool = False,
 ) -> FunctionRecord | ProgramRecord:
     required, defaults = _FIELDS[kind]
     if (
@@ -155,12 +163,13 @@ def _constructor(
     ):
         raise SerializationError("Invalid single-factorization constructor fields")
     raw: dict[str, ResolvedArgument] = {**defaults, **arguments}
-    values = {field: _finite(raw, field) for field in raw}
-    spin, aux = values.get("num_spin_orb", 0), values.get("num_aux", 0)
+    values = {field: _integer(raw, field) for field in raw}
+    spin = _finite(values, "num_spin_orb") if "num_spin_orb" in values else 0
+    aux = _finite(values, "num_aux") if "num_aux" in values else 0
     if kind == "SingleFactorizationOneBody":
         program = _one_body(values)
     elif kind == "SingleFactorizationBlockEncoding":
-        program = _block(values)
+        program = _block(values, adjoint=adjoint)
     else:
         if kind == "InnerPrepareSingleFactorization":
             signature = source_single_factorization_inner_prepare_signature(aux, spin)
@@ -185,7 +194,7 @@ def _constructor(
 
 def single_factorization_factories() -> dict[str, ComponentFactory]:
     """Resolve all five original identifiers through their native signature owners."""
-    return {
+    owners = {
         _BASE + module + "." + kind: partial(_constructor, kind)
         for module, kinds in (
             (
@@ -200,3 +209,9 @@ def single_factorization_factories() -> dict[str, ComponentFactory]:
         )
         for kind in kinds
     }
+
+    inverses = {
+        key: partial(factory.func, *factory.args, **factory.keywords, adjoint=True)
+        for key, factory in owners.items()
+    }
+    return constructor_adjoint_factories(owners, inverses)
