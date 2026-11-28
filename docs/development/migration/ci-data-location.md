@@ -1,6 +1,9 @@
 # CI data location
 
-Integration declaration before implementation. Owner: Integration.
+Integration declaration was committed before implementation. Owner: Integration.
+
+Implementation is present; local and exact-head CI qualification are tracked
+separately and are not claimed complete by this declaration.
 
 The three remaining root CI JSON files belong beside the CI tooling. Move their
 original bytes, remove the root predecessors and empty directory, and update real

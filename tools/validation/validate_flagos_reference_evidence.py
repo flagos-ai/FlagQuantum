@@ -31,7 +31,7 @@ except ModuleNotFoundError:  # direct script execution
     )
 
 ROOT = Path(__file__).resolve().parents[2]
-DEFAULT_LOCK = ROOT / "ci" / "flagos_cuda_reference.lock.json"
+DEFAULT_LOCK = ROOT / "tools" / "ci" / "flagos_cuda_reference.lock.json"
 DEFAULT_PROFILE = (
     ROOT / "flagquantum" / "runtime" / "profiles" / "statevector_local_p0.json"
 )

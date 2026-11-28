@@ -598,3 +598,11 @@ The [Simulation direct-relay retirement](simulation-direct-relay-retirement.md) 
 | --- | --- | --- | --- |
 | root-policy-configuration | `capability-maturity.toml` | `config/capability-maturity.toml` | Unchanged data, actual readers updated, root file removed; versioned authority names and explicit custom declarations paths preserved. |
 | root-policy-configuration | `evidence-revision-origins.toml` | `config/evidence-revision-origins.toml` | Unchanged data, actual readers updated, root file removed; versioned authority names and explicit custom declarations paths preserved. |
+
+## CI data location
+
+| Group | Previous path | Authoritative path | Scope |
+| --- | --- | --- | --- |
+| ci-data-location | `ci/pr-gate-main.json` | `tools/ci/pr-gate-main.json` | Unchanged data, actual readers synchronized, root file removed; historical contract and evidence preserved. |
+| ci-data-location | `ci/flagos_cuda_reference.lock.json` | `tools/ci/flagos_cuda_reference.lock.json` | Unchanged data, actual readers synchronized, root file removed; historical contract and evidence preserved. |
+| ci-data-location | `ci/domestic_single_card_attestation.template.json` | `tools/ci/domestic_single_card_attestation.template.json` | Unchanged data, actual readers synchronized, root file removed; historical contract and evidence preserved. |

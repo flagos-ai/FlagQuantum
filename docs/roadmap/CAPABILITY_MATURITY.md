@@ -243,7 +243,7 @@ next person who widens it. The field-name rule is what makes that boundary
 expressible: a root may now be added once its revision-named fields are accounted
 for, and this root's are not this repository's to account for. `ci/` is left out for a
 different reason and does not wait on that work:
-`ci/flagos_cuda_reference.lock.json` records
+`tools/ci/flagos_cuda_reference.lock.json` records
 `2e00b393cf80088706b460a187aef185d3a283f4`, an external dependency already declared
 for the artifacts under `artifacts/`, but two
 validators read that file as an input, and a lock file pins an installation rather

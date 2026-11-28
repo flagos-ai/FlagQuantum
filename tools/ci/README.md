@@ -17,3 +17,17 @@ change its owning implementation, then run from the repository root:
 python -m pytest tests/unit/test_ci_source_archive.py -q
 python tools/architecture/check_architecture.py
 ```
+
+The CI ruleset template, locked FlagOS CUDA-reference environment and unverified
+domestic-card attestation template live here as JSON data. Their contents do not
+authorize remote settings or hardware claims. Keep historical contract identifiers
+resolved through the existing source-relocation ledger.
+
+For the data-only acceptance path, run from the repository root:
+
+```sh
+python tools/validation/check_domestic_single_card_contract.py
+python tools/validation/validate_flagos_reference_evidence.py artifacts/flagos_cuda_reference_a800_20260824.json
+```
+
+Both commands validate existing data without measuring hardware or submitting jobs.

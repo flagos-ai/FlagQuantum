@@ -10524,6 +10524,30 @@
       "compatibility": "none",
       "source_kind": "Unchanged repository policy data; no Python definitions or public authority identifiers moved.",
       "retirement": "Root predecessor removed. Actual default readers and current metadata/link consumers use config; original data, repository-relative evidence, versioned authority identifiers and arbitrary explicit fixture paths are preserved."
+    },
+    {
+      "group": "ci-data-location",
+      "old": "ci/pr-gate-main.json",
+      "new": "tools/ci/pr-gate-main.json",
+      "compatibility": "none",
+      "source_kind": "Unchanged CI input JSON; no Python definition moved.",
+      "retirement": "Root file removed; actual defaults/readers use tools/ci. Existing source_path resolves the unchanged contract identifier; original recorded evidence and remote settings are unchanged."
+    },
+    {
+      "group": "ci-data-location",
+      "old": "ci/flagos_cuda_reference.lock.json",
+      "new": "tools/ci/flagos_cuda_reference.lock.json",
+      "compatibility": "none",
+      "source_kind": "Unchanged CI input JSON; no Python definition moved.",
+      "retirement": "Root file removed; actual defaults/readers use tools/ci. Existing source_path resolves the unchanged contract identifier; original recorded evidence and remote settings are unchanged."
+    },
+    {
+      "group": "ci-data-location",
+      "old": "ci/domestic_single_card_attestation.template.json",
+      "new": "tools/ci/domestic_single_card_attestation.template.json",
+      "compatibility": "none",
+      "source_kind": "Unchanged CI input JSON; no Python definition moved.",
+      "retirement": "Root file removed; actual defaults/readers use tools/ci. Existing source_path resolves the unchanged contract identifier; original recorded evidence and remote settings are unchanged."
     }
   ],
   "retired_namespace_parents": [

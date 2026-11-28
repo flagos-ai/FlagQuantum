@@ -39,7 +39,6 @@ protected_paths = [
     "tools/**",
     # Release, deployment, and repository-level configuration. No development
     # team owns these; a change here is coordinated by Integration.
-    "ci/**",
     "docker/**",
     ".coveragerc",
     ".dockerignore",

@@ -802,7 +802,7 @@ def test_queue_uses_full_integration_suites_and_preserves_required_check_names()
 
 
 def test_pr_gate_template_preserves_strict_checks_without_a_merge_queue() -> None:
-    config = json.loads((ROOT / "ci/pr-gate-main.json").read_text())
+    config = json.loads((ROOT / "tools/ci/pr-gate-main.json").read_text())
     assert config["enforcement"] == "active"
     assert config["target"] == "branch"
     assert config["conditions"] == {
