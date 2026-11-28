@@ -263,6 +263,8 @@ class TensorNetworkState:
             )
             return torch.real(direct)
         self._last_observable_execution = "per_observable_direct_fallback"
+        from .observables import tensor_network_expectation_ps
+
         values = [
             tensor_network_expectation_ps(
                 self.plan,
@@ -289,6 +291,8 @@ class TensorNetworkState:
         self._validate_observable_qubits(x_set | y_set | z_set)
 
         strategy, budget = self._observable_contraction()
+        from .observables import tensor_network_expectation_ps
+
         value = tensor_network_expectation_ps(
             self.plan,
             x=x,
@@ -390,9 +394,3 @@ class TensorNetworkState:
             "observable_peak_size": self._last_observable_peak_size,
             "full_state_materialized": self._state_cache is not None,
         }
-
-
-def tensor_network_expectation_ps(*args: Any, **kwargs: Any) -> torch.Tensor:
-    from .entrypoints import tensor_network_expectation_ps as execute
-
-    return execute(*args, **kwargs)

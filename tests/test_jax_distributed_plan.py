@@ -71,8 +71,8 @@ from flagquantum.runtime.executors.jax.tensor_network.records import (
     JAXSlicedTensorNetworkGradientResult,
     JAXSlicedTensorNetworkParameterGradientResult,
 )
-from flagquantum.simulation.tensor_network.entrypoints import (
-    build_tensor_network,
+from flagquantum.simulation.tensor_network.local import build_local_tensor_network
+from flagquantum.simulation.tensor_network.observables import (
     build_tensor_network_expectation,
 )
 
@@ -89,7 +89,7 @@ pytestmark = [
 
 
 def _first_internal_tn_label(circuit):
-    plan = build_tensor_network(circuit)
+    plan = build_local_tensor_network(circuit)
     counts = {}
     for node in plan.nodes:
         for label in node.labels:
@@ -102,7 +102,7 @@ def _first_internal_tn_label(circuit):
 
 
 def _first_internal_tn_expectation_label(circuit):
-    plan = build_tensor_network_expectation(build_tensor_network(circuit), z=(0,))
+    plan = build_tensor_network_expectation(build_local_tensor_network(circuit), z=(0,))
     counts = {}
     for node in plan.nodes:
         for label in node.labels:

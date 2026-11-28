@@ -1,6 +1,7 @@
 """Coverage fan-out preserves the complete selection and source identity."""
 
 import json
+from pathlib import Path
 
 import pytest
 
@@ -9,7 +10,7 @@ from tools.ci.ci_coverage_plan import verify_plan, write_plan
 pytestmark = pytest.mark.unit
 
 
-@pytest.mark.parametrize("requested", [1, 16, 192])
+@pytest.mark.parametrize("requested", [1, 16, 192, 256])
 def test_plan_partitions_real_tests_once_without_empty_shards(
     tmp_path, monkeypatch, requested
 ):
@@ -57,7 +58,7 @@ def test_small_selection_reduces_count_and_refuses_tampered_or_stale_plan(
         ((), 16),
         (("tests/a.py::test_a",) * 2, 16),
         (("tests/a.py::test_a",), 0),
-        (("tests/a.py::test_a",), 193),
+        (("tests/a.py::test_a",), 257),
     ],
 )
 def test_invalid_collection_and_unbounded_fanout_fail(tmp_path, nodes, count):
@@ -245,3 +246,225 @@ def test_measured_full_state_cases_do_not_share_a_partition(
     assert sorted(node for shard in shards for node in shard) == sorted(nodes)
     for node in full_state:
         assert [shard for shard in shards if node in shard] == [[node]]
+
+
+@pytest.mark.parametrize("requested", [1, 2, 4, 16])
+def test_exclusive_cases_and_bounded_fanout_preserve_every_original_node(
+    tmp_path, monkeypatch, requested
+):
+    from tools.ci import ci_coverage_plan
+
+    monkeypatch.setenv("GITHUB_SHA", "a" * 40)
+    monkeypatch.setenv("GITHUB_OUTPUT", str(tmp_path / "output"))
+    nodes = tuple(f"tests/test_large.py::test_case[{i}]" for i in range(8))
+    hints = dict.fromkeys(nodes, 300.0)
+    monkeypatch.setattr(ci_coverage_plan, "load_duration_hints", lambda: (0.05, hints))
+    count = write_plan(nodes, tmp_path / "plan", requested)
+    rows = json.loads((tmp_path / "output").read_text().split("matrix=", 1)[1])[
+        "include"
+    ]
+    shards = [
+        verify_plan(tmp_path / "plan", i).read_text().splitlines() for i in range(count)
+    ]
+    assert sorted(node for shard in shards for node in shard) == sorted(nodes)
+    assert count == min(requested, len(nodes))
+    for row, shard in zip(rows, shards, strict=True):
+        assert row["exclusive"] == (len(shard) == 1)
+        assert row["timeout-minutes"] == 60
+
+
+def test_measured_full_case_has_no_untimed_neighbors(tmp_path, monkeypatch):
+    from tools.ci import ci_coverage_plan
+
+    monkeypatch.setenv("GITHUB_SHA", "b" * 40)
+    monkeypatch.setenv("GITHUB_OUTPUT", str(tmp_path / "output"))
+    heavy = "tests/test_full.py::test_complete_original_workflow"
+    ordinary = tuple(f"tests/test_full.py::test_neighbor[{i}]" for i in range(32))
+    nodes = (heavy, *ordinary)
+    monkeypatch.setattr(
+        ci_coverage_plan, "load_duration_hints", lambda: (0.05, {heavy: 1200.0})
+    )
+    count = write_plan(nodes, tmp_path / "plan", 256)
+    rows = json.loads((tmp_path / "output").read_text().split("matrix=", 1)[1])[
+        "include"
+    ]
+    shards = [
+        verify_plan(tmp_path / "plan", i).read_text().splitlines() for i in range(count)
+    ]
+    owner = next(i for i, shard in enumerate(shards) if heavy in shard)
+    assert shards[owner] == [heavy]
+    assert rows[owner]["exclusive"] is True
+    assert sorted(node for shard in shards for node in shard) == sorted(nodes)
+
+
+def test_full_256_way_plan_remains_nonempty_and_complete(tmp_path, monkeypatch):
+    monkeypatch.setenv("GITHUB_SHA", "c" * 40)
+    monkeypatch.setenv("GITHUB_OUTPUT", str(tmp_path / "output"))
+    nodes = tuple(f"tests/test_{i}.py::test_case" for i in range(300))
+    assert write_plan(nodes, tmp_path / "plan", 256) == 256
+    shards = [
+        verify_plan(tmp_path / "plan", i).read_text().splitlines() for i in range(256)
+    ]
+    assert all(shards)
+    assert sorted(node for shard in shards for node in shard) == sorted(nodes)
+    rows = json.loads((tmp_path / "output").read_text().split("matrix=", 1)[1])[
+        "include"
+    ]
+    assert len(rows) == 256
+    assert not any(row["exclusive"] for row in rows)
+
+
+@pytest.mark.parametrize("seconds,expected", [(299.9, False), (300.0, True)])
+def test_only_indivisible_measured_heavy_cases_use_qualified_cpu_pool(
+    tmp_path, monkeypatch, seconds, expected
+):
+    from tools.ci import ci_coverage_plan
+
+    monkeypatch.setenv("GITHUB_SHA", "b" * 40)
+    monkeypatch.setenv("GITHUB_OUTPUT", str(tmp_path / "output"))
+    heavy = "tests/test_full.py::test_original_workload"
+    ordinary = "tests/test_small.py::test_original_workload"
+    monkeypatch.setattr(
+        ci_coverage_plan, "load_duration_hints", lambda: (0.05, {heavy: seconds})
+    )
+    assert write_plan((heavy, ordinary), tmp_path / "plan", 2) == 2
+    rows = json.loads((tmp_path / "output").read_text().split("matrix=", 1)[1])[
+        "include"
+    ]
+    for row in rows:
+        nodes = verify_plan(tmp_path / "plan", row["shard"]).read_text().splitlines()
+        assert row["a800"] is (expected and nodes == [heavy])
+        assert row["timeout-minutes"] == 60
+
+    monkeypatch.setenv("GITHUB_OUTPUT", str(tmp_path / "mixed-output"))
+    assert write_plan((heavy, ordinary), tmp_path / "mixed-plan", 1) == 1
+    mixed = json.loads((tmp_path / "mixed-output").read_text().split("matrix=", 1)[1])
+    assert mixed["include"][0]["a800"] is False
+
+
+def test_serial_embedding_cases_keep_complete_sole_workloads_on_qualified_slots(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    from tools.ci import ci_coverage_plan
+
+    targets = ci_coverage_plan._SERIAL_BW_RUNNERS
+    maxwell = (
+        "tests/integration/test_synthesis_maxwell_notebook.py::"
+        "test_fresh_original_degree_and_original_size_workflow"
+    )
+    nodes = (*targets, maxwell, "tests/test_small.py::test_original")
+    monkeypatch.setenv("GITHUB_SHA", "b" * 40)
+    monkeypatch.setenv("GITHUB_OUTPUT", str(tmp_path / "output"))
+    monkeypatch.setattr(
+        ci_coverage_plan,
+        "load_duration_hints",
+        lambda: (0.05, dict.fromkeys((*targets, maxwell), 800.0)),
+    )
+    directory = tmp_path / "plan"
+    assert write_plan(nodes, directory, len(nodes)) == len(nodes)
+    rows = json.loads((tmp_path / "output").read_text().split("matrix=", 1)[1])[
+        "include"
+    ]
+    selected = {}
+    for row in rows:
+        shard = verify_plan(directory, row["shard"]).read_text().splitlines()
+        assert len(shard) == 1
+        selected[shard[0]] = row
+    assert set(selected) == set(nodes)
+    qualified = json.loads(ci_coverage_plan._CPU_QUALIFICATION.read_text())
+    assert set(targets.values()) <= {
+        r["selector"] for r in qualified["qualified_slots"]
+    }
+    assert len({runner.split("-cpu")[0] for runner in targets.values()}) == len(targets)
+    for node, runner in targets.items():
+        assert selected[node]["runner"] == runner
+        assert selected[node]["exclusive"] is True
+        assert selected[node]["a800"] is False
+        assert selected[node]["timeout-minutes"] == 60
+    assert selected[maxwell]["a800"] is True
+    assert selected[maxwell]["runner"] == ""
+
+
+@pytest.mark.parametrize("missing", ["profile", "slot"])
+def test_serial_coverage_rejects_unqualified_resource_targets(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, missing: str
+) -> None:
+    from tools.ci import ci_coverage_plan
+
+    node = next(iter(ci_coverage_plan._SERIAL_BW_RUNNERS))
+    data = json.loads(ci_coverage_plan._CPU_QUALIFICATION.read_text())
+    if missing == "profile":
+        data["profiles"].remove("coverage-py3.12")
+    else:
+        data["qualified_slots"] = []
+    proof = tmp_path / "qualification.json"
+    proof.write_text(json.dumps(data))
+    monkeypatch.setattr(ci_coverage_plan, "_CPU_QUALIFICATION", proof)
+    monkeypatch.setenv("GITHUB_SHA", "b" * 40)
+    monkeypatch.setattr(
+        ci_coverage_plan, "load_duration_hints", lambda: (0.05, {node: 800.0})
+    )
+    with pytest.raises(ValueError, match="verified locked coverage profile"):
+        write_plan((node,), tmp_path / "plan", 1)
+
+
+def test_mixed_partition_retains_original_routing_without_unused_qualification(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    from tools.ci import ci_coverage_plan
+
+    nodes = tuple(ci_coverage_plan._SERIAL_BW_RUNNERS)
+    monkeypatch.setenv("GITHUB_SHA", "b" * 40)
+    monkeypatch.setenv("GITHUB_OUTPUT", str(tmp_path / "output"))
+    monkeypatch.setattr(
+        ci_coverage_plan, "_CPU_QUALIFICATION", tmp_path / "absent.json"
+    )
+    monkeypatch.setattr(
+        ci_coverage_plan,
+        "load_duration_hints",
+        lambda: (0.05, dict.fromkeys(nodes, 800.0)),
+    )
+    directory = tmp_path / "plan"
+    assert write_plan(nodes, directory, 1) == 1
+    assert set(verify_plan(directory, 0).read_text().splitlines()) == set(nodes)
+    row = json.loads((tmp_path / "output").read_text().split("matrix=", 1)[1])[
+        "include"
+    ][0]
+    assert row["runner"] == ""
+    assert row["exclusive"] is False
+    assert row["a800"] is False
+
+
+def test_wide_state_oracle_keeps_complete_selection_on_qualified_bw_slot(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    from tools.ci import ci_coverage_plan
+
+    node = (
+        "tests/integration/test_synthesis_glued_trees_notebook.py::"
+        "test_wide_full_state_at_original_first_time"
+    )
+    ordinary = "tests/test_small.py::test_original"
+    monkeypatch.setenv("GITHUB_SHA", "c" * 40)
+    monkeypatch.setenv("GITHUB_OUTPUT", str(tmp_path / "output"))
+    monkeypatch.setattr(
+        ci_coverage_plan,
+        "load_duration_hints",
+        lambda: (0.05, {node: 166.0}),
+    )
+    directory = tmp_path / "plan"
+    assert write_plan((node, ordinary), directory, 2) == 2
+    rows = json.loads((tmp_path / "output").read_text().split("matrix=", 1)[1])[
+        "include"
+    ]
+    selected = {
+        tuple(verify_plan(directory, row["shard"]).read_text().splitlines()): row
+        for row in rows
+    }
+    assert set(selected) == {(node,), (ordinary,)}
+    row = selected[(node,)]
+    assert row["runner"] == "fq-bw1100-17-cpu16-validation"
+    assert row["exclusive"] is True
+    assert row["a800"] is False
+    assert row["timeout-minutes"] == 60
+    assert selected[(ordinary,)]["runner"] == ""

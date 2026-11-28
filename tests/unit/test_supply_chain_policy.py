@@ -42,7 +42,11 @@ def test_supply_chain_audits_a_fresh_dependency_environment():
     import yaml
 
     workflow = yaml.safe_load((ROOT / ".github/workflows/ci.yml").read_text())
-    steps = workflow["jobs"]["supply-chain"]["steps"]
+    job = workflow["jobs"]["supply-chain"]
+    assert job["runs-on"] == "ubuntu-latest"
+    assert job["concurrency"] == {"group": "flagquantum-gh-2", "queue": "max"}
+    assert job["timeout-minutes"] == 20
+    steps = job["steps"]
     isolation = [
         step
         for step in steps
@@ -55,3 +59,5 @@ def test_supply_chain_audits_a_fresh_dependency_environment():
     )
     assert "pip-audit --strict --disable-pip --no-deps" in audit["run"]
     assert "--ignore-vuln" not in audit["run"]
+    assert audit["timeout-minutes"] == 8
+    assert "--timeout 60" in audit["run"]

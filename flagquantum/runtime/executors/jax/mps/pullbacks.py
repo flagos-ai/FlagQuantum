@@ -11,9 +11,6 @@ from flagquantum.simulation.mps.jax.pullbacks import (
     jax_mps_owner_local_vjp,
 )
 
-from ..release_policy import (
-    attach_mps_backward_readiness as _attach_mps_backward_readiness,
-)
 from ..runtime_environment import _require_jax
 from .backward import _execute_minimal_mps_sharded_backward
 from .boundary_exchange import _summarize_local_mps_boundary_adjoint_exchange
@@ -155,7 +152,9 @@ def _execute_minimal_mps_owner_rank_parameter_vjp(
             "blockers": blockers,
         }
     )
-    return _attach_mps_backward_readiness(summary)
+    from flagquantum.runtime.audit.mps_readiness import _attach_mps_runtime_summary
+
+    return _attach_mps_runtime_summary(summary)
 
 
 def _execute_minimal_mps_boundary_gate_adjoint_pullback(
@@ -327,4 +326,6 @@ def _execute_minimal_mps_boundary_gate_adjoint_pullback(
             "blockers": blockers,
         }
     )
-    return _attach_mps_backward_readiness(base)
+    from flagquantum.runtime.audit.mps_readiness import _attach_mps_runtime_summary
+
+    return _attach_mps_runtime_summary(base)

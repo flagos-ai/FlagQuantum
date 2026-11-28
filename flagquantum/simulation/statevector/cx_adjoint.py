@@ -10,7 +10,6 @@ from flagquantum.simulation.native_cpu import (
     fused_compact_cx_adjoint_gather,
     fused_cx_adjoint_gather,
 )
-from flagquantum.simulation.native_cpu.permutation import compact_cx_permutation_images
 from flagquantum.simulation.statevector.operations import (
     _cx_sequence_permutation_index,
 )
@@ -31,16 +30,6 @@ def cpu_cx_permutation_index(
         device=ket.device,
         dtype=ket.dtype,
     )
-
-
-def cpu_cx_permutation_images(
-    controls: Sequence[int],
-    targets: Sequence[int],
-    n_qubits: int,
-) -> torch.Tensor:
-    """Build one compact basis image per qubit for an inverse CX mapping."""
-
-    return compact_cx_permutation_images(controls, targets, n_qubits)
 
 
 def apply_cpu_cx_adjoint_index(
@@ -97,7 +86,6 @@ def apply_cpu_compact_cx_adjoint_segment(
 
 for _identity in (
     cpu_cx_permutation_index,
-    cpu_cx_permutation_images,
     apply_cpu_cx_adjoint_index,
     apply_cpu_cx_adjoint_segment,
     apply_cpu_compact_cx_adjoint_segment,
