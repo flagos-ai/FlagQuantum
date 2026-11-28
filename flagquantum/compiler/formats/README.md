@@ -52,3 +52,11 @@ is retired. Native Programs and metadata export do not depend on this adapter.
 Start with `tests/unit/test_qref_source_capture.py`: it compares complete large
 schemas, isolated scalar occurrences and source-free JSON consumers. QREF
 resources are declared model data; export emits no physical instructions.
+
+`legacy_su2_factories.controlled_su2_factories()` supplies scoped SU2 controls for
+callers that explicitly need them. It tracks actual constructor identity, reuses
+CRz/ZPow owners and preserves the source-atomic controlled-Rx boundary. Default
+normal SU2 mapping remains unchanged. Run `tests/unit/test_controlled_su2_source.py`
+for both polarities, adjoints, complete complex operators, symbolic binding and
+SDK-free append. The [SU2 constructor audit](../../../docs/development/RESOLVER_SU2_AUDIT.md)
+separates primitive inventories, declared models and source limitations.
