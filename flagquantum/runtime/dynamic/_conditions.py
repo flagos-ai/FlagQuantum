@@ -5,7 +5,6 @@ from __future__ import annotations
 from typing import TYPE_CHECKING
 
 from ...core.classical_control import (
-    is_classical_control_instruction,
     validate_classical_control,
 )
 from ...core.ir import Instruction
@@ -117,17 +116,6 @@ def validate_disjunctive_clauses(
     return clauses
 
 
-def instruction_is_dynamic(instruction: Instruction) -> bool:
-    """Whether one instruction needs a classical register to be interpreted.
-
-    This is a predicate over the keys a program carries, not a validation pass: a
-    caller that asks whether an instruction is dynamic must get an answer even for
-    a malformed condition, which the parser refuses a layer later.
-    """
-
-    return is_classical_control_instruction(instruction)
-
-
 def classical_width(circuit: DynamicCircuit) -> int:
     return validate_classical_control(
         circuit._instructions,
@@ -139,7 +127,6 @@ __all__ = (
     "classical_width",
     "instruction_condition_clauses",
     "instruction_conditions",
-    "instruction_is_dynamic",
     "validate_condition_clauses",
     "validate_disjunctive_clauses",
 )

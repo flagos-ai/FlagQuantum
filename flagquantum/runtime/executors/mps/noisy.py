@@ -213,21 +213,7 @@ def run_lowered_noisy_mps(
     )
 
 
-def merge_noisy_mps_results(
-    results: Any,
-    *,
-    require_complete: bool = True,
-) -> MPSMonteCarloResult:
-    """Merge disjoint rank-local noisy MPS results."""
-
-    return trajectory_runtime.merge_noisy_mps_results_runtime(
-        results,
-        require_complete=require_complete,
-    )
-
-
 __all__ = (
-    "merge_noisy_mps_results",
     "run_lowered_noisy_mps",
     "run_lowered_noisy_mps_trajectory",
     "run_noisy_mps",
