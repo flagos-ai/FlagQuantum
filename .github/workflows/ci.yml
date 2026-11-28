@@ -1052,7 +1052,7 @@ jobs:
           - {shard: 38, hosted-bucket: 6, runner: fq-bw1100-17-cpu01-validation}
           - {shard: 39, hosted-bucket: 7, runner: fq-bw1100-2-cpu01-validation}
           - {shard: 40, hosted-bucket: 0, runner: fq-bw1100-10-cpu02-validation}
-          - {shard: 41, hosted-bucket: 1, runner: fq-bw1100-11-cpu02-validation}
+          - {shard: 41, hosted-bucket: 1, runner: fq-bw1100-11-cpu13-validation}
           - {shard: 42, hosted-bucket: 2, runner: fq-bw1100-12-cpu02-validation}
           - {shard: 43, hosted-bucket: 3, runner: fq-bw1100-14-cpu02-validation}
           - {shard: 44, hosted-bucket: 4, runner: fq-bw1100-15-cpu02-validation}
@@ -1067,7 +1067,7 @@ jobs:
           - {shard: 53, hosted-bucket: 5, runner: fq-bw1100-16-cpu03-validation}
           - {shard: 54, hosted-bucket: 6, runner: fq-bw1100-17-cpu03-validation}
           - {shard: 55, hosted-bucket: 7, runner: fq-bw1100-2-cpu03-validation}
-          - {shard: 56, hosted-bucket: 0, runner: fq-bw1100-10-cpu04-validation}
+          - {shard: 56, hosted-bucket: 0, runner: fq-bw1100-10-cpu13-validation}
           - {shard: 57, hosted-bucket: 1, runner: fq-bw1100-11-cpu04-validation}
           - {shard: 58, hosted-bucket: 2, runner: fq-bw1100-12-cpu04-validation}
           - {shard: 59, hosted-bucket: 3, runner: fq-bw1100-14-cpu04-validation}
@@ -1075,7 +1075,7 @@ jobs:
           - {shard: 61, hosted-bucket: 5, runner: fq-bw1100-16-cpu04-validation}
           - {shard: 62, hosted-bucket: 6, runner: fq-bw1100-17-cpu04-validation}
           - {shard: 63, hosted-bucket: 7, runner: fq-bw1100-2-cpu04-validation}
-          - {shard: 64, hosted-bucket: 0, runner: fq-bw1100-10-cpu05-validation}
+          - {shard: 64, hosted-bucket: 0, runner: fq-bw1100-10-cpu15-validation}
           - {shard: 65, hosted-bucket: 1, runner: fq-bw1100-11-cpu05-validation}
           - {shard: 66, hosted-bucket: 2, runner: fq-bw1100-12-cpu05-validation}
           - {shard: 67, hosted-bucket: 3, runner: fq-bw1100-14-cpu05-validation}
