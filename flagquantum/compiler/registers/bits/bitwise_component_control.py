@@ -19,6 +19,7 @@ from ..component_builder import BindingCollection, ComponentProgramBuilder
 from ..component_control import ControlAdder, control_component_hierarchy
 from ..component_gate_function import bit_gate_function
 from ..control.component_bookkeeping import bookkeeping_scalar_control_adder
+from ..control.multi_control_component import merged_pauli_control_program
 from .bitwise_component import bitwise_word_program
 
 
@@ -65,24 +66,53 @@ def _toffoli_function() -> FunctionRecord:
     )
 
 
+def _controlled_toffoli(
+    builder: ComponentProgramBuilder,
+    control: BindingCollection,
+    values: dict[str, BindingCollection],
+) -> tuple[BindingCollection, tuple[BindingCollection, ...]]:
+    """Use Toffoli.get_ctrl_system's merged scalar/array X predicate literally."""
+    outputs = builder.call_program(
+        merged_pauli_control_program((1, 1), "x"),
+        {"ctrl1": control, "ctrl2": values["ctrl"], "q": values["target"]},
+    )
+    return outputs["ctrl1"], (outputs["ctrl2"], outputs["q"])
+
+
 def nested_controlled_xor_constant_program(
-    dtype: RegisterType, pattern: int
+    dtype: RegisterType, pattern: int, *, control_count: int = 2
 ) -> ProgramRecord:
-    """Retain two separate positive scalar controls on the source XOR loader.
+    """Retain two or three distinct positive scalar controls on the source loader.
 
     Source nested Controlled retains the inner Split/XOR/Join calls and turns
     each loaded CNOT into an atomic Toffoli. This is distinct from a grouped
     predicate that first computes a shared conjunction into private work.
+    A third control uses Toffoli's exact merged-predicate callback per loaded bit.
     """
-    record = controlled_bitwise_word_program(dtype, "xor_constant", pattern=pattern)
-    adders: dict[str, ControlAdder] = {"bitwise_controlled_x": _controlled_cx}
+    if type(control_count) is not int or control_count not in (2, 3):
+        raise ValueError("Nested XOR loading supports two or three positive controls")
+    record = (
+        controlled_bitwise_word_program(dtype, "xor_constant", pattern=pattern)
+        if control_count == 2
+        else nested_controlled_xor_constant_program(dtype, pattern)
+    )
+    adders: dict[str, ControlAdder] = (
+        {"bitwise_controlled_x": _controlled_cx}
+        if control_count == 2
+        else {"bitwise_toffoli": _controlled_toffoli}
+    )
     for function in record.functions:
         if function.registers is not None and any(
             register.side != RegisterSide.THRU for register in function.registers
         ):
             adders[function.name] = bookkeeping_scalar_control_adder(function)
     return control_component_hierarchy(
-        replace(record, functions=(*record.functions, _toffoli_function())), adders
+        (
+            replace(record, functions=(*record.functions, _toffoli_function()))
+            if control_count == 2
+            else record
+        ),
+        adders,
     )
 
 

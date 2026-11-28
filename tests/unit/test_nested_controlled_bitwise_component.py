@@ -4,6 +4,7 @@ from collections import Counter
 from hashlib import sha1
 from importlib import import_module
 from importlib.metadata import version
+from itertools import product
 from pathlib import Path
 from typing import Any
 
@@ -28,6 +29,7 @@ from flagquantum.compiler.registers.bits.bitwise_component_control import (
 )
 from flagquantum.compiler.registers.register_binding import bind_register_program
 from flagquantum.core.ir.program.registers import RegisterSide, RegisterType
+from tests.unit.measurement_checks import forced_branch
 from tests.unit.test_component_hierarchy_control import compare_layers
 from tests.unit.test_multi_control_component import MeasurementSlots
 from tests.unit.test_multiplexed_source_binding import logical_operator
@@ -40,7 +42,15 @@ pytestmark = [pytest.mark.unit, pytest.mark.ftqc_reference]
 @pytest.fixture(scope="module", autouse=True)
 def frozen_word_source() -> None:
     for name, digest in (
+        (
+            "qualtran.bloqs.basic_gates.toffoli",
+            "a007be2ef25aa7dc5fda4d793498041a8f6b5a48",
+        ),
         ("qualtran._infra.controlled", "6fabe760e793f1b39f825d76f80e92b6e5fa5c28"),
+        (
+            "qualtran.bloqs.mcmt.controlled_via_and",
+            "3947ddf86be37f4ff3ba58fcc316a8a64922f84f",
+        ),
         (
             "qualtran.bloqs.arithmetic.bitwise",
             "24835990709339b96cde9b2302a2525c09345ab5",
@@ -55,6 +65,7 @@ def frozen_word_source() -> None:
     assert kickmix.__version__ == "0.1" and hasattr(kickmix, "Simulator")
 
 
+@pytest.mark.parametrize("control_count", (2, 3))
 @pytest.mark.parametrize(
     "kind,width,value",
     (
@@ -67,14 +78,18 @@ def frozen_word_source() -> None:
     ),
 )
 def test_complete_source_word_calls_primitives_and_full_complex_operator(
-    kind: str, width: int, value: int
+    kind: str, width: int, value: int, control_count: int
 ) -> None:
     source_type: Any = {"uint": QUInt, "signed": QInt, "montgomery": QMontgomeryUInt}[
         kind
     ]
-    source = XorK(source_type(width), value).controlled().controlled()
+    source = XorK(source_type(width), value)
+    for _ in range(control_count):
+        source = source.controlled()
     pattern = value % (1 << width)
-    record = nested_controlled_xor_constant_program(RegisterType(kind, width), pattern)
+    record = nested_controlled_xor_constant_program(
+        RegisterType(kind, width), pattern, control_count=control_count
+    )
     terminals = {
         f.name
         for f in record.functions
@@ -84,23 +99,35 @@ def test_complete_source_word_calls_primitives_and_full_complex_operator(
     pairs = compare_layers(record, source, terminals)
     for name, child in pairs.items():
         if name in terminals:
-            with pytest.raises(DecomposeTypeError):
+            if type(child).__name__ in {"And", "MultiAnd", "CtrlSpecAnd"} or (
+                type(child).__name__ == "Adjoint"
+                and type(child.subbloq).__name__ == "CtrlSpecAnd"
+            ):
+                # These shared measured predicates have separate complete
+                # primitive/branch certificates; they are not source refusals.
                 child.decompose_bloq()
-    inputs = ((0,), (1,), tuple(range(2, width + 2)))
-    bound = bind_register_program(record, inputs)
+            else:
+                with pytest.raises(DecomposeTypeError):
+                    child.decompose_bloq()
+    inputs = (
+        *((i,) for i in range(control_count)),
+        tuple(range(control_count, width + control_count)),
+    )
+    logical = width + control_count
+    clean = tuple(range(logical, logical + 2)) if control_count == 3 else ()
+    bound = bind_register_program(record, inputs, clean=clean)
     registers = record.functions[0].registers
     assert registers is not None
     ports = {r.name: wires for r, wires in zip(registers, inputs, strict=True)}
-    logical = width + 2
-    assert bound.circuit.n_wires == logical
-    assert not bound.events
-    assert Counter(g.name for g in bound.circuit.instructions) == Counter(
-        ccx=pattern.bit_count()
-    )
+    actual = Counter(g.name for g in bound.circuit.instructions)
+    if control_count == 2:
+        assert bound.circuit.n_wires == logical
+        assert not bound.events
+        assert actual == Counter(ccx=pattern.bit_count())
     expected = reference_arithmetic_gates(
         source,
         ports,
-        (),
+        clean,
         MeasurementSlots(bound.circuit.instructions),
         preserve_components=True,
         keep_exchange_leaves=True,
@@ -109,12 +136,36 @@ def test_complete_source_word_calls_primitives_and_full_complex_operator(
     operator = torch.as_tensor(
         np.asarray(source.tensor_contract()), dtype=torch.complex128
     )
-    torch.testing.assert_close(
-        logical_operator(bound.circuit, logical), operator, rtol=0, atol=2e-12
-    )
+    if control_count == 2 or not pattern:
+        torch.testing.assert_close(
+            logical_operator(bound.circuit, logical), operator, rtol=0, atol=2e-12
+        )
+    else:
+        work = bound.circuit.n_wires - logical
+        coefficients = torch.tensor(
+            [complex(2 * i - 3, i + 1) for i in range(1 << logical)],
+            dtype=torch.complex128,
+        )
+        coefficients /= coefficients.norm()
+        initial = torch.zeros(1 << bound.circuit.n_wires, dtype=torch.complex128)
+        initial[:: 1 << work] = coefficients
+        measured = actual["measure"]
+        assert measured == 2 * pattern.bit_count()
+        expected_state = torch.zeros_like(initial)
+        expected_state[:: 1 << work] = operator @ coefficients / (2 ** (measured / 2))
+        for history in product((0, 1), repeat=measured):
+            torch.testing.assert_close(
+                forced_branch(initial, bound.circuit.instructions, history),
+                expected_state,
+                rtol=0,
+                atol=2e-12,
+            )
     model = get_cost_value(source, QECGatesCost())
-    assert (
-        model.toffoli == pattern.bit_count()
-        and model.measurement == model.and_bloq == 0
-    )
-    assert get_cost_value(source, QubitCount()) == width + 2
+    if control_count == 2:
+        assert model.toffoli == pattern.bit_count()
+        assert model.measurement == model.and_bloq == 0
+        assert get_cost_value(source, QubitCount()) == width + 2
+    else:
+        assert model.toffoli == 0
+        assert model.and_bloq == model.measurement == actual["measure"]
+        assert get_cost_value(source, QubitCount()) >= logical
