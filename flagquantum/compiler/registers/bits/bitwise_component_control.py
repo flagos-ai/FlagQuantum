@@ -1,6 +1,8 @@
+# Copyright 2023 Google LLC
 # Copyright 2024 Google LLC
 # SPDX-License-Identifier: Apache-2.0
-# Adapted from Qualtran v0.7.0 Controlled and bitwise XorK/BitwiseNot.
+# Adapted from Qualtran v0.7.0 Controlled, bitwise XorK/BitwiseNot,
+# Toffoli.get_ctrl_system and ControlledViaAnd.get_ctrl_system.
 # https://github.com/quantumlib/Qualtran/blob/bcb17bb25360ed68ce3bc084645db3e929799389/qualtran/bloqs/arithmetic/bitwise.py
 
 """Share literal bitwise control propagation across arithmetic consumers."""
