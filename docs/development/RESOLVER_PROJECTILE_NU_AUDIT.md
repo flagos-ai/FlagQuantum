@@ -78,3 +78,28 @@ symbolic execution and source-permitted invalid physical domains remain outside
 this path. Root generic adjoint and the five physical leaf bodies remain open.
 Catalogue registration grows to 212/303; this is not parent acceptance.
 Q-0375, Q-0866 and Q-0876 remain open. No source-defect waiver is applied.
+
+## Source-success declaration gap found November 28
+
+Fresh unchanged-source intake prevents whole-parent acceptance: finite physical
+constructor admission is narrower than successful source logical declarations.
+With positive integer symbol n, projectile nu widths (electron=n, projectile=n+1)
+have a successful six-call graph and depth-one source library. Projectile UV
+additionally has successful two-call shallow graphs/libraries for (2,n) and
+(n,3), even where recursively decomposing its nu child fails a relational test.
+Electron width zero with projectile width one also has a successful source
+graph. Existing native _finite and positive-width signature helpers refuse
+these paths. This is missing native declaration/call coverage, not an upstream
+physical failure or a waiver under the faithful-source rule. Q-0375/Q-0379
+remain open. Receipt: g2-first-quantization-symbolic-intake-20261128.json.
+
+The next implementation must share the existing Algorithms register formulas
+between strict executable helpers and source logical declaration construction.
+Ecosystem should retain _integer expressions and source relational validation;
+Compiler should continue using the existing six-call/two-call typed builders.
+Keep original bodyless leaves, inverse flag defect, and failed recursive
+relational checks explicit. A valid shallow parent must not require its child
+to have a physical body. Unknown symbolic widths must never bind as identities.
+Ordinary counterparts and every directly called leaf need the same source
+intake before changing ownership or claiming complete source coverage. No Core
+schema or physical symbolic-width admission is proposed by this design.
