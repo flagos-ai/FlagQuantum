@@ -10,16 +10,25 @@ from ..component_builder import ComponentProgramBuilder
 
 
 def potential_preparation_program(
-    signature: Signature, momentum: ProgramRecord, nuclear: ProgramRecord
+    signature: Signature,
+    momentum: ProgramRecord,
+    nuclear: ProgramRecord,
+    *,
+    adjoint: bool = False,
 ) -> ProgramRecord:
     """Preserve the source nu-then-zeta calls and nuclear-index bystander."""
     builder = ComponentProgramBuilder(signature)
+    if adjoint:
+        nuclear_result = builder.call_program(
+            nuclear, {"l": builder.inputs["l"]}, entry=nuclear.functions[0].name
+        )
     momentum_result = builder.call_program(
         momentum,
         {name: builder.inputs[name] for name in ("mu", "nu", "m", "flag_nu")},
         entry=momentum.functions[0].name,
     )
-    nuclear_result = builder.call_program(
-        nuclear, {"l": builder.inputs["l"]}, entry=nuclear.functions[0].name
-    )
+    if not adjoint:
+        nuclear_result = builder.call_program(
+            nuclear, {"l": builder.inputs["l"]}, entry=nuclear.functions[0].name
+        )
     return builder.finalize({**momentum_result, **nuclear_result})
