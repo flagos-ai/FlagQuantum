@@ -30,20 +30,42 @@ def controlled_modular_subtraction_program(
         raise ValueError("Modular subtraction requires unsigned or Montgomery words")
     if type(modulus) is not int or not 0 < modulus < (1 << width) - 1:
         raise ValueError("Modular subtraction requires modulus+1 to fit the operand")
-    complement = bitwise_word_program(dtype, "bitwise_not")
     load = constant_addition_program(dtype, modulus + 1)
     unload = constant_addition_program(dtype, modulus + 1, adjoint=True)
     addition = controlled_modular_addition_program(
         dtype, modulus, control_value=control_value
     )
+    return controlled_modular_subtraction_component_program(
+        dtype, load, unload, addition
+    )
+
+
+def controlled_modular_subtraction_component_program(
+    dtype: RegisterType,
+    load: ProgramRecord,
+    unload: ProgramRecord,
+    addition: ProgramRecord,
+) -> ProgramRecord:
+    """Preserve the five-call source shell around its explicit child owners.
+
+    Load/unload keep their constructor's constant and exact direction. The
+    addition child retains the source residue-domain and cleanup promises;
+    unresolved source leaves remain nonexecutable declarations.
+    """
+    executable_register_width(dtype)
+    if dtype.encoding not in {"uint", "montgomery"}:
+        raise ValueError("Modular subtraction requires unsigned or Montgomery words")
+    complement = bitwise_word_program(dtype, "bitwise_not")
     builder = ComponentProgramBuilder(
         Signature.build_from_dtypes(ctrl=quantum_bit_type(), x=dtype, y=dtype)
     )
     x = builder.call_program(complement, {"x": builder.inputs["x"]})["x"]
-    x = builder.call_program(load, {"x": x})["x"]
+    x = builder.call_program(load, {"x": x}, entry=load.functions[0].name)["x"]
     added = builder.call_program(
         addition, {"ctrl": builder.inputs["ctrl"], "x": x, "y": builder.inputs["y"]}
     )
-    x = builder.call_program(unload, {"x": added["x"]})["x"]
+    x = builder.call_program(unload, {"x": added["x"]}, entry=unload.functions[0].name)[
+        "x"
+    ]
     x = builder.call_program(complement, {"x": x})["x"]
     return builder.finalize({"ctrl": added["ctrl"], "x": x, "y": added["y"]})
