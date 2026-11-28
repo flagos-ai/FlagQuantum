@@ -11,6 +11,7 @@ from .....core.ir.program.register_types import (
     montgomery_register_type,
     quantum_bit_type,
 )
+from .....core.ir.program.registers import RegisterType
 from .....core.ir.program.signatures import Signature
 from ...component_builder import ComponentProgramBuilder
 from .inverse_arithmetic_component import inverse_arithmetic_program
@@ -30,7 +31,7 @@ def inverse_iteration_program(
     Internal a/b are clean only on source-reachable inputs, or their inverse
     images. Each child owns its measured work and returns its actual aliases.
     """
-    word, bit = montgomery_register_type(width, modulus), quantum_bit_type()
+    word = montgomery_register_type(width, modulus)
     steps = (
         inverse_termination_program(width, adjoint=adjoint),
         inverse_parity_program(width, adjoint=adjoint),
@@ -39,6 +40,16 @@ def inverse_iteration_program(
         inverse_arithmetic_program(width, adjoint=adjoint),
         inverse_scaling_program(width, modulus, adjoint=adjoint),
     )
+    return inverse_iteration_component_program(word, steps, adjoint=adjoint)
+
+
+def inverse_iteration_component_program(
+    word: RegisterType, steps: tuple[ProgramRecord, ...], *, adjoint: bool = False
+) -> ProgramRecord:
+    """Retain six explicit source steps and clean branch-flag ownership."""
+    if len(steps) != 6 or type(adjoint) is not bool:
+        raise ValueError("Inverse iteration requires six steps and a boolean direction")
+    bit = quantum_bit_type()
     builder = ComponentProgramBuilder(
         Signature.build_from_dtypes(
             u=word, v=word, r=word, s=word, m=bit, f=bit, is_terminal=bit
@@ -50,7 +61,11 @@ def inverse_iteration_program(
     for step in reversed(steps) if adjoint else steps:
         ports = step.functions[0].registers or ()
         values.update(
-            builder.call_program(step, {r.name: values[r.name] for r in ports})
+            builder.call_program(
+                step,
+                {r.name: values[r.name] for r in ports},
+                entry=step.functions[0].name,
+            )
         )
     for name in (("b", "a") if adjoint else ("a", "b")):
         flag = values.pop(name)
