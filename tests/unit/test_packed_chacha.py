@@ -1,5 +1,6 @@
 """Verify complete source lifecycle and the existing seeded spin consumer."""
 
+import csv
 import json
 import lzma
 from collections.abc import Iterator
@@ -171,10 +172,36 @@ def test_invalid_seed_refused(invalid: int) -> None:
         PackedChaCha(64).randomize(iter([invalid] * 11))
 
 
-@pytest.mark.parametrize("invalid", [0, 32, -1, True])
+@pytest.mark.parametrize("invalid", [32 - ((1 << 31) - 1) - 1, 1 << 31, True, 1.0])
 def test_invalid_rotation_refused(invalid: int) -> None:
     with pytest.raises(ValueError, match="rotation"):
         _rotate32(1, invalid)
+
+
+def test_complete_defined_sse_rotation_vectors_and_source_provenance() -> None:
+    data = json.loads(
+        (
+            Path(__file__).with_name("data") / "packed_chacha_sse_rotations.json"
+        ).read_text()
+    )
+    inventory = (
+        Path(__file__).resolve().parents[2]
+        / "docs/development/ftqc_source_inventory.csv"
+    )
+    rows = {
+        row["path"]: row for row in csv.DictReader(inventory.read_text().splitlines())
+    }
+    assert data["revision"] == "9a0c11a4ee7697c082fbf8f2e1e8bf4a71fcb453"
+    assert data["ubsan"] == "no diagnostics"
+    assert len(data["frozen_blobs"]) == 2
+    for name, digest in data["frozen_blobs"].items():
+        assert rows["kickmix/src/" + name]["git_blob"] == digest
+    assert set(range(33)) <= set(data["amounts"])
+    assert len(data["records"]) == len(data["amounts"]) * 36 == 1548
+    for record in data["records"]:
+        assert len(record) == 9 and all(type(value) is int for value in record)
+        amount, *words = record
+        assert [_rotate32(value, amount) for value in words[:4]] == words[4:]
 
 
 # Original frozen chacha.test.cc vectors, Apache-2.0.

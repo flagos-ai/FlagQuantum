@@ -12,11 +12,25 @@ from dataclasses import dataclass
 from ._packed_word import broadcast_u32, pack_lanes
 
 _U32 = (1 << 32) - 1
+_I32_MAX = (1 << 31) - 1
 
 
 def _rotate32(value: int, amount: int) -> int:
-    if type(amount) is not int or not 1 <= amount < 32:
-        raise ValueError("Source uint32 rotation requires an amount from 1 to 31")
+    """Retain the source SSE lane shifts for every defined int-template amount.
+
+    Portable shifts outside 1..31 have no C++ value guarantee. SSE defines
+    those counts: 0/32 preserve the lane, and other outlying counts clear it.
+    The template's signed expression 32-amount must itself remain defined.
+    """
+    if type(amount) is not int or not 32 - _I32_MAX <= amount <= _I32_MAX:
+        raise ValueError(
+            "Source rotation amount must keep int template arithmetic defined"
+        )
+    value &= _U32
+    if amount < 0 or amount > 32:
+        return 0
+    if amount in (0, 32):
+        return value
     return ((value << amount) | (value >> (32 - amount))) & _U32
 
 

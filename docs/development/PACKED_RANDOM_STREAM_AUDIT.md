@@ -34,7 +34,7 @@ retain their separate source scope.
 
 | Frozen definition group | Authoritative native owner |
 | --- | --- |
-| rol32<K> | _rotate32 for defined scalar uint32 amounts 1 through 31, independently applied to each packed lane |
+| rol32<K> | _rotate32 preserves portable-defined amounts 1 through 31 and the complete defined SSE template count families, independently per uint32 lane. Counts 0/32 preserve the lane; other outlying SSE counts clear it. Signed template arithmetic remains bounded. |
 | chacha_quarter_round and reference aliases | _quarter retains the source add/XOR/rotate order, including shared-index aliases |
 | Template state, buffer, cursor and round constraint | PackedChaCha immutable fields, zero construction, positive even round validation and original uint32 lane width |
 | randomize | randomize consumes exactly eleven packed words and preserves old cache storage while resetting cursor and counter |
@@ -57,19 +57,48 @@ Four separate original compilations verify invalid round counts 0/1/3/-2.
 ## Explicit source and native boundaries
 
 Original rol32<0> and rol32<32> instantiate uint32 shifts by 32 in the portable
-SIMD implementation. UBSan reproduces both failures. Native _rotate32 refuses
-both inputs. K-0291 stays open for that original header/dependency boundary.
+SIMD implementation. UBSan reproduces both failures. The earlier native helper
+refused both inputs. The complete SSE-defined domain is now implemented below;
+portable UB witnesses remain separate and unchanged.
 The actual round algorithm uses only 16/12/8/7 rotations. The original header
 is unchanged. Evidence is retained in
 `ftqc-reference-env/g2-packed-chacha-rotation-boundary-20261122.json` and
 `g2-packed-chacha-original-round-refusals-20261122.json`.
 
-The [2026-11-28 closure review](G2_FUNCTIONAL_MIGRATION_DISPOSITIONS.md) does not
+The [2026-11-28 closure review](G2_FUNCTIONAL_MIGRATION_DISPOSITIONS.md) did not
 accept K-0291 solely from those portable UB witnesses. The unchanged SSE header
 successfully executes rol32<0> and rol32<32> in an x86_64/Rosetta UBSan probe;
-both return the input word without sanitizer errors. The native helper rejects
-both amounts, so this is a source-defined implementation gap. It remains open
-independently of the approved treatment of original UB and unexecuted platforms.
+both return the input word without sanitizer errors. The native helper rejected
+both amounts, establishing a source-defined implementation gap. That gap is
+resolved by the implementation and complete source-domain evidence below.
+
+## Defined SSE rotation closure
+
+The scalar lane owner now retains the original SSE shift semantics. Counts
+1..31 perform the original rotation, 0/32 retain the input lane, and other
+source-valid int template counts produce zero. The source expression 32-K
+must fit signed int; the native owner rejects template-domain overflow instead
+of treating it as a valid source result. Values retain uint32 storage. This
+changes no round behavior, since quarter rounds use only 16/12/8/7.
+
+The new frozen-header generator checks both original Git blobs and calls the
+unaltered SSE implementation under UBSan. Forty-three template amounts include
+every 0..32 count, negative/outlying count families and both signed-domain
+limits. Each uses all 32 basis vectors and four additional words, with four
+distinct lane patterns: 1,548 complete vectors and 6,192 scalar comparisons.
+The headers' per-lane Boolean-linear shifts/OR and the complete basis coverage
+establish the defined uint32 operation; no random sampling substitutes for
+the count-family boundary checks. The corpus regenerates byte-exactly with
+no sanitizer diagnostics. This is numerical conformance, not SSE acceleration.
+
+The original 3,064 complete lifecycle observations remain unchanged, including
+all alias patterns, state/cache/counter behavior and caller RNG consumption.
+Current spin, lifecycle, workload and normal register-execution regressions
+validate the actual consumer paths. Source UB and ISA-specific stream ordering
+remain explicit; no cross-ISA timing or cryptographic certification is inferred.
+K-0291 now has its complete original function responsibilities and defined
+rotation contexts implemented. Its portable UB follow-up follows the already
+approved G2 rule, rather than remaining a missing-source-path hold.
 
 Immutable successors replace C++ mutation. Cached state survives failed seed
 construction. Source RNG consumption remains caller-owned, so failed seed

@@ -61,12 +61,14 @@ workspace ledgers under `g2-closure-review-*`.
 
 This rule is applied individually, not as a blanket source-defect waiver.
 
-* K-0291 cannot close solely from portable shift UB. The unchanged SSE source
+* K-0291 could not close solely from portable shift UB. The unchanged SSE source
   executes rol32<0> and rol32<32> successfully under UBSan, returning the input
   word in both cases. The native scalar helper currently refuses both. The
   review's x86_64/Rosetta probe returned `12345678 12345678` without sanitizer
-  errors. This source-defined context is a real implementation gap; the
-  3,064-state stream corpus does not close it.
+  errors. The 3,064-state stream corpus alone did not close that missing path.
+  The subsequent [complete rotation implementation](PACKED_RANDOM_STREAM_AUDIT.md#defined-sse-rotation-closure)
+  implements all defined count families and adds unchanged-source SSE vectors;
+  its whole-header acceptance is recorded separately from these nine decisions.
 * K-0315 retains the source's successful but invalid overlapping-buffer samples.
   The native independently owned tuple interface does not expose that writable
   alias. The correct independent-buffer path cannot by itself certify literal
