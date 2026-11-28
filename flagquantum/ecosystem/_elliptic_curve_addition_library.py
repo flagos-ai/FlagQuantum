@@ -40,6 +40,9 @@ from ..compiler.formats.legacy_component_resolution import (
 from ..compiler.formats.legacy_controlled_factories import controlled_via_and_factories
 from ..compiler.formats.legacy_fixed_gate_factories import fixed_gate_factories
 from ..compiler.formats.legacy_modular_addition_factories import _integer
+from ..compiler.formats.legacy_modular_subtraction_factories import (
+    modular_subtraction_factories,
+)
 from ..compiler.formats.legacy_word_factories import _rename_program
 from ..compiler.formats.montgomery_port_views import restore_montgomery_ports
 from ..compiler.registers.bits.bitwise_component import bitwise_word_program
@@ -93,9 +96,6 @@ from ..compiler.registers.modular.modular_doubling_component import (
 from ..compiler.registers.modular.modular_inverse_component import (
     modular_inverse_program,
 )
-from ..compiler.registers.modular.modular_negation_component import (
-    modular_negation_program,
-)
 from ..compiler.registers.modular.modular_subtraction_component import (
     modular_subtraction_program,
 )
@@ -121,7 +121,7 @@ def _flags(
     signature = addition_flags_signature(width)
     if registers is not None and registers != tuple(signature):
         raise SerializationError("Invalid original curve addition flag signature")
-    if type(width) is not int or type(modulus) is not int:
+    if type(width) is not int:
         return FunctionRecord(name, (), registers=tuple(signature))
     dtype = montgomery_register_type(width)
     zero = basis_vector_factories()["qualtran.bloqs.basic_gates.z_basis.ZeroState"](
@@ -132,7 +132,11 @@ def _flags(
         signature,
         zero_program,
         equality_program(dtype),
-        modular_negation_program(dtype, modulus),
+        _program(
+            modular_subtraction_factories()[
+                "qualtran.bloqs.mod_arithmetic.mod_subtraction.ModNeg"
+            ]("negation", None, {"dtype": dtype, "mod": modulus})
+        ),
         multi_control_x_program((0,) * (2 * width)),
         multi_control_x_program((0, 0, 0)),
     )

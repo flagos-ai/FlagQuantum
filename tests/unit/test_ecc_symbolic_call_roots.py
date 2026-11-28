@@ -73,3 +73,24 @@ def test_actual_symbolic_root_transports_six_calls_and_preserves_stage_refusals(
             resolve_component_program(library, 0, elliptic_curve_addition_factories())
             == record
         )
+
+
+@pytest.mark.parametrize("width", (3, 5))
+@pytest.mark.parametrize("depth", (0, 1))
+def test_fixed_width_symbolic_modulus_keeps_all_flag_calls_and_dependencies(
+    width: int, depth: int
+) -> None:
+    from qualtran.bloqs.cryptography.ecc.ec_add import _ECAddStepOne
+
+    from tests.unit.test_symbolic_modular_negation_calls import (
+        assert_symbolic_negation_dependencies,
+    )
+
+    assert_symbolic_negation_dependencies(
+        _ECAddStepOne(width, sympy.Symbol("p")),
+        elliptic_curve_addition_factories(),
+        width=width,
+        depth=depth,
+        root_calls=20,
+        input_words=4,
+    )

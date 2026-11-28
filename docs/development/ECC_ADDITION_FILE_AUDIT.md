@@ -416,3 +416,19 @@ upstream defects or a basis for parent acceptance. Q-0457 and Q-0460 therefore
 remain open while this batch publishes the completed value and model owners.
 The source controlled window root has available calls above a non-THRU QROAM
 refusal; preserve available logical layers separately from absent physical leaves.
+
+## Available symbolic flag stage
+
+For concrete n and symbolic modulus, `_ECAddStepOne` has an available 20-call
+source body. The constructor now composes the existing flag owner and shared
+logical ModNeg dependency. Source depths 0/1 and n=3/5 compare all available
+nested calls and operands; the shared unknown controlled constant is genuinely
+source-refused and blocks physical lowering. Logical output flags belong to the
+caller, while each negation's nonzero flag and predicate work remain private.
+MSB word order, finite append behavior and measured cleanup are unchanged.
+
+This closes the flag-stage constructor gap only. Remaining symbolic slope,
+coordinates, products, cleanup and finish stages expose 28/28/34/18/65 source
+calls at n=5 and still need complete dependency intake; symbolic ECWindow's
+available five-call root is separate. No ECC parent is accepted from this slice,
+and supplied reference leaf prices do not establish native default pricing.
