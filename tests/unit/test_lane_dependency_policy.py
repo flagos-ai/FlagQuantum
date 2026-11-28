@@ -65,7 +65,7 @@ pytestmark = pytest.mark.unit
 ROOT = Path(__file__).resolve().parents[2]
 WORKFLOW_DIR = ROOT / ".github" / "workflows"
 CI_WORKFLOW = "ci.yml"
-POLICY = ROOT / "dependency-policy.toml"
+POLICY = ROOT / "config" / "dependency-policy.toml"
 # Where an opt-in device run is recorded, since no lane can supply its variable.
 MANUAL = ROOT / "docs/development/TESTING.md"
 

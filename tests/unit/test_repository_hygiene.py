@@ -176,7 +176,7 @@ def test_dependency_groups_keep_core_minimal_and_ranges_executable():
 
 
 def test_dependency_policy_matches_ci_python_matrix():
-    policy = tomllib.loads((ROOT / "dependency-policy.toml").read_text())
+    policy = tomllib.loads((ROOT / "config" / "dependency-policy.toml").read_text())
     pyproject = tomllib.loads((ROOT / "pyproject.toml").read_text())
     workflow = (ROOT / ".github/workflows/ci.yml").read_text()
     assert policy["python"] == ["3.10", "3.11", "3.12"]

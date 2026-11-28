@@ -606,3 +606,9 @@ The [Simulation direct-relay retirement](simulation-direct-relay-retirement.md) 
 | ci-data-location | `ci/pr-gate-main.json` | `tools/ci/pr-gate-main.json` | Unchanged data, actual readers synchronized, root file removed; historical contract and evidence preserved. |
 | ci-data-location | `ci/flagos_cuda_reference.lock.json` | `tools/ci/flagos_cuda_reference.lock.json` | Unchanged data, actual readers synchronized, root file removed; historical contract and evidence preserved. |
 | ci-data-location | `ci/domestic_single_card_attestation.template.json` | `tools/ci/domestic_single_card_attestation.template.json` | Unchanged data, actual readers synchronized, root file removed; historical contract and evidence preserved. |
+
+## Dependency policy location
+
+| Group | Previous path | Authoritative path | Scope |
+| --- | --- | --- | --- |
+| dependency-policy-location | `dependency-policy.toml` | `config/dependency-policy.toml` | Unchanged data, actual defaults/cache/filter updated, root file removed; frozen contracts, diagnostics, historical records and explicit custom paths preserved. |

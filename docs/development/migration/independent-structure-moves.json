@@ -10548,6 +10548,14 @@
       "compatibility": "none",
       "source_kind": "Unchanged CI input JSON; no Python definition moved.",
       "retirement": "Root file removed; actual defaults/readers use tools/ci. Existing source_path resolves the unchanged contract identifier; original recorded evidence and remote settings are unchanged."
+    },
+    {
+      "group": "dependency-policy-location",
+      "old": "dependency-policy.toml",
+      "new": "config/dependency-policy.toml",
+      "compatibility": "none",
+      "source_kind": "Unchanged repository dependency policy; no Python definition, public contract or dependency version moved.",
+      "retirement": "Root predecessor removed; real default readers, cache input, OpenFermion filter, current documentation and ownership synchronized. Frozen contracts, diagnostics, explicit fixture paths and historical records preserved."
     }
   ],
   "retired_namespace_parents": [

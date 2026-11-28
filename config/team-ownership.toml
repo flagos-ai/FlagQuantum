@@ -60,7 +60,6 @@ protected_paths = [
     "README.md",
     "SECURITY.md",
     "conftest.py",
-    "dependency-policy.toml",
     # The declaration table `tools/release/check_evidence_revisions.py` reads. It records
     # which revisions of the checked-in evidence are obtainable and which are not,
     # so an edit to it changes what the repository discloses about its own

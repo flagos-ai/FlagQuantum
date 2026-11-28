@@ -15,7 +15,7 @@ Protocol stability does not stabilize an adapter implementation. Each adapter
 retains its own dependency window, operation mapping, issue codes and maturity.
 
 The adapter dependency must have its own optional extra and be classified as
-`interop` in `dependency-policy.toml`. Importing `flagquantum`,
+`interop` in `config/dependency-policy.toml`. Importing `flagquantum`,
 `flagquantum.ecosystem`, or resolving the adapter object must continue to work in
 a core-only installation.
 

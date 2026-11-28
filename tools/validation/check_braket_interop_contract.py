@@ -33,7 +33,7 @@ from flagquantum.ecosystem.braket.conversion import (
 
 ROOT = Path(__file__).resolve().parents[2]
 CONTRACT = ROOT / "contracts" / "braket-circuit-interop-contract.toml"
-POLICY = ROOT / "dependency-policy.toml"
+POLICY = ROOT / "config" / "dependency-policy.toml"
 EXPECTED_REQUIREMENT = "amazon-braket-sdk>=1.117,<2; python_version >= '3.11'"
 EXPECTED_VERSIONS = ["1.117.0", "1.127.1"]
 CONVERSION = ROOT / "flagquantum/ecosystem/braket/conversion.py"

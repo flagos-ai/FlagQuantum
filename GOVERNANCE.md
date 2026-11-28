@@ -163,7 +163,7 @@ hand-maintaining it would not be.
 ## Security
 
 Vulnerability reporting, supported versions, and scope are in [SECURITY.md](SECURITY.md).
-Security fixes are merged on the expedited schedule recorded in `dependency-policy.toml`
+Security fixes are merged on the expedited schedule recorded in `config/dependency-policy.toml`
 rather than the monthly dependency cadence.
 
 ## Amending this document

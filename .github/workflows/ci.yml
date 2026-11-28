@@ -1643,7 +1643,7 @@ jobs:
         if: runner.environment == 'github-hosted'
         with:
           path: ${{ env.FQ_QISKIT_WHEEL_DIRECTORY }}
-          key: qiskit-wheels-${{ runner.os }}-${{ runner.arch }}-py312-${{ matrix.qiskit }}-${{ hashFiles('dependency-policy.toml', '.github/actions/prepare-qiskit-wheels/action.yml') }}
+          key: qiskit-wheels-${{ runner.os }}-${{ runner.arch }}-py312-${{ matrix.qiskit }}-${{ hashFiles('config/dependency-policy.toml', '.github/actions/prepare-qiskit-wheels/action.yml') }}
       - name: Preserve the online wheel resolver interpreter
         run: echo "FQ_QISKIT_RESOLVER_PYTHON=$(command -v python)" >> "$GITHUB_ENV"
       - uses: ./.github/actions/offline-cpu

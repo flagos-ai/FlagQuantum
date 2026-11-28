@@ -55,7 +55,7 @@ on tiny amplitudes, which this coarse benchmark bound cannot certify.
 
 ## Re-run
 
-Use a repository-certified Qiskit lane from `dependency-policy.toml`, then run:
+Use a repository-certified Qiskit lane from `config/dependency-policy.toml`, then run:
 
 ```bash
 python -m pytest tests/benchmark_contract/test_compiler_*.py -m benchmark_contract -q

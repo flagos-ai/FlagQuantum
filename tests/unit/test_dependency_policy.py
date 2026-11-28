@@ -27,7 +27,7 @@ GATED_TOOLS = ("black", "mypy", "ruff")
 
 def _inputs() -> tuple[dict, dict]:
     return (
-        load_toml(ROOT / "dependency-policy.toml"),
+        load_toml(ROOT / "config" / "dependency-policy.toml"),
         load_toml(ROOT / "pyproject.toml"),
     )
 

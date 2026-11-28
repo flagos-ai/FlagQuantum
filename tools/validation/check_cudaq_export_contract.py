@@ -28,7 +28,7 @@ from flagquantum.ecosystem.cudaq._version import installed_cudaq_version
 
 ROOT = Path(__file__).resolve().parents[2]
 CONTRACT = ROOT / "contracts" / "cudaq-export-contract.toml"
-POLICY = ROOT / "dependency-policy.toml"
+POLICY = ROOT / "config" / "dependency-policy.toml"
 EXPECTED_VERSIONS = ["0.15.1", "0.16.0.post1"]
 EXPECTED_PLATFORMS = ["linux_x86_64", "linux_aarch64"]
 EXPECTED_SEMANTICS = {

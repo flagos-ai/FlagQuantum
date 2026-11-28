@@ -1,6 +1,6 @@
 # Dependency policy location
 
-Integration declaration, committed before implementation. Owner: Integration.
+Integration declaration was committed before implementation. Owner: Integration.
 
 Move `dependency-policy.toml` unchanged to `config/dependency-policy.toml` and
 remove the root file. Keep one authoritative file, without a copy, symlink,
@@ -80,3 +80,6 @@ The connected #1084 families, native ABI relocation, independent developer
 distributions, remaining bootstrap closure and final integrated G0 remain
 unfinished. Rust, merging, force pushing and runner administration are outside
 this work package.
+
+Implementation is present; local and own exact-head CI qualification remain
+separate acceptance requirements, not claims established by this declaration.

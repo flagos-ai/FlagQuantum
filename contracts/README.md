@@ -69,7 +69,7 @@ entry points for CI and maintainers:
 
 - `architecture.toml`
 - `config/capability-maturity.toml`
-- `dependency-policy.toml`
+- `config/dependency-policy.toml`
 
 Contract filenames and schemas are compatibility surfaces. Move or rename a
 contract only with all tool, test, and documentation references updated in the

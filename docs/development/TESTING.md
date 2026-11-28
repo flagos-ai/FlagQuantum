@@ -199,14 +199,14 @@ CUDA guard without the `gpu` marker, so the CPU lanes selected and skipped them
 while the accelerator lane never selected them at all. The fourth closes the
 hole the second leaves: a probe for a package the policy declares nowhere is not
 "no lane installs this" but "no lane can be wired to install it", so the answer
-has to be recorded in `dependency-policy.toml` rather than implied by silence.
+has to be recorded in `config/dependency-policy.toml` rather than implied by silence.
 The fifth applies the same reasoning to the variable that gates an opt-in device
 run: no lane sets one, so the table under "Opt-In Device Runs" is where it has to
 be recorded.
 Add an extra to an install line, or a marker to a selector; do not let the skip
 absorb the difference.
 
-What counts as an optional integration comes from `dependency-policy.toml`, so
+What counts as an optional integration comes from `config/dependency-policy.toml`, so
 the check cannot drift from the policy. A probe for a package the policy declares
 nowhere is not outside it — that is the case the fourth invariant reports,
 because no lane can be wired to install what nothing declares.
