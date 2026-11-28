@@ -16,17 +16,29 @@ from .constant_addition_component import _unconditional, constant_addition_progr
 
 
 def nested_controlled_constant_addition_program(
-    dtype: RegisterType, pattern: int, *, adjoint: bool = False
+    dtype: RegisterType, pattern: int, *, adjoint: bool = False, control_count: int = 2
 ) -> ProgramRecord:
-    """Add or subtract an encoded pattern under two positive source controls.
+    """Add or subtract an encoded pattern under distinct positive source controls.
 
     Controls remain distinct THRU scalar ports, preceding the MSB-first word.
     The constant word and ordinary adder work are private and clean. Both loads
     use literal nested XOR control; Always(Add) and allocation/free calls retain
     unchanged controls. No grouped-predicate synthesis replaces this recipe.
     """
-    record = constant_addition_program(dtype, pattern, adjoint=adjoint, control_value=1)
-    word = nested_controlled_xor_constant_program(dtype, pattern)
+    if type(control_count) is not int or control_count < 2:
+        raise ValueError(
+            "Nested constant addition requires at least two positive controls"
+        )
+    record = (
+        constant_addition_program(dtype, pattern, adjoint=adjoint, control_value=1)
+        if control_count == 2
+        else nested_controlled_constant_addition_program(
+            dtype, pattern, adjoint=adjoint, control_count=control_count - 1
+        )
+    )
+    word = nested_controlled_xor_constant_program(
+        dtype, pattern, control_count=control_count
+    )
     registers = word.functions[0].registers
     assert registers is not None
     control_name = registers[0].name

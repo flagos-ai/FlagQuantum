@@ -4,6 +4,18 @@ Reference: unchanged Qualtran v0.7.0 commit
 `bcb17bb25360ed68ce3bc084645db3e929799389`, addition.py, bitwise.py,
 _infra/controlled.py and _infra/adjoint.py. Their four frozen blobs are asserted.
 
+## Recursive extension (2026-11-28)
+
+The [ECC dependency closure](ECC_NESTED_CONTROL_DEPENDENCIES.md) extends these
+same owners through the literal Toffoli and ControlledViaAnd callbacks. Scalar
+prefixes recurse without the original two-control cap; two through five
+controls have complete source stream, complex branch, clean-work, resource and
+constructor evidence. The original two-control Programs and resource table
+below remain unchanged. Deeper loads own measured predicate work per loaded
+bit, while Always(Add/Adjoint(Add)) remains uncontrolled. This extension closes
+shared constant-load dependencies; the remaining ECC/modular parents are not
+marked complete by this audit.
+
 ## Ownership and interface
 
 The shared Bits owner constructs `Controlled(Controlled(XorK))` using the
@@ -26,8 +38,9 @@ packed predicates reuse the existing three-call predicate owner; full source
 primitive streams, branch amplitudes and source resource models are compared.
 The observer flattens the original composite before export so that temporary
 RIGHT outputs do not exhaust a physical lifetime pool during partial export.
-Deeper positive nesting and symbolic data-width predicate bodies remain outside
-this scoped catalogue, without being relabeled as upstream failures.
+The original deeper-positive nesting restriction is superseded by the recursive
+extension above. Symbolic data-width predicate bodies remain outside this
+scoped catalogue, without being relabeled as upstream failures.
 Unknown same-signature children
 require a separately supplied owner, never signature-based semantic inference.
 Symbolic constants retain true declarations and fail physical binding.
@@ -36,7 +49,9 @@ Symbolic constants retain true declarations and fail physical binding.
 
 Word controls compare every available source call and operand, the actual
 atomic Toffoli primitive stream and the complete complex operator. They allocate
-no work and use no measurements. Constant controls compare all new higher
+no work and use no measurements at two controls. Deeper predicate work and
+measurement histories are documented in the recursive extension. Constant
+controls compare all new higher
 calls, literal primitive dependencies and feedback slots against unmodified
 source decomposition. Their Always(Add/Adjoint(Add)) subtree is reused only
 after a complete native definition certificate. Independent Split(a)/Split(b)
@@ -57,7 +72,7 @@ binding supplies no clean pool and asserts its actual logical qubit extent.
 
 ## Measured primitive inventory versus source model
 
-The three-bit encoded pattern 3 has the following literal counts. Native CCX
+The three-bit encoded pattern 3 under two scalar controls has these literal counts. Native CCX
 is an atomic primitive; a source default T estimate is a separate convention.
 
 | Operation | Emitted primitives | CCX | T / T-dagger | Measurements / resets | Source model Toffoli / And | Source default T estimate | Source qubits |

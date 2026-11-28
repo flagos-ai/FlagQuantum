@@ -130,7 +130,7 @@ def constant_control_factories(
     controlled_factory: ComponentFactory | None = None,
     adjoint_factory: ComponentFactory | None = None,
 ) -> dict[str, ComponentFactory]:
-    """Resolve known AddK/XorK owners and at most two nested positive controls.
+    """Resolve known AddK/XorK owners and nested positive controls.
 
     Context is private to one compilation. Encoding and negative-constant
     normalization remain with the existing constructor and injected codec.
@@ -212,17 +212,19 @@ def constant_control_factories(
         if kind == "add":
             program = (
                 nested_controlled_constant_addition_program(
-                    dtype, pattern, adjoint=inverse
+                    dtype, pattern, adjoint=inverse, control_count=count
                 )
-                if count == 2
+                if count >= 2
                 else constant_addition_program(
                     dtype, pattern, adjoint=inverse, control_value=1 if count else None
                 )
             )
         else:
             program = (
-                nested_controlled_xor_constant_program(dtype, pattern)
-                if count == 2
+                nested_controlled_xor_constant_program(
+                    dtype, pattern, control_count=count
+                )
+                if count >= 2
                 else (
                     controlled_bitwise_word_program(
                         dtype, "xor_constant", pattern=pattern
@@ -259,10 +261,6 @@ def constant_control_factories(
                 "Constant control requires one scalar positive QBit"
             )
         kind, word, pattern, count, inverse = recipes[child]
-        if count >= 2:
-            raise SerializationError(
-                "Constant constructor context supports at most two nested controls"
-            )
         assert child.registers is not None
         signature = quantum_control_signature(
             Signature(child.registers), ((dtype, ()),)
@@ -321,10 +319,6 @@ def constant_control_factories(
         if child not in recipes or child.registers is None:
             raise SerializationError("Missing constant predicate constructor context")
         kind, dtype, pattern, count, inverse = recipes[child]
-        if count >= 2:
-            raise SerializationError(
-                "Constant predicate context supports at most two nested controls"
-            )
         signature = quantum_control_signature(
             Signature(child.registers), ((quantum_bit_type(), ()),)
         )

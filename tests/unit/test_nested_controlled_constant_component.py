@@ -101,19 +101,25 @@ def frozen_sources() -> None:
 
 
 @pytest.mark.parametrize(
-    "kind,width,constant",
+    "kind,width,constant,control_count",
     (
-        ("uint", 2, 1),
-        ("uint", 3, 3),
-        ("uint", 3, 0),
-        ("signed", 3, -3),
-        ("montgomery", 3, 3),
-        ("uint", 4, 5),
+        ("uint", 2, 1, 2),
+        ("uint", 3, 3, 2),
+        ("uint", 3, 0, 2),
+        ("signed", 3, -3, 2),
+        ("montgomery", 3, 3, 2),
+        ("uint", 4, 5, 2),
+        ("uint", 2, 1, 3),
+        ("uint", 3, 0, 3),
+        ("signed", 2, -2, 3),
+        ("montgomery", 2, 1, 3),
+        ("uint", 1, 1, 4),
+        ("uint", 1, 1, 5),
     ),
 )
 @pytest.mark.parametrize("adjoint", (False, True))
 def test_source_calls_full_primitive_stream_all_complex_branches_and_resources(
-    kind: str, width: int, constant: int, adjoint: bool
+    kind: str, width: int, constant: int, control_count: int, adjoint: bool
 ) -> None:
     dtype = RegisterType(kind, width)
     source_type: Any = {"uint": QUInt, "signed": QInt, "montgomery": QMontgomeryUInt}[
@@ -121,17 +127,18 @@ def test_source_calls_full_primitive_stream_all_complex_branches_and_resources(
     ]
     source = AddK(source_type(width), constant)
     source = source.adjoint() if adjoint else source
-    source = source.controlled().controlled()
+    for _ in range(control_count):
+        source = source.controlled()
     pattern = constant % (1 << width)
     record = nested_controlled_constant_addition_program(
-        dtype, pattern, adjoint=adjoint
+        dtype, pattern, adjoint=adjoint, control_count=control_count
     )
     assert len(record.functions[0].blocks[0].operations) == 5
-    assert [r.name for r in record.functions[0].registers or ()] == [
-        "ctrl2",
-        "ctrl",
-        "x",
-    ]
+    assert [r.name for r in record.functions[0].registers or ()] == (
+        ["ctrl2", "ctrl", "x"]
+        if control_count == 2
+        else [*(f"ctrl{i}" for i in range(control_count, 1, -1)), "ctrl", "x"]
+    )
     terminals = {
         f.name
         for f in record.functions
@@ -151,13 +158,25 @@ def test_source_calls_full_primitive_stream_all_complex_branches_and_resources(
     for name, child in pairs.items():
         if name == "constant_always":
             assert type(child).__name__ == "Always"
+        elif type(child).__name__ == "CtrlSpecAnd" or (
+            type(child).__name__ == "Adjoint"
+            and type(child.subbloq).__name__ == "CtrlSpecAnd"
+        ):
+            child.decompose_bloq()
         elif name in terminals:
             with pytest.raises((DecomposeTypeError, DecomposeNotImplementedError)):
                 child.decompose_bloq()
-    logical = width + 2
-    inputs = ((0,), (1,), tuple(range(2, logical)))
+    logical = width + control_count
+    inputs = (
+        *((i,) for i in range(control_count)),
+        tuple(range(control_count, logical)),
+    )
     bound = bind_register_program(
-        record, inputs, clean=tuple(range(logical, 3 * width + 1))
+        record,
+        inputs,
+        clean=tuple(
+            range(logical, logical + width + max(width - 1, control_count - 1))
+        ),
     )
     registers = record.functions[0].registers
     assert registers is not None
@@ -177,11 +196,27 @@ def test_source_calls_full_primitive_stream_all_complex_branches_and_resources(
     assert_source(bound.circuit.instructions, expected_gates)
     counts = Counter(g.name for g in bound.circuit.instructions)
     model = get_cost_value(source, QECGatesCost())
-    assert counts["ccx"] == model.toffoli == 2 * pattern.bit_count()
-    assert counts["measure"] == counts["reset"] == model.measurement == width - 1
+    if control_count == 2:
+        assert counts["ccx"] == model.toffoli == 2 * pattern.bit_count()
+    else:
+        assert counts["ccx"] == model.toffoli == 0
+    expected_measurements = (
+        width
+        - 1
+        + (2 * (control_count - 1) * pattern.bit_count() if control_count >= 3 else 0)
+    )
+    assert (
+        counts["measure"]
+        == counts["reset"]
+        == model.measurement
+        == expected_measurements
+    )
     assert counts["t"] + counts["tdg"] + 4 * counts["ccx"] == model.total_t_count()
     physical = max(w for g in bound.circuit.instructions for w in g.wires) + 1
-    assert physical == get_cost_value(source, QubitCount()) == 3 * width + 1
+    assert physical == get_cost_value(source, QubitCount())
+    assert physical == logical + width + max(
+        width - 1, control_count - 1 if control_count >= 3 and pattern else 0
+    )
     work = physical - logical
     matrix = torch.as_tensor(
         np.asarray(source.tensor_contract()), dtype=torch.complex128
@@ -215,7 +250,7 @@ def base_for_always(record: ProgramRecord) -> ProgramRecord:
     )
 
 
-@pytest.mark.parametrize("controls", (0, 1, 2))
+@pytest.mark.parametrize("controls", (0, 1, 2, 3, 4, 5))
 @pytest.mark.parametrize("adjoint", (False, True))
 @pytest.mark.parametrize("depth", (0, 1))
 def test_constructor_metadata_roundtrip_and_reference_free_resolution(
@@ -246,8 +281,10 @@ def test_constructor_metadata_roundtrip_and_reference_free_resolution(
     actual = resolve()
     dtype = RegisterType("uint", 3)
     expected = (
-        nested_controlled_constant_addition_program(dtype, 7, adjoint=adjoint)
-        if controls == 2
+        nested_controlled_constant_addition_program(
+            dtype, 7, adjoint=adjoint, control_count=controls
+        )
+        if controls >= 2
         else constant_addition_program(
             dtype, 7, adjoint=adjoint, control_value=1 if controls else None
         )
@@ -262,13 +299,18 @@ def test_constructor_metadata_roundtrip_and_reference_free_resolution(
         assert resolve() == actual
 
 
-def test_symbolic_constant_is_never_encoded_or_silently_executed() -> None:
+@pytest.mark.parametrize("control_count", (2, 3))
+def test_symbolic_constant_is_never_encoded_or_silently_executed(
+    control_count: int,
+) -> None:
     import sympy
 
     def forbidden(dtype: RegisterType, value: object) -> tuple[int, ...]:
         raise AssertionError("An unresolved source constant has no numeric encoding")
 
-    source = AddK(QUInt(3), sympy.Symbol("k")).controlled().controlled()
+    source = AddK(QUInt(3), sympy.Symbol("k"))
+    for _ in range(control_count):
+        source = source.controlled()
     record = resolve_component_program(
         _library(source, 0), 0, constant_control_factories(encode_constant=forbidden)
     )
@@ -276,7 +318,13 @@ def test_symbolic_constant_is_never_encoded_or_silently_executed() -> None:
     with pytest.raises(DecomposeTypeError, match="symbolic"):
         source.decompose_bloq()
     with pytest.raises(ValueError, match="component bodies"):
-        bind_register_program(record, ((0,), (1,), (2, 3, 4)))
+        bind_register_program(
+            record,
+            (
+                *((i,) for i in range(control_count)),
+                tuple(range(control_count, control_count + 3)),
+            ),
+        )
 
 
 def test_scoped_constructor_requires_provenance_and_valid_control_metadata() -> None:
@@ -397,3 +445,36 @@ def test_predicate_constructor_keeps_negative_and_grouped_source_recipes(
     assert counts["measure"] == model.measurement
     assert counts["t"] + counts["tdg"] + 4 * counts["ccx"] == model.total_t_count()
     assert bound.circuit.n_wires == get_cost_value(source, QubitCount())
+
+
+@pytest.mark.parametrize("depth", (0, 1))
+@pytest.mark.parametrize("control_count", (3, 4, 5))
+def test_recursive_xor_constructor_roundtrip_uses_the_shared_word_owner(
+    depth: int, control_count: int
+) -> None:
+    from qualtran.bloqs.arithmetic.bitwise import XorK
+
+    from flagquantum.compiler.registers.bits.bitwise_component_control import (
+        nested_controlled_xor_constant_program,
+    )
+    from flagquantum.ecosystem._component_library import _constant_bits
+
+    source = XorK(QUInt(2), 1)
+    for _ in range(control_count):
+        source = source.controlled()
+    encoded = serialize_component_library(_library(source, depth))
+    library = deserialize_component_library(encoded)
+    assert serialize_component_library(library) == encoded
+    denied = {
+        name: None
+        for name in sys.modules
+        if name.split(".", 1)[0] in {"qualtran", "cirq", "kickmix"}
+    }
+    with patch.dict(sys.modules, denied):
+        actual = resolve_component_program(
+            library, 0, constant_control_factories(encode_constant=_constant_bits)
+        )
+    expected = nested_controlled_xor_constant_program(
+        RegisterType("uint", 2), 1, control_count=control_count
+    )
+    assert bind_case(actual)[0] == bind_case(expected)[0]
