@@ -209,3 +209,13 @@ unsigned word is MSB first. Padding states are fixed. Private clean scratch and
 feedback remain owned by the existing emitter. Run `test_bounded_increment.py`
 and `test_hubbard_stored_graph.py`. Original ModAddK has no primitive recipe, so
 keep its five-Add model separate from literal native gates.
+
+`nested_controlled_constant_component` composes two-control XOR loading around
+the existing unconditional Always(Add) or its exact inverse. Both scalar
+controls and the data word are THRU; the constant word and carry work are
+private. Constants are already encoded by the caller. The normal append path
+uses the same bound primitive IR. Run
+`tests/unit/test_nested_controlled_constant_component.py` for complete source
+primitive/feedback comparisons, all small raw histories, complex states, zero
+work and constructor replacement. Source modeled Toffoli costs stay separate
+from emitted atomic CCX and Clifford/T counts.

@@ -69,3 +69,15 @@ Missing contexts fail closed. Numerical coefficient and phase derivation belongs
 to Simulation, not this constructor. Start with
 `tests/unit/test_controlled_hamiltonian_gqsp_source.py` and the
 [complete source audit](../../../docs/development/HAMILTONIAN_GQSP_CONSTRUCTOR_AUDIT.md).
+
+`legacy_constant_control_factories.constant_control_factories` retains AddK and
+XorK constructor ownership in one compilation. It supports zero, one and two
+nested positive scalar controls plus known adjoints, and the bare Add adjoint
+needed by Always. The existing constructor and injected encoder own validation
+and unsigned negative-value normalization; the context captures only validated
+MSB bits. It neither guesses a child's semantics from its signature nor encodes
+an unresolved symbol as zero. Unknown control/adjoint children require an
+explicit supplied fallback. Negative and finite grouped/packed predicates reuse
+the existing predicate owner and its positive-control provider. More than two
+nested positive controls remain outside this scoped catalogue. See
+[Nested constant controls](../../../docs/development/NESTED_CONSTANT_CONTROL_AUDIT.md).
