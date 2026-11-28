@@ -308,3 +308,10 @@ precision is retained before physical admission. Failed zero-port source bodies
 stay declarations; unavailable alpha/epsilon and absent leaf circuits are never
 filled by coefficient-driven implementations. The factorization source closure
 scenario test is the shortest change path.
+
+`_thc_walk_component_library` captures actual original THC factory data and
+signature order into native walk dependency records. It preserves original
+RIGHT-junk lifetimes and unavailable leaf declarations. It does not select the
+corrected mathematical THC operation or synthesize missing rotation networks.
+The THC walk file audit distinguishes literal source calls, specialized positive
+inverse ownership, source constructor defects and actual construction limits.
