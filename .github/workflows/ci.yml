@@ -94,7 +94,7 @@ jobs:
               os.environ["GITHUB_GRAPHQL_URL"],
               data=json.dumps({"query": query, "variables": {
                   "owner": owner, "name": name,
-                  "expression": f"{sha}:tools/ci_source_archive.py",
+                  "expression": f"{sha}:tools/ci/ci_source_archive.py",
               }}).encode(),
               headers={
                   "Authorization": f"Bearer {os.environ['GH_TOKEN']}",
@@ -156,7 +156,7 @@ jobs:
             git rev-parse HEAD
             git rev-list --objects 'HEAD^{tree}' "^${base}^{tree}"
             # Carry the Git path proof for bounded API repair of cache misses.
-            git rev-parse 'HEAD^{tree}' 'HEAD:tools' 'HEAD:tools/ci_source_archive.py'
+            git rev-parse 'HEAD^{tree}' 'HEAD:tools' 'HEAD:tools/ci' 'HEAD:tools/ci/ci_source_archive.py'
           } | git pack-objects --stdout > "$staging/incremental/source.pack"
       - uses: ./.github/actions/upload-artifact
         timeout-minutes: 6
@@ -267,11 +267,11 @@ jobs:
           fi
           python tools/release/check_evidence_retention.py --base "$BASE_SHA"
       - name: Enforce core, extras, interop, and external-platform dependencies
-        run: python tools/check_dependency_policy.py
+        run: python tools/architecture/check_dependency_policy.py
       - name: Verify Amazon Braket circuit interoperability contract
         run: python tools/validation/check_braket_interop_contract.py
       - name: Verify Cirq interoperability contract
-        run: python tools/check_cirq_interop_contract.py
+        run: python tools/validation/check_cirq_interop_contract.py
       - name: Verify CUDA-Q export contract
         run: python tools/validation/check_cudaq_export_contract.py
       - name: Verify Qiskit interoperability contract
@@ -293,7 +293,7 @@ jobs:
       - name: Verify OpenQASM import contract
         run: python tools/validation/check_openqasm_import_contract.py
       - name: Verify internal multi-level IR contract
-        run: python tools/check_multi_level_ir_contract.py
+        run: python tools/validation/check_multi_level_ir_contract.py
       - name: Verify realtime messaging contract
         run: python tools/validation/check_realtime_messaging_contract.py
       - name: Verify the qubit-vocabulary ledgers
@@ -597,7 +597,7 @@ jobs:
           fi
           git index-pack --stdin < "$RUNNER_TEMP/ci-source/source.pack"
           if [ "$RUNNER_ENVIRONMENT" = self-hosted ]; then
-            git show "$sha:tools/ci_source_archive.py" > "$RUNNER_TEMP/ci-source/cleanup-source.py"
+            git show "$sha:tools/ci/ci_source_archive.py" > "$RUNNER_TEMP/ci-source/cleanup-source.py"
             python3 "$RUNNER_TEMP/ci-source/cleanup-source.py" --cleanup-containers
           fi
           complete=false
@@ -615,7 +615,7 @@ jobs:
         run: |
           sha="$(cat "$RUNNER_TEMP/ci-source/source.sha")"
           test "$sha" = "$GITHUB_SHA"
-          git show "$sha:tools/ci_source_archive.py" > "$RUNNER_TEMP/ci-source/repair-source.py"
+          git show "$sha:tools/ci/ci_source_archive.py" > "$RUNNER_TEMP/ci-source/repair-source.py"
           if timeout --kill-after=15s 120s python3 "$RUNNER_TEMP/ci-source/repair-source.py"; then
             echo "complete=true" >> "$GITHUB_OUTPUT"
           else
@@ -723,7 +723,7 @@ jobs:
           fi
           git index-pack --stdin < "$RUNNER_TEMP/ci-source/source.pack"
           if [ "$RUNNER_ENVIRONMENT" = self-hosted ]; then
-            git show "$sha:tools/ci_source_archive.py" > "$RUNNER_TEMP/ci-source/cleanup-source.py"
+            git show "$sha:tools/ci/ci_source_archive.py" > "$RUNNER_TEMP/ci-source/cleanup-source.py"
             python3 "$RUNNER_TEMP/ci-source/cleanup-source.py" --cleanup-containers
           fi
           complete=false
@@ -741,7 +741,7 @@ jobs:
         run: |
           sha="$(cat "$RUNNER_TEMP/ci-source/source.sha")"
           test "$sha" = "$GITHUB_SHA"
-          git show "$sha:tools/ci_source_archive.py" > "$RUNNER_TEMP/ci-source/repair-source.py"
+          git show "$sha:tools/ci/ci_source_archive.py" > "$RUNNER_TEMP/ci-source/repair-source.py"
           if timeout --kill-after=15s 120s python3 "$RUNNER_TEMP/ci-source/repair-source.py"; then
             echo "complete=true" >> "$GITHUB_OUTPUT"
           else
@@ -809,7 +809,7 @@ jobs:
         # `sys.version_info` passes on 3.11 and 3.12 and fails to collect on
         # 3.10; the `try`/`except ModuleNotFoundError` form is the one that
         # survives both this lane and a stripped standard library, and
-        # `tools/check_dependency_policy.py` holds every site to it. This step
+        # `tools/architecture/check_dependency_policy.py` holds every site to it. This step
         # proves the lane is what that fallback assumes: the standard library
         # module is there exactly where the version says, and where it is not,
         # the substitute the fallback imports is installed.
@@ -872,7 +872,7 @@ jobs:
           fi
           git index-pack --stdin < "$RUNNER_TEMP/ci-source/source.pack"
           if [ "$RUNNER_ENVIRONMENT" = self-hosted ]; then
-            git show "$sha:tools/ci_source_archive.py" > "$RUNNER_TEMP/ci-source/cleanup-source.py"
+            git show "$sha:tools/ci/ci_source_archive.py" > "$RUNNER_TEMP/ci-source/cleanup-source.py"
             python3 "$RUNNER_TEMP/ci-source/cleanup-source.py" --cleanup-containers
           fi
           complete=false
@@ -890,7 +890,7 @@ jobs:
         run: |
           sha="$(cat "$RUNNER_TEMP/ci-source/source.sha")"
           test "$sha" = "$GITHUB_SHA"
-          git show "$sha:tools/ci_source_archive.py" > "$RUNNER_TEMP/ci-source/repair-source.py"
+          git show "$sha:tools/ci/ci_source_archive.py" > "$RUNNER_TEMP/ci-source/repair-source.py"
           if timeout --kill-after=15s 120s python3 "$RUNNER_TEMP/ci-source/repair-source.py"; then
             echo "complete=true" >> "$GITHUB_OUTPUT"
           else
@@ -1119,7 +1119,7 @@ jobs:
           fi
           git index-pack --stdin < "$RUNNER_TEMP/ci-source/source.pack"
           if [ "$RUNNER_ENVIRONMENT" = self-hosted ]; then
-            git show "$sha:tools/ci_source_archive.py" > "$RUNNER_TEMP/ci-source/cleanup-source.py"
+            git show "$sha:tools/ci/ci_source_archive.py" > "$RUNNER_TEMP/ci-source/cleanup-source.py"
             python3 "$RUNNER_TEMP/ci-source/cleanup-source.py" --cleanup-containers
           fi
           complete=false
@@ -1137,7 +1137,7 @@ jobs:
         run: |
           sha="$(cat "$RUNNER_TEMP/ci-source/source.sha")"
           test "$sha" = "$GITHUB_SHA"
-          git show "$sha:tools/ci_source_archive.py" > "$RUNNER_TEMP/ci-source/repair-source.py"
+          git show "$sha:tools/ci/ci_source_archive.py" > "$RUNNER_TEMP/ci-source/repair-source.py"
           if timeout --kill-after=15s 120s python3 "$RUNNER_TEMP/ci-source/repair-source.py"; then
             echo "complete=true" >> "$GITHUB_OUTPUT"
           else
@@ -1240,7 +1240,7 @@ jobs:
           fi
           git index-pack --stdin < "$RUNNER_TEMP/ci-source/source.pack"
           if [ "$RUNNER_ENVIRONMENT" = self-hosted ]; then
-            git show "$sha:tools/ci_source_archive.py" > "$RUNNER_TEMP/ci-source/cleanup-source.py"
+            git show "$sha:tools/ci/ci_source_archive.py" > "$RUNNER_TEMP/ci-source/cleanup-source.py"
             python3 "$RUNNER_TEMP/ci-source/cleanup-source.py" --cleanup-containers
           fi
           complete=false
@@ -1258,7 +1258,7 @@ jobs:
         run: |
           sha="$(cat "$RUNNER_TEMP/ci-source/source.sha")"
           test "$sha" = "$GITHUB_SHA"
-          git show "$sha:tools/ci_source_archive.py" > "$RUNNER_TEMP/ci-source/repair-source.py"
+          git show "$sha:tools/ci/ci_source_archive.py" > "$RUNNER_TEMP/ci-source/repair-source.py"
           if timeout --kill-after=15s 120s python3 "$RUNNER_TEMP/ci-source/repair-source.py"; then
             echo "complete=true" >> "$GITHUB_OUTPUT"
           else
@@ -1351,7 +1351,7 @@ jobs:
           fi
           git index-pack --stdin < "$RUNNER_TEMP/ci-source/source.pack"
           if [ "$RUNNER_ENVIRONMENT" = self-hosted ]; then
-            git show "$sha:tools/ci_source_archive.py" > "$RUNNER_TEMP/ci-source/cleanup-source.py"
+            git show "$sha:tools/ci/ci_source_archive.py" > "$RUNNER_TEMP/ci-source/cleanup-source.py"
             python3 "$RUNNER_TEMP/ci-source/cleanup-source.py" --cleanup-containers
           fi
           complete=false
@@ -1369,7 +1369,7 @@ jobs:
         run: |
           sha="$(cat "$RUNNER_TEMP/ci-source/source.sha")"
           test "$sha" = "$GITHUB_SHA"
-          git show "$sha:tools/ci_source_archive.py" > "$RUNNER_TEMP/ci-source/repair-source.py"
+          git show "$sha:tools/ci/ci_source_archive.py" > "$RUNNER_TEMP/ci-source/repair-source.py"
           if timeout --kill-after=15s 120s python3 "$RUNNER_TEMP/ci-source/repair-source.py"; then
             echo "complete=true" >> "$GITHUB_OUTPUT"
           else
@@ -1452,7 +1452,7 @@ jobs:
           fi
           git index-pack --stdin < "$RUNNER_TEMP/ci-source/source.pack"
           if [ "$RUNNER_ENVIRONMENT" = self-hosted ]; then
-            git show "$sha:tools/ci_source_archive.py" > "$RUNNER_TEMP/ci-source/cleanup-source.py"
+            git show "$sha:tools/ci/ci_source_archive.py" > "$RUNNER_TEMP/ci-source/cleanup-source.py"
             python3 "$RUNNER_TEMP/ci-source/cleanup-source.py" --cleanup-containers
           fi
           complete=false
@@ -1470,7 +1470,7 @@ jobs:
         run: |
           sha="$(cat "$RUNNER_TEMP/ci-source/source.sha")"
           test "$sha" = "$GITHUB_SHA"
-          git show "$sha:tools/ci_source_archive.py" > "$RUNNER_TEMP/ci-source/repair-source.py"
+          git show "$sha:tools/ci/ci_source_archive.py" > "$RUNNER_TEMP/ci-source/repair-source.py"
           if timeout --kill-after=15s 120s python3 "$RUNNER_TEMP/ci-source/repair-source.py"; then
             echo "complete=true" >> "$GITHUB_OUTPUT"
           else
@@ -1570,7 +1570,7 @@ jobs:
           fi
           git index-pack --stdin < "$RUNNER_TEMP/ci-source/source.pack"
           if [ "$RUNNER_ENVIRONMENT" = self-hosted ]; then
-            git show "$sha:tools/ci_source_archive.py" > "$RUNNER_TEMP/ci-source/cleanup-source.py"
+            git show "$sha:tools/ci/ci_source_archive.py" > "$RUNNER_TEMP/ci-source/cleanup-source.py"
             python3 "$RUNNER_TEMP/ci-source/cleanup-source.py" --cleanup-containers
           fi
           complete=false
@@ -1588,7 +1588,7 @@ jobs:
         run: |
           sha="$(cat "$RUNNER_TEMP/ci-source/source.sha")"
           test "$sha" = "$GITHUB_SHA"
-          git show "$sha:tools/ci_source_archive.py" > "$RUNNER_TEMP/ci-source/repair-source.py"
+          git show "$sha:tools/ci/ci_source_archive.py" > "$RUNNER_TEMP/ci-source/repair-source.py"
           if timeout --kill-after=15s 120s python3 "$RUNNER_TEMP/ci-source/repair-source.py"; then
             echo "complete=true" >> "$GITHUB_OUTPUT"
           else
@@ -1731,7 +1731,7 @@ jobs:
           fi
           git index-pack --stdin < "$RUNNER_TEMP/ci-source/source.pack"
           if [ "$RUNNER_ENVIRONMENT" = self-hosted ]; then
-            git show "$sha:tools/ci_source_archive.py" > "$RUNNER_TEMP/ci-source/cleanup-source.py"
+            git show "$sha:tools/ci/ci_source_archive.py" > "$RUNNER_TEMP/ci-source/cleanup-source.py"
             python3 "$RUNNER_TEMP/ci-source/cleanup-source.py" --cleanup-containers
           fi
           complete=false
@@ -1749,7 +1749,7 @@ jobs:
         run: |
           sha="$(cat "$RUNNER_TEMP/ci-source/source.sha")"
           test "$sha" = "$GITHUB_SHA"
-          git show "$sha:tools/ci_source_archive.py" > "$RUNNER_TEMP/ci-source/repair-source.py"
+          git show "$sha:tools/ci/ci_source_archive.py" > "$RUNNER_TEMP/ci-source/repair-source.py"
           if timeout --kill-after=15s 120s python3 "$RUNNER_TEMP/ci-source/repair-source.py"; then
             echo "complete=true" >> "$GITHUB_OUTPUT"
           else
@@ -1812,7 +1812,7 @@ jobs:
               python -m pip install --upgrade "cirq-core==${version}"
             fi
             python -c 'from importlib.metadata import version; import sys; assert version("cirq-core") == sys.argv[1]' "$version"
-            python tools/check_cirq_interop_contract.py --verify-sdk
+            python tools/validation/check_cirq_interop_contract.py --verify-sdk
             python -m pytest tests/test_cirq_interop.py tests/test_cirq_interop_conformance.py -m cirq -q
             python -c "import sys, flagquantum; assert not any(name == 'cirq' or name.startswith('cirq.') for name in sys.modules)"
           ); done
@@ -1851,7 +1851,7 @@ jobs:
           fi
           git index-pack --stdin < "$RUNNER_TEMP/ci-source/source.pack"
           if [ "$RUNNER_ENVIRONMENT" = self-hosted ]; then
-            git show "$sha:tools/ci_source_archive.py" > "$RUNNER_TEMP/ci-source/cleanup-source.py"
+            git show "$sha:tools/ci/ci_source_archive.py" > "$RUNNER_TEMP/ci-source/cleanup-source.py"
             python3 "$RUNNER_TEMP/ci-source/cleanup-source.py" --cleanup-containers
           fi
           complete=false
@@ -1869,7 +1869,7 @@ jobs:
         run: |
           sha="$(cat "$RUNNER_TEMP/ci-source/source.sha")"
           test "$sha" = "$GITHUB_SHA"
-          git show "$sha:tools/ci_source_archive.py" > "$RUNNER_TEMP/ci-source/repair-source.py"
+          git show "$sha:tools/ci/ci_source_archive.py" > "$RUNNER_TEMP/ci-source/repair-source.py"
           if timeout --kill-after=15s 120s python3 "$RUNNER_TEMP/ci-source/repair-source.py"; then
             echo "complete=true" >> "$GITHUB_OUTPUT"
           else
@@ -2043,7 +2043,7 @@ jobs:
           fi
           git index-pack --stdin < "$RUNNER_TEMP/ci-source/source.pack"
           if [ "$RUNNER_ENVIRONMENT" = self-hosted ]; then
-            git show "$sha:tools/ci_source_archive.py" > "$RUNNER_TEMP/ci-source/cleanup-source.py"
+            git show "$sha:tools/ci/ci_source_archive.py" > "$RUNNER_TEMP/ci-source/cleanup-source.py"
             python3 "$RUNNER_TEMP/ci-source/cleanup-source.py" --cleanup-containers
           fi
           complete=false
@@ -2061,7 +2061,7 @@ jobs:
         run: |
           sha="$(cat "$RUNNER_TEMP/ci-source/source.sha")"
           test "$sha" = "$GITHUB_SHA"
-          git show "$sha:tools/ci_source_archive.py" > "$RUNNER_TEMP/ci-source/repair-source.py"
+          git show "$sha:tools/ci/ci_source_archive.py" > "$RUNNER_TEMP/ci-source/repair-source.py"
           if timeout --kill-after=15s 120s python3 "$RUNNER_TEMP/ci-source/repair-source.py"; then
             echo "complete=true" >> "$GITHUB_OUTPUT"
           else
@@ -2163,7 +2163,7 @@ jobs:
           fi
           git index-pack --stdin < "$RUNNER_TEMP/ci-source/source.pack"
           if [ "$RUNNER_ENVIRONMENT" = self-hosted ]; then
-            git show "$sha:tools/ci_source_archive.py" > "$RUNNER_TEMP/ci-source/cleanup-source.py"
+            git show "$sha:tools/ci/ci_source_archive.py" > "$RUNNER_TEMP/ci-source/cleanup-source.py"
             python3 "$RUNNER_TEMP/ci-source/cleanup-source.py" --cleanup-containers
           fi
           complete=false
@@ -2181,7 +2181,7 @@ jobs:
         run: |
           sha="$(cat "$RUNNER_TEMP/ci-source/source.sha")"
           test "$sha" = "$GITHUB_SHA"
-          git show "$sha:tools/ci_source_archive.py" > "$RUNNER_TEMP/ci-source/repair-source.py"
+          git show "$sha:tools/ci/ci_source_archive.py" > "$RUNNER_TEMP/ci-source/repair-source.py"
           # A cold cache otherwise downloads the complete Actions artifact over
           # the runner's slow blob-storage route. Git negotiates existing objects.
           if timeout --kill-after=15s 180s git -c http.version=HTTP/1.1 fetch \
@@ -2250,7 +2250,7 @@ jobs:
         if: matrix.python == '3.12'
         run: >-
           python -m pip install
-          $(python tools/check_dependency_policy.py --print-floor)
+          $(python tools/architecture/check_dependency_policy.py --print-floor)
       - name: Run the Python gates on the declared development floor
         if: matrix.python == '3.12'
         run: |
@@ -2294,7 +2294,7 @@ jobs:
           mkdir -p dist
           cp dist-a/* dist/
       - name: Verify artifact contents
-        run: python tools/verify_distribution_artifacts.py dist
+        run: python tools/release/verify_distribution_artifacts.py dist
       - name: Write checksummed artifact manifest
         run: python tools/release/artifact_manifest.py --output dist/manifest.json dist/*.whl dist/*.tar.gz
       - uses: ./.github/actions/upload-artifact
@@ -2329,7 +2329,7 @@ jobs:
           only: cp310-manylinux_x86_64
           output-dir: wheelhouse
       - name: Verify publishable manylinux wheel contents
-        run: python tools/verify_distribution_artifacts.py wheelhouse
+        run: python tools/release/verify_distribution_artifacts.py wheelhouse
 
   package-installed:
     needs: [prepare-source, package]
@@ -2470,7 +2470,7 @@ jobs:
           only: ${{ matrix.identifier }}
           output-dir: wheelhouse
       - name: Verify release wheel contents
-        run: python tools/verify_distribution_artifacts.py wheelhouse
+        run: python tools/release/verify_distribution_artifacts.py wheelhouse
       - uses: ./.github/actions/upload-artifact
         timeout-minutes: 6
         with:
@@ -2520,7 +2520,7 @@ jobs:
           fi
           git index-pack --stdin < "$RUNNER_TEMP/ci-source/source.pack"
           if [ "$RUNNER_ENVIRONMENT" = self-hosted ]; then
-            git show "$sha:tools/ci_source_archive.py" > "$RUNNER_TEMP/ci-source/cleanup-source.py"
+            git show "$sha:tools/ci/ci_source_archive.py" > "$RUNNER_TEMP/ci-source/cleanup-source.py"
             python3 "$RUNNER_TEMP/ci-source/cleanup-source.py" --cleanup-containers
           fi
           complete=false
@@ -2538,7 +2538,7 @@ jobs:
         run: |
           sha="$(cat "$RUNNER_TEMP/ci-source/source.sha")"
           test "$sha" = "$GITHUB_SHA"
-          git show "$sha:tools/ci_source_archive.py" > "$RUNNER_TEMP/ci-source/repair-source.py"
+          git show "$sha:tools/ci/ci_source_archive.py" > "$RUNNER_TEMP/ci-source/repair-source.py"
           if timeout --kill-after=15s 120s python3 "$RUNNER_TEMP/ci-source/repair-source.py"; then
             echo "complete=true" >> "$GITHUB_OUTPUT"
           else
@@ -2653,7 +2653,7 @@ jobs:
           fi
           git index-pack --stdin < "$RUNNER_TEMP/ci-source/source.pack"
           if [ "$RUNNER_ENVIRONMENT" = self-hosted ]; then
-            git show "$sha:tools/ci_source_archive.py" > "$RUNNER_TEMP/ci-source/cleanup-source.py"
+            git show "$sha:tools/ci/ci_source_archive.py" > "$RUNNER_TEMP/ci-source/cleanup-source.py"
             python3 "$RUNNER_TEMP/ci-source/cleanup-source.py" --cleanup-containers
           fi
           complete=false
@@ -2671,7 +2671,7 @@ jobs:
         run: |
           sha="$(cat "$RUNNER_TEMP/ci-source/source.sha")"
           test "$sha" = "$GITHUB_SHA"
-          git show "$sha:tools/ci_source_archive.py" > "$RUNNER_TEMP/ci-source/repair-source.py"
+          git show "$sha:tools/ci/ci_source_archive.py" > "$RUNNER_TEMP/ci-source/repair-source.py"
           if timeout --kill-after=15s 120s python3 "$RUNNER_TEMP/ci-source/repair-source.py"; then
             echo "complete=true" >> "$GITHUB_OUTPUT"
           else
@@ -2777,7 +2777,7 @@ jobs:
           fi
           git index-pack --stdin < "$RUNNER_TEMP/ci-source/source.pack"
           if [ "$RUNNER_ENVIRONMENT" = self-hosted ]; then
-            git show "$sha:tools/ci_source_archive.py" > "$RUNNER_TEMP/ci-source/cleanup-source.py"
+            git show "$sha:tools/ci/ci_source_archive.py" > "$RUNNER_TEMP/ci-source/cleanup-source.py"
             python3 "$RUNNER_TEMP/ci-source/cleanup-source.py" --cleanup-containers
           fi
           complete=false
@@ -2795,7 +2795,7 @@ jobs:
         run: |
           sha="$(cat "$RUNNER_TEMP/ci-source/source.sha")"
           test "$sha" = "$GITHUB_SHA"
-          git show "$sha:tools/ci_source_archive.py" > "$RUNNER_TEMP/ci-source/repair-source.py"
+          git show "$sha:tools/ci/ci_source_archive.py" > "$RUNNER_TEMP/ci-source/repair-source.py"
           if timeout --kill-after=15s 120s python3 "$RUNNER_TEMP/ci-source/repair-source.py"; then
             echo "complete=true" >> "$GITHUB_OUTPUT"
           else
@@ -2912,7 +2912,7 @@ jobs:
           fi
           git index-pack --stdin < "$RUNNER_TEMP/ci-source/source.pack"
           if [ "$RUNNER_ENVIRONMENT" = self-hosted ]; then
-            git show "$sha:tools/ci_source_archive.py" > "$RUNNER_TEMP/ci-source/cleanup-source.py"
+            git show "$sha:tools/ci/ci_source_archive.py" > "$RUNNER_TEMP/ci-source/cleanup-source.py"
             python3 "$RUNNER_TEMP/ci-source/cleanup-source.py" --cleanup-containers
           fi
           complete=false
@@ -2930,7 +2930,7 @@ jobs:
         run: |
           sha="$(cat "$RUNNER_TEMP/ci-source/source.sha")"
           test "$sha" = "$GITHUB_SHA"
-          git show "$sha:tools/ci_source_archive.py" > "$RUNNER_TEMP/ci-source/repair-source.py"
+          git show "$sha:tools/ci/ci_source_archive.py" > "$RUNNER_TEMP/ci-source/repair-source.py"
           if timeout --kill-after=15s 120s python3 "$RUNNER_TEMP/ci-source/repair-source.py"; then
             echo "complete=true" >> "$GITHUB_OUTPUT"
           else
@@ -3057,7 +3057,7 @@ jobs:
           fi
           git index-pack --stdin < "$RUNNER_TEMP/ci-source/source.pack"
           if [ "$RUNNER_ENVIRONMENT" = self-hosted ]; then
-            git show "$sha:tools/ci_source_archive.py" > "$RUNNER_TEMP/ci-source/cleanup-source.py"
+            git show "$sha:tools/ci/ci_source_archive.py" > "$RUNNER_TEMP/ci-source/cleanup-source.py"
             python3 "$RUNNER_TEMP/ci-source/cleanup-source.py" --cleanup-containers
           fi
           complete=false
@@ -3075,7 +3075,7 @@ jobs:
         run: |
           sha="$(cat "$RUNNER_TEMP/ci-source/source.sha")"
           test "$sha" = "$GITHUB_SHA"
-          git show "$sha:tools/ci_source_archive.py" > "$RUNNER_TEMP/ci-source/repair-source.py"
+          git show "$sha:tools/ci/ci_source_archive.py" > "$RUNNER_TEMP/ci-source/repair-source.py"
           if timeout --kill-after=15s 120s python3 "$RUNNER_TEMP/ci-source/repair-source.py"; then
             echo "complete=true" >> "$GITHUB_OUTPUT"
           else

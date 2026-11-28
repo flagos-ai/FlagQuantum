@@ -266,7 +266,7 @@ Planned commands include:
     python -m pytest -q tests/qec/test_matching_graph.py
     python -m pytest -q tests/qec/test_pymatching_graph.py tests/qec/test_adapters_pymatching.py tests/unit/test_qec_installed_profiles.py
     python examples/qec/check_matrix_matching.py
-    python tools/check_dependency_policy.py
+    python tools/architecture/check_dependency_policy.py
 
 Minimum Ruff0.15, Black24.1 and strict Mypy2/Python3.12 check new production and
 new test code using existing environments. Owner/architecture/language/hygiene/

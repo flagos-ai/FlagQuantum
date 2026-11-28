@@ -202,7 +202,7 @@ python -m pytest -q \
   tests/test_dynamic_circuit.py
 python -m examples.qec.compiled_measurement_sampler
 python tools/architecture/check_architecture.py
-python tools/check_dependency_policy.py
+python tools/architecture/check_dependency_policy.py
 python tools/docs/check_docs_links.py
 python tools/docs/docs_source_of_truth.py --check
 python tools/release/check_qec_installed_profiles.py --dist-dir dist --report-dir /tmp/qec-installed-reports

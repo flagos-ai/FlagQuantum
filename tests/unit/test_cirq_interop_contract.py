@@ -4,7 +4,7 @@ from pathlib import Path
 
 import pytest
 
-from tools.check_cirq_interop_contract import contract_errors, load_toml
+from tools.validation.check_cirq_interop_contract import contract_errors, load_toml
 
 pytestmark = pytest.mark.unit
 ROOT = Path(__file__).resolve().parents[2]

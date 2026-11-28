@@ -102,7 +102,7 @@ Run before submitting:
 
 ```bash
 python tools/architecture/check_architecture.py
-python tools/check_dependency_policy.py
+python tools/architecture/check_dependency_policy.py
 python tools/architecture/check_repository_hygiene.py
 python tools/docs/check_docs_links.py
 pre-commit run --all-files

@@ -256,7 +256,7 @@ revision. Reproduce the native boundary check without installing upstream:
 
 ```bash
 python -m pytest tests/integration/test_native_fermion_isolation.py tests/integration/test_openfermion_interop.py tests/unit/test_openfermion_native_boundary.py -q
-python tools/check_dependency_policy.py
+python tools/architecture/check_dependency_policy.py
 python -m examples.algorithms.fermion_hubbard
 python -m examples.algorithms.fermion_orbital_rotation
 ```

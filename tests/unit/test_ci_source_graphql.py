@@ -11,7 +11,7 @@ from threading import Barrier
 
 import pytest
 
-from tools import ci_source_archive as source
+from tools.ci import ci_source_archive as source
 
 pytestmark = pytest.mark.unit
 
@@ -382,7 +382,7 @@ def test_workflow_bootstrap_checks_graphql_bytes_before_execution(
         assert payload["variables"] == {
             "owner": "owner",
             "name": "repo",
-            "expression": "a" * 40 + ":tools/ci_source_archive.py",
+            "expression": "a" * 40 + ":tools/ci/ci_source_archive.py",
         }
         data = (
             {"errors": [{"type": "FORBIDDEN"}]}

@@ -12,7 +12,7 @@ import yaml
 from setuptools.dist import Distribution
 from torch.utils.cpp_extension import BuildExtension
 
-from tools.check_dependency_policy import load_toml
+from tools.architecture.check_dependency_policy import load_toml
 
 pytestmark = pytest.mark.unit
 
@@ -145,7 +145,8 @@ def test_pull_request_ci_builds_native_release_wheels() -> None:
         for step in job["steps"]
     )
     assert any(
-        step.get("run") == "python tools/verify_distribution_artifacts.py wheelhouse"
+        step.get("run")
+        == "python tools/release/verify_distribution_artifacts.py wheelhouse"
         for step in job["steps"]
     )
 

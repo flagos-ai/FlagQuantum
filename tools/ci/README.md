@@ -31,3 +31,11 @@ python tools/validation/validate_flagos_reference_evidence.py artifacts/flagos_c
 ```
 
 Both commands validate existing data without measuring hardware or submitting jobs.
+
+The remaining root-tool implementations have moved to their owners. The source bootstrap remains a standalone standard-library program. Pre-checkout downloads and incremental packs include the complete root/tools/ci ancestor chain even when the ci subtree is unchanged versus the pack base.
+
+```sh
+python -I tools/ci/ci_source_archive.py --help
+```
+
+See the [root-tool Integration declaration](../../docs/development/migration/root-tool-ownership.md). Incoming #1084 semantic changes remain separately unqualified.

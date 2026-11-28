@@ -9,7 +9,7 @@ import pytest
 import yaml
 from packaging.requirements import Requirement
 
-from tools.check_dependency_policy import (
+from tools.architecture.check_dependency_policy import (
     development_floor_pins,
     load_toml,
     policy_errors,
@@ -147,7 +147,7 @@ assert not loaded, loaded
 def _sandbox(monkeypatch: pytest.MonkeyPatch, tmp_path: Path, files: dict[str, str]):
     """Point the scans at a written-out tree instead of the repository."""
 
-    from tools import check_dependency_policy as gate
+    from tools.architecture import check_dependency_policy as gate
 
     for name, text in files.items():
         path = tmp_path / name
@@ -176,7 +176,10 @@ def test_collected_modules_guard_every_optional_reference() -> None:
 def test_the_reference_scan_covers_every_collected_tree() -> None:
     """A scan that silently reads nothing must not report success."""
 
-    from tools.check_dependency_policy import COLLECTION_TREES, python_files
+    from tools.architecture.check_dependency_policy import (
+        COLLECTION_TREES,
+        python_files,
+    )
 
     scanned = {
         path.relative_to(ROOT).parts[0] for path in python_files(COLLECTION_TREES)

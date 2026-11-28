@@ -10,6 +10,7 @@ try:
 except ModuleNotFoundError:  # pragma: no cover - Python 3.10 compatibility
     import tomli as tomllib
 
+from tools.architecture.check_dependency_policy import policy_errors
 from tools.architecture.check_repository_hygiene import (
     DEFAULT_MAX_FILE_BYTES,
     DEFAULT_MAX_RESULT_BYTES,
@@ -21,10 +22,9 @@ from tools.architecture.check_repository_hygiene import (
     repository_metrics,
     violations,
 )
-from tools.check_dependency_policy import policy_errors
 from tools.docs.fetch_example_assets import verify_asset
+from tools.release.verify_distribution_artifacts import _forbidden
 from tools.validation.check_import_time import sample_imports
-from tools.verify_distribution_artifacts import _forbidden
 
 pytestmark = pytest.mark.unit
 ROOT = Path(__file__).resolve().parents[2]

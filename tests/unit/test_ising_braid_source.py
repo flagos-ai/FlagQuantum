@@ -342,7 +342,7 @@ def test_a_duck_typed_source_does_not_gain_native_frontend_authority() -> None:
 
 
 def test_existing_internal_contract_reader_requires_both_approved_profiles() -> None:
-    from tools.check_multi_level_ir_contract import contract_errors
+    from tools.validation.check_multi_level_ir_contract import contract_errors
 
     contract_path = (
         Path(__file__).parents[2]

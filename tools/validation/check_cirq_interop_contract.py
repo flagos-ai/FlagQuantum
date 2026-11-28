@@ -3,6 +3,13 @@
 
 from __future__ import annotations
 
+import sys as _entry_sys
+from pathlib import Path as _EntryPath
+
+if __package__ in (None, ""):
+    _entry_sys.path.insert(0, str(_EntryPath(__file__).resolve().parents[2]))
+
+
 import argparse
 import ast
 import importlib
@@ -18,7 +25,7 @@ from flagquantum.core.ir import IR_VERSION
 from flagquantum.core.operators.schema import OPERATOR_SCHEMAS
 from flagquantum.ecosystem.cirq.conversion import _CIRQ_SYMBOL_TO_FLAGQUANTUM
 
-ROOT = Path(__file__).resolve().parents[1]
+ROOT = Path(__file__).resolve().parents[2]
 CONTRACT = ROOT / "contracts" / "cirq-interop-contract.toml"
 POLICY = ROOT / "config" / "dependency-policy.toml"
 CONVERSION = ROOT / "flagquantum/ecosystem/cirq/conversion.py"

@@ -180,7 +180,7 @@ python -m pytest -q \
   tests/test_algorithm_examples.py::test_examples_readme_names_every_example_that_does_not_use_the_root_alias
 python -m examples.local.dynamic_final_outputs
 python tools/architecture/check_architecture.py
-python tools/check_dependency_policy.py
+python tools/architecture/check_dependency_policy.py
 python tools/docs/check_docs_links.py
 python tools/docs/docs_source_of_truth.py --check
 ```

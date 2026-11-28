@@ -193,7 +193,7 @@ From the repository root:
 ```bash
 python -m pytest tests/integration/test_cpu_vertical_slice.py tests/team/runtime -q
 python tools/architecture/check_architecture.py
-python tools/check_dependency_policy.py
+python tools/architecture/check_dependency_policy.py
 ```
 
 Preserve the accepted plan, reject unsupported requirements before numerical

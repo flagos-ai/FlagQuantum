@@ -101,9 +101,9 @@ def test_source_artifact_restores_the_exact_tree_and_rejects_another_commit(
     git("config", "user.email", "liuwei.chem.phys@gmail.com")
     (source / "tracked.txt").write_text("parent\n")
     (source / "unchanged.txt").write_text("cached baseline\n")
-    (source / "tools").mkdir()
-    helper = ROOT / "tools/ci_source_archive.py"
-    (source / "tools/ci_source_archive.py").write_bytes(helper.read_bytes())
+    (source / "tools" / "ci").mkdir(parents=True)
+    helper = ROOT / "tools/ci/ci_source_archive.py"
+    (source / "tools/ci/ci_source_archive.py").write_bytes(helper.read_bytes())
     git("add", ".")
     git("commit", "-m", "parent")
     parent = git("rev-parse", "HEAD")
@@ -165,7 +165,7 @@ def test_source_artifact_restores_the_exact_tree_and_rejects_another_commit(
         shell(probe, target)
         assert output.read_text().splitlines()[-1] == "complete=false"
         assert (
-            git("show", f"{sha}:tools/ci_source_archive.py", cwd=target)
+            git("show", f"{sha}:tools/ci/ci_source_archive.py", cwd=target)
             == helper.read_text().strip()
         )
     (temporary / "ci-source/source.pack").write_bytes(full_pack)
@@ -258,7 +258,7 @@ def test_partial_source_caches_get_bounded_verified_api_repair_before_full_trans
             repair["if"]
             == "runner.environment == 'self-hosted' && steps.source-cache.outputs.complete != 'true'"
         )
-        assert 'git show "$sha:tools/ci_source_archive.py"' in repair["run"]
+        assert 'git show "$sha:tools/ci/ci_source_archive.py"' in repair["run"]
         assert 'test "$sha" = "$GITHUB_SHA"' in repair["run"]
         assert "timeout --kill-after=15s 120s python3" in repair["run"]
         assert 'echo "complete=true"' in repair["run"]
@@ -329,8 +329,8 @@ def test_dependency_source_repair_verifies_git_transport_before_api_fallback(
     git("init")
     git("config", "user.name", "FlagQuantum")
     git("config", "user.email", "liuwei.chem.phys@gmail.com")
-    (source / "tools").mkdir()
-    (source / "tools/ci_source_archive.py").write_text(
+    (source / "tools" / "ci").mkdir(parents=True)
+    (source / "tools/ci/ci_source_archive.py").write_text(
         "from pathlib import Path\n"
         f"Path({str(tmp_path / 'api-called')!r}).touch()\n"
         f"raise SystemExit({0 if api_success else 1})\n"
@@ -403,7 +403,7 @@ def test_source_cache_stops_previous_runner_writers_before_checkout() -> None:
             if probe is None:
                 continue
             checked += 1
-            assert 'git show "$sha:tools/ci_source_archive.py"' in probe
+            assert 'git show "$sha:tools/ci/ci_source_archive.py"' in probe
             assert "--cleanup-containers" in probe
             assert probe.index("--cleanup-containers") < probe.index("complete=false")
         assert checked
@@ -455,9 +455,9 @@ def test_source_pack_uses_the_previous_pr_tree_with_verified_full_fallback(
     git("init", "-b", "baseline")
     git("config", "user.name", "FlagQuantum")
     git("config", "user.email", "liuwei.chem.phys@gmail.com")
-    (source / "tools").mkdir()
-    helper = (ROOT / "tools/ci_source_archive.py").read_bytes()
-    (source / "tools/ci_source_archive.py").write_bytes(helper)
+    (source / "tools" / "ci").mkdir(parents=True)
+    helper = (ROOT / "tools/ci/ci_source_archive.py").read_bytes()
+    (source / "tools/ci/ci_source_archive.py").write_bytes(helper)
     git("add", ".")
     git("commit", "-m", "baseline")
     baseline = git("rev-parse", "HEAD")
@@ -511,7 +511,7 @@ def test_source_pack_uses_the_previous_pr_tree_with_verified_full_fallback(
         )
         assert git("rev-parse", sha, cwd=target) == sha
         assert (
-            git("show", f"{sha}:tools/ci_source_archive.py", cwd=target)
+            git("show", f"{sha}:tools/ci/ci_source_archive.py", cwd=target)
             == helper.decode().strip()
         )
         assert git("show", f"{sha}:current.txt", cwd=target) == "current PR tree"

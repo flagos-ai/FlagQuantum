@@ -154,7 +154,7 @@ python -m pytest tests/team/compiler/test_construction_multiplication.py \
   tests/unit/test_algorithms_arithmetic.py -q
 python tools/architecture/check_qubit_vocabulary.py
 python tools/architecture/check_architecture.py
-python tools/check_dependency_policy.py
+python tools/architecture/check_dependency_policy.py
 python tools/architecture/public_api_snapshot.py
 ```
 

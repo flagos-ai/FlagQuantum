@@ -612,3 +612,14 @@ The [Simulation direct-relay retirement](simulation-direct-relay-retirement.md) 
 | Group | Previous path | Authoritative path | Scope |
 | --- | --- | --- | --- |
 | dependency-policy-location | `dependency-policy.toml` | `config/dependency-policy.toml` | Unchanged data, actual defaults/cache/filter updated, root file removed; frozen contracts, diagnostics, historical records and explicit custom paths preserved. |
+
+## Remaining root-tool ownership
+
+| Group | Previous path | Authoritative path | Scope |
+| --- | --- | --- | --- |
+| root-tool-ownership | `tools/ci_source_archive.py` | `tools/ci/ci_source_archive.py` | Actual implementation moved, all operational callers synchronized, old path removed; frozen source identifiers are metadata only. |
+| root-tool-ownership | `tools/check_dependency_policy.py` | `tools/architecture/check_dependency_policy.py` | Actual implementation moved, all operational callers synchronized, old path removed; frozen source identifiers are metadata only. |
+| root-tool-ownership | `tools/check_cirq_interop_contract.py` | `tools/validation/check_cirq_interop_contract.py` | Actual implementation moved, all operational callers synchronized, old path removed; frozen source identifiers are metadata only. |
+| root-tool-ownership | `tools/check_multi_level_ir_contract.py` | `tools/validation/check_multi_level_ir_contract.py` | Actual implementation moved, all operational callers synchronized, old path removed; frozen source identifiers are metadata only. |
+| root-tool-ownership | `tools/verify_distribution_artifacts.py` | `tools/release/verify_distribution_artifacts.py` | Actual implementation moved, all operational callers synchronized, old path removed; frozen source identifiers are metadata only. |
+| root-tool-ownership | `tools/setup_flagquantum_dev_env.sh` | `tools/development/setup_flagquantum_dev_env.sh` | Actual implementation moved, all operational callers synchronized, old path removed; frozen source identifiers are metadata only. |

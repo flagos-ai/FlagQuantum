@@ -53,7 +53,7 @@ jobs:
       - name: Build and inspect the wheel
         run: |
           python -m build --wheel --no-isolation
-          python tools/verify_distribution_artifacts.py dist
+          python tools/release/verify_distribution_artifacts.py dist
       - name: Install and smoke-test the wheel in a clean runtime
         shell: bash
         run: |

@@ -131,7 +131,7 @@ python -m pytest tests/team/compiler/test_construction_addition.py \
   tests/team/compiler/test_construction_dependencies.py \
   tests/integration/test_construction_execution_boundary.py -q
 python tools/architecture/check_architecture.py
-python tools/check_dependency_policy.py
+python tools/architecture/check_dependency_policy.py
 python tools/architecture/public_api_snapshot.py
 ```
 

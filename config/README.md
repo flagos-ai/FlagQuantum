@@ -14,7 +14,7 @@ From the repository root, use:
 conda env create -f config/environments/environment.yml
 python tools/architecture/check_architecture.py
 python tools/architecture/check_team_scope.py --validate
-python tools/check_dependency_policy.py
+python tools/architecture/check_dependency_policy.py
 python tools/validation/check_capability_maturity.py
 python tools/release/check_evidence_revisions.py
 ```

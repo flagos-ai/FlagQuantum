@@ -50,7 +50,7 @@ from pathlib import Path
 
 import pytest
 
-from tools.check_dependency_policy import load_toml
+from tools.architecture.check_dependency_policy import load_toml
 
 pytestmark = pytest.mark.unit
 

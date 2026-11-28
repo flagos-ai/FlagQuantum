@@ -8,7 +8,7 @@ from datetime import datetime, timezone
 
 import pytest
 
-from tools.ci_source_archive import _verified_commit
+from tools.ci.ci_source_archive import _verified_commit
 
 pytestmark = pytest.mark.unit
 

@@ -1,6 +1,6 @@
 # Remaining root-tool ownership
 
-Integration declaration, committed before implementation. Owner: Integration.
+Integration declaration was committed before implementation. Owner: Integration.
 
 Move all six remaining root-tool implementations to their real owners in one
 complete closure. Remove every predecessor; do not add an import/executable
@@ -37,7 +37,7 @@ All 4,691 changed incoming blobs were verified. Current full import closure
 covers 5,572 Python ASTs, including an alias-only source-network test missed by
 filename-only searches; changed incoming import closure covers 3,374 ASTs.
 The subsequent reviewed pin `8e51d3b52c4482589ce0425d97a9cdfeed54e7a3` adds ten
-linear commits, 23 changed files and 18 Python files. All new bytes/ASTs/texts
+linear commits, 23 changed files and 17 Python files. All new bytes/ASTs/texts
 were checked; all six inputs remain unchanged, targets absent and no new
 root-tool references appear. This is scoped independence review, not merged
 program/type/native or G0 qualification.
@@ -122,3 +122,6 @@ validation/release artifact organization remain explicit unfinished root/G0
 closures. The connected #1084 families, native relocation and independently
 installed developer distributions also remain unfinished. Rust, merging, force
 pushing and runner administration are not part of this work package.
+
+Implementation is present. Local and own exact-head CI qualification remain
+separate requirements; no completed qualification is claimed by this declaration.

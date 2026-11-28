@@ -17,3 +17,11 @@ change its owning implementation, then run from the repository root:
 python -m pytest tests/unit/test_density_matrix_output_contract.py -q
 python tools/architecture/check_architecture.py
 ```
+
+The remaining root-tool implementations have moved to their owners. Cirq and multi-level IR validators remain substantive implementations. The frozen IR reader identifier is resolved only by the existing explicit source-relocation metadata.
+
+```sh
+python tools/validation/check_multi_level_ir_contract.py
+```
+
+See the [root-tool Integration declaration](../../docs/development/migration/root-tool-ownership.md). Incoming #1084 semantic changes remain separately unqualified.

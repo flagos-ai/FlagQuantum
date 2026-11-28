@@ -12,7 +12,7 @@ from urllib.request import Request
 
 import pytest
 
-from tools.ci_source_archive import _Commit, _Redirect, _restore, _verified_commit
+from tools.ci.ci_source_archive import _Commit, _Redirect, _restore, _verified_commit
 
 pytestmark = pytest.mark.unit
 
@@ -187,7 +187,7 @@ def test_api_objects_restore_exact_source_and_reuse_cache(
     import base64
     import re
 
-    from tools.ci_source_archive import _checkout, _materialize_api
+    from tools.ci.ci_source_archive import _checkout, _materialize_api
 
     directory = source.archive.parent / "source"
     calls = []
@@ -220,7 +220,7 @@ def test_api_objects_restore_exact_source_and_reuse_cache(
     if batch_mode != "rest":
         from http.client import IncompleteRead
 
-        from tools.ci_source_archive import _GraphQLSource
+        from tools.ci.ci_source_archive import _GraphQLSource
 
         def source_query(self: _GraphQLSource, fields: str) -> dict[str, object]:
             if batch_mode == "truncated":
@@ -286,7 +286,7 @@ def test_api_objects_restore_exact_source_and_reuse_cache(
 
 
 def test_api_truncated_tree_requires_archive(tmp_path: Path, source: _Source) -> None:
-    from tools.ci_source_archive import _materialize_api
+    from tools.ci.ci_source_archive import _materialize_api
 
     assert not _materialize_api(
         tmp_path,
@@ -312,7 +312,7 @@ def test_cleanup_only_removes_previous_container_for_this_runner_and_workspace(
 ):
     import json
 
-    from tools import ci_source_archive as archive
+    from tools.ci import ci_source_archive as archive
 
     monkeypatch.setenv("RUNNER_ENVIRONMENT", "self-hosted")
     monkeypatch.setenv("RUNNER_NAME", "cpu01")
@@ -399,7 +399,7 @@ def test_cleanup_only_removes_previous_container_for_this_runner_and_workspace(
 
 
 def test_cleanup_does_not_access_docker_on_hosted_or_non_docker_runners(monkeypatch):
-    from tools import ci_source_archive as archive
+    from tools.ci import ci_source_archive as archive
 
     monkeypatch.setenv("RUNNER_ENVIRONMENT", "github-hosted")
     monkeypatch.setattr(
@@ -418,7 +418,7 @@ def test_large_source_addition_uses_bounded_parallel_verified_objects(
     import base64
     from threading import Barrier, Lock
 
-    from tools.ci_source_archive import _checkout, _materialize_api
+    from tools.ci.ci_source_archive import _checkout, _materialize_api
 
     monkeypatch.setenv("GIT_CONFIG_NOSYSTEM", "1")
     monkeypatch.setenv("GIT_CONFIG_GLOBAL", "/dev/null")
@@ -491,7 +491,7 @@ def test_partial_clone_cache_repair_never_uses_implicit_git_fetch(
     import base64
     import shlex
 
-    from tools.ci_source_archive import _checkout, _materialize_api
+    from tools.ci.ci_source_archive import _checkout, _materialize_api
 
     directory = source.archive.parent / "source"
     _git(directory, "config", "uploadpack.allowFilter", "true")
@@ -521,7 +521,7 @@ def test_partial_clone_cache_repair_never_uses_implicit_git_fetch(
     assert any(line.startswith(b"?") for line in missing.splitlines())
     assert not marker.exists()
     if not lazy_guard:
-        from tools import ci_source_archive as archive
+        from tools.ci import ci_source_archive as archive
 
         monkeypatch.delenv("GIT_NO_LAZY_FETCH", raising=False)
 
@@ -566,7 +566,7 @@ def test_partial_clone_cache_repair_never_uses_implicit_git_fetch(
 def test_nullable_classification_does_not_admit_malformed_blob_metadata(
     monkeypatch: pytest.MonkeyPatch, metadata: dict[str, object]
 ) -> None:
-    from tools.ci_source_archive import _GraphQLSource
+    from tools.ci.ci_source_archive import _GraphQLSource
 
     sha = "a" * 40
 

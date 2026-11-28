@@ -57,7 +57,7 @@ from typing import NamedTuple
 
 import pytest
 
-from tools.check_dependency_policy import distribution_name, load_toml
+from tools.architecture.check_dependency_policy import distribution_name, load_toml
 from tools.ci.ci_tier import CI_TIERS
 
 pytestmark = pytest.mark.unit

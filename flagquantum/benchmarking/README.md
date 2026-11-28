@@ -45,7 +45,7 @@ python -m pytest tests/unit/test_benchmark_runner_contract.py \
   tests/benchmark_contract/test_statevector_weak_scaling_report.py \
   tests/benchmark_contract/test_statevector_training_scaling_report.py -q
 python tools/architecture/check_architecture.py
-python tools/check_dependency_policy.py
+python tools/architecture/check_dependency_policy.py
 ```
 
 Keep workload, seed, precision, warmup, sample count, environment, comparison

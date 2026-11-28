@@ -8,7 +8,7 @@ import pytest
 import yaml
 
 from tools.release.artifact_manifest import main as manifest_main
-from tools.verify_distribution_artifacts import (
+from tools.release.verify_distribution_artifacts import (
     ALLOWED_WHEEL_PACKAGE_ROOTS,
     REQUIRED_MEMBER_SUFFIXES,
     _allowed_wheel_member,

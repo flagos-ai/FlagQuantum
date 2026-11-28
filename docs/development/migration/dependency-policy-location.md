@@ -50,8 +50,8 @@ No new contract, registry or generalized path resolver is required.
 From the repository root:
 
 ```bash
-python tools/check_dependency_policy.py
-python tools/check_dependency_policy.py --print-floor
+python tools/architecture/check_dependency_policy.py
+python tools/architecture/check_dependency_policy.py --print-floor
 ```
 
 The first command validates the same declared extras and source import rules

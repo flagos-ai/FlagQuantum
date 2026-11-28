@@ -17,3 +17,11 @@ change its owning implementation, then run from the repository root:
 python -m pytest tests/unit/test_source_relocations.py -q
 python tools/architecture/check_architecture.py
 ```
+
+The remaining root-tool implementations have moved to their owners. The distribution verifier remains standalone and checks the same native, metadata, resource and release-matrix boundaries.
+
+```sh
+python -I tools/release/verify_distribution_artifacts.py --help
+```
+
+See the [root-tool Integration declaration](../../docs/development/migration/root-tool-ownership.md). Incoming #1084 semantic changes remain separately unqualified.

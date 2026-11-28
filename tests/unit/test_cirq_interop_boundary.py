@@ -48,7 +48,10 @@ def test_ci_runs_both_cirq_versions_and_the_cirq_suite() -> None:
     assert 'OPTIONAL_VERSIONS: "1.6.1 1.7.0"' in workflow
     assert "for version in ${OPTIONAL_VERSIONS}" in workflow
     assert '"cirq-core==${version}"' in workflow
-    assert "python tools/check_cirq_interop_contract.py --verify-sdk" in workflow
+    assert (
+        "python tools/validation/check_cirq_interop_contract.py --verify-sdk"
+        in workflow
+    )
     assert "tests/test_cirq_interop.py" in workflow
     assert "tests/test_cirq_interop_conformance.py" in workflow
     assert "-m cirq -q" in workflow

@@ -45,7 +45,7 @@ users need none of these source-build steps.
 
 Every optional dependency
 group in `pyproject.toml` must have an exact, classified entry in that matrix;
-`python tools/check_dependency_policy.py` rejects missing groups, requirement
+`python tools/architecture/check_dependency_policy.py` rejects missing groups, requirement
 drift, unclassified extras and aggregate extras that no longer equal their
 components.
 
@@ -83,7 +83,7 @@ installs `.[dev]` and PyTorch only, then collects `tests` and runs `tools`, so a
 module-level `import numpy` — or `import stim`, `import qiskit`, `import jax` —
 is a collection error on that lane and a passing suite on every developer
 machine that happens to have the extra installed. That asymmetry is the defect
-two suites shipped once each. `tools/check_dependency_policy.py` now reads the
+two suites shipped once each. `tools/architecture/check_dependency_policy.py` now reads the
 `tests` and `tools` sources and reports any reference to a
 `core_forbidden_imports` root that is not inside a `try` that absorbs the import
 error, a `pytest.importorskip` of that root, or a skip on a `find_spec` of that
@@ -134,7 +134,7 @@ aspirational compatibility.
 The `dev` extra is bounded like the runtime extras, because it is the toolchain
 this repository installs to check itself: an unbounded entry lets an upstream
 release change that toolchain and break `main` with no commit and no diff.
-`python tools/check_dependency_policy.py` rejects an unbounded development
+`python tools/architecture/check_dependency_policy.py` rejects an unbounded development
 requirement, so the bound is a checked property rather than a convention. The
 static gates record their oldest and newest verified release in `[tested]`, and
 the `dependency-bounds` lane installs exactly that floor and re-runs `ruff`,
