@@ -43,9 +43,17 @@ class WalkContext:
     positive_block_pair: ExactPair | None = None
     positive_reflection_pair: ExactPair | None = None
     source_signature: Signature | None = None
+    positive_source_block_pair: ExactPair | None = None
 
-    def pair(self, *, controlled: bool = False) -> ExactPair:
-        """Compose the shared source root without numerical execution."""
+    def pair(
+        self, *, controlled: bool = False, source_control_recipes: bool = False
+    ) -> ExactPair:
+        """Compose owned calls, optionally selecting literal source control recipes.
+
+        Default pairs retain the stored graph's reverse ownership. The source
+        option preserves a separately supplied constructor specialization;
+        it makes no mathematical inverse claim for an upstream defect.
+        """
         signature = self.signature
         block, reflection = self.block_pair, self.reflection_pair
         if controlled:
@@ -55,6 +63,11 @@ class WalkContext:
             ):
                 raise SerializationError("Missing exact positive walk dependencies")
             block, reflection = self.positive_block_pair, self.positive_reflection_pair
+            if source_control_recipes and self.positive_source_block_pair is not None:
+                # A source constructor may change specialization when forming
+                # its inverse. Keep that literal recipe distinct from the
+                # stored forward graph's exact mathematical inverse.
+                block = self.positive_source_block_pair
             signature = quantum_control_signature(
                 signature, ((quantum_bit_type(), ()),)
             )
@@ -115,7 +128,7 @@ def qubitization_walk_factories(
         if child not in roles:
             raise SerializationError("Missing exact positive walk context")
         context, inverse = roles[child]
-        pair = context.pair(controlled=True)
+        pair = context.pair(controlled=True, source_control_recipes=True)
         return (pair[1], pair[0]) if inverse else pair
 
     def positive(child: FunctionRecord) -> tuple[ProgramRecord, ControlAdder]:

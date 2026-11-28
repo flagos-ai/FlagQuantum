@@ -37,8 +37,8 @@ def capture_thc_walk_context(source: object) -> WalkContext:
     Opaque rotation, comparator and erasure leaves refuse physical binding.
     No Givens network, corrected sentinel or unitary-bank extension is inferred.
     Positive inverse ownership reverses the stored specialized forward graph.
-    The source's direct Controlled.adjoint constructor changes specialization
-    and is a distinct, unclaimed path.
+    The source's direct Controlled.adjoint constructor changes specialization;
+    its separate literal block pair is retained without an inverse proof.
     """
     from qualtran import CtrlSpec
     from qualtran.bloqs.block_encoding.lcu_block_encoding import SelectBlockEncoding
@@ -191,11 +191,31 @@ def capture_thc_walk_context(source: object) -> WalkContext:
     positive_block = block.get_ctrl_system(CtrlSpec())[0]
     positive_reflection = reflection.get_ctrl_system(CtrlSpec())[0]
     signature = Signature(_signature(foreign.signature))
+    positive_blocks = blocks(positive_block)
+    generic_select_inverse = _selection(
+        "thc_generic_select_inverse",
+        None,
+        {**selection_arguments, "control_val": None},
+        adjoint=True,
+        generic_control=True,
+    )
+    assert isinstance(generic_select_inverse, ProgramRecord)
+    source_inverse_builder = ComponentProgramBuilder(
+        Signature(_signature(positive_block.adjoint().signature))
+    )
+    source_inverse = source_inverse_builder.finalize(
+        source_inverse_builder.call_program(
+            generic_select_inverse,
+            source_inverse_builder.inputs,
+            entry=generic_select_inverse.functions[0].name,
+        )
+    )
     return WalkContext(
         signature,
         blocks(block),
         reflect(reflection),
-        blocks(positive_block),
+        positive_blocks,
         reflect(positive_reflection),
         source_signature=signature,
+        positive_source_block_pair=(positive_blocks[0], source_inverse),
     )

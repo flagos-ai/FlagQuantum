@@ -9,8 +9,10 @@ from collections.abc import Mapping
 import sympy
 
 from ...core.ir.program import FunctionRecord, ProgramRecord
+from ...core.ir.program.register_types import quantum_bit_type
 from ...core.ir.program.registers import Register
 from ...errors import SerializationError
+from ..registers.component_control import quantum_control_signature
 from ..registers.control.thc_selection_component import thc_selection_program
 from ..registers.layout.thc_signatures import (
     thc_rotation_signature,
@@ -90,6 +92,7 @@ def _selection(
     arguments: Mapping[str, ResolvedArgument],
     *,
     adjoint: bool = False,
+    generic_control: bool = False,
 ) -> FunctionRecord | ProgramRecord:
     required = {"num_mu", "num_spin_orb", "num_bits_theta", "keep_bitsize"}
     if not required <= arguments.keys() or arguments.keys() - (
@@ -108,10 +111,22 @@ def _selection(
         raise SerializationError("THC SELECT control must be zero, one or None")
     assert control is None or isinstance(control, int)
     signature = thc_selection_signature(m, spin, keep, control_value=control)
-    declaration = _ports(name, registers, tuple(signature))
     width = spin // 2
     if m == 0 or width == 0:
-        return declaration
+        if generic_control:
+            signature = quantum_control_signature(
+                signature, ((quantum_bit_type(), ()),)
+            )
+        return _ports(name, registers, tuple(signature))
+    _ports(
+        name,
+        registers,
+        tuple(
+            quantum_control_signature(signature, ((quantum_bit_type(), ()),))
+            if generic_control
+            else signature
+        ),
+    )
     rotation_args = {
         key: arguments[key] for key in ("num_mu", "num_spin_orb", "num_bits_theta")
     }
@@ -144,6 +159,7 @@ def _selection(
             phase2 if isinstance(phase2, ProgramRecord) else ProgramRecord((phase2,)),
         ),
         adjoint=adjoint,
+        generic_control=generic_control,
     )
     return _rename_program(program, name)
 

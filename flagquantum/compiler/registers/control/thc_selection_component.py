@@ -15,6 +15,7 @@ from ....core.ir.program.signatures import Signature
 from ..component_adjoint import adjoint_component_program
 from ..component_builder import BindingCollection, ComponentProgramBuilder
 from ..component_gate_function import bit_gate_function
+from .thc_selection_control import control_thc_selection_program
 
 
 def thc_selection_program(
@@ -26,6 +27,7 @@ def thc_selection_program(
     phases: tuple[ProgramRecord, ProgramRecord],
     *,
     adjoint: bool = False,
+    generic_control: bool = False,
 ) -> ProgramRecord:
     """Compose the complete source root with four explicitly directional leaves.
 
@@ -37,10 +39,13 @@ def thc_selection_program(
     builder = ComponentProgramBuilder(signature, rotations)
     state: dict[str, BindingCollection] = dict(builder.inputs)
     self_adjoint: set[str] = set()
+    swaps: dict[str, ProgramRecord] = {}
+    phase_roles: dict[str, tuple[ProgramRecord, tuple[int, ...]]] = {}
 
     def swap(program: ProgramRecord, control: str, left: str, right: str) -> None:
         entry = builder.import_program(program, entry=program.functions[0].name)
         self_adjoint.add(entry)
+        swaps[entry] = program
         result = builder.call_dict(
             entry,
             {
@@ -71,6 +76,7 @@ def thc_selection_program(
     def phase(program: ProgramRecord, controls: tuple[str, ...]) -> None:
         entry = builder.import_program(program, entry=program.functions[0].name)
         self_adjoint.add(entry)
+        phase_roles[entry] = program, (1,) if len(controls) == 1 else (1, 0)
         result = builder.call_dict(
             entry,
             {
@@ -109,8 +115,6 @@ def thc_selection_program(
     assert isinstance(data, RegisterBinding)
     builder.free(data)
     record = builder.finalize(state)
-    if not adjoint:
-        return record
     mapping = {name: name for name in (*self_adjoint, x.name)}
     mapping.update(
         {rotations[index].name: rotations[index ^ 1].name for index in range(4)}
@@ -121,4 +125,10 @@ def thc_selection_program(
     allocate, release = operations[1].callee, operations[-1].callee
     assert allocate is not None and release is not None
     mapping[allocate], mapping[release] = release, allocate
-    return adjoint_component_program(record, mapping)
+    if adjoint:
+        record = adjoint_component_program(record, mapping)
+    if generic_control:
+        return control_thc_selection_program(
+            record, rotations, swaps, phase_roles, x.name, (allocate, release)
+        )
+    return record

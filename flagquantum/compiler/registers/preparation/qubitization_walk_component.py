@@ -38,8 +38,10 @@ def qubitization_walk_component_pair(
 ) -> tuple[ProgramRecord, ProgramRecord]:
     """Thread named caller-owned words through block then prepared reflection.
 
-    Exact inverse Programs are explicit dependencies. Each dependency owns its
-    clean work and feedback. In controlled mode both pairs already implement
+    Reverse recipes are explicit dependencies. Mathematical execution requires
+    exact inverse proofs from their owners; literal source capture can retain
+    a source constructor defect without claiming that proof. Each dependency
+    owns its clean work and feedback. In controlled mode both pairs implement
     their source-positive specializations; the first child control port is
     mapped to the outer first port, independently of their internal spellings.
     No source metadata, gate equivalence or control decomposition is inferred.
