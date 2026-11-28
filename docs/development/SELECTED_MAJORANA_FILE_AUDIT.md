@@ -185,3 +185,44 @@ pass. The first broad run exposed an absent optional OpenFermion reference in
 an isolated source-factory process. Adding the existing pinned reference path
 resolved that test without changing its code or the source. The complete original SelectedMajoranaFermion test file in the Cirq 1.6.1
 lane executes unchanged.
+
+## Faithful whole-file disposition, November 28
+
+Q-0594 can close under the approved
+[G2 closure rule](G2_FAITHFUL_MIGRATION_CLOSURE_PROPOSAL.md), after complete
+source and direct-dependency verification. Earlier open-parent statements
+record the prior defect rule. Native owners cover converters/defaults, make_on,
+all register properties, accumulator initialization, row-major nth_operation,
+diagram/string identity, literal source direction and shared generic gate
+import. The complete stored and live graph evidence in
+[the constructor audit](RESOLVER_MAJORANA_AUDIT.md) remains binding.
+
+Keep the separate-control accumulator defect, uncontrolled singleton and
+symbolic-extent failures as upstream follow-ups. No clean-work claim is made
+for the failing separate-control layout. Source JSON namespace/uint8 transport
+failures do not invalidate its separately verified executable snapshot path.
+Actual symbolic logical declarations do not imply physical symbolic execution.
+
+Primitive comparison retains every comparable source gate, quantum operand and
+measurement feedback. Source scalar phase has no operand, so artificial native
+phase carriers are not claimed identical to source wires. Controlled matrices
+and admitted atomic rotations retain their explicit numerical comparison
+boundary; no nonexistent atomic source decomposition is invented. Existing
+complex all-history, exact inverse, balanced leases and unchanged Hubbard
+consumer certificates are reused. The new target-position matrix consumer
+independently exercises that same importer behind another unchanged consumer.
+No production algorithm or protected API changes in this disposition batch.
+
+Final batch verification: 611 concentrated cases and 611 independent Cirq 1.6
+cases pass. Three additional complete matrix-callable operator cases pass in
+each lane, covering both directions and every applicable raw history. The two
+unchanged original files report 21 passes and one original expected failure;
+one notebook is deselected and reuses its earlier complete receipt. The
+unchanged integration owners reuse 248 passing current-branch cases. Three
+Python owners/tests pass strict typing, Black and Ruff. Architecture, IR, API,
+required/Cirq contracts, Algorithms scope, English, links and whitespace pass.
+Six actual optional/mandatory missing-reference cases pass; mandatory errors
+retain their original exception. The existing 568 dependency findings are
+unchanged, with none on the new consumer. Source fixtures verify frozen files,
+Qualtran 0.7.0 and the actual Kickmix 0.1 Simulator. Receipt prefix:
+g2-indexed-source-closure. No production execution owner was changed.
