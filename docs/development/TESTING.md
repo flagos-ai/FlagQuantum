@@ -1262,3 +1262,20 @@ network-bound setup retains the fresh environment, complete installed-dependency
 snapshot, strict no-resolver audit, request timeout, eight-minute audit-step limit,
 twenty-minute job budget, Bandit and SBOM validation. No dependency, vulnerability,
 scientific case or failed outcome is filtered out.
+
+## Coverage input transport
+
+Coverage aggregation downloads all original shard databases with host
+`python3 -I tools/ci/ci_coverage_artifacts.py`. The host performs network I/O;
+the locked offline Python environment still runs SQLite checks, coverage combine,
+XML generation and the unchanged coverage policy. The downloader starts at most
+eight requests, retries transient failures at most twice within its deadline,
+and requires the exact run/head/source/index set, API SHA-256 and one safe regular
+ZIP member per shard. It publishes a fresh complete directory atomically and
+refuses partial, expired, duplicate, different-source or corrupted inputs.
+The workflow grants only read-only actions access for that transport step.
+
+Use `python3 -I tools/ci/ci_coverage_artifacts.py --help` to inspect the command
+without downloading data. Run `python -m pytest tests/unit/test_ci_coverage_artifacts.py -q` to exercise concurrency, refusal, retry and credential handling locally.
+The original #1360 aggregation failure remains recorded; a passing test shard is
+not a passing coverage policy or whole-workflow qualification.

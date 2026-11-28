@@ -495,22 +495,15 @@ def test_coverage_shards_are_combined_before_the_policy_is_enforced() -> None:
         str(step.get("run", "")) for step in _steps("ci.yml", "coverage")
     )
     assert "needs.coverage-shard.result" in commands
-    download = next(
-        step
-        for step in _steps("ci.yml", "coverage")
-        if step.get("uses") == "./.github/actions/download-artifact"
-        and "pattern" in step.get("with", {})
-    )
-    assert download["with"]["merge-multiple"] is True
-    assert download["timeout-minutes"] == 2
-    assert download["continue-on-error"] is True
-    retry = next(
-        step for step in source_steps if step.get("id") == "coverage-data-retry"
-    )
-    assert retry["uses"] == download["uses"]
-    assert retry["with"] == download["with"]
-    assert retry["timeout-minutes"] == 3
-    assert not retry.get("continue-on-error", False)
+    download = next(step for step in source_steps if step.get("id") == "coverage-data")
+    assert "python3 -I tools/ci/ci_coverage_artifacts.py" in download["run"]
+    assert '--run-id "$GITHUB_RUN_ID"' in download["run"]
+    assert '--source-sha "$GITHUB_SHA"' in download["run"]
+    assert '--count "$FQ_COVERAGE_SHARDS"' in download["run"]
+    assert download["timeout-minutes"] == 4
+    assert not download.get("continue-on-error", False)
+    assert not any(step.get("id") == "coverage-data-retry" for step in source_steps)
+    assert final["permissions"]["actions"] == "read"
     assert commands.index("integrity_check") < commands.index(
         'coverage combine "$FQ_COVERAGE_INPUTS"'
     )

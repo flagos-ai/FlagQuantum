@@ -81,26 +81,17 @@ def test_coverage_workflow_consumes_only_isolated_download_outputs() -> None:
         index, step = next(
             (i, step) for i, step in enumerate(steps) if step.get("id") == artifact_id
         )
-        assert step["uses"] == "./.github/actions/download-artifact"
         if job == "coverage":
-            retry = next(s for s in steps if s.get("id") == "coverage-data-retry")
-            assert step["timeout-minutes"] == 2
-            assert step["continue-on-error"] is True
-            assert retry["timeout-minutes"] == 3
-            assert not retry.get("continue-on-error", False)
-            assert retry["uses"] == step["uses"]
-            assert retry["with"] == step["with"]
-            assert retry["if"] == (
-                "${{ !cancelled() && steps.coverage-data.outcome == 'failure' }}"
-            )
-            expected_path = (
-                "${{ steps.coverage-data.outcome == 'success' && "
-                "steps.coverage-data.outputs.path || steps.coverage-data-retry.outputs.path }}"
-            )
+            assert step["timeout-minutes"] == 4
+            assert not step.get("continue-on-error", False)
+            assert "python3 -I tools/ci/ci_coverage_artifacts.py" in step["run"]
+            assert "timeout --kill-after=10s 240s" in step["run"]
+            assert not any(s.get("id") == "coverage-data-retry" for s in steps)
         else:
+            assert step["uses"] == "./.github/actions/download-artifact"
             assert step["timeout-minutes"] == 6
             assert not step.get("continue-on-error", False)
-            expected_path = "${{ steps." + artifact_id + ".outputs.path }}"
+        expected_path = "${{ steps." + artifact_id + ".outputs.path }}"
         consumers = [
             step for step in steps[index + 1 :] if environment in step.get("env", {})
         ]

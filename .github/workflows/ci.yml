@@ -2886,6 +2886,7 @@ jobs:
     permissions:
       contents: read
       packages: read
+      actions: read
     env:
       FQ_COVERAGE_SHARDS: ${{ needs.coverage-plan.outputs.count }}
     if: ${{ !cancelled() }}
@@ -2966,24 +2967,21 @@ jobs:
           require-cached: ${{ runner.environment == 'self-hosted' }}
       - name: Verify the locked coverage tool
         run: python -c "from coverage import Coverage; print(Coverage.__module__)"
-      - uses: ./.github/actions/download-artifact
+      - name: Download complete coverage inputs with bounded concurrency
         id: coverage-data
-        timeout-minutes: 2
-        continue-on-error: true
-        with:
-          pattern: coverage-shard-*-${{ github.sha }}
-          merge-multiple: true
-      # A composite timeout exhausts its nested retry too. Retry in a new step.
-      - uses: ./.github/actions/download-artifact
-        id: coverage-data-retry
-        if: ${{ !cancelled() && steps.coverage-data.outcome == 'failure' }}
-        timeout-minutes: 3
-        with:
-          pattern: coverage-shard-*-${{ github.sha }}
-          merge-multiple: true
+        timeout-minutes: 4
+        env:
+          GH_TOKEN: ${{ github.token }}
+          FQ_COVERAGE_HEAD: ${{ github.event.pull_request.head.sha || github.sha }}
+        run: |
+          timeout --kill-after=10s 240s python3 -I tools/ci/ci_coverage_artifacts.py \
+            --run-id "$GITHUB_RUN_ID" --attempt "$GITHUB_RUN_ATTEMPT" \
+            --head-sha "$FQ_COVERAGE_HEAD" --source-sha "$GITHUB_SHA" \
+            --count "$FQ_COVERAGE_SHARDS" --output "$RUNNER_TEMP/fq-coverage-inputs"
+          echo "path=$RUNNER_TEMP/fq-coverage-inputs" >> "$GITHUB_OUTPUT"
       - name: Validate complete coverage inputs
         env:
-          FQ_COVERAGE_INPUTS: ${{ steps.coverage-data.outcome == 'success' && steps.coverage-data.outputs.path || steps.coverage-data-retry.outputs.path }}
+          FQ_COVERAGE_INPUTS: ${{ steps.coverage-data.outputs.path }}
         run: |
           python - <<'PY'
           from pathlib import Path
@@ -3011,7 +3009,7 @@ jobs:
           PY
       - name: Combine coverage shards
         env:
-          FQ_COVERAGE_INPUTS: ${{ steps.coverage-data.outcome == 'success' && steps.coverage-data.outputs.path || steps.coverage-data-retry.outputs.path }}
+          FQ_COVERAGE_INPUTS: ${{ steps.coverage-data.outputs.path }}
         run: |
           python -m coverage combine "$FQ_COVERAGE_INPUTS"
           python -m coverage xml
