@@ -89,7 +89,9 @@ def _fixed_positive_control(
 
 
 def controlled_via_and_factories(
-    *, control_system: PositiveControlProvider = _fixed_positive_control
+    *,
+    control_system: PositiveControlProvider = _fixed_positive_control,
+    allow_symbolic_targets: bool = False,
 ) -> dict[str, ComponentFactory]:
     """Adapt the complete constructor without duplicating child implementations.
 
@@ -99,7 +101,10 @@ def controlled_via_and_factories(
     atomic control views.
     Nested constructor recipes retain complete functions and ordered clauses
     within this catalogue, so controlling a wrapper combines new controls first.
-    Unresolved symbolic widths retain declarations and require concrete binding.
+    Unresolved symbolic widths retain declarations by default. A logical owner
+    may supply exact typed positive-control bodies for symbolic target widths;
+    controls still require concrete predicate storage and physical binding still
+    requires concrete targets.
     """
     recipes: dict[FunctionRecord, tuple[FunctionRecord, ControlSpecification]] = {}
 
@@ -149,7 +154,9 @@ def controlled_via_and_factories(
         )
         if registers is not None and registers != tuple(signature):
             raise SerializationError("Invalid register signature for ControlledViaAnd")
-        if any(register.is_symbolic() for register in signature):
+        if not allow_symbolic_targets and any(
+            register.is_symbolic() for register in signature
+        ):
             result: FunctionRecord | ProgramRecord = FunctionRecord(
                 name, (), registers=tuple(signature)
             )
