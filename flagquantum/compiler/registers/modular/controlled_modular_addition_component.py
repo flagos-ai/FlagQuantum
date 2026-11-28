@@ -49,50 +49,9 @@ def controlled_modular_addition_program(
     subtraction = constant_addition_program(wide, (-modulus) % (1 << (width + 1)))
     correction = constant_addition_program(word, modulus, control_value=1)
     comparison = controlled_greater_program(word, control_value=control_value)
-    builder = ComponentProgramBuilder(
-        Signature.build_from_dtypes(ctrl=quantum_bit_type(), x=dtype, y=dtype),
-        (
-            *comparison_bit_functions(),
-            cast_word_function("mod_cast_unsigned", dtype, word),
-            cast_word_function("mod_cast_return", word, dtype),
-        ),
+    record = controlled_modular_addition_component_program(
+        dtype, addition, subtraction, correction, comparison
     )
-    y = builder.inputs["y"]
-    assert isinstance(y, RegisterBinding)
-    ys = builder.split(y)
-    sign = builder.allocate()
-    x = builder.call_dict("mod_cast_unsigned", {"reg": builder.inputs["x"]})["reg"]
-    y = builder.join([sign, *ys], wide)
-    added = builder.call_program(
-        addition,
-        {"ctrl": builder.inputs["ctrl"], "a": x, "b": y},
-    )
-    y = builder.call_program(
-        subtraction,
-        {"x": added["b"]},
-    )["x"]
-    assert isinstance(y, RegisterBinding)
-    ys = builder.split(y)
-    sign, y = ys[0], builder.join(ys[1:])
-    corrected = builder.call_program(
-        correction,
-        {"ctrl": sign, "x": y},
-    )
-    compared = builder.call_program(
-        comparison,
-        {
-            "ctrl": added["ctrl"],
-            "a": added["a"],
-            "b": corrected["x"],
-            "target": corrected["ctrl"],
-        },
-    )
-    cleared_sign = builder.call_dict("comparison_x", {"q": compared["target"]})["q"]
-    assert isinstance(cleared_sign, RegisterBinding)
-    builder.free(cleared_sign)
-    x = builder.call_dict("mod_cast_return", {"reg": compared["a"]})["reg"]
-    y = builder.call_dict("mod_cast_return", {"reg": compared["b"]})["reg"]
-    record = builder.finalize({"ctrl": compared["ctrl"], "x": x, "y": y})
     if not adjoint:
         return record
     x_gate = ProgramRecord((comparison_bit_functions()[0],))
@@ -124,3 +83,71 @@ def controlled_modular_addition_program(
             (x_gate, x_gate),
         ),
     )
+
+
+def controlled_modular_addition_component_program(
+    dtype: RegisterType,
+    addition: ProgramRecord,
+    subtraction: ProgramRecord,
+    correction: ProgramRecord,
+    comparison: ProgramRecord,
+) -> ProgramRecord:
+    """Compose the fourteen source calls with explicit arithmetic owners.
+
+    Source casts and sign work retain their original lifetime. Supplying a
+    declaration for a genuinely unresolved constant does not turn it into a
+    physical implementation or a zero-cost operation.
+    """
+    width = executable_register_width(dtype)
+    controlled_modular_requirements(width)
+    if dtype.encoding not in {"uint", "montgomery"}:
+        raise ValueError(
+            "Controlled modular addition requires unsigned or Montgomery words"
+        )
+    word, wide = unsigned_register_type(width), unsigned_register_type(width + 1)
+    builder = ComponentProgramBuilder(
+        Signature.build_from_dtypes(ctrl=quantum_bit_type(), x=dtype, y=dtype),
+        (
+            *comparison_bit_functions(),
+            cast_word_function("mod_cast_unsigned", dtype, word),
+            cast_word_function("mod_cast_return", word, dtype),
+        ),
+    )
+    y = builder.inputs["y"]
+    assert isinstance(y, RegisterBinding)
+    ys = builder.split(y)
+    sign = builder.allocate()
+    x = builder.call_dict("mod_cast_unsigned", {"reg": builder.inputs["x"]})["reg"]
+    y = builder.join([sign, *ys], wide)
+    added = builder.call_program(
+        addition,
+        {"ctrl": builder.inputs["ctrl"], "a": x, "b": y},
+    )
+    y = builder.call_program(
+        subtraction,
+        {"x": added["b"]},
+        entry=subtraction.functions[0].name,
+    )["x"]
+    assert isinstance(y, RegisterBinding)
+    ys = builder.split(y)
+    sign, y = ys[0], builder.join(ys[1:])
+    corrected = builder.call_program(
+        correction,
+        {"ctrl": sign, "x": y},
+        entry=correction.functions[0].name,
+    )
+    compared = builder.call_program(
+        comparison,
+        {
+            "ctrl": added["ctrl"],
+            "a": added["a"],
+            "b": corrected["x"],
+            "target": corrected["ctrl"],
+        },
+    )
+    cleared_sign = builder.call_dict("comparison_x", {"q": compared["target"]})["q"]
+    assert isinstance(cleared_sign, RegisterBinding)
+    builder.free(cleared_sign)
+    x = builder.call_dict("mod_cast_return", {"reg": compared["a"]})["reg"]
+    y = builder.call_dict("mod_cast_return", {"reg": compared["b"]})["reg"]
+    return builder.finalize({"ctrl": compared["ctrl"], "x": x, "y": y})
