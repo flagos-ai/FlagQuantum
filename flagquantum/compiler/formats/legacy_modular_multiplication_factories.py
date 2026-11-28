@@ -11,10 +11,20 @@ from typing import Literal
 import sympy
 
 from ...core.ir.program import FunctionRecord, ProgramRecord
-from ...core.ir.program.register_types import montgomery_register_type, quantum_bit_type
+from ...core.ir.program.register_types import (
+    montgomery_register_type,
+    quantum_bit_type,
+    signed_register_type,
+    unsigned_register_type,
+)
 from ...core.ir.program.registers import Register, RegisterSide, RegisterType
 from ...errors import SerializationError
-from ..registers.modular.modular_doubling_component import modular_doubling_program
+from ..registers.comparison._component_gates import comparison_bit_functions
+from ..registers.component_adjoint import adjoint_component_calls
+from ..registers.modular.modular_doubling_component import (
+    modular_doubling_component_program,
+    modular_doubling_program,
+)
 from ..registers.modular.modular_multiplication_component import (
     modular_multiplication_program,
 )
@@ -26,6 +36,7 @@ from ..registers.modular.windowed_multiplication_component import (
     windowed_multiplication_program,
 )
 from .legacy_component_resolution import ComponentFactory, ResolvedArgument
+from .legacy_constant_control_factories import unresolved_constant_addition_program
 from .legacy_modular_addition_factories import _integer
 from .legacy_word_factories import _rename_program
 from .montgomery_port_views import restore_montgomery_ports, source_modulus_omission
@@ -37,6 +48,49 @@ _Kind = Literal[
     "_DirtyOutOfPlaceMontgomeryModMulImpl",
     "DirtyOutOfPlaceMontgomeryModMul",
 ]
+
+
+def symbolic_modular_doubling_program(
+    dtype: RegisterType, modulus: sympy.Expr, *, adjoint: bool = False
+) -> ProgramRecord:
+    """Preserve the original available source root and genuine constant refusals."""
+    width = dtype.num_qubits
+    assert type(width) is int
+    signed, unsigned = signed_register_type(width + 2), unsigned_register_type(
+        width + 1
+    )
+    subtraction = unresolved_constant_addition_program(
+        signed, -modulus, name="subtract_modulus"
+    )
+    correction = unresolved_constant_addition_program(
+        unsigned, modulus, name="restore_modulus", controlled=True
+    )
+    record = modular_doubling_component_program(dtype, subtraction, correction)
+    if not adjoint:
+        return record
+    gates = tuple(ProgramRecord((f,)) for f in comparison_bit_functions())
+    return adjoint_component_calls(
+        record,
+        (
+            (
+                subtraction,
+                unresolved_constant_addition_program(
+                    signed, -modulus, name="subtract_modulus_inverse", adjoint=True
+                ),
+            ),
+            (
+                correction,
+                unresolved_constant_addition_program(
+                    unsigned,
+                    modulus,
+                    name="restore_modulus_inverse",
+                    adjoint=True,
+                    controlled=True,
+                ),
+            ),
+            *((gate, gate) for gate in gates),
+        ),
+    )
 
 
 def _modular_factory(
@@ -110,6 +164,13 @@ def _modular_factory(
             )
         ):
             raise SerializationError(f"Invalid register signature for {kind}")
+    if (
+        kind == "ModDbl"
+        and type(width) is int
+        and isinstance(modulus, sympy.Expr)
+        and modulus.free_symbols
+    ):
+        return _rename_program(symbolic_modular_doubling_program(dtype, modulus), name)
     if any(isinstance(item, sympy.Expr) for item in (width, window, modulus, value)):
         return FunctionRecord(
             name, (), registers=signature if registers is None else registers
@@ -133,8 +194,10 @@ def _modular_factory(
     return _rename_program(program, name)
 
 
-def modular_multiplication_factories() -> dict[str, ComponentFactory]:
-    """Supply the complete modular product source family and its private core."""
+def modular_multiplication_factories(
+    *, adjoint_factory: ComponentFactory | None = None
+) -> dict[str, ComponentFactory]:
+    """Keep exact doubling adjoints in a compilation-local constructor context."""
     kinds: tuple[_Kind, ...] = (
         "ModDbl",
         "CModMulK",
@@ -142,9 +205,62 @@ def modular_multiplication_factories() -> dict[str, ComponentFactory]:
         "_DirtyOutOfPlaceMontgomeryModMulImpl",
         "DirtyOutOfPlaceMontgomeryModMul",
     )
+    recipes: dict[FunctionRecord, tuple[dict[str, ResolvedArgument], bool]] = {}
+
+    def make(
+        name: str,
+        registers: tuple[Register, ...] | None,
+        arguments: Mapping[str, ResolvedArgument],
+        inverse: bool,
+    ) -> FunctionRecord | ProgramRecord:
+        result = _modular_factory("ModDbl", name, registers, arguments)
+        if inverse and isinstance(result, ProgramRecord):
+            dtype = arguments["dtype"]
+            modulus = _integer(arguments, "mod")
+            assert isinstance(dtype, RegisterType)
+            result = _rename_program(
+                (
+                    symbolic_modular_doubling_program(dtype, modulus, adjoint=True)
+                    if isinstance(modulus, sympy.Expr)
+                    else modular_doubling_program(dtype, modulus, adjoint=True)
+                ),
+                name,
+            )
+        root = result.functions[0] if isinstance(result, ProgramRecord) else result
+        recipes[root] = dict(arguments), inverse
+        return result
+
+    def forward(
+        name: str,
+        registers: tuple[Register, ...] | None,
+        arguments: Mapping[str, ResolvedArgument],
+    ) -> FunctionRecord | ProgramRecord:
+        return make(name, registers, arguments, False)
+
+    def inverse(
+        name: str,
+        registers: tuple[Register, ...] | None,
+        arguments: Mapping[str, ResolvedArgument],
+    ) -> FunctionRecord | ProgramRecord:
+        child = arguments.get("subbloq")
+        if (
+            set(arguments) == {"subbloq"}
+            and isinstance(child, FunctionRecord)
+            and child in recipes
+        ):
+            values, direction = recipes[child]
+            return make(name, registers, values, not direction)
+        if adjoint_factory is not None:
+            return adjoint_factory(name, registers, arguments)
+        raise SerializationError("Missing exact modular doubling adjoint context")
+
     return {
-        f"qualtran.bloqs.mod_arithmetic.mod_multiplication.{kind}": partial(
-            _modular_factory, kind
-        )
-        for kind in kinds
+        **{
+            f"qualtran.bloqs.mod_arithmetic.mod_multiplication.{kind}": partial(
+                _modular_factory, kind
+            )
+            for kind in kinds
+        },
+        "qualtran.bloqs.mod_arithmetic.mod_multiplication.ModDbl": forward,
+        "qualtran._infra.adjoint.Adjoint": inverse,
     }

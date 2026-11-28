@@ -231,3 +231,23 @@ have native responsibility and direct dependency closure. Q-0576 is eligible
 after verified publication and final local checks under the approved faithful
 rule. Missing generic SDK/serialization providers remain in Q-0866/Q-0876, not
 waived or claimed by this source-file acceptance.
+
+## Fixed-width symbolic doubling dependency closure
+
+ModDbl now preserves all fifteen available source calls when only the modulus
+is unbound, including its exact generic adjoint. The shared template takes the
+actual signed subtract and controlled unsigned correction; its changed output
+alias remains the source work-to-data exchange. The constructor catalogue keeps
+adjoint provenance per compilation and rejects unknown same-signature children
+without an explicit fallback. Unresolved AddK and Controlled(Adjoint(AddK))
+declarations reuse the existing constant catalogue; no encoder is invoked.
+
+Widths 3/5, uint/Montgomery storage, both directions and source serialization
+depths 0/1 compare all calls and operands. Every stopped child actually refuses
+the unmodified source decomposition. Finite complete doubling Programs remain
+literally equal to the published baseline, preserving the existing phase,
+measurement-history, work-zero and resource evidence. An unbound modulus emits
+no certifiable primitive stream; source QEC models remain separate. For width 3
+the symbolic source model estimates And=7, Clifford=64, measurements=7,
+T-equivalent=28 and peak qubits=14 in either direction. Those estimates are not
+measured gates or a successful physical cleanup claim.

@@ -57,6 +57,13 @@ Run `tests/unit/test_symbolic_modular_addition_calls.py` for complete reachable
 source layers and atomic And/Partition certificates; finite execution evidence
 remains governed by the source residue-domain promises.
 
+`modular_doubling_component_program` retains the fifteen source calls and their
+work-to-data alias around explicit constant owners. The existing finite wrapper
+and exact adjoint are unchanged. Fixed-width symbolic-modulus forward/inverse
+constructors retain every available call, with two genuine constant refusals.
+Run `tests/unit/test_symbolic_modular_doubling_calls.py` for source operands,
+scope-bound adjoints, stored transport and SDK-free reconstruction.
+
 The complete modular multiplication graph family uses separate doubling,
 controlled multiplier, single-window, window traversal and output-allocation
 owners in the corresponding `*_component` modules. Shared clean-bank lifetime

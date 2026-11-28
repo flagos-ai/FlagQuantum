@@ -49,6 +49,34 @@ def unresolved_constant_addition_program(
     controlled: bool = False,
     adjoint: bool = False,
 ) -> ProgramRecord:
+    """Retain an actual unresolved AddK, exact adjoint and positive control."""
+    return _unresolved_constant_program(
+        "add", dtype, constant, name=name, controlled=controlled, adjoint=adjoint
+    )
+
+
+def unresolved_xor_constant_program(
+    dtype: RegisterType,
+    constant: sympy.Expr,
+    *,
+    name: str,
+    controlled: bool = False,
+) -> ProgramRecord:
+    """Retain an actual unresolved XorK and its positive control without encoding."""
+    return _unresolved_constant_program(
+        "xor", dtype, constant, name=name, controlled=controlled
+    )
+
+
+def _unresolved_constant_program(
+    kind: _Kind,
+    dtype: RegisterType,
+    constant: sympy.Expr,
+    *,
+    name: str,
+    controlled: bool = False,
+    adjoint: bool = False,
+) -> ProgramRecord:
     """Retain an actual unresolved AddK constructor at its source refusal.
 
     Reuse constructor validation and control/adjoint provenance without a
@@ -56,34 +84,39 @@ def unresolved_constant_addition_program(
     """
     if not constant.free_symbols:
         raise SerializationError("A constant declaration requires unresolved symbols")
-    if controlled and adjoint:
-        raise SerializationError(
-            "A constant declaration requires one wrapper direction"
-        )
 
     def forbidden(word: RegisterType, value: object) -> tuple[int, ...]:
         raise SerializationError("An unresolved source constant has no bit encoding")
 
     factories = constant_control_factories(encode_constant=forbidden)
-    child = factories["qualtran.bloqs.arithmetic.addition.AddK"](
+    child = factories[
+        (
+            "qualtran.bloqs.arithmetic.addition.AddK"
+            if kind == "add"
+            else "qualtran.bloqs.arithmetic.bitwise.XorK"
+        )
+    ](
         name if not (controlled or adjoint) else name + "_constant",
         None,
         {"dtype": dtype, "k": constant},
     )
     assert isinstance(child, FunctionRecord) and not child.blocks
-    if controlled or adjoint:
-        arguments: dict[str, ResolvedArgument] = {"subbloq": child}
-        if controlled:
-            arguments["ctrl_spec"] = ControlSpecification(
-                ((quantum_bit_type(), np.asarray(1)),)
-            )
-        child = factories[
-            (
-                "qualtran._infra.controlled.Controlled"
-                if controlled
-                else "qualtran._infra.adjoint.Adjoint"
-            )
-        ](name, None, arguments)
+    if adjoint:
+        child = factories["qualtran._infra.adjoint.Adjoint"](
+            name + "_adjoint" if controlled else name, None, {"subbloq": child}
+        )
+        assert isinstance(child, FunctionRecord) and not child.blocks
+    if controlled:
+        child = factories["qualtran._infra.controlled.Controlled"](
+            name,
+            None,
+            {
+                "subbloq": child,
+                "ctrl_spec": ControlSpecification(
+                    ((quantum_bit_type(), np.asarray(1)),)
+                ),
+            },
+        )
     assert isinstance(child, FunctionRecord) and not child.blocks
     return ProgramRecord((child,))
 
