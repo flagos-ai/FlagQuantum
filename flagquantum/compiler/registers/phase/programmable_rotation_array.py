@@ -57,7 +57,9 @@ def programmable_rotation_array_ir(
     convention. Interleavers may act on target and interleaved_target.
     Load and QROM workspace start and finish clean. A rotation may borrow
     the declared subset of QROM workspace and its associated classical slots
-    between lookups. It must restore those wires before returning.
+    between lookups. Interleavers may borrow the same declared scratch for a
+    scalar carrier. Each local stage must restore those wires before returning.
+    An empty target retains source scalar rotations on the load controls.
     """
     if (
         not angles
@@ -69,9 +71,9 @@ def programmable_rotation_array_ir(
             "Rotation array requires equally sized nonempty unsigned angle rows"
         )
     extent = len(angles[0])
-    if not load or not target or len(selection) != (extent - 1).bit_length():
+    if not load or len(selection) != (extent - 1).bit_length():
         raise ValueError(
-            "Rotation array requires source selection width and nonempty load and target"
+            "Rotation array requires source selection width and nonempty load"
         )
     if len(interleaved) != len(angles) - 1:
         raise ValueError(
@@ -88,7 +90,7 @@ def programmable_rotation_array_ir(
         raise ValueError(
             "Rotation array requires one distinct classical slot per work wire"
         )
-    interleave_wires = {*target, *interleaved_target}
+    interleave_wires = {*target, *interleaved_target, *rotation_workspace}
     rotation_wires = {*target, *rotation_workspace}
     rotation_slots = {
         bit
@@ -102,6 +104,13 @@ def programmable_rotation_array_ir(
         for wire in gate.wires
     ):
         raise ValueError("Rotation array interleaver used a wire outside its targets")
+    if rotation_workspace and any(
+        gate.name == "measure"
+        and gate.metadata.get("classical_bit") not in rotation_slots
+        for stage in interleaved
+        for gate in stage
+    ):
+        raise ValueError("Interleaver measurement used an undeclared workspace slot")
 
     gates: list[Instruction] = []
     last_index = 0

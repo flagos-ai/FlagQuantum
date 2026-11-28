@@ -53,3 +53,13 @@ through explicit controlled child Programs, preserving source-selected walk
 predicates. The Hamiltonian constructor leaves both Always preparations outside
 that control. Run `test_controlled_hamiltonian_gqsp_source.py` for both default
 polarities, measured execution and the symbolic declaration refusal.
+
+`programmable_rotation_array_ir` keeps XOR-delta QROM updates and final unload
+separate from local rotation/interleaver callbacks. A zero-width target uses
+scalar rotation phases on the load controls. Local stages may borrow only the
+explicit `rotation_workspace` and its feedback slots, restoring it before the
+next stage; this includes a scalar interleaver's existing phase carrier. No new
+Core operation or SDK static-conversion contract is involved. Run
+`tests/unit/test_programmable_array_source_binding.py` for source-local matrix
+leaves, empty targets, complete complex operators and measured cleanup. Named
+one/two-target synthesis remains separate from matrix-leaf source fidelity.

@@ -19,6 +19,7 @@ from flagquantum.compiler.registers.phase.programmable_rotation_array import (
 )
 from flagquantum.core.ir import CircuitIR, Instruction
 from flagquantum.ecosystem.cirq._register_emitter import import_register_emitter
+from tests._reference_dependencies import unavailable_reference
 from tests.unit.test_multiplexed_source_binding import logical_operator
 from tests.unit.test_programmable_rotation_array_file import (
     source_module as source_module,
@@ -27,18 +28,24 @@ from tests.unit.test_programmable_rotation_array_file import (
 pytestmark = [pytest.mark.unit, pytest.mark.ftqc_reference]
 
 
-@pytest.mark.parametrize("synthesize", [False, True])
 @pytest.mark.parametrize(
-    "word,kappa,custom,opaque",
+    "synthesize,word,kappa,custom,opaque",
     [
-        (1, 1, False, False),
-        (1, 2, False, False),
-        (2, 1, False, False),
-        (2, 2, False, False),
-        (1, 2, True, False),
-        (1, 2, False, True),
-        (2, 2, False, True),
-    ],
+        (synthesize, *profile)
+        for synthesize in (False, True)
+        for profile in (
+            (1, 1, False, False),
+            (1, 2, False, False),
+            (2, 1, False, False),
+            (2, 2, False, False),
+            (1, 2, True, False),
+            (1, 2, False, True),
+            (2, 2, False, True),
+        )
+    ]
+    # Source-local matrix payloads remain valid beyond the separate two-target
+    # named-gate synthesis owner. QROM and feedback are still explicit gates.
+    + [(False, 3, 1, False, False)],
 )
 def test_external_local_gate_array_full_operators_and_owned_replacement(
     source_module: Any,
@@ -260,3 +267,106 @@ def test_provider_decomposition_precedes_unitary_protocol(source_module: Any) ->
     torch.testing.assert_close(
         backward @ forward, torch.eye(32, dtype=torch.complex128), atol=1e-11, rtol=0
     )
+
+
+@pytest.mark.parametrize("kappa", (1, 2))
+@pytest.mark.parametrize("stages", (1, 2))
+def test_scalar_rotation_target_source_calls_complete_phases_and_clean_scratch(
+    source_module: Any, kappa: int, stages: int
+) -> None:
+    try:
+        import cirq
+        from qualtran.bloqs.data_loading.qrom import QROM
+    except ModuleNotFoundError as error:
+        unavailable_reference(error)
+
+    from flagquantum.compiler.registers.primitives.global_phase import scalar_phase_ir
+    from tests.unit.test_chebyshev_component import assert_all_small_raw_histories
+    from tests.unit.test_programmable_rotation_array_file import source_bound_ops
+
+    angles = ((1, 2, 3), (3, 0, 1))[:stages]
+    source = source_module.ProgrammableRotationGateArray(
+        *angles,
+        kappa=kappa,
+        rotation_gate=cirq.GlobalPhaseGate(np.exp(0.3j)),
+        interleaved_unitaries=(cirq.GlobalPhaseGate(np.exp(-0.2j)),) * (stages - 1),
+    )
+    selection = (0, 1)
+    load = tuple(range(2, 2 + kappa))
+    logical = 2 + kappa
+    work = (logical,)
+    calls = source_bound_ops(
+        source, selection=selection, kappa_load_target=load, rotations_target=()
+    )
+    assert [
+        tuple(map(int, op.gate.data[0])) for op in calls if isinstance(op.gate, QROM)
+    ] == [delta for delta, _ in _rotation_batches(angles, kappa)]
+    assert sum(isinstance(op.gate, cirq.GlobalPhaseGate) for op in calls) == stages - 1
+    captured = import_register_emitter(source)
+    expected = logical_operator(captured.snapshots[0], logical)
+    native = CircuitIR(
+        logical + 1,
+        programmable_rotation_array_ir(
+            selection,
+            load,
+            (),
+            angles,
+            work,
+            (0,),
+            rotation=lambda control, _target, power: (
+                Instruction("phase", (control,), {"theta": 0.3 * 2 ** (-1 - power)}),
+            ),
+            interleaved=(scalar_phase_ir(work[0], -0.2),) * (stages - 1),
+            rotation_workspace=work,
+        ),
+    )
+    torch.testing.assert_close(
+        logical_operator(native, logical), expected, atol=1e-11, rtol=0
+    )
+    assert_all_small_raw_histories(native, logical, expected)
+    for address in range(3):
+        index = address << kappa
+        phase = np.exp(
+            1j
+            * (
+                0.3
+                * sum(
+                    ((row[address] >> power) & 1) * 2 ** (-1 - power)
+                    for row in angles
+                    for power in (1, 0)
+                )
+                - 0.2 * (stages - 1)
+            )
+        )
+        assert expected[index, index].item() == pytest.approx(phase, abs=1e-12)
+    assert (
+        Circuit(logical + 1)
+        .append(FieldOperation(logical + 1, native.instructions))
+        .to_ir()
+        .instructions
+        == native.instructions
+    )
+    assert CircuitIR.from_json(native.to_json()) == native
+
+
+def test_scalar_interleaver_cannot_write_an_undeclared_feedback_slot() -> None:
+    with pytest.raises(ValueError, match="Interleaver measurement used an undeclared"):
+        programmable_rotation_array_ir(
+            (0,),
+            (1,),
+            (),
+            ((1, 2), (2, 1)),
+            (2,),
+            (0,),
+            rotation=lambda *_: (),
+            interleaved=(
+                (
+                    Instruction(
+                        "measure",
+                        (2,),
+                        metadata={"classical_bit": 9, "is_dynamic": True},
+                    ),
+                ),
+            ),
+            rotation_workspace=(2,),
+        )

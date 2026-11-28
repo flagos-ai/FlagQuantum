@@ -209,3 +209,60 @@ operator failure or an optional-dependency skip. Local integration passes 145
 cases; strict four files, formatting/lint, Compiler scope, language/links,
 architecture, multi-level IR and protected API checks pass. The runnable example
 also executes through both local strategies in the resource receipt.
+
+## Whole-file faithful-source closure, 2026-11-28
+
+The approved faithful-migration rule supersedes the earlier requirement to finish
+arbitrary Clifford+T synthesis before accepting this source file. The unchanged
+source accepts fractional local gates through Cirq; it does not itself supply a
+general precision-certified Clifford+T synthesizer. The existing callback owner
+retains arbitrary finite local unitary payloads as explicit matrix leaves. A
+new three-target source MatrixGate case verifies the complete dirty-load complex
+operator, exact source inverse composition and independently assembled per-address
+output. The algorithm is not replaced by a whole-array matrix. Named one/two-target
+Euler/KAK lowering remains a separate admitted capability, not a claim that larger
+matrices have been decomposed into named gates.
+
+A genuine missing source case was reproduced during the complete member review:
+zero-width rotations_target with GlobalPhaseGate succeeds upstream, but the
+native generator rejected every empty target. The internal Compiler helper now
+admits that target and leaves its controlled scalar action on each load control.
+For a scalar interleaver it reuses scalar_phase_ir on explicitly declared local
+scratch. That scratch is shared between QROM and local stages and restored before
+reuse. The existing rotation_workspace declaration covers both kinds of local
+stage; undeclared interleaver feedback slots fail closed. Normal nonempty-target
+call order, XOR data, QROM and feedback recipes are unchanged.
+
+Both one/two-stage scalar arrays and load widths one/two compare complete complex
+operators to actual source capture, including dirty initial load. Each small raw
+measurement history restores private work and agrees in complex amplitude.
+Independent diagonal phases use the literal source bit-power order, including
+its 2**(-1-power) exponent, rather than replacing it with ordinary integer/2**width.
+The actual QROM deltas and interleaver occurrences match; append/JSON preserves
+the native instructions. The existing register-emitter scalar support already
+has positive physical extent here. Pending Proposal132's public static-import
+carrier extension is neither required nor implemented.
+
+The complete member table above, original parameter grid and original source
+suite receipts remain applicable. Reuse the published 296/244 SDK and145 local
+integration evidence for unchanged owners. The changed generator and callback
+paths receive concentrated dual-SDK regression and strict checks before
+publication. Q-0679 can then close as a faithful complete source migration.
+Original shallow constructor metadata loss, SDK reduced-state eigensolver
+failures and generic C[And] cost-query refusal remain source defects. General
+Clifford+T precision and larger named-gate synthesis remain explicit optimization
+work; neither is represented as implemented or as a primitive-count equality.
+
+Scalar-target inventory and source estimates are intentionally separate:
+
+| Load width | Stages | Emitted primitives | Emitted measurements | Source QEC categories | Source peak / native reserved |
+|---:|---:|---:|---:|---|---:|
+|1|1|53|2|2And,15Clifford,2rotation,2measurement|4/4|
+|1|2|65|2|2And,21Clifford,4rotation,2measurement|4/4|
+|2|1|54|2|2And,16Clifford,2rotation,2measurement|5/5|
+|2|2|60|2|2And,16Clifford,4rotation,2measurement|5/5|
+
+A two-stage native stream includes the existing four-instruction scalar carrier;
+its allocation-free logical source phase is not priced as four source model
+operations. The full inventories and original frozen inputs are recorded in
+`g2-rotation-scalar-resources-20261128.json` in the reference workspace.
