@@ -101,3 +101,13 @@ phase construction with the existing through profile, without asserting a
 unitary bank extension or arbitrary-signal cleanup. Missing preparation leaves
 still refuse physical binding. See the THC walk audit and
 `tests/unit/test_thc_walk_source_context.py` for exact original connections.
+
+`qubitization_walk_component.doubly_controlled_select_walk_pair` composes the
+literal nested-positive SELECT walk using existing packed multi-control owners.
+Its inputs are explicit main-entry positive SELECT/inverse and source-declared
+self-adjoint reflection Programs, plus their bare data signatures and control
+port names. Each child owns its predicate work and erasure; the walk preserves
+the caller's outer/inner control order. Run `test_hubbard_double_control_source.py`
+for actual Hubbard source graphs and a clean small example's full complex,
+all-history and work-zero certificate. Source dirty-Free Hubbard behavior remains
+separate in the [Hamiltonian audit](../../../../docs/development/HAMILTONIAN_GQSP_CONSTRUCTOR_AUDIT.md).

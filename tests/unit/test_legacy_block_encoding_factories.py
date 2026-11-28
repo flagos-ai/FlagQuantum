@@ -145,6 +145,15 @@ def _oracles(
         def control_registers(self) -> tuple[Any, ...]:
             return (SourceRegister("control", QBit()),)
 
+        def get_ctrl_system(self, ctrl_spec: Any) -> Any:
+            return get_ctrl_system_1bit_cv_from_bloqs(
+                self,
+                ctrl_spec,
+                current_ctrl_bit=1,
+                bloq_with_ctrl=self,
+                ctrl_reg_name="control",
+            )
+
         def build_composite_bloq(
             self, bb: Any, address: Any, data: Any, control: Any = None
         ) -> dict[str, Any]:

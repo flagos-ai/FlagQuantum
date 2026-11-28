@@ -174,3 +174,39 @@ Q-0540 stays open for the remaining literal controlled-Hamiltonian composition:
 its Always-wrapped preparations must bypass outer controls while the actual GQSP
 receives them, with explicit source-selected owners. Missing controlled execution
 is not relabeled as an upstream defect. No G3 or automatic PR merge follows.
+
+## Source double-positive walk control composition, 2026-11-28
+
+`doubly_controlled_select_walk_pair` in the existing Compiler preparation owner
+retains source nested positive controls as separate per-child reductions. The
+SELECT-block root calls its packed multi-controlled SELECT once. The walk then
+calls the packed multi-controlled reflection. Reverse source order is reflection
+then the SELECT-block adjoint, with its exact supplied SELECT inverse. A single
+whole-walk predicate would have a different available source graph and is not
+substituted here. Actual outer/inner scalar names and packed array order agree.
+The existing source declaration treats reflection as self-adjoint; it remains
+the same identity in both recipes, with no inferred arbitrary-junk cleanup proof.
+
+Actual Hubbard forward and inverse each match124reachable source/native nodes,
+including all available control packing, predicate and erasure dependencies.
+For a clean independent small SELECT/reflection, the complete complex operator,
+every small raw measurement history and zero private work agree in both
+orientations. The existing FlagQuantum small test oracle now reports that its
+controlled specialization already has current_ctrl_bit=1 when controlled again.
+That repair is to this repository's test asset, not to the frozen Qualtran
+reference; the upstream generic/specialization helpers remain unchanged.
+
+Both actual Hubbard directions emit1042instructions and33measurements with18
+caller logical qubits. Source models separately declare16CSwap,31And,92Clifford,
+8rotation and31measurement. Source and native logical peaks agree at28. Native
+lowering and source category accounts retain their different measurement counts;
+these are not interchangeable inventories. Whole Hubbard dirty-Free behavior
+remains the original counterexample. The clean small-oracle proof does not
+replace that source domain or certify its released temp.
+
+The next remaining Q-0540 responsibility is the controlled GQSP root schedule:
+combine the accepted controlled SU2 calls, nested positive inverse walk and the
+source mixed-polarity forward-walk predicate, then compose the Always-aware
+Hamiltonian root. The source mixed predicate is CtrlSpecAnd, not the packed
+specialization used for the double-positive inverse branch. No parent checkbox
+is changed by the present dependency delivery.
