@@ -1,5 +1,20 @@
 # Independent structure migration
 
+## Current result-reader ownership package
+
+PR #1353 at `557f25c127e52a237e05aea9ad4c50196d81158f` is independently
+qualified on all three workflows. Its one 603-second test partition remains
+explicitly above the preferred 600-second target; the other 393 test partitions
+are below it. The next [complete named-result ownership package](migration/runtime-named-result-ownership.md)
+consolidates the reader and native admission in Runtime, removes two private
+modules and three relays, and retains public methods and existing numerics.
+Its 606-row ledger is the target for this package; implementation, original
+outcome replay, packaging and own-head CI must close together before acceptance.
+The original 140 helper and separate 62 complete-reader outcomes are sealed.
+The package and the whole #1084-coupled architecture migration are not yet
+qualified. Historical inputs and inventories below retain their original scope.
+
+
 The implementation now covers the independently auditable structure migration,
 including product modules, development tools and repository configuration. The
 allocator move in commit `08549f62` was the first package, not the scope limit.
