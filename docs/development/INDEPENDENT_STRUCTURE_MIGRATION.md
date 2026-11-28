@@ -1,18 +1,26 @@
 # Independent structure migration
 
-## Current result-reader ownership package
+## Current qualified baseline and next complete package
 
-PR #1353 at `557f25c127e52a237e05aea9ad4c50196d81158f` is independently
-qualified on all three workflows. Its one 603-second test partition remains
-explicitly above the preferred 600-second target; the other 393 test partitions
-are below it. The next [complete named-result ownership package](migration/runtime-named-result-ownership.md)
-consolidates the reader and native admission in Runtime, removes two private
-modules and three relays, and retains public methods and existing numerics.
-Its 606-row ledger is the target for this package; implementation, original
-outcome replay, packaging and own-head CI must close together before acceptance.
-The original 140 helper and separate 62 complete-reader outcomes are sealed.
-The package and the whole #1084-coupled architecture migration are not yet
-qualified. Historical inputs and inventories below retain their original scope.
+PR [#1354](https://github.com/flagos-ai/FlagQuantum/pull/1354), head
+`f46fccce160da3efaadaeee73c13c5e3ecb7ad8c`, independently qualifies the complete
+[named-result ownership package](migration/runtime-named-result-ownership.md):
+430 successful checks, three existing conditions, all original CPU/scientific
+reports and 394 test partitions below 600 seconds. Its full tree is carried
+unchanged before this package. Quality, one dependency-bounds cell and package
+remain above that preference and are recorded explicitly.
+
+The next [query/aggregation closure](migration/runtime-query-aggregation-retirement.md)
+removes the remaining two prepared Runtime relays and retains protected public
+locators. The accompanying [CI execution graph](migration/ci-gate-parallelism.md)
+parallelizes complete quality/package acceptance and uses fresh dependency-bound
+environments on existing BW runners. Integration declarations precede owner
+implementations. The ledger adds one real partial executor-relay retirement;
+same-module private deletion/rename is not falsely counted as a file move.
+Actual source/default/native-installed original-outcome acceptance and this
+package's own exact-head CI remain required. Incoming #1084, native/developer
+packaging and repository-root G0 remain open; historical inputs and inventories
+below retain their original scope.
 
 
 The implementation now covers the independently auditable structure migration,

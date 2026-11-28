@@ -10483,6 +10483,23 @@
       ],
       "source_kind": "Free internal validation relay retired in favor of the retained public plan validation operation.",
       "retirement": "Callers use existing DistributedStatevectorPlan.validate. Its local call target is the existing planning.trace_distributed_statevector_plan; actual private validation and report construction remain in planning, unchanged. No numerical implementation or public method is removed."
+    },
+    {
+      "group": "runtime-query-aggregation-retirement",
+      "old": "flagquantum/runtime/executors/mps/noisy.py",
+      "new": "flagquantum/runtime/trajectories/mps.py",
+      "symbols": [],
+      "partial": true,
+      "same_import_path": false,
+      "retired_reexports": [
+        "merge_noisy_mps_results"
+      ],
+      "retired_private_members": [
+        "merge_noisy_mps_results"
+      ],
+      "compatibility": "retired internal relay has no compatibility; substantive executor remains",
+      "retirement": "The executor argument relay is removed; existing trajectory aggregation keeps the canonical operation name without its redundant runtime suffix. No numerical definition is claimed as moved.",
+      "remaining_imports": "Actual trajectory scheduling dependencies remain; consumers call the trajectory aggregation owner directly."
     }
   ],
   "retired_namespace_parents": [

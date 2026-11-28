@@ -140,3 +140,22 @@ print(dict(program.probabilities(result, registers=("q",))))
 ```
 
 The same program validation, exact result association and read-cost limits apply.
+
+## Exact-head qualification
+
+PR [#1354](https://github.com/flagos-ai/FlagQuantum/pull/1354), head
+`f46fccce160da3efaadaeee73c13c5e3ecb7ad8c`, passes both applicable workflows at
+attempt 1: 430 successful checks and three existing conditional skips. Prewarm
+is not path-triggered and is not counted as a missing success. The actual tested
+merge `37af2859e5abed403093d117dd47035f50ae867d` has the complete published and
+locally qualified tree. All 384 original reports, Runtime 14,259 nodes, coverage
+38,568 nodes, 256 unchanged partition lists, 83 scientific singletons and their
+existing call phases/resources are verified. All 394 CPU test partitions finish
+below 600 seconds: maxima Runtime 511, coverage 588, unit 421, distributed CPU
+432. Aggregation takes 103 seconds with a 15-second data download; its independent
+timeout retry is not triggered. No favorable rerun or workload reduction is used.
+
+Non-partition jobs remain above the preference: quality 1,080 seconds, one
+dependency-bounds cell 1,031 and package 701. Their step evidence drives the
+[next CI arrangement](ci-gate-parallelism.md). This qualification closes this
+package, not the whole architecture or incoming #1084 G0.
