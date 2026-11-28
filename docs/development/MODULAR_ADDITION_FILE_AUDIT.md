@@ -234,3 +234,22 @@ exterior constants, full-ring loader failures and strict/count/type outcomes
 remain recorded source limitations. Atomic ModAddK still has no original gate
 recipe; its native documented permutation and original analytical model remain
 separate. Global SDK/transport certification is not inferred or waived.
+## Fixed-width symbolic modulus constructor closure
+
+ModAdd and CModAdd now retain every available fixed-width source call when only
+the modulus is symbolic: seventeen and fourteen calls respectively. Shared
+templates own widening, casts, addition, sign comparison and clean releases;
+Formats supplies the actual unresolved minus-modulus and controlled plus-modulus
+constructors through the existing constant catalogue. No numerical encoder is
+invoked. Both control polarities and uint/Montgomery external words retain the
+same source Add/CAdd and comparator specializations.
+
+The frozen interchange codec omits Montgomery's modulus on signature records.
+Its existing five-call Cast bridge is certified in full before comparing the
+inner seventeen-call ModAdd owner. The bridge is not counted as an upstream
+arithmetic decomposition. All available source call/operand layers are traversed;
+atomic And views are certified against their exact shared bodies, and every
+stopped source leaf must genuinely refuse decomposition. Symbolic constants
+remain nonexecutable and supply no fabricated primitive, amplitude, cleanup or
+default-resource evidence. Finite Program equality preserves the accepted
+physical proofs. Symbolic word-width declarations remain a separate boundary.

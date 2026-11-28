@@ -208,8 +208,8 @@ controlled AddK is one shared unavailable definition, even when called repeatedl
 
 Unbound modulus supplies no concrete gate stream, amplitude, cleanup or default
 resource price. Physical binding refuses its missing constant body. This does
-not expand ModSub/CModSub constructor-only symbolic bodies; their existing
-ordered library recipes and remaining dependency intake stay distinct. Finite
+not by itself expand ModSub/CModSub constructor-only symbolic bodies; the
+subsequent closure below retains their available fixed-width layers. Finite
 source-stream, feedback, coherent-state and all-history proofs remain mandatory.
 
 The same dependency intake now closes the direct CModNeg fixed-width symbolic
@@ -222,3 +222,18 @@ refusal remains bodyless. No symbolic gate counts, amplitude or physical cleanup
 are fabricated. Twelve complete finite Programs are definition-identical to
 the published baseline, so accepted finite phase/work/resource evidence remains
 applicable after factoring the shared template.
+
+## Fixed-width symbolic subtraction constructor closure
+
+ModSub and CModSub now retain their complete five-call complement/load/add/
+unload/complement shell when the word width is concrete and the modulus is
+symbolic. The forward and exact inverse AddK constructors keep modulus-plus-one;
+the inner ModAdd/CModAdd retains all seventeen/fourteen available source calls.
+Only the four actual unresolved constant definitions remain bodyless. Widths
+3/5, uint/Montgomery ports, both control polarities, and original serialization
+depths 0/1 traverse every available source layer and certify atomic views.
+SDK-free reconstruction consumes the same stored library; physical binding
+refuses the missing constant bodies. No phase, zero-work or default cost is
+claimed for an unbound modulus. Complete finite Programs are unchanged by
+factoring the same shell around explicit children. Symbolic-width roots and
+higher generic controlled ECC dependencies remain separately tracked.

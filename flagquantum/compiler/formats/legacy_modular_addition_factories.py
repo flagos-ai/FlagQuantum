@@ -19,10 +19,18 @@ from ...core.ir.program.register_types import (
 from ...core.ir.program.registers import Register, RegisterType
 from ...core.value_math import SymbolicInt
 from ...errors import SerializationError
+from ..registers.arithmetic.controlled_addition_component import (
+    controlled_addition_program,
+)
+from ..registers.comparison.controlled_component import controlled_greater_program
 from ..registers.modular.controlled_modular_addition_component import (
+    controlled_modular_addition_component_program,
     controlled_modular_addition_program,
 )
-from ..registers.modular.modular_addition_component import modular_addition_program
+from ..registers.modular.modular_addition_component import (
+    modular_addition_component_program,
+    modular_addition_program,
+)
 from ..registers.modular.modular_constant_component import (
     controlled_modular_constant_program,
 )
@@ -30,11 +38,46 @@ from ..registers.modular.scaled_modular_addition_component import (
     scaled_modular_addition_program,
 )
 from .legacy_component_resolution import ComponentFactory, ResolvedArgument
+from .legacy_constant_control_factories import unresolved_constant_addition_program
 from .legacy_multi_control_factories import _literal_values
 from .legacy_word_factories import _rename_program
 from .montgomery_port_views import restore_montgomery_ports, source_modulus_omission
 
 _Kind = Literal["ModAdd", "ModAddK", "CModAdd", "CModAddK", "CtrlScaleModAdd"]
+
+
+def _symbolic_addition(
+    dtype: RegisterType,
+    modulus: sympy.Expr,
+    *,
+    controlled: bool,
+    control_value: int = 1,
+) -> ProgramRecord:
+    width = dtype.num_qubits
+    assert type(width) is int
+    word = (
+        unsigned_register_type(width) if controlled else montgomery_register_type(width)
+    )
+    wide = (
+        unsigned_register_type(width + 1)
+        if controlled
+        else montgomery_register_type(width + 1)
+    )
+    subtraction = unresolved_constant_addition_program(
+        wide, -modulus, name="subtract_modulus"
+    )
+    correction = unresolved_constant_addition_program(
+        word, modulus, name="restore_modulus", controlled=True
+    )
+    if controlled:
+        return controlled_modular_addition_component_program(
+            dtype,
+            controlled_addition_program(word, wide, control_value=control_value),
+            subtraction,
+            correction,
+            controlled_greater_program(word, control_value=control_value),
+        )
+    return modular_addition_component_program(dtype, subtraction, correction)
 
 
 def _integer(arguments: Mapping[str, ResolvedArgument], key: str) -> SymbolicInt:
@@ -107,6 +150,24 @@ def _modular_factory(
             and not 1 <= modulus <= 2**width
         ):
             raise SerializationError("ModAddK modulus must fit the operand width")
+    if kind == "CModAdd":
+        cv = arguments.get("cv", 1)
+        if type(cv) is not int or cv not in (0, 1):
+            raise SerializationError("CModAdd requires a binary control value")
+    else:
+        cv = 1
+    if (
+        kind in {"ModAdd", "CModAdd"}
+        and type(width) is int
+        and isinstance(modulus, sympy.Expr)
+        and modulus.free_symbols
+    ):
+        program = _symbolic_addition(
+            dtype, modulus, controlled=kind == "CModAdd", control_value=cv
+        )
+        if registers is not None and registers != signature:
+            program = restore_montgomery_ports(program, registers)
+        return _rename_program(program, name)
     if kind == "ModAddK" or any(
         isinstance(item, sympy.Expr) for item in (width, modulus, value)
     ):

@@ -15,7 +15,6 @@ from flagquantum.compiler.formats.legacy_modular_addition_factories import (
 )
 from flagquantum.compiler.registers.register_binding import bind_register_program
 from flagquantum.core.ir.program import (
-    FunctionRecord,
     ProgramRecord,
     verify_program_record,
 )
@@ -131,7 +130,10 @@ def test_modular_constructor_errors_keep_invalid_metadata_outside_execution() ->
     declaration = factories[key + "ModAdd"](
         "main", None, {"bitsize": 2, "mod": sympy.Symbol("p")}
     )
-    assert isinstance(declaration, FunctionRecord) and not declaration.blocks
+    assert isinstance(declaration, ProgramRecord)
+    assert len(declaration.functions[0].blocks[0].operations) == 17
+    with pytest.raises(ValueError, match="component bodies"):
+        bind_register_program(declaration, ((0, 1), (2, 3)))
 
 
 def test_original_montgomery_signature_loss_uses_shared_typed_views() -> None:

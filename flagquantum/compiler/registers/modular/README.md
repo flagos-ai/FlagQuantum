@@ -46,6 +46,17 @@ The finite wrapper still validates its modulus and builds the same complete
 Program. Run `tests/unit/test_symbolic_modular_negation_calls.py` for actual
 constructor, source layers, terminal refusals and SDK-free reconstruction.
 
+The addition and subtraction `*_component_program` templates likewise accept
+explicit minus/plus-modulus, load/unload and accumulation owners. Their finite
+wrappers retain the original validations and exact adjoints. Fixed-width
+symbolic-modulus constructors preserve ModAdd's seventeen calls, CModAdd's
+fourteen calls and each subtraction shell's five calls. Only the actual
+unresolved AddK leaves are declaration-only. The existing Montgomery codec
+bridge retains explicit metadata Casts around the true arithmetic owner.
+Run `tests/unit/test_symbolic_modular_addition_calls.py` for complete reachable
+source layers and atomic And/Partition certificates; finite execution evidence
+remains governed by the source residue-domain promises.
+
 The complete modular multiplication graph family uses separate doubling,
 controlled multiplier, single-window, window traversal and output-allocation
 owners in the corresponding `*_component` modules. Shared clean-bank lifetime
