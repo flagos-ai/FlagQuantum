@@ -2,6 +2,11 @@
 
 Training and fq.Module implementation live in `training/`; checkpoints in `checkpointing.py`; execution/trajectory results and count statistics in `results/`; profile definitions in `profiles/`; measured MPS profiling in `observability/`; evolution composition in `evolution/`. Remote deployment planning lives in `planner/deployment.py`. Per-trajectory seed ownership remains in `trajectories/rng.py`, where it belongs to execution lifecycle.
 
+Bounded named-result views live in `results/readout.py`; native-result type
+admission shares `results/adapters.py`. They inspect an already checked result
+without planning or executing its program again. The old Synth reader and MPS
+result helper modules are removed; numerical contractions remain in Simulation.
+
 Turn a quantum program or accepted execution plan into an observable execution
 attempt. The design goal is consistent program, gradient, and result semantics
 across local, distributed, and remote resources, with a direct local fast path.

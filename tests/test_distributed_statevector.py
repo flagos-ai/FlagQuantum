@@ -42,7 +42,6 @@ from flagquantum.runtime.executors.statevector.models import (
 from flagquantum.runtime.executors.statevector.planning import (
     estimate_distributed_statevector_performance,
     trace_distributed_statevector_plan,
-    validate_distributed_statevector_plan,
 )
 
 
@@ -377,7 +376,7 @@ def test_distributed_statevector_trace_and_validation_report():
 
     plan = plan_distributed_statevector(circuit, world_size=2)
     trace = plan.trace()
-    validation = validate_distributed_statevector_plan(plan)
+    validation = plan.validate()
     trace_from_function = trace_distributed_statevector_plan(plan)
 
     assert isinstance(trace, StatevectorTraceReport)

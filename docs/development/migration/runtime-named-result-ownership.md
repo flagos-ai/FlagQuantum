@@ -93,13 +93,26 @@ fixed during reading; planning, execution and existing scientific clocks are
 unmodified. The earlier unadmitted wide Qmod attempt is retained as a refusal,
 not converted into MPS admission or discarded as a passing experiment.
 
-The 13-path implementation preview and 606-row ledger proposal have passed
-ownership-scope review. They are preparation evidence, not qualification of the
-new implementation. Acceptance still requires complete original-outcome replay,
-unchanged public signatures, optional-import boundaries, architecture/API/docs
-checks, complete default/focused tests, a newly packaged native wheel with old
-private files absent, repository-external installation verification and this
-package's own exact-head CI. No predecessor result substitutes for those checks.
+The initial 13-path preview and 606-row ledger proposal passed ownership-scope
+review. Functional collection and the complete namespace scan exposed five
+additional test/reference-script imports. Their updates preserve all non-import
+AST and original corpus data; both obsolete private modules are deleted.
+
+Local source acceptance passes 251 focused tests and exact replay of all 202
+original outcomes. The complete default selection passes 21,926 tests with 864
+existing skips; all 22,790 classname/name/outcome entries match the qualified
+baseline, including multiplicities. The recovered local run uses two workers
+and retains the full selection after an earlier disk-space failure; the failed
+attempt is not qualification. Strict typing, formatting, architecture, public
+API, ownership, documentation and repository-policy gates pass. A scan of 5,543
+operational Python files finds no retired imports, bound references or qualified
+old-path literals. The authoritative numerical owners, actual validator/trace,
+public probability method and 1,253 other product Python files are unchanged.
+
+Acceptance still requires optional-import boundary checks, a newly packaged
+native wheel with old private files absent, repository-external installation
+verification and this package's own exact-head CI. Local source checks and
+predecessor results do not substitute for those checks.
 
 Incoming #1084 remains draft and conflicting at
 `7f32a36f9a87958e67dbe7eeb4c8c7a7081e150d`. Its earlier Services reader supports a
