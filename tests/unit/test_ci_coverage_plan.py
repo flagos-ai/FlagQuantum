@@ -312,6 +312,10 @@ def test_full_256_way_plan_remains_nonempty_and_complete(tmp_path, monkeypatch):
     ]
     assert len(rows) == 256
     assert not any(row["exclusive"] for row in rows)
+    assert {row["runner"] for row in rows} == {
+        "flagquantum-bw1100-cpu",
+        "flagquantum-mc550-cpu",
+    }
 
 
 @pytest.mark.parametrize("seconds,expected", [(299.9, False), (300.0, True)])
@@ -430,7 +434,7 @@ def test_mixed_partition_retains_original_routing_without_unused_qualification(
     row = json.loads((tmp_path / "output").read_text().split("matrix=", 1)[1])[
         "include"
     ][0]
-    assert row["runner"] == ""
+    assert row["runner"] in {"flagquantum-bw1100-cpu", "flagquantum-mc550-cpu"}
     assert row["exclusive"] is False
     assert row["a800"] is False
 
@@ -467,4 +471,7 @@ def test_wide_state_oracle_keeps_complete_selection_on_qualified_bw_slot(
     assert row["exclusive"] is True
     assert row["a800"] is False
     assert row["timeout-minutes"] == 60
-    assert selected[(ordinary,)]["runner"] == ""
+    assert selected[(ordinary,)]["runner"] in {
+        "flagquantum-bw1100-cpu",
+        "flagquantum-mc550-cpu",
+    }

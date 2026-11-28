@@ -72,8 +72,21 @@ sandbox-blocked loopback Gloo failures. Their raw logs are retained. The stale
 consumer was updated, the obsolete delegation-only test removed, and the same
 complete selection passes with local Gloo communication permitted. No product
 calculation, test tolerance, backend, or refusal condition was changed.
-Complete default results and exact-head CI must be recorded before this batch
-is called qualified.
+PR #1352 head `9a3f580d7979115412adb686ed9fea6f8ec450aa` is now qualified:
+all three workflows pass on attempt 1, with 432 successful checks and four
+existing conditional skips. All 384 CPU reports are retained and verified;
+Runtime accounts for 14,259 surviving nodes and coverage for 38,563, with the
+obsolete wrapper test as the sole removed node. All 83 original scientific
+singletons and call phases remain. Maximum whole executed partition times are
+Runtime 485 seconds, coverage 586, unit 464, and distributed CPU 425, including
+preparation/upload and excluding queue.
+
+The complete default run contains the same 22,785 nodes: 21,920 pass and 865
+conditionally skip. One evidence-provenance case skips after a historical Git
+lazy-fetch timeout; the unchanged exact test subsequently passes with implicit
+fetching disabled, against the real object store and declared unavailable
+origins. Those separately retained results reconcile to the predecessor's
+21,921 passed and 864 original conditions. The full-run skip is not rewritten.
 
 PR #1084 head `5fa323b1356b91996afe5cae3c5bf043f65c15cd` remains draft and
 conflicting. Its two new commits after `179ebbf6` change three independently

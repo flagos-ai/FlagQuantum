@@ -24,9 +24,9 @@ EXCLUSIVE_TEST_SECONDS = 120.0
 MAX_FILE_BATCH_TESTS = 16
 MAX_FILE_BATCH_SECONDS = 60.0
 DEFAULT_TIMEOUT_MINUTES = 60
-# Original module-fixture reports used 1.09 CPU cores out of twelve admitted.
-# Spread these unchanged serial workloads across already-qualified BW services;
-# Maxwell remains on A800 because its original run actually used seven cores.
+# Original embedding reports used 1.09 CPU cores out of twelve admitted.
+# Map only independently verified complete workloads to existing BW services;
+# keep Maxwell on A800 because its original run actually used seven cores.
 _EMBEDDING_TEST = "tests/integration/test_synthesis_projection_embedding_notebook.py::"
 _SERIAL_BW_RUNNERS: dict[str, str] = {
     _EMBEDDING_TEST
@@ -40,6 +40,10 @@ _SERIAL_BW_RUNNERS: dict[str, str] = {
     # Keep the complete memory-intensive state oracle on a qualified BW slot.
     "tests/integration/test_synthesis_glued_trees_notebook.py::"
     "test_wide_full_state_at_original_first_time": "fq-bw1100-17-cpu16-validation",
+    "tests/integration/test_synthesis_native_autocallable.py::"
+    "test_complete_native_source_and_circuit[2-0.22]": "fq-bw1100-15-cpu16-validation",
+    "tests/integration/test_synthesis_native_autocallable.py::"
+    "test_complete_native_source_and_circuit[2-0.1274075]": "fq-bw1100-16-cpu16-validation",
 }
 _CPU_QUALIFICATION = (
     Path(__file__).resolve().parents[2]
@@ -120,8 +124,8 @@ def write_plan(nodeids: tuple[str, ...], directory: Path, requested: int) -> int
         )
         assignments.update({name: index + reserve for name, index in balanced.items()})
     shards: list[list[str]] = [[] for _ in range(count)]
-    for batch in sorted(batches):
-        shards[assignments[batch]].extend(batches[batch])
+    for batch_key in sorted(batches):
+        shards[assignments[batch_key]].extend(batches[batch_key])
     assert all(shards)
     directory.mkdir(parents=True, exist_ok=False)
     for index, nodes in enumerate(shards):
@@ -158,8 +162,20 @@ def write_plan(nodeids: tuple[str, ...], directory: Path, requested: int) -> int
             raise ValueError(
                 "Serial coverage runners need the verified locked coverage profile"
             )
-    matrix = {
-        "include": [
+    entries = []
+    for i, nodes in enumerate(shards):
+        runner = bw_runners.get(nodes[0], "") if len(nodes) == 1 else ""
+        a800 = (
+            len(nodes) == 1
+            and hints.get(nodes[0], default) >= 300.0
+            and nodes[0] not in bw_runners
+        )
+        if not runner and not a800:
+            # Keep ordinary work off the pool reserved for the expensive cases.
+            # Existing BW and MC slots both admit four CPUs; their online pool
+            # sizes are approximately two to one.
+            runner = "flagquantum-mc550-cpu" if i % 3 == 0 else "flagquantum-bw1100-cpu"
+        entries.append(
             {
                 "shard": i,
                 "hosted-bucket": i % 8,
@@ -169,21 +185,15 @@ def write_plan(nodeids: tuple[str, ...], directory: Path, requested: int) -> int
                     LONG_TEST_TIMEOUT_MINUTES.get(nodes[0], 0) * 60,
                 )
                 >= EXCLUSIVE_TEST_SECONDS,
-                # These indivisible cases already occupy their own partition.
-                # Both existing A800 hosts qualify the locked coverage image;
-                # reuse their admitted CPU pool instead of adding empty shards.
-                "a800": len(nodes) == 1
-                and hints.get(nodes[0], default) >= 300.0
-                and nodes[0] not in bw_runners,
-                "runner": bw_runners.get(nodes[0], "") if len(nodes) == 1 else "",
+                "a800": a800,
+                "runner": runner,
                 "timeout-minutes": max(
                     DEFAULT_TIMEOUT_MINUTES,
                     sum(LONG_TEST_TIMEOUT_MINUTES.get(node, 0) for node in nodes),
                 ),
             }
-            for i, nodes in enumerate(shards)
-        ]
-    }
+        )
+    matrix = {"include": entries}
     if output := os.environ.get("GITHUB_OUTPUT"):
         with Path(output).open("a") as stream:
             stream.write(

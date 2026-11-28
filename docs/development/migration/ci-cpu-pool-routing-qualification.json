@@ -1,0 +1,54 @@
+{
+  "purpose": "Observed qualification of the two original full scientific cases on the proposed existing BW target slots, not a new planner contract or actual next-head CI result.",
+  "locked_image": "sha256:b12e3004927655651e3589bc9c263a7277574d66779d3c7713071959a7fd328e",
+  "mode": "One pytest worker, four numerical threads, existing dedicated four-CPU/24-GiB profile, immutable source, sysmon line coverage.",
+  "cases": [
+    {
+      "node": "tests/integration/test_synthesis_native_autocallable.py::test_complete_native_source_and_circuit[2-0.22]",
+      "selector": "fq-bw1100-15-cpu16-validation",
+      "source_revision": "9a3f580d7979115412adb686ed9fea6f8ec450aa",
+      "source_archive_sha256": "d94704517f06ab14caf5335b4fa654f1fce74e04f374b82a53b0cef037562524",
+      "actual_test_phase_seconds": 81.43877538386732,
+      "cpu_quota": 4.0,
+      "memory_limit_bytes": 25769803776,
+      "observed_memory_peak_bytes": 25769803776,
+      "memory_events": {
+        "low": 0,
+        "high": 0,
+        "max": 2647,
+        "oom": 0,
+        "oom_kill": 0,
+        "oom_group_kill": 0
+      },
+      "original_scientific_input_and_assertions_unchanged": true,
+      "all_snapshot_files_match_recorded_Git_blobs_before_after": true,
+      "actual_source_and_native_CPU_provider_checked": true,
+      "task_containers_remaining": 0
+    },
+    {
+      "node": "tests/integration/test_synthesis_native_autocallable.py::test_complete_native_source_and_circuit[2-0.1274075]",
+      "selector": "fq-bw1100-16-cpu16-validation",
+      "source_revision": "9a3f580d7979115412adb686ed9fea6f8ec450aa",
+      "source_archive_sha256": "d94704517f06ab14caf5335b4fa654f1fce74e04f374b82a53b0cef037562524",
+      "actual_test_phase_seconds": 81.46693265717477,
+      "cpu_quota": 4.0,
+      "memory_limit_bytes": 25769803776,
+      "observed_memory_peak_bytes": 25769803776,
+      "memory_events": {
+        "low": 0,
+        "high": 0,
+        "max": 2551,
+        "oom": 0,
+        "oom_kill": 0,
+        "oom_group_kill": 0
+      },
+      "original_scientific_input_and_assertions_unchanged": true,
+      "all_snapshot_files_match_recorded_Git_blobs_before_after": true,
+      "actual_source_and_native_CPU_provider_checked": true,
+      "task_containers_remaining": 0
+    }
+  ],
+  "positive_memory_headroom_claim": false,
+  "represents_actual_new_head_CI_qualification": false,
+  "scope": "Raw profile results establish only the observed complete workload on these existing targets. Both peak memory readings reached the quota, with reclaim events and no OOM. Next-head GitHub CI must independently preserve scientific calls, original selected nodes and whole-job time targets."
+}
