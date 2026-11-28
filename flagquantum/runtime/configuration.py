@@ -11,7 +11,6 @@ from .backend_registry import (
     get_active_backend,
     get_backend_capabilities,
     resolve_dtype,
-    set_active_backend,
 )
 
 
@@ -19,7 +18,7 @@ def set_backend(name: str = "pytorch") -> str:
     """Select the native tensor backend for the current runtime context."""
 
     try:
-        selected = set_active_backend(name).name
+        selected = get_backend_capabilities(name).name
         set_runtime_config(get_runtime_config().with_overrides(backend=selected))
         return selected
     except KeyError as exc:
