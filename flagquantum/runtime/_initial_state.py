@@ -10,9 +10,9 @@ import torch
 
 from flagquantum.core.operators.schema import get_operator_schema
 
+from ..core.classical_control import is_classical_control_instruction
 from ..core.ir import CircuitIR, MeasurementNode
 from ..errors import CapabilityError, ValidationError
-from .dynamic._conditions import instruction_is_dynamic
 from .options import ExecutionOptions
 from .options_resolver import circuit_execution_constraints, resolve_execution_options
 
@@ -38,7 +38,7 @@ def validate_input_program(program: CircuitIR) -> None:
             schema is None
             or not schema.unitary
             or instruction.matrix is not None
-            or instruction_is_dynamic(instruction)
+            or is_classical_control_instruction(instruction)
         ):
             raise CapabilityError(
                 "external initial_state supports ordinary static unitary opcodes only"

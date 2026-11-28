@@ -7,9 +7,6 @@ from collections.abc import Mapping, Sequence
 from typing import Any
 
 from ..common import communication_tier as _communication_tier
-from ..release_policy import (
-    attach_mps_backward_readiness as _attach_mps_backward_readiness,
-)
 from ..runtime_environment import _require_jax
 
 
@@ -302,7 +299,9 @@ def _collect_jax_mps_accelerator_backward_evidence(
         "release_gate_allowed": False,
         "blockers": blockers,
     }
-    return _attach_mps_backward_readiness(payload)
+    from flagquantum.runtime.audit.mps_readiness import _attach_mps_runtime_summary
+
+    return _attach_mps_runtime_summary(payload)
 
 
 def _summarize_minimal_mps_measured_runtime_evidence(

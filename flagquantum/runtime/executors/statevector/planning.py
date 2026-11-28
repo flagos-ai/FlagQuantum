@@ -718,11 +718,3 @@ def trace_distributed_statevector_plan(
         per_rank_event_counts=per_rank_counts,
         peak_rank_buffer_bytes=tuple(peak_buffers),
     )
-
-
-def validate_distributed_statevector_plan(
-    plan: DistributedStatevectorPlan,
-) -> StatevectorTraceReport:
-    """Validate a distributed statevector plan and return a trace-shaped report."""
-
-    return trace_distributed_statevector_plan(plan)

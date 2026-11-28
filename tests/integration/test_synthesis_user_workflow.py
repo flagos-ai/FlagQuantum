@@ -12,7 +12,7 @@ from examples.synthesis.tutorials.getting_started.trial.main import polynomial, 
 from flagquantum import synth
 from flagquantum.core.ir import Instruction
 from flagquantum.runtime.execution_plan import ExecutionPlan
-from flagquantum.synth import _readout as readout
+from flagquantum.runtime.results import readout
 
 pytestmark = pytest.mark.integration
 

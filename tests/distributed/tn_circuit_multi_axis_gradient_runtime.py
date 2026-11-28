@@ -43,7 +43,7 @@ from flagquantum.runtime.executors.tensor_network.reverse_dag import (
     execute_tn_forward_with_tape,
     plan_explicit_tn_reverse_dag,
 )
-from flagquantum.simulation.tensor_network.entrypoints import (
+from flagquantum.simulation.tensor_network.observables import (
     build_tensor_network_expectation,
 )
 

@@ -263,11 +263,7 @@ def test_migrated_cpu_jobs_keep_frameworks_and_processes_isolated(job: str) -> N
         )
     if job == "coverage-shard":
         assert " ".join(definition["runs-on"].split()) == (
-            "${{ fromJSON( (github.event_name != 'pull_request' || "
-            "github.event.pull_request.head.repo.full_name == github.repository) "
-            '&& (matrix.a800 && \'["self-hosted","linux","x64","flagquantum-cpu",'
-            '"flagquantum-a800-cpu"]\' || \'["self-hosted","linux","x64","flagquantum-cpu"]\') '
-            "|| '[\"ubuntu-latest\"]' ) }}"
+            '${{ fromJSON( (github.event_name != \'pull_request\' || github.event.pull_request.head.repo.full_name == github.repository) && (matrix.runner && format(\'["self-hosted","linux","x64","flagquantum-cpu","{0}"]\', matrix.runner) || matrix.a800 && \'["self-hosted","linux","x64","flagquantum-cpu","flagquantum-a800-cpu"]\' || \'["self-hosted","linux","x64","flagquantum-cpu"]\') || \'["ubuntu-latest"]\' ) }}'
         )
         assert any(
             step.get("uses") == "./.github/actions/offline-cpu"
@@ -495,8 +491,15 @@ def test_coverage_shards_are_combined_before_the_policy_is_enforced() -> None:
         and "pattern" in step.get("with", {})
     )
     assert download["with"]["merge-multiple"] is True
-    assert download["timeout-minutes"] == 6
-    assert not download.get("continue-on-error", False)
+    assert download["timeout-minutes"] == 2
+    assert download["continue-on-error"] is True
+    retry = next(
+        step for step in source_steps if step.get("id") == "coverage-data-retry"
+    )
+    assert retry["uses"] == download["uses"]
+    assert retry["with"] == download["with"]
+    assert retry["timeout-minutes"] == 3
+    assert not retry.get("continue-on-error", False)
     assert commands.index("integrity_check") < commands.index(
         'coverage combine "$FQ_COVERAGE_INPUTS"'
     )
@@ -625,7 +628,10 @@ def test_openfermion_validation_does_not_wait_for_container_builds() -> None:
 
 def test_native_fermion_uses_isolated_cpu_capacity_for_trusted_changes() -> None:
     job = _document("ci.yml")["jobs"]["native-fermion"]
-    assert job["runs-on"] == TRUSTED_CPU_ROUTE
+    assert job["runs-on"] == "ubuntu-latest"
+    assert _groups(job) == {"flagquantum-gh-3", "flagquantum-gh-4"}
+    assert job["concurrency"]["queue"] == "max"
+    assert job["timeout-minutes"] == 45
     assert len(job["strategy"]["matrix"]["include"]) == 2
     isolated = next(
         step
