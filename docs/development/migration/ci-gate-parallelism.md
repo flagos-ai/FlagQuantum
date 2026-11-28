@@ -24,6 +24,8 @@ The slow dependency cell ran on `fq-a100-cpu10`: isolated-environment preparatio
 installation 106 and editable installation 103; tests took 45. Routing this
 fresh compatibility check to the already provisioned BW pool uses idle capacity
 without adding runner registrations, labels, quotas or services.
+The fresh project install resolves all declared core dependencies under the same
+selected Torch constraint, including the Python 3.10 TOML reader.
 
 The workflow keeps its existing hosted concurrency buckets. The terminal
 `ci-complete` gate must require every added job and fail for a failed, cancelled

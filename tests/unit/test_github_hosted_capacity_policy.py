@@ -22,6 +22,7 @@ WORKFLOWS = ROOT / ".github" / "workflows"
 CEILING = 8
 BUCKETS = frozenset(f"flagquantum-gh-{slot}" for slot in range(CEILING))
 TRUSTED_CPU_ROUTE = "${{ (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository) && 'flagquantum-cpu-general' || 'ubuntu-latest' }}"
+BW_CPU_ROUTE = "${{ (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository) && 'flagquantum-bw1100-cpu' || 'ubuntu-latest' }}"
 A800_CPU_ROUTE = '${{ fromJSON((github.event_name != \'pull_request\' || github.event.pull_request.head.repo.full_name == github.repository) && \'["self-hosted","linux","x64","flagquantum-cpu"]\' || \'["ubuntu-latest"]\') }}'
 BOUNDED_PYTEST_ADDOPTS = "-n 16 --dist=worksteal --durations=50"
 
@@ -295,7 +296,7 @@ def test_dependency_bounds_retain_the_full_matrix_on_isolated_cpu_runners() -> N
     assert "python -m pytest tests/smoke tests/test_native_circuit.py -q" in commands
     assert "--print-floor" in commands
     assert "mypy --strict" in commands
-    assert definition["runs-on"] == TRUSTED_CPU_ROUTE
+    assert definition["runs-on"] == BW_CPU_ROUTE
     assert "max-parallel" not in definition["strategy"]
     isolated = next(
         step
@@ -303,6 +304,16 @@ def test_dependency_bounds_retain_the_full_matrix_on_isolated_cpu_runners() -> N
         if step.get("uses") == "./.github/actions/isolated-python"
     )
     assert isolated["with"]["torch-spec"] == "${{ matrix.torch }}"
+    assert isolated["with"]["inherit-installed-dependencies"] == "false"
+    project = next(
+        step
+        for step in steps
+        if step.get("name") == "Install project within the selected Torch bound"
+    )
+    assert project["env"]["FQ_TORCH_SPEC"] == "${{ matrix.torch }}"
+    assert '"$FQ_TORCH_SPEC" > "$RUNNER_TEMP/fq-torch-bound.txt"' in project["run"]
+    assert '--constraint "$RUNNER_TEMP/fq-torch-bound.txt" -e .' in project["run"]
+    assert "--no-deps" not in project["run"]
 
 
 def test_pull_requests_use_compatibility_smoke_on_older_python() -> None:
@@ -935,6 +946,7 @@ def test_dependency_bounds_uses_checked_mirror_without_changing_torch_spec() -> 
     )
     assert isolated["with"] == {
         "torch-spec": "${{ matrix.torch }}",
+        "inherit-installed-dependencies": "false",
         "self-hosted-pypi-index": "https://mirrors.aliyun.com/pypi/simple",
     }
     assert any(

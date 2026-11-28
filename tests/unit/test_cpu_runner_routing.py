@@ -183,10 +183,31 @@ def test_portable_cpu_work_uses_general_or_validated_scale_sets() -> None:
     }
     for name in portable:
         job = jobs[name]
-        assert any(
-            f"'{label}'" in job["runs-on"]
-            for label in {"flagquantum-cpu-general", *_inventoried_r300_labels()}
-        ), name
+        if name == "dependency-bounds":
+            assert job["runs-on"] == (
+                "${{ (github.event_name != 'pull_request' || "
+                "github.event.pull_request.head.repo.full_name == github.repository) "
+                "&& 'flagquantum-bw1100-cpu' || 'ubuntu-latest' }}"
+            )
+            isolated = next(
+                step
+                for step in job["steps"]
+                if step.get("uses") == "./.github/actions/isolated-python"
+            )
+            assert isolated["with"]["inherit-installed-dependencies"] == "false"
+            installation = next(
+                step
+                for step in job["steps"]
+                if step.get("name") == "Install project within the selected Torch bound"
+            )
+            assert installation["env"]["FQ_TORCH_SPEC"] == "${{ matrix.torch }}"
+            assert "--constraint" in installation["run"]
+            assert "--no-deps" not in installation["run"]
+        else:
+            assert any(
+                f"'{label}'" in job["runs-on"]
+                for label in {"flagquantum-cpu-general", *_inventoried_r300_labels()}
+            ), name
         assert "flagquantum-a100-cpu" not in job["runs-on"], name
         if "flagcicd-r300-" not in job["runs-on"]:
             assert not any(
@@ -494,7 +515,16 @@ def test_quality_capacity_is_independent_of_platform_and_package_builds() -> Non
         )
         for row in platform["strategy"]["matrix"]["include"]
     }
-    build_groups = platform_groups | {jobs["package"]["concurrency"]["group"]}
+    package_groups = {
+        jobs[name]["concurrency"]["group"]
+        for name in (
+            "package",
+            "package-manylinux",
+            "package-installed",
+            "package-qec-installed",
+        )
+    }
+    build_groups = platform_groups | package_groups
     assert len(build_groups) == 3
     assert quality_group not in build_groups
     assert build_groups <= {f"flagquantum-gh-{slot}" for slot in range(8)}

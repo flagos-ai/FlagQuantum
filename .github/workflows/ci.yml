@@ -182,6 +182,7 @@ jobs:
   quality:
     needs: prepare-source
     runs-on: ubuntu-latest
+    timeout-minutes: 30
     concurrency:
       group: flagquantum-gh-0
       queue: max
@@ -210,12 +211,6 @@ jobs:
       - run: python -m pip install --upgrade pip 'setuptools>=77.0.3' wheel
       - uses: ./.github/actions/install-cpu-torch
       - run: python -m pip install --no-build-isolation -e '.[dev]'
-      - name: English repository content
-        run: python tools/architecture/check_repository_language.py
-      - name: Ruff production and test surface
-        run: ruff check flagquantum tests tools
-      - name: Black production and test surface
-        run: black --check flagquantum tests tools
       - name: Strict type check of the whole package
         # Target 3.12 because numpy's bundled stubs use PEP 695 ``type``
         # statements, which mypy only parses at 3.12. The 3.10 and 3.11
@@ -362,17 +357,132 @@ jobs:
         run: python tools/architecture/public_api_snapshot.py
       - name: Verify proposed Stable Core classification
         run: python -m pytest tests/unit/test_public_api_candidate.py -q
-      - name: Reject legacy root API in user-facing files
-        run: python tools/architecture/check_legacy_root_api_usage.py
       - name: Verify correctness certification matrix
         run: python tools/validation/correctness_certification.py --check
       - name: Verify capability maturity claims
         run: python tools/validation/check_capability_maturity.py
+      # Three two-node probe contract tests recompute the digest of the contract
+      # each checked-in artifact recorded, from the revision the artifact names.
+      # That needs the commit, so those three assertions skip in a depth-1 lane
+      # rather than read a clone that never fetched the revision as a mismatch.
+      # They ran in the unit tier and errored there for exactly that reason,
+      # which is why the skip has to be paired with somewhere it reaches a
+      # verdict: a gate that fetches full history. The rest of
+      # each module is about the artifact's own content and runs everywhere.
+      - name: Verify checked-in probe artifacts against their recorded contracts
+        run: >-
+          python -m pytest
+          tests/team/runtime/test_cuda_multinode_tn_probe.py
+          tests/team/runtime/test_cuda_multinode_mps_probe.py
+          tests/team/runtime/test_cuda_multinode_statevector_probe.py
+          -q
+      - name: Verify checked-in FlagOS reference evidence
+        run: >-
+          python tools/validation/validate_flagos_reference_evidence.py
+          artifacts/flagos_cuda_reference_a800_20260824.json
+      - name: Verify branch-protection required-check contract
+        run: python tools/ci/validate_required_checks.py
+      - name: Repository size and forbidden artifacts
+        run: python tools/architecture/check_repository_hygiene.py
+      - name: Lazy import budget
+        run: python tools/validation/check_import_time.py
+      - name: Retain resource limits and pytest timing reports
+        if: ${{ always() && env.FQ_CI_REPORT_DIR != '' }}
+        uses: ./.github/actions/upload-artifact
+        timeout-minutes: 6
+        with:
+          name: cpu-report-${{ github.job }}-${{ strategy.job-index || '0' }}
+          path: ${{ env.FQ_CI_REPORT_DIR }}
+          retention-days: 7
+
+
+  quality-style:
+    needs: prepare-source
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    concurrency:
+      group: flagquantum-gh-1
+      queue: max
+    steps:
+      # The evidence provenance gates below ask whether each recorded source
+      # revision is present in this repository and whether a ref of it reaches
+      # the commit. A depth-1 clone cannot answer either question about a
+      # revision it did not fetch: it cannot tell one it never fetched from one
+      # the repository never contained, nor list the refs reaching a commit, and
+      # tools/release/evidence_provenance.py fails closed on that ambiguity rather than
+      # reading it as a pass.
+      - name: Clear sparse checkout state from a previous job
+        run: |
+          if [ -d .git ]; then
+            git sparse-checkout disable
+            rm -f .git/info/sparse-checkout
+            git config --local --unset core.sparseCheckout || true
+          fi
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - uses: ./.github/actions/isolated-python
+      - run: python -m pip install --upgrade pip 'setuptools>=77.0.3' wheel
+      - uses: ./.github/actions/install-cpu-torch
+      - run: python -m pip install --no-build-isolation -e '.[dev]'
+      - name: English repository content
+        run: python tools/architecture/check_repository_language.py
+      - name: Ruff production and test surface
+        run: ruff check flagquantum tests tools
+      - name: Black production and test surface
+        run: black --check flagquantum tests tools
+      - name: Reject legacy root API in user-facing files
+        run: python tools/architecture/check_legacy_root_api_usage.py
+      - name: Retain resource limits and pytest timing reports
+        if: ${{ always() && env.FQ_CI_REPORT_DIR != '' }}
+        uses: ./.github/actions/upload-artifact
+        timeout-minutes: 6
+        with:
+          name: cpu-report-${{ github.job }}-${{ strategy.job-index || '0' }}
+          path: ${{ env.FQ_CI_REPORT_DIR }}
+          retention-days: 7
+
+
+  quality-provenance:
+    needs: prepare-source
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    concurrency:
+      group: flagquantum-gh-2
+      queue: max
+    steps:
+      # The evidence provenance gates below ask whether each recorded source
+      # revision is present in this repository and whether a ref of it reaches
+      # the commit. A depth-1 clone cannot answer either question about a
+      # revision it did not fetch: it cannot tell one it never fetched from one
+      # the repository never contained, nor list the refs reaching a commit, and
+      # tools/release/evidence_provenance.py fails closed on that ambiguity rather than
+      # reading it as a pass.
+      - name: Clear sparse checkout state from a previous job
+        run: |
+          if [ -d .git ]; then
+            git sparse-checkout disable
+            rm -f .git/info/sparse-checkout
+            git config --local --unset core.sparseCheckout || true
+          fi
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - uses: ./.github/actions/isolated-python
+      - run: python -m pip install --upgrade pip 'setuptools>=77.0.3' wheel
+      - uses: ./.github/actions/install-cpu-torch
+      - run: python -m pip install --no-build-isolation -e '.[dev]'
       # The two modules below resolve each performance claim's recorded
       # `code_version` against this repository's history. A depth-1 clone cannot
       # separate a revision it never fetched from one the repository never
       # contained, so those tests skip in every other lane rather than read that
-      # silence as a pass -- which leaves this job, the only one that fetches
+      # silence as a pass -- which leaves a gate that fetches
       # full history, as the only place they can reach a verdict. Running them
       # here is what keeps the pin check live instead of nominally present.
       - name: Verify performance claim provenance where history resolves
@@ -382,21 +492,48 @@ jobs:
           tests/unit/test_docs_source_of_truth.py
           tests/unit/test_evidence_revisions.py
           -q
-      # Three two-node probe contract tests recompute the digest of the contract
-      # each checked-in artifact recorded, from the revision the artifact names.
-      # That needs the commit, so those three assertions skip in a depth-1 lane
-      # rather than read a clone that never fetched the revision as a mismatch.
-      # They ran in the unit tier and errored there for exactly that reason,
-      # which is why the skip has to be paired with somewhere it reaches a
-      # verdict: this job, the only one that fetches full history. The rest of
-      # each module is about the artifact's own content and runs everywhere.
-      - name: Verify checked-in probe artifacts against their recorded contracts
-        run: >-
-          python -m pytest
-          tests/team/runtime/test_cuda_multinode_tn_probe.py
-          tests/team/runtime/test_cuda_multinode_mps_probe.py
-          tests/team/runtime/test_cuda_multinode_statevector_probe.py
-          -q
+      - name: Retain resource limits and pytest timing reports
+        if: ${{ always() && env.FQ_CI_REPORT_DIR != '' }}
+        uses: ./.github/actions/upload-artifact
+        timeout-minutes: 6
+        with:
+          name: cpu-report-${{ github.job }}-${{ strategy.job-index || '0' }}
+          path: ${{ env.FQ_CI_REPORT_DIR }}
+          retention-days: 7
+
+
+  quality-evidence-origins:
+    needs: prepare-source
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    concurrency:
+      group: flagquantum-gh-3
+      queue: max
+    steps:
+      # The evidence provenance gates below ask whether each recorded source
+      # revision is present in this repository and whether a ref of it reaches
+      # the commit. A depth-1 clone cannot answer either question about a
+      # revision it did not fetch: it cannot tell one it never fetched from one
+      # the repository never contained, nor list the refs reaching a commit, and
+      # tools/release/evidence_provenance.py fails closed on that ambiguity rather than
+      # reading it as a pass.
+      - name: Clear sparse checkout state from a previous job
+        run: |
+          if [ -d .git ]; then
+            git sparse-checkout disable
+            rm -f .git/info/sparse-checkout
+            git config --local --unset core.sparseCheckout || true
+          fi
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - uses: ./.github/actions/isolated-python
+      - run: python -m pip install --upgrade pip 'setuptools>=77.0.3' wheel
+      - uses: ./.github/actions/install-cpu-torch
+      - run: python -m pip install --no-build-isolation -e '.[dev]'
       # The six artifact validators in this job resolve the revision of the one
       # artifact each of them names, so an artifact no validator names was never
       # asked -- which is how nineteen artifacts under `artifacts/` came to record
@@ -410,19 +547,9 @@ jobs:
       # whose two records disagree fails rather than passing twice. Presence alone
       # is not enough, because a commit only a deleted branch pointed at stays in
       # the object database of the checkout that made it and no clone obtains it.
-      # It needs the full history this job already fetches.
+      # It needs the full history these gates already fetch.
       - name: Verify evidence revision origins
         run: python tools/release/check_evidence_revisions.py
-      - name: Verify checked-in FlagOS reference evidence
-        run: >-
-          python tools/validation/validate_flagos_reference_evidence.py
-          artifacts/flagos_cuda_reference_a800_20260824.json
-      - name: Verify branch-protection required-check contract
-        run: python tools/ci/validate_required_checks.py
-      - name: Repository size and forbidden artifacts
-        run: python tools/architecture/check_repository_hygiene.py
-      - name: Lazy import budget
-        run: python tools/validation/check_import_time.py
       - name: Retain resource limits and pytest timing reports
         if: ${{ always() && env.FQ_CI_REPORT_DIR != '' }}
         uses: ./.github/actions/upload-artifact
@@ -1991,7 +2118,7 @@ jobs:
 
   dependency-bounds:
     needs: prepare-source
-    runs-on: ${{ (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository) && 'flagquantum-cpu-general' || 'ubuntu-latest' }}
+    runs-on: ${{ (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository) && 'flagquantum-bw1100-cpu' || 'ubuntu-latest' }}
     timeout-minutes: 30
     env:
       OMP_NUM_THREADS: "1"
@@ -2000,7 +2127,7 @@ jobs:
       CUDA_VISIBLE_DEVICES: ""
       JAX_PLATFORMS: cpu
     concurrency:
-      group: flagquantum-${{ (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository) && format('a100-cpu-{0}-dependency-bounds-{1}', github.run_id, strategy.job-index || 0) || 'gh' }}-2
+      group: flagquantum-${{ (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository) && format('self-hosted-{0}-dependency-bounds-{1}', github.run_id, strategy.job-index || 0) || 'gh' }}-2
       queue: max
     strategy:
       fail-fast: false
@@ -2097,13 +2224,20 @@ jobs:
       - uses: ./.github/actions/isolated-python
         with:
           torch-spec: ${{ matrix.torch }}
+          inherit-installed-dependencies: "false"
           self-hosted-pypi-index: https://mirrors.aliyun.com/pypi/simple
       - run: python -m pip install --upgrade pip 'setuptools>=77.0.3' wheel
       - uses: ./.github/actions/install-cpu-torch
         with:
           torch-spec: ${{ matrix.torch }}
       - run: python -m pip install 'pytest>=7.0.0,<10'
-      - run: python -m pip install --no-build-isolation -e . --no-deps
+      - name: Install project within the selected Torch bound
+        env:
+          FQ_TORCH_SPEC: ${{ matrix.torch }}
+        run: |
+          printf '%s\n' "$FQ_TORCH_SPEC" > "$RUNNER_TEMP/fq-torch-bound.txt"
+          python -m pip install --no-build-isolation \
+            --constraint "$RUNNER_TEMP/fq-torch-bound.txt" -e .
       - name: Verify dependency consistency and CPU frameworks
         run: |
           python -m pip check
@@ -2161,6 +2295,64 @@ jobs:
           cp dist-a/* dist/
       - name: Verify artifact contents
         run: python tools/verify_distribution_artifacts.py dist
+      - name: Write checksummed artifact manifest
+        run: python tools/release/artifact_manifest.py --output dist/manifest.json dist/*.whl dist/*.tar.gz
+      - uses: ./.github/actions/upload-artifact
+        timeout-minutes: 6
+        with:
+          name: flagquantum-distributions-${{ github.sha }}
+          path: dist/
+
+
+  package-manylinux:
+    needs: prepare-source
+    runs-on: ubuntu-22.04
+    timeout-minutes: 30
+    concurrency:
+      group: flagquantum-gh-5
+      queue: max
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - run: python -m pip install build setuptools wheel
+      # Reproducible artifacts are compiled against PyTorch's 2.10 Stable ABI.
+      # The cold-install steps below validate the resulting artifacts against
+      # the declared runtime range, including preinstalled vendor baselines.
+      - run: python -m pip install "torch>=2.10,<2.11" --index-url https://download.pytorch.org/whl/cpu
+      - name: Build and test the publishable manylinux wheel
+        uses: pypa/cibuildwheel@v4.3.0
+        with:
+          # cp310-abi3 is the single wheel for every supported CPython.
+          # cibuildwheel builds it against torch 2.10 and tests it on 2.14.
+          only: cp310-manylinux_x86_64
+          output-dir: wheelhouse
+      - name: Verify publishable manylinux wheel contents
+        run: python tools/verify_distribution_artifacts.py wheelhouse
+
+  package-installed:
+    needs: [prepare-source, package]
+    runs-on: ubuntu-22.04
+    timeout-minutes: 30
+    concurrency:
+      group: flagquantum-gh-4
+      queue: max
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - run: python -m pip install build setuptools wheel
+      # Reproducible artifacts are compiled against PyTorch's 2.10 Stable ABI.
+      # The cold-install steps below validate the resulting artifacts against
+      # the declared runtime range, including preinstalled vendor baselines.
+      - run: python -m pip install "torch>=2.10,<2.11" --index-url https://download.pytorch.org/whl/cpu
+      - uses: actions/download-artifact@v8.0.2
+        with:
+          digest-mismatch: error
+          name: flagquantum-distributions-${{ github.sha }}
+          path: dist
       - name: Verify one wheel on older PyTorch runtimes
         timeout-minutes: 15
         run: |
@@ -2174,15 +2366,6 @@ jobs:
               /tmp/fq-torch-compat/bin/python -c "import torch; from importlib.metadata import requires; from packaging.requirements import Requirement; r=next(Requirement(x) for x in requires('flagquantum') if Requirement(x).name == 'torch'); assert r.specifier.contains(torch.__version__), (r, torch.__version__); from flagquantum.simulation.native_cpu import adjoint; assert adjoint.native_cpu_adjoint_available(), repr(adjoint._EXTENSION_ERROR); import flagquantum as fq; assert fq.Circuit(2).h(0).cx(0,1).state().shape[-1] == 4"
             )
           done
-      - name: Build and test the publishable manylinux wheel
-        uses: pypa/cibuildwheel@v4.3.0
-        with:
-          # cp310-abi3 is the single wheel for every supported CPython.
-          # cibuildwheel builds it against torch 2.10 and tests it on 2.14.
-          only: cp310-manylinux_x86_64
-          output-dir: wheelhouse
-      - name: Verify publishable manylinux wheel contents
-        run: python tools/verify_distribution_artifacts.py wheelhouse
       - name: Cold-install CPU wheel and run quick start
         timeout-minutes: 5
         env:
@@ -2213,8 +2396,29 @@ jobs:
           /tmp/fq-sdist/bin/python -c "import flagquantum as fq; c=fq.Circuit(2).h(0).cx(0,1); assert c.state().shape[-1] == 4"
           /tmp/fq-sdist/bin/python -c "from flagquantum.simulation.numerics.conformance import run_double_single_conformance; assert run_double_single_conformance().passed"
           popd
-      - name: Write checksummed artifact manifest
-        run: python tools/release/artifact_manifest.py --output dist/manifest.json dist/*.whl dist/*.tar.gz
+
+  package-qec-installed:
+    needs: [prepare-source, package]
+    runs-on: ubuntu-22.04
+    timeout-minutes: 30
+    concurrency:
+      group: flagquantum-gh-5
+      queue: max
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - run: python -m pip install build setuptools wheel
+      # Reproducible artifacts are compiled against PyTorch's 2.10 Stable ABI.
+      # The cold-install steps below validate the resulting artifacts against
+      # the declared runtime range, including preinstalled vendor baselines.
+      - run: python -m pip install "torch>=2.10,<2.11" --index-url https://download.pytorch.org/whl/cpu
+      - uses: actions/download-artifact@v8.0.2
+        with:
+          digest-mismatch: error
+          name: flagquantum-distributions-${{ github.sha }}
+          path: dist
       - name: Verify real QEC optional installations outside the checkout
         id: qec-installed
         timeout-minutes: 15
@@ -2230,12 +2434,6 @@ jobs:
           name: qec-installed-${{ github.sha }}
           path: ${{ runner.temp }}/qec-installed-reports/
           retention-days: 7
-      - uses: ./.github/actions/upload-artifact
-        timeout-minutes: 6
-        with:
-          name: flagquantum-distributions-${{ github.sha }}
-          path: dist/
-
   release-wheel-platform:
     needs: prepare-source
     # Linux is exercised by `package`; these are the two native toolchains that
@@ -2956,6 +3154,9 @@ jobs:
       - pre-commit
       - prepare-source
       - quality
+      - quality-style
+      - quality-provenance
+      - quality-evidence-origins
       - native-fermion
       - cpu-core
       - cpu-core-3-12-tests
@@ -2972,6 +3173,9 @@ jobs:
       - pennylane-optional
       - dependency-bounds
       - package
+      - package-manylinux
+      - package-installed
+      - package-qec-installed
       - release-wheel-platform
       - distributed-cpu
       - distributed-cpu-shard
