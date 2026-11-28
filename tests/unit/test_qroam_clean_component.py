@@ -10,6 +10,7 @@ import pytest
 
 from flagquantum.compiler.registers.lookup.qroam_clean_component import (
     qroam_clean_program,
+    qroam_clean_unblocked_program,
 )
 from flagquantum.compiler.registers.lookup.source_qroam_clean import QroamCleanTable
 from flagquantum.compiler.registers.register_binding import bind_register_program
@@ -21,6 +22,51 @@ from tests.unit.test_register_subtraction import assert_source
 from tests.unit.test_source_qroam_clean import source_clean_graph
 
 pytestmark = [pytest.mark.unit, pytest.mark.ftqc_reference]
+
+
+def test_unblocked_template_replaces_finite_lookup_without_changing_execution() -> None:
+    from qualtran.bloqs.data_loading.qroam_clean import QROAMClean
+
+    from flagquantum.compiler.formats.legacy_component_resolution import (
+        resolve_component_program,
+    )
+    from flagquantum.compiler.formats.legacy_qrom_factories import qrom_factories
+    from flagquantum.compiler.registers.lookup.qroam_clean_metadata import (
+        qroam_clean_signature,
+    )
+    from tests.unit.test_legacy_arithmetic_factories import _library
+
+    source = QROAMClean.build_from_data(
+        [0, 1, 2, 3], [3, 2, 1, 0], target_bitsizes=(2, 2), log_block_sizes=(0,)
+    )
+    lookup = resolve_component_program(
+        _library(source.qrom_bloq, 0), 0, qrom_factories()
+    )
+    signature = qroam_clean_signature((4,), (2, 2), (0,), selection_widths=(2,))
+    actual = qroam_clean_unblocked_program(signature, lookup)
+    expected = qroam_clean_program(
+        QroamCleanTable((4,), (0,), ((0, 1, 2, 3), (3, 2, 1, 0))),
+        (2, 2),
+        reserve_workspace=False,
+    )
+    left = bind_register_program(
+        actual,
+        ((0, 1),),
+        clean=tuple(range(2, 24)),
+        allow_workspace_outputs=True,
+        measured_workspace="reset",
+    )
+    right = bind_register_program(
+        expected,
+        ((0, 1),),
+        clean=tuple(range(2, 24)),
+        allow_workspace_outputs=True,
+        measured_workspace="reset",
+    )
+    assert left.circuit == right.circuit and left.outputs == right.outputs
+    assert tuple(
+        (e.kind, e.wires, e.dirty, e.instruction_offset) for e in left.events
+    ) == tuple((e.kind, e.wires, e.dirty, e.instruction_offset) for e in right.events)
 
 
 @pytest.fixture(scope="module", autouse=True)

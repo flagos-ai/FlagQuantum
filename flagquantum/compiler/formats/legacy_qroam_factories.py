@@ -5,16 +5,15 @@
 """Resolve clean lookup constructors without replacing the source erasure leaf."""
 
 from collections.abc import Mapping
-from math import prod
 from typing import cast
-
-import numpy as np
 
 from ...core.ir.program import FunctionRecord, ProgramRecord
 from ...core.ir.program.registers import Register, RegisterSide
 from ...core.ir.program.signatures import Signature
 from ...errors import SerializationError
-from ..registers.component_builder import ComponentProgramBuilder
+from ..registers.lookup.qroam_clean_adjoint_component import (
+    qroam_clean_adjoint_wrapper_program,
+)
 from ..registers.lookup.qroam_clean_component import qroam_clean_program
 from ..registers.lookup.qrom_table import QromTable
 from ..registers.lookup.source_qroam_clean import QroamCleanTable
@@ -121,25 +120,9 @@ def qroam_factories(*, reserve_workspace: bool = True) -> dict[str, ComponentFac
         erased = FunctionRecord(
             name + "_erase", (), registers=_erasure_signature(leaf_table)
         )
-        builder = ComponentProgramBuilder(signature, (erased,), name=name)
-        values: dict[str, object] = {
-            reg.name: builder.inputs[reg.name]
-            for reg in signature
-            if not reg.name.startswith(("target", "junk_"))
-        }
-        for i, width in enumerate(base.target_bitsizes):
-            if width == 0:
-                continue
-            target = builder.inputs[f"target{i}_"]
-            junk = (
-                np.asarray(builder.inputs[f"junk_target{i}_"]).flat
-                if prod(table.block_shape) > 1
-                else ()
-            )
-            values[f"target{i}_"] = np.asarray([target, *junk], dtype=object).reshape(
-                table.block_shape
-            )
-        return builder.finalize(builder.call_dict(erased.name, values))
+        return qroam_clean_adjoint_wrapper_program(
+            Signature(child.registers), erased, table.block_shape, name=name
+        )
 
     prefix = "qualtran.bloqs.data_loading.qroam_clean."
     return {

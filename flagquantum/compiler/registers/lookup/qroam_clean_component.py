@@ -10,7 +10,8 @@ import numpy as np
 from numpy.typing import NDArray
 
 from ....core.ir.program import ProgramRecord
-from ..component_builder import ComponentProgramBuilder
+from ....core.ir.program.signatures import Signature
+from ..component_builder import BindingCollection, ComponentProgramBuilder
 from .blocked_lookup_component import (
     load_lookup_banks,
     partition_lookup_selection,
@@ -19,6 +20,30 @@ from .blocked_lookup_component import (
 )
 from .qroam_clean_metadata import qroam_clean_signature
 from .source_qroam_clean import QroamCleanTable
+
+
+def qroam_clean_unblocked_program(
+    signature: Signature, lookup: ProgramRecord
+) -> ProgramRecord:
+    """Allocate each RIGHT word before one source QROM call with singleton banks.
+
+    This is the block-size-one source path, including symbolic word widths.
+    An unavailable QROM body remains explicit and prevents physical binding.
+    No lookup values are fabricated from its shape.
+    """
+    builder = ComponentProgramBuilder(signature)
+    entry = builder.import_program(lookup, entry=lookup.functions[0].name)
+    values: dict[str, BindingCollection] = dict(builder.inputs)
+    for register in signature.rights():
+        if register.name.startswith("target"):
+            values[register.name] = np.asarray(
+                [builder.allocate(dtype=register.dtype)], dtype=object
+            )
+    result = builder.call_dict(entry, values)
+    for register in signature.rights():
+        if register.name.startswith("target"):
+            result[register.name] = np.asarray(result[register.name]).flat[0]
+    return builder.finalize(result)
 
 
 def qroam_clean_program(

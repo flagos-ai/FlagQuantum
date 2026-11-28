@@ -146,3 +146,15 @@ QROM reuses imported XOR-mask definitions within each builder. Repeated calls
 still consume fresh bindings and emit independent SSA results in source order.
 This affects construction cost only; lookup order, feedback and the complete
 Program remain unchanged, including the reserved-workspace profile.
+
+`qroam_clean_unblocked_program` owns the source block-size-one allocation and
+single QROM call, including logical symbolic word widths. Its lookup is a
+complete supplied Program; unresolved QROM data remains a declaration and cannot
+be physically bound. `qroam_clean_adjoint_wrapper_program` owns the source
+scalar-plus-junk reshape and single explicit erase call. Its bank shape is
+concrete while word widths may be symbolic. The erase leaf's implementation and
+resource model remain separate; this wrapper never silently chooses native
+measurement erasure. The stored finite factory uses this same reshape owner.
+Run `tests/unit/test_qroam_clean_component.py` and
+`tests/unit/test_legacy_qroam_factories.py` for finite replacement and source calls;
+`tests/unit/test_symbolic_curve_window_calls.py` verifies the full window consumer.
