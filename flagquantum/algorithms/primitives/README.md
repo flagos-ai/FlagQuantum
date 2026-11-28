@@ -237,3 +237,8 @@ comparison dispatch. It does not choose a backend or execute a statevector.
 Run `tests/unit/test_factorization_source_closure.py` for constructor, exact
 source-direction and model changes, then the existing SF/DF model/library tests.
 Opaque source declarations do not imply a physical circuit.
+
+`thc_chemistry_walk.source_thc_walk_cost` and `source_thc_walk_gate_cost` query
+the existing THC source budgets from a preparation owner without requiring
+physical Givens networks. These are model queries; literal source dependency
+capture and actual emitted gates remain separate evidence.

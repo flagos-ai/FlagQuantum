@@ -102,14 +102,7 @@ class THCChemistryWalk:
     @property
     def source_signature(self) -> Signature:
         """Declare the frozen signal union with a deterministic order."""
-        data = self.prepare.data
-        select = select_thc_signature(
-            data.num_mu, data.num_spin_orb, data.probability_bits
-        )
-        ports = {reg.name: reg for reg in select[:-2]}
-        for reg in self.prepare.selection_registers:
-            ports.setdefault(reg.name, reg)
-        return Signature((*ports.values(), *select[-2:]))
+        return _source_walk_signature(self.prepare)
 
     @property
     def alpha(self) -> float:
@@ -202,63 +195,91 @@ class THCChemistryWalk:
         self, *, num_bits_theta: int = 8, kr1: int = 1, kr2: int = 1
     ) -> ComponentCost:
         """Count the locked walk with its narrower reflection and opaque erase."""
-        data = self.prepare.data
-        width = int(self.source_signature.n_qubits())
-        select = select_thc_cost(
-            data.num_mu,
-            data.num_spin_orb,
-            num_bits_theta,
-            data.probability_bits,
-            kr1=kr1,
-            kr2=kr2,
-        )
-        block = ComponentCost("SelectBlockEncoding", width, calls=(CostCall(select),))
-        reflection = self._source_reflection(
-            self.prepare.source_resource_model(),
-            self.prepare.source_resource_model(adjoint=True),
-        )
-        return ComponentCost(
-            "QubitizationWalkOperator",
-            width,
-            calls=(
-                CostCall(block),
-                CostCall(reflection, bystander_qubits=data.num_spin_orb),
-            ),
+        return source_thc_walk_cost(
+            self.prepare, num_bits_theta=num_bits_theta, kr1=kr1, kr2=kr2
         )
 
     def source_gate_cost(
         self, *, num_bits_theta: int = 8, kr1: int = 1, kr2: int = 1
     ) -> GateCost:
         """Count the locked walk gates when the source peak is unavailable."""
-        data = self.prepare.data
-        select = select_thc_cost(
-            data.num_mu,
-            data.num_spin_orb,
-            num_bits_theta,
-            data.probability_bits,
-            kr1=kr1,
-            kr2=kr2,
-        )
-        reflection = self._source_reflection(
-            ComponentCost("PrepareTHC", 0, self.prepare.source_gate_cost()),
-            ComponentCost(
-                "PrepareTHC†", 0, self.prepare.source_gate_cost(adjoint=True)
-            ),
-        )
-        return estimate_component_resources(select).gates.plus(
-            estimate_component_resources(reflection).gates, 1
+        return source_thc_walk_gate_cost(
+            self.prepare, num_bits_theta=num_bits_theta, kr1=kr1, kr2=kr2
         )
 
-    def _source_reflection(
-        self, prepare: ComponentCost, unprepare: ComponentCost
-    ) -> ComponentCost:
-        return source_uncontrolled_prepare_reflection_cost(
-            sum(width for _, width in self.prepare.selection_layout),
-            sum(width for _, width in self.prepare.junk_layout),
-            prepare,
-            unprepare,
-            mark_junk_width=self.prepare.data.address_width + 2,
-        )
+
+def _source_walk_signature(prepare: PrepareTHCChemistry) -> Signature:
+    data = prepare.data
+    select = select_thc_signature(data.num_mu, data.num_spin_orb, data.probability_bits)
+    ports = {reg.name: reg for reg in select[:-2]}
+    for reg in prepare.selection_registers:
+        ports.setdefault(reg.name, reg)
+    return Signature((*ports.values(), *select[-2:]))
+
+
+def source_thc_walk_cost(
+    prepare: PrepareTHCChemistry, *, num_bits_theta: int = 8, kr1: int = 1, kr2: int = 1
+) -> ComponentCost:
+    """Query the original walk budget without requiring physical Givens networks."""
+    data = prepare.data
+    width = int(_source_walk_signature(prepare).n_qubits())
+    select = select_thc_cost(
+        data.num_mu,
+        data.num_spin_orb,
+        num_bits_theta,
+        data.probability_bits,
+        kr1=kr1,
+        kr2=kr2,
+    )
+    block = ComponentCost("SelectBlockEncoding", width, calls=(CostCall(select),))
+    reflection = _source_reflection(
+        prepare,
+        prepare.source_resource_model(),
+        prepare.source_resource_model(adjoint=True),
+    )
+    return ComponentCost(
+        "QubitizationWalkOperator",
+        width,
+        calls=(
+            CostCall(block),
+            CostCall(reflection, bystander_qubits=data.num_spin_orb),
+        ),
+    )
+
+
+def source_thc_walk_gate_cost(
+    prepare: PrepareTHCChemistry, *, num_bits_theta: int = 8, kr1: int = 1, kr2: int = 1
+) -> GateCost:
+    """Keep the original gate query separate from unavailable source peak widths."""
+    data = prepare.data
+    select = select_thc_cost(
+        data.num_mu,
+        data.num_spin_orb,
+        num_bits_theta,
+        data.probability_bits,
+        kr1=kr1,
+        kr2=kr2,
+    )
+    reflection = _source_reflection(
+        prepare,
+        ComponentCost("PrepareTHC", 0, prepare.source_gate_cost()),
+        ComponentCost("PrepareTHC†", 0, prepare.source_gate_cost(adjoint=True)),
+    )
+    return estimate_component_resources(select).gates.plus(
+        estimate_component_resources(reflection).gates, 1
+    )
+
+
+def _source_reflection(
+    owner: PrepareTHCChemistry, prepare: ComponentCost, unprepare: ComponentCost
+) -> ComponentCost:
+    return source_uncontrolled_prepare_reflection_cost(
+        sum(width for _, width in owner.selection_layout),
+        sum(width for _, width in owner.junk_layout),
+        prepare,
+        unprepare,
+        mark_junk_width=owner.data.address_width + 2,
+    )
 
 
 @dataclass(frozen=True)
