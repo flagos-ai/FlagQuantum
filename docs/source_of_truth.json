@@ -4,7 +4,7 @@
     "stable_api": "docs/public_api_v1.json",
     "operator_capability": "docs/operator_manifest.json",
     "runtime_contracts": "docs/runtime_contracts.schema.json",
-    "capability_maturity": "capability-maturity.toml",
+    "capability_maturity": "config/capability-maturity.toml",
     "benchmark_evidence": "benchmarks/results/",
     "support_policy": "pyproject.toml",
     "release_changes": "docs/reference/RELEASE_NOTES.md",

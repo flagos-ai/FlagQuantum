@@ -32,7 +32,7 @@ from flagquantum.compiler._construction.semantics.cnf_phase import Clause, Locat
 from flagquantum.compiler.frontends._structured.model import Value
 from flagquantum.core.ir import Instruction
 from flagquantum.ecosystem._qmod.source import load_qmod
-from flagquantum.runtime.results.mps import native_mps
+from flagquantum.runtime.results.adapters import native_mps
 from flagquantum.simulation.mps.entrypoints import run_mps
 from flagquantum.simulation.mps.state import MPSState
 from tests.integration.test_synthesis_qmod_wide_cnf import _original

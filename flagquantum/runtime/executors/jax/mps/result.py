@@ -8,9 +8,6 @@ from typing import Any
 
 from ....distributed.backend_policy import DistributedBackendPolicy
 from ..planning_core import JAXDistributedQuantumPlan
-from ..release_policy import (
-    attach_mps_backward_readiness as _attach_mps_backward_readiness,
-)
 from ..runtime_environment import _require_torch
 from .shards import _reconstruct_torch_mps_from_jax_rank_shards
 from .training_records import JAXMPSRankShardState
@@ -238,4 +235,6 @@ class JAXShardedMPSResult:
             "jax_distributed_plan": jax_plan_summary,
             "rank_local_jax_kernel_allowed_for_capacity_claim": False,
         }
-        return _attach_mps_backward_readiness(payload)
+        from flagquantum.runtime.audit.mps_readiness import _attach_mps_runtime_summary
+
+        return _attach_mps_runtime_summary(payload)

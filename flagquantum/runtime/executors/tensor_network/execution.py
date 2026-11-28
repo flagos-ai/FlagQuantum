@@ -19,6 +19,10 @@ import torch.distributed as dist
 
 from flagquantum.compute.local import get_platform_runtime
 from flagquantum.runtime.distributed import placement as _placement
+from flagquantum.simulation.tensor_network.local import build_local_tensor_network
+from flagquantum.simulation.tensor_network.observables import (
+    build_tensor_network_expectation,
+)
 
 from ....simulation.mps.rank_local import (
     tensor_nbytes as _tensor_nbytes,
@@ -30,8 +34,6 @@ from ....simulation.tensor_network.contraction import (
 from ....simulation.tensor_network.entrypoints import (
     _amplitude_batch_projection,
     _amplitude_projection,
-    build_tensor_network,
-    build_tensor_network_expectation,
     run_tensor_network,
 )
 from ....simulation.tensor_network.models import (
@@ -639,7 +641,7 @@ def distributed_tensor_network_amplitude(
         options=options,
     )
 
-    plan = build_tensor_network(
+    plan = build_local_tensor_network(
         circuit_or_ir,
         bsz=int(options.get("bsz", 1)),
         device=options.get("device", "cpu"),
@@ -714,7 +716,7 @@ def distributed_tensor_network_expectation(
         options=options,
     )
 
-    ket_plan = build_tensor_network(
+    ket_plan = build_local_tensor_network(
         circuit_or_ir,
         bsz=int(options.get("bsz", 1)),
         device=options.get("device", "cpu"),
@@ -788,7 +790,7 @@ def distributed_tensor_network_amplitudes(
         options=options,
     )
 
-    plan = build_tensor_network(
+    plan = build_local_tensor_network(
         circuit_or_ir,
         bsz=int(options.get("bsz", 1)),
         device=options.get("device", "cpu"),
@@ -862,7 +864,7 @@ def distributed_tensor_network_expectations(
         options=options,
     )
 
-    plan = build_tensor_network(
+    plan = build_local_tensor_network(
         circuit_or_ir,
         bsz=int(options.get("bsz", 1)),
         device=options.get("device", "cpu"),
@@ -927,7 +929,7 @@ def run_distributed_tensor_network(
         options=options,
     )
 
-    plan = build_tensor_network(
+    plan = build_local_tensor_network(
         circuit_or_ir,
         bsz=int(options.get("bsz", 1)),
         device=options.get("device", "cpu"),
