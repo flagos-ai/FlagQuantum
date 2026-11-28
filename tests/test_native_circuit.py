@@ -47,7 +47,7 @@ from flagquantum.simulation.statevector.operations import (
     _compose_gate_matrices,
     _gate_matrix,
 )
-from flagquantum.simulation.tensor_network.entrypoints import build_tensor_network
+from flagquantum.simulation.tensor_network.local import build_local_tensor_network
 
 pytestmark = pytest.mark.integration
 
@@ -1917,7 +1917,7 @@ def test_distributed_mps_strict_sharded_rejects_nonlocal_gate():
 def test_distributed_tensor_network_mode_exposes_slice_tasks_and_matches_tn():
     circuit = fq.Circuit(4)
     circuit.h(0).cx(0, 3).ry(1, theta=0.2).rzz(2, 3, theta=-0.4)
-    local_plan = build_tensor_network(circuit)
+    local_plan = build_local_tensor_network(circuit)
     target_peak = local_plan.contraction_cost()["peak_size"]
     label_counts = Counter(label for node in local_plan.nodes for label in node.labels)
     sliced_label = next(
@@ -1955,7 +1955,7 @@ def test_distributed_tensor_network_mode_exposes_slice_tasks_and_matches_tn():
 def test_distributed_tensor_network_local_tensor_simulates_slice_parallel_state():
     circuit = fq.Circuit(4)
     circuit.h(0).cx(0, 3).ry(1, theta=0.2).rzz(2, 3, theta=-0.4)
-    local_plan = build_tensor_network(circuit)
+    local_plan = build_local_tensor_network(circuit)
     target_peak = local_plan.contraction_cost()["peak_size"]
     label_counts = Counter(label for node in local_plan.nodes for label in node.labels)
     sliced_label = next(

@@ -47,6 +47,11 @@ def test_cpu_pool_routes_require_a_same_repository_pull_request() -> None:
             expected,
             FULL_CPU_ROUTE,
             FULL_CPU_ROUTE.replace(
+                '\'["self-hosted","linux","x64","flagquantum-cpu"]\'',
+                'format(\'["self-hosted","linux","x64","flagquantum-cpu","{0}"]\', matrix.runner)',
+            ),
+            '${{ fromJSON((github.event_name != \'pull_request\' || github.event.pull_request.head.repo.full_name == github.repository) && (matrix.runner && format(\'["self-hosted","linux","x64","flagquantum-cpu","{0}"]\', matrix.runner) || matrix.a800 && \'["self-hosted","linux","x64","flagquantum-cpu","flagquantum-a800-cpu"]\' || \'["self-hosted","linux","x64","flagquantum-cpu"]\') || \'["ubuntu-latest"]\') }}',
+            FULL_CPU_ROUTE.replace(
                 '"flagquantum-cpu"]', '"flagquantum-cpu","flagquantum-a800-cpu"]'
             ),
             FULL_CPU_ROUTE.replace(
@@ -118,7 +123,7 @@ def test_trusted_cpu_jobs_and_matrix_legs_do_not_share_hosted_buckets() -> None:
             if matrix == "${{ fromJSON(needs.coverage-plan.outputs.matrix) }}":
                 matrix = {
                     "include": [
-                        {"shard": i, "hosted-bucket": i % 8} for i in range(192)
+                        {"shard": i, "hosted-bucket": i % 8} for i in range(256)
                     ]
                 }
             rows = matrix.get("include") or [
@@ -173,7 +178,6 @@ def test_portable_cpu_work_uses_general_or_validated_scale_sets() -> None:
         "qiskit-optional",
         "dependency-bounds",
         "distributed-cpu",
-        "supply-chain",
         "cpu-core-3-12",
         "ci-complete",
     }
@@ -222,6 +226,12 @@ def test_portable_cpu_work_uses_general_or_validated_scale_sets() -> None:
         step.get("with", {}).get("fetch-depth") == 0
         for step in jobs["quality"]["steps"]
     ), "Evidence provenance still needs full Git history"
+
+    assert jobs["supply-chain"]["runs-on"] == "ubuntu-latest"
+    assert jobs["supply-chain"]["concurrency"] == {
+        "group": "flagquantum-gh-2",
+        "queue": "max",
+    }
 
 
 def test_network_dependent_sdks_do_not_wait_for_the_preinstalled_pool() -> None:
@@ -330,8 +340,12 @@ def test_r300_is_not_a_dependency_of_pr_source_preparation() -> None:
 def test_cpu_suites_attach_the_locked_image(job: str, profile: str) -> None:
     jobs = yaml.safe_load((WORKFLOWS / "ci.yml").read_text())["jobs"]
     suite = jobs[job]
-    if job != "coverage-shard":
+    if job in {"cpu-core", "cpu-core-3-12-tests"}:
         assert '"flagquantum-a800-cpu"' in suite["runs-on"]
+    elif job == "cpu-runtime":
+        assert "matrix.runner" in suite["runs-on"]
+        assert all("runner" in row for row in suite["strategy"]["matrix"]["include"])
+
     steps = suite["steps"]
     attach = next(
         step for step in steps if step.get("uses") == "./.github/actions/offline-cpu"
@@ -364,9 +378,8 @@ def test_linux_prerequisites_keep_forks_off_private_cpu_runners(
     document = yaml.safe_load((WORKFLOWS / workflow).read_text())
     job = document["jobs"][name]
     if name == "prepare-source":
-        assert job["runs-on"] == FULL_CPU_ROUTE
-        assert f"self-hosted-{{0}}-{name}-{{1}}" in job["concurrency"]["group"]
-        assert "github.run_id" in job["concurrency"]["group"]
+        assert job["runs-on"] == "ubuntu-latest"
+        assert job["concurrency"]["group"] == "flagquantum-gh-5"
         assert job["env"]["GIT_CONFIG_COUNT"] == "1"
         assert job["env"]["GIT_CONFIG_KEY_0"] == "http.version"
         assert job["env"]["GIT_CONFIG_VALUE_0"] == "HTTP/1.1"
@@ -450,8 +463,13 @@ def test_image_provisioning_keeps_credentials_off_the_import_hosts() -> None:
     assert export["concurrency"] == {"group": "flagquantum-gh-6", "queue": "max"}
     imported = document["jobs"]["prewarm"]
     assert imported["needs"] == "export"
-    assert "flagquantum-a800-cpu" in imported["runs-on"]
-    assert imported["strategy"]["matrix"]["host"] == ["a800-171", "a800-172"]
+    assert "flagquantum-cpu" in imported["runs-on"]
+    assert imported["strategy"]["matrix"]["host"] == (
+        '${{ fromJSON(inputs.runner-labels || \'["a800-171","a800-172"]\') }}'
+    )
+    dispatch = document[True]["workflow_dispatch"]["inputs"]
+    assert dispatch["runner-labels"]["default"] == '["a800-171","a800-172"]'
+    assert dispatch["runner-labels"]["type"] == "string"
     assert "head.repo.full_name == github.repository" in imported["if"]
     assert "needs.export.result == 'skipped'" in imported["if"]
     commands = "\n".join(step.get("run", "") for step in imported["steps"])

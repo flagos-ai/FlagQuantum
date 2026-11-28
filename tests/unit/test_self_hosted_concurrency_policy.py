@@ -71,7 +71,7 @@ def test_self_hosted_cpu_capacity_groups_do_not_serialize_ready_work() -> None:
             assert selector in template, (workflow, name)
             matrix = job.get("strategy", {}).get("matrix", {})
             if matrix == "${{ fromJSON(needs.coverage-plan.outputs.matrix) }}":
-                matrix = {"include": [{"shard": i} for i in range(192)]}
+                matrix = {"include": [{"shard": i} for i in range(256)]}
             rows = matrix.get("include") or [
                 dict(zip(matrix, values, strict=True))
                 for values in product(*matrix.values())
@@ -88,5 +88,10 @@ def test_self_hosted_cpu_capacity_groups_do_not_serialize_ready_work() -> None:
         "coverage-shard",
         "dependency-bounds",
         "distributed-cpu-shard",
-        "prepare-source",
     } <= set(found)
+    for workflow in ("ci.yml", "local-gpu.yml"):
+        publisher = yaml.safe_load((WORKFLOWS / workflow).read_text())["jobs"][
+            "prepare-source"
+        ]
+        assert publisher["runs-on"] == "ubuntu-latest"
+        assert publisher["concurrency"] == {"group": "flagquantum-gh-5", "queue": "max"}

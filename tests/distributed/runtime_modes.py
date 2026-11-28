@@ -21,8 +21,8 @@ if str(ROOT) not in sys.path:
 
 import flagquantum as fq  # noqa: E402
 import flagquantum.runtime as fqr  # noqa: E402
-from flagquantum.simulation.tensor_network.entrypoints import (  # noqa: E402
-    build_tensor_network,
+from flagquantum.simulation.tensor_network.local import (  # noqa: E402
+    build_local_tensor_network,
 )
 
 
@@ -42,7 +42,7 @@ def main() -> None:
     world_size = _world_size()
     rank = _rank()
 
-    network = build_tensor_network(_circuit())
+    network = build_local_tensor_network(_circuit())
     internal_label = next(
         label
         for node in network.nodes
