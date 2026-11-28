@@ -95,3 +95,53 @@ estimated And/measurement inventory is intentionally recorded separately from
 the captured forward primitive count. The original source callable's own foreign
 serialization remains the previously recorded expected failure. General foreign
 gates beyond the supported importer vocabulary remain open under Q-0583.
+
+## Complete callable and matrix responsibility, November 28
+
+Whole-file review covers all fields/converters/defaults, make_on inference,
+control/selection/target properties, diagram/index mapping, nth_operation,
+example and documentation record. The source callable is evaluated only at
+conversion; native snapshots retain neither the callable nor SDK objects.
+Selection is MSB first and multiple axes flatten row-major. Logical words
+remain caller-owned; captured unary traversal owns initially clean work and
+measurement slots, returned clean.
+
+The shared importer already supports a callable returning a general one-qubit
+MatrixGate together with Rx. test_target_position_matrix_consumer.py now
+verifies that actual source path with zero, one and two controls, both source
+directions, every complete operator column and every raw measurement history.
+The matrix payload survives JSON restoration and the restored instructions
+execute through ordinary append with zero private work at return. This reuses
+the accepted Majorana generic-gate dependency; no production emitter is copied.
+The first probe attempted dataclass equality on tensor payloads, which raises
+ambiguous Boolean conversion. The final check verifies exact JSON roundtrip
+and executes restored payloads instead; that failed probe is not evidence.
+
+For zero/one/two controls the actual snapshot has zero/one/two measurements;
+the latter two emit four/eight T-family gates and seven/thirteen CX. All retain
+one controlled Rx and one two-wire matrix leaf. Independently, source models
+report two/three/four And, five rotations and two/three/four measurements.
+Those matrix/rotation categories are not synthesized Clifford+T instructions.
+Directional records remain in g2-indexed-matrix-resources-20261128.xml.
+
+Under the approved [G2 closure rule](G2_FAITHFUL_MIGRATION_CLOSURE_PROPOSAL.md),
+Q-0583 can close after batch acceptance. Callable foreign serialization, source
+symbolic-extent refusal and unbound-width refusal remain explicit dependency
+limits. The former restricted-gate note above is superseded for the accepted
+one-qubit unitary importer domain. No arbitrary channel or invented source
+primitive decomposition is claimed. Scalar phases without a source quantum
+operand remain distinct from native carrier bookkeeping.
+
+Final batch verification: 611 concentrated cases and 611 independent Cirq 1.6
+cases pass. Three additional complete matrix-callable operator cases pass in
+each lane, covering both directions and every applicable raw history. The two
+unchanged original files report 21 passes and one original expected failure;
+one notebook is deselected and reuses its earlier complete receipt. The
+unchanged integration owners reuse 248 passing current-branch cases. Three
+Python owners/tests pass strict typing, Black and Ruff. Architecture, IR, API,
+required/Cirq contracts, Algorithms scope, English, links and whitespace pass.
+Six actual optional/mandatory missing-reference cases pass; mandatory errors
+retain their original exception. The existing 568 dependency findings are
+unchanged, with none on the new consumer. Source fixtures verify frozen files,
+Qualtran 0.7.0 and the actual Kickmix 0.1 Simulator. Receipt prefix:
+g2-indexed-source-closure. No production execution owner was changed.
