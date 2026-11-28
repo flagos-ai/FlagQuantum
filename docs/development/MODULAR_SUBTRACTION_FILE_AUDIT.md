@@ -192,3 +192,22 @@ unavailable symbolic numerical leaves remain separate limitations. Normal
 append, all-history clean work, complex phases and exact adjoint certificates
 above are reused at unchanged execution paths. No global SDK/transport promise
 is made by this source-file acceptance.
+
+## Fixed-width symbolic negation constructor dependency
+
+The direct ModNeg factory now retains the source eight-call body for symbolic
+modulus, instead of returning a whole-root declaration. Its zero-word control
+also retains the actual three-call `CtrlSpecAnd` / CNOT / adjoint predicate
+hierarchy, not merely an equivalent split/multi-control wrapper. The same
+component template serves finite inputs. Widths 3 and 5, uint and Montgomery,
+and source serialization depths 0 and 1 are compared at every available layer.
+Terminal And and Partition typed views are certified before stopping traversal;
+directional predicates and roots are not treated as atomic solely by side.
+Every stopped source child must actually refuse decomposition. The symbolic
+controlled AddK is one shared unavailable definition, even when called repeatedly.
+
+Unbound modulus supplies no concrete gate stream, amplitude, cleanup or default
+resource price. Physical binding refuses its missing constant body. This does
+not expand CModNeg/ModSub/CModSub constructor-only symbolic bodies; their existing
+ordered library recipes and remaining dependency intake stay distinct. Finite
+source-stream, feedback, coherent-state and all-history proofs remain mandatory.

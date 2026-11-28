@@ -5,32 +5,49 @@
 
 """Compose the source nonzero flag, fanout and constant modular correction."""
 
+from dataclasses import replace
+
 from ....core.ir.program import ProgramRecord
 from ....core.ir.program.register_bindings import RegisterBinding
-from ....core.ir.program.register_types import quantum_bit_type, unsigned_register_type
+from ....core.ir.program.register_types import unsigned_register_type
 from ....core.ir.program.register_verifier import executable_register_width
-from ....core.ir.program.registers import RegisterType
+from ....core.ir.program.registers import Register, RegisterType
 from ....core.ir.program.signatures import Signature
 from ..arithmetic.constant_addition_component import constant_addition_program
 from ..bits.fanout_component import fanout_component_program
 from ..comparison._component_gates import comparison_bit_functions
-from ..component_builder import ComponentProgramBuilder
-from ..control.multi_control_component import multi_control_x_program
+from ..component_builder import BindingCollection, ComponentProgramBuilder
+from ..component_control import control_component_via_predicate
+from ..control.control_predicate import ControlRegister
 
 
 def _zero_word_flip_program(dtype: RegisterType) -> ProgramRecord:
     width = executable_register_width(dtype)
+    gates = {f.name: f for f in comparison_bit_functions()}
+    base = replace(gates["comparison_x"], name="zero_base")
     builder = ComponentProgramBuilder(
-        Signature.build_from_dtypes(ctrl=dtype, q=quantum_bit_type())
+        Signature(base.registers or ()), (base, gates["comparison_cx"])
     )
-    control = builder.inputs["ctrl"]
-    assert isinstance(control, RegisterBinding)
-    result = builder.call_program(
-        multi_control_x_program((0,) * width),
-        {"controls": builder.split(control), "target": builder.inputs["q"]},
+    record = builder.finalize(builder.call_dict(base.name, builder.inputs))
+
+    def positive(
+        builder: ComponentProgramBuilder,
+        control: BindingCollection,
+        values: dict[str, BindingCollection],
+    ) -> tuple[BindingCollection, tuple[BindingCollection, ...]]:
+        result = builder.call_dict(
+            "comparison_cx", {"ctrl": control, "target": values["q"]}
+        )
+        return result["ctrl"], (result["target"],)
+
+    result = control_component_via_predicate(
+        record,
+        {"main": positive},
+        (Register("ctrl", dtype),),
+        (ControlRegister(width, (0,)),),
     )
-    return builder.finalize(
-        {"ctrl": builder.join(result["controls"], dtype), "q": result["target"]}
+    return replace(
+        result, functions=tuple(f for f in result.functions if f.name != base.name)
     )
 
 
@@ -50,6 +67,23 @@ def modular_negation_program(dtype: RegisterType, modulus: int) -> ProgramRecord
     correction = constant_addition_program(
         unsigned_register_type(width), modulus + 1, control_value=1
     )
+    return modular_negation_component_program(dtype, correction)
+
+
+def modular_negation_component_program(
+    dtype: RegisterType,
+    correction: ProgramRecord,
+) -> ProgramRecord:
+    """Retain the eight source calls with explicit constant/control owners.
+
+    A logical constant child may truthfully lack a source decomposition. The
+    constructor owns its actual modulus-plus-one identity; this template infers
+    no arithmetic action or price from an opaque signature. The shared predicate
+    owner preserves the actual source control graph.
+    """
+    width = executable_register_width(dtype)
+    if dtype.encoding not in {"uint", "montgomery"}:
+        raise ValueError("Modular negation requires unsigned or Montgomery words")
     zero = _zero_word_flip_program(dtype)
     fanout = fanout_component_program(width)
     builder = ComponentProgramBuilder(
@@ -57,14 +91,24 @@ def modular_negation_program(dtype: RegisterType, modulus: int) -> ProgramRecord
     )
     flag = builder.allocate()
     active = builder.call_dict("comparison_x", {"q": flag})["q"]
-    tested = builder.call_program(zero, {"ctrl": builder.inputs["x"], "q": active})
+    tested = builder.call_program(
+        zero,
+        {"ctrl": builder.inputs["x"], "q": active},
+        entry=zero.functions[0].name,
+    )
     spread = builder.call_program(
         fanout, {"control": tested["q"], "targets": tested["ctrl"]}
     )
     added = builder.call_program(
-        correction, {"ctrl": spread["control"], "x": spread["targets"]}
+        correction,
+        {"ctrl": spread["control"], "x": spread["targets"]},
+        entry=correction.functions[0].name,
     )
-    tested = builder.call_program(zero, {"ctrl": added["x"], "q": added["ctrl"]})
+    tested = builder.call_program(
+        zero,
+        {"ctrl": added["x"], "q": added["ctrl"]},
+        entry=zero.functions[0].name,
+    )
     cleared = builder.call_dict("comparison_x", {"q": tested["q"]})["q"]
     assert isinstance(cleared, RegisterBinding)
     builder.free(cleared)

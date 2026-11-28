@@ -60,7 +60,14 @@ def test_complete_original_examples_retain_symbolic_declarations(name: str) -> N
         import_module("qualtran.bloqs.mod_arithmetic.mod_subtraction"), name
     )()
     program = _resolve(source)
-    assert not program.functions[0].blocks
+    if name == "_mod_neg":
+        assert (
+            len(program.functions[0].blocks[0].operations)
+            == len(source.decompose_bloq().bloq_instances)
+            == 8
+        )
+    else:
+        assert not program.functions[0].blocks
     assert program.functions[0].registers is not None
     assert tuple(register.name for register in program.functions[0].registers) == tuple(
         register.name for register in source.signature

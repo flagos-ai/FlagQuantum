@@ -81,3 +81,13 @@ different physical layout, so inverse consumers must use actual output bindings
 and transfer pool ownership when a source release touches caller storage. Run
 `tests/unit/test_ecc_arithmetic_adjoints.py` for original streams, all small
 complex columns, erasure histories and private cleanup.
+
+The negation owner exposes the same eight-call template to concrete and
+fixed-width symbolic-modulus constructors. Its zero-word test uses the shared
+`CtrlSpecAnd`, positive CNOT and exact predicate erasure graph, including the
+source atomic Partition and And boundaries. A symbolic correction remains a
+true unavailable `Controlled(AddK(p+1))` leaf; physical binding rejects it rather
+than substituting a zero constant. Run
+`tests/unit/test_symbolic_modular_negation_calls.py` for available call/operand
+closure, codec and reference-free reconstruction, and the modular subtraction
+component tests for finite streams, complex states, feedback and clean work.
