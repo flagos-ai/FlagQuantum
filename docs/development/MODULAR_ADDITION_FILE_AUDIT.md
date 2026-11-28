@@ -253,3 +253,14 @@ stopped source leaf must genuinely refuse decomposition. Symbolic constants
 remain nonexecutable and supply no fabricated primitive, amplitude, cleanup or
 default-resource evidence. Finite Program equality preserves the accepted
 physical proofs. Symbolic word-width declarations remain a separate boundary.
+## Exact symbolic modular addition adjoints
+
+The fixed-width symbolic addition owner now reverses its original available
+call graph using the accepted exact Add/CAdd and comparator inverses, explicit
+unresolved constant adjoints and the same X leaf. Both controlled polarities
+retain their original fourteen calls; ordinary ModAdd retains seventeen calls.
+Widths 3/5 compare the actual source inverse parent and every new operand.
+Complete unchanged arithmetic/comparison definitions are certified before their
+existing primitive, branch, phase and work-zero evidence is reused. Each opaque
+constant must genuinely refuse the unchanged source decomposition. This grants
+no physical gate count, numerical inverse or cleanup proof at an unbound modulus.

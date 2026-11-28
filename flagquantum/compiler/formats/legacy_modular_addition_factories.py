@@ -19,10 +19,14 @@ from ...core.ir.program.register_types import (
 from ...core.ir.program.registers import Register, RegisterType
 from ...core.value_math import SymbolicInt
 from ...errors import SerializationError
+from ..registers.arithmetic.addition_component import addition_component_program
 from ..registers.arithmetic.controlled_addition_component import (
     controlled_addition_program,
 )
+from ..registers.comparison._component_gates import comparison_bit_functions
 from ..registers.comparison.controlled_component import controlled_greater_program
+from ..registers.comparison.linear_component import linear_greater_program
+from ..registers.component_adjoint import adjoint_component_calls
 from ..registers.modular.controlled_modular_addition_component import (
     controlled_modular_addition_component_program,
     controlled_modular_addition_program,
@@ -52,6 +56,7 @@ def _symbolic_addition(
     *,
     controlled: bool,
     control_value: int = 1,
+    adjoint: bool = False,
 ) -> ProgramRecord:
     width = dtype.num_qubits
     assert type(width) is int
@@ -70,14 +75,62 @@ def _symbolic_addition(
         word, modulus, name="restore_modulus", controlled=True
     )
     if controlled:
-        return controlled_modular_addition_component_program(
+        addition = controlled_addition_program(word, wide, control_value=control_value)
+        comparison = controlled_greater_program(word, control_value=control_value)
+        record = controlled_modular_addition_component_program(
             dtype,
-            controlled_addition_program(word, wide, control_value=control_value),
+            addition,
             subtraction,
             correction,
-            controlled_greater_program(word, control_value=control_value),
+            comparison,
         )
-    return modular_addition_component_program(dtype, subtraction, correction)
+    else:
+        addition = addition_component_program(
+            width + 1, left_dtype=wide, right_dtype=wide
+        )
+        comparison = linear_greater_program(width)
+        record = modular_addition_component_program(dtype, subtraction, correction)
+    if not adjoint:
+        return record
+    inverse_addition = (
+        controlled_addition_program(
+            word, wide, control_value=control_value, adjoint=True
+        )
+        if controlled
+        else addition_component_program(
+            width + 1, left_dtype=wide, right_dtype=wide, adjoint=True
+        )
+    )
+    inverse_comparison = (
+        controlled_greater_program(word, control_value=control_value, adjoint=True)
+        if controlled
+        else linear_greater_program(width, adjoint=True)
+    )
+    x_gate = ProgramRecord((comparison_bit_functions()[0],))
+    return adjoint_component_calls(
+        record,
+        (
+            (addition, inverse_addition),
+            (comparison, inverse_comparison),
+            (
+                subtraction,
+                unresolved_constant_addition_program(
+                    wide, -modulus, name="subtract_modulus_inverse", adjoint=True
+                ),
+            ),
+            (
+                correction,
+                unresolved_constant_addition_program(
+                    word,
+                    modulus,
+                    name="restore_modulus_inverse",
+                    controlled=True,
+                    adjoint=True,
+                ),
+            ),
+            (x_gate, x_gate),
+        ),
+    )
 
 
 def _integer(arguments: Mapping[str, ResolvedArgument], key: str) -> SymbolicInt:

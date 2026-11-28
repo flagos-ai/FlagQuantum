@@ -87,3 +87,7 @@ Approved Proposal 130 covers this raw view. Symbolic fixed-point/bounded and
 genuinely unresolved width constructor refusals remain intact. Run
 `tests/unit/test_symbolic_montgomery_views.py` for original constructors, complete
 raw operators, entangled spectator phase, reverse wire order and normal append.
+
+Symbolic modular addition exact adjoints reuse explicit child inverses at the
+same logical call boundary; source-refused constants remain declarations. See
+`tests/unit/test_symbolic_modular_addition_adjoint_calls.py`.
