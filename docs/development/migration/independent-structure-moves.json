@@ -10500,6 +10500,14 @@
       "compatibility": "retired internal relay has no compatibility; substantive executor remains",
       "retirement": "The executor argument relay is removed; existing trajectory aggregation keeps the canonical operation name without its redundant runtime suffix. No numerical definition is claimed as moved.",
       "remaining_imports": "Actual trajectory scheduling dependencies remain; consumers call the trajectory aggregation owner directly."
+    },
+    {
+      "group": "development-compose-location",
+      "old": "compose.dev.yaml",
+      "new": "docker/compose.dev.yaml",
+      "compatibility": "none",
+      "source_kind": "Unchanged development Compose configuration; no Python definitions or runtime API moved.",
+      "retirement": "Root file removed; commands explicitly preserve the repository project directory, .env discovery, build context, bind mount and project identity. Publication workflow path filters use the new file."
     }
   ],
   "retired_namespace_parents": [

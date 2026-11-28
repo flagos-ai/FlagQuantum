@@ -61,7 +61,6 @@ protected_paths = [
     "README.md",
     "SECURITY.md",
     "capability-maturity.toml",
-    "compose.dev.yaml",
     "conftest.py",
     "dependency-policy.toml",
     # The declaration table `tools/release/check_evidence_revisions.py` reads. It records

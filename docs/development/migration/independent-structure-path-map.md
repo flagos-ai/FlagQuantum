@@ -585,3 +585,9 @@ Each row names the authoritative owner. Partial rows move only the listed defini
 | runtime-mps-local-numerics | `flagquantum/runtime/executors/jax/mps/pullbacks.py` | `flagquantum/simulation/mps/jax/pullbacks.py` | partial: Actual local scores that feed received VJP cotangents; evidence-only tensor allocations stay Runtime |
 
 The [Simulation direct-relay retirement](simulation-direct-relay-retirement.md) removes seven redundant internal definitions. Their callers use the existing local, observable, and native permutation owners directly; the surviving tensor-network modules remain authoritative for their other operations.
+
+## Development Compose location
+
+| Group | Previous path | Authoritative path | Scope |
+| --- | --- | --- | --- |
+| development-compose-location | `compose.dev.yaml` | `docker/compose.dev.yaml` | Unchanged YAML; old root file removed, explicit repository project directory preserves all relative-path and project behavior; workflow filters and ownership synchronized. |

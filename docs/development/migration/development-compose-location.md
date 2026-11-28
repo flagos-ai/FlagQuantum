@@ -1,6 +1,9 @@
 # Development Compose location
 
-Integration declaration, before implementation. Owner: Integration.
+Integration declaration was committed before implementation. Owner: Integration.
+
+Implementation is present; local and exact-head CI acceptance are tracked
+separately. This document does not claim a new-head CI pass.
 
 The development Compose file belongs in `docker/compose.dev.yaml`. Its content
 and four service definitions remain unchanged. Commands run from the repository

@@ -16,7 +16,11 @@ All four images target Linux AMD64. The pinned Quafu/compiler dependencies do
 not provide the required Linux ARM64 distributions, so these images do not
 claim native ARM64 support. On Apple Silicon, CPU images require AMD64
 emulation (`--platform linux/amd64`); GPU images require an NVIDIA Linux host.
-Compose selects AMD64 explicitly for every variant.
+Compose selects AMD64 explicitly for every variant. Run the Compose commands
+below from the repository root. The explicit project directory preserves the
+checkout build context and mount, root `.env` discovery and checkout-derived
+project name after moving the file under `docker/`. An explicit
+`COMPOSE_PROJECT_NAME` still overrides that name.
 
 The CUDA image includes CPU execution as well. Images install PyTorch 2.13.0;
 other dependency constraints come from `pyproject.toml`. The self-contained
@@ -31,7 +35,7 @@ All four variants include JupyterLab 4 and IPython kernels. Launch it from the
 repository root (replace the profile/service for the desired variant):
 
 ```bash
-docker compose -f compose.dev.yaml --profile cpu-no-jax run --rm \
+docker compose --project-directory . -f docker/compose.dev.yaml --profile cpu-no-jax run --rm \
   -p 127.0.0.1:8888:8888 dev-no-jax \
   jupyter lab --ip=0.0.0.0 --port=8888 --no-browser --allow-root
 ```
@@ -57,8 +61,8 @@ version also requires NumPy 2, conflicting with QSteed's NumPy 1 requirement.
 No separate compiler environment is needed.
 
 ```bash
-docker compose -f compose.dev.yaml --profile gpu-no-jax build dev-gpu-no-jax
-docker compose -f compose.dev.yaml --profile gpu-no-jax run --rm dev-gpu-no-jax \
+docker compose --project-directory . -f docker/compose.dev.yaml --profile gpu-no-jax build dev-gpu-no-jax
+docker compose --project-directory . -f docker/compose.dev.yaml --profile gpu-no-jax run --rm dev-gpu-no-jax \
   python your_training_and_compilation_script.py
 ```
 
@@ -109,8 +113,8 @@ private package still requires authentication.
 ## Build with a live checkout
 
 ```bash
-docker compose -f compose.dev.yaml --profile gpu build dev-gpu
-docker compose -f compose.dev.yaml --profile gpu run --rm dev-gpu
+docker compose --project-directory . -f docker/compose.dev.yaml --profile gpu build dev-gpu
+docker compose --project-directory . -f docker/compose.dev.yaml --profile gpu run --rm dev-gpu
 ```
 
 Use `--profile cpu` and `dev` on a CPU machine. The two services use different
