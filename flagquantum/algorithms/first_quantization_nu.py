@@ -10,37 +10,28 @@ from ..compiler.registers.preparation.uniform_preparation import uniform_prepara
 from ..core.ir.program.register_types import opaque_register_type, quantum_bit_type
 from ..core.ir.program.registers import Register, RegisterSide
 from ..core.ir.program.signatures import Signature
+from ..core.value_math import SymbolicInt
 from .primitives._block_binding import _BoundBlockOperation
 
 
-def _momentum_words(
-    num_bits_p: int, m_param: int
-) -> tuple[Register, Register, Register]:
+def _sample_width(num_bits_p: int, m_param: int) -> int:
     if any(type(n) is not int or n < 1 for n in (num_bits_p, m_param)):
         raise ValueError("Momentum width and m_param must be positive integers")
-    return (
-        Register("mu", opaque_register_type(num_bits_p)),
-        Register("nu", opaque_register_type(num_bits_p + 1), shape=(3,)),
-        Register("m", opaque_register_type((m_param - 1).bit_length())),
-    )
+    return (m_param - 1).bit_length()
 
 
-def prepare_nu_signature(num_bits_p: int, m_param: int) -> Signature:
-    """Return the source through words, including the externally owned success bit."""
-    return Signature(
-        (*_momentum_words(num_bits_p, m_param), Register("flag_nu", quantum_bit_type()))
-    )
-
-
-def prepare_nu_leaf_signatures(
-    num_bits_p: int, m_param: int, *, adjoint: bool = False
+def _nu_declarations(
+    width: SymbolicInt, sample_width: SymbolicInt, *, adjoint: bool = False
 ) -> dict[str, Signature]:
-    """Describe the five declaration-only children and directional flag ownership."""
-    mu, nu, m = _momentum_words(num_bits_p, m_param)
+    """Share source logical formulas without claiming physical width admission."""
+    mu = Register("mu", opaque_register_type(width))
+    nu = Register("nu", opaque_register_type(width + 1), shape=(3,))
+    m = Register("m", opaque_register_type(sample_width))
     produced = RegisterSide.LEFT if adjoint else RegisterSide.RIGHT
     consumed = RegisterSide.RIGHT if adjoint else RegisterSide.LEFT
     bit = quantum_bit_type()
     return {
+        "PrepareNuState": Signature((mu, nu, m, Register("flag_nu", bit))),
         "PrepareMuUnaryEncodedOneHot": Signature(
             (mu, Register("flag", bit, side=produced))
         ),
@@ -65,6 +56,24 @@ def prepare_nu_leaf_signatures(
     }
 
 
+def prepare_nu_signature(num_bits_p: int, m_param: int) -> Signature:
+    """Return the source through words, including the externally owned success bit."""
+    return _nu_declarations(num_bits_p, _sample_width(num_bits_p, m_param))[
+        "PrepareNuState"
+    ]
+
+
+def prepare_nu_leaf_signatures(
+    num_bits_p: int, m_param: int, *, adjoint: bool = False
+) -> dict[str, Signature]:
+    """Describe the five declaration-only children and directional flag ownership."""
+    declarations = _nu_declarations(
+        num_bits_p, _sample_width(num_bits_p, m_param), adjoint=adjoint
+    )
+    del declarations["PrepareNuState"]
+    return declarations
+
+
 def projectile_prepare_mu_signature(num_bits_p: int, num_bits_n: int) -> Signature:
     """Return the projectile μ word and the forward-produced success flag."""
     if any(type(width) is not int or width < 1 for width in (num_bits_p, num_bits_n)):
@@ -73,12 +82,7 @@ def projectile_prepare_mu_signature(num_bits_p: int, num_bits_n: int) -> Signatu
         raise ValueError(
             "Projectile momentum width must be at least the electron width"
         )
-    return Signature(
-        (
-            Register("mu", opaque_register_type(num_bits_n)),
-            Register("flag", quantum_bit_type(), side=RegisterSide.RIGHT),
-        )
-    )
+    return _nu_declarations(num_bits_n, 0)["PrepareMuUnaryEncodedOneHot"]
 
 
 def projectile_prepare_nu_leaf_signatures(

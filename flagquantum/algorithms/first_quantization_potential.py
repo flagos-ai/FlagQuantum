@@ -15,6 +15,11 @@ def prepare_zeta_signature(num_atoms: int) -> Signature:
     """Keep the through nuclear index, including the single-atom empty word."""
     if type(num_atoms) is not int or num_atoms < 1:
         raise ValueError("First-quantized dimensions must be positive integers")
+    return _zeta_declaration(num_atoms)
+
+
+def _zeta_declaration(num_atoms: int) -> Signature:
+    """Retain source index metadata independently of executable atom admission."""
     return Signature(
         (Register("l", opaque_register_type((num_atoms - 1).bit_length())),)
     )
