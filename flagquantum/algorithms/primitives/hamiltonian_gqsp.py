@@ -22,11 +22,10 @@ from ...core.classical_control import is_classical_control_instruction
 from ...core.ir import CircuitIR, Instruction
 from ...core.value_math import SymbolicInt, SymbolicReal
 from ...dynamic import DynamicCircuit
-from ...simulation.numerics.jacobi_anger_coefficients import (
-    approx_exp_cos_by_jacobi_anger,
+from ...simulation.numerics.hamiltonian_qsp_coefficients import (
+    hamiltonian_qsp_coefficients,
 )
 from ...simulation.numerics.jacobi_anger_degree import degree_jacobi_anger_approximation
-from ...simulation.numerics.qsp_grid import scale_down_to_qsp_polynomial
 from .black_box_prepare import BlackBoxPrepare
 from .generalized_qsp import GeneralizedQSP, UnitaryEmitter
 
@@ -101,11 +100,11 @@ class HamiltonianGQSP:
 
     @cached_property
     def coefficients(self) -> tuple[complex, ...]:
-        raw = approx_exp_cos_by_jacobi_anger(
-            -self.time * self.alpha, degree=self.degree
+        values = hamiltonian_qsp_coefficients(
+            self.alpha, self.time, self.precision, degree=self.degree
         )
-        normalized = scale_down_to_qsp_polynomial(list(raw))
-        return tuple(complex(value) for value in normalized * (1 - 2 * self.precision))
+        assert isinstance(values, tuple)
+        return values
 
     @cached_property
     def gqsp(self) -> GeneralizedQSP:

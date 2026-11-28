@@ -110,3 +110,15 @@ separate validators and pass resulting angles to Compiler. See
 [the source and replacement evidence](../../../docs/development/HUBBARD_COEFFICIENT_OWNER.md).
 Run `python -m pytest tests/unit/test_hubbard_coefficients.py -q` with the pinned
 reference dependencies for literal source rotation and numerical failure checks.
+
+## Hamiltonian QSP coefficients
+
+`hamiltonian_qsp_coefficients` owns the source Jacobi-Anger sign, half-precision
+degree, grid normalization and Issue860 safety margin. Symbolic interpretation
+retains a shape without inventing coefficients. Algorithms delegates its existing
+finite coefficients to this same owner, retaining its cached degree and public
+finite-input validation. Compiler consumes the resulting Programs and performs
+no numerical derivation. Run
+`python -m pytest tests/unit/test_hamiltonian_qsp_coefficient_owner.py tests/unit/test_hamiltonian_gqsp.py -q`
+with the pinned dependencies; the complete constructor audit records remaining
+upstream numerical limitations separately from source fidelity.
