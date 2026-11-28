@@ -65,17 +65,21 @@ def frozen_word_source() -> None:
     assert kickmix.__version__ == "0.1" and hasattr(kickmix, "Simulator")
 
 
-@pytest.mark.parametrize("control_count", (2, 3))
 @pytest.mark.parametrize(
-    "kind,width,value",
-    (
-        ("uint", 1, 1),
-        ("uint", 3, 0),
-        ("uint", 3, 3),
-        ("uint", 4, 5),
-        ("signed", 3, -3),
-        ("montgomery", 3, 3),
-    ),
+    "kind,width,value,control_count",
+    [
+        (kind, width, value, count)
+        for count in (2, 3)
+        for kind, width, value in (
+            ("uint", 1, 1),
+            ("uint", 3, 0),
+            ("uint", 3, 3),
+            ("uint", 4, 5),
+            ("signed", 3, -3),
+            ("montgomery", 3, 3),
+        )
+    ]
+    + [("uint", 1, 1, 4), ("uint", 1, 1, 5), ("uint", 1, 0, 5)],
 )
 def test_complete_source_word_calls_primitives_and_full_complex_operator(
     kind: str, width: int, value: int, control_count: int
@@ -114,7 +118,9 @@ def test_complete_source_word_calls_primitives_and_full_complex_operator(
         tuple(range(control_count, width + control_count)),
     )
     logical = width + control_count
-    clean = tuple(range(logical, logical + 2)) if control_count == 3 else ()
+    clean = (
+        tuple(range(logical, logical + control_count - 1)) if control_count >= 3 else ()
+    )
     bound = bind_register_program(record, inputs, clean=clean)
     registers = record.functions[0].registers
     assert registers is not None
@@ -150,7 +156,7 @@ def test_complete_source_word_calls_primitives_and_full_complex_operator(
         initial = torch.zeros(1 << bound.circuit.n_wires, dtype=torch.complex128)
         initial[:: 1 << work] = coefficients
         measured = actual["measure"]
-        assert measured == 2 * pattern.bit_count()
+        assert measured == (control_count - 1) * pattern.bit_count()
         expected_state = torch.zeros_like(initial)
         expected_state[:: 1 << work] = operator @ coefficients / (2 ** (measured / 2))
         for history in product((0, 1), repeat=measured):

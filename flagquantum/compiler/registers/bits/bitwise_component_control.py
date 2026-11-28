@@ -17,6 +17,7 @@ from ....core.ir.program.register_types import quantum_bit_type
 from ....core.ir.program.registers import Register, RegisterSide, RegisterType
 from ..component_builder import BindingCollection, ComponentProgramBuilder
 from ..component_control import ControlAdder, control_component_hierarchy
+from ..component_definition_match import matches_component_definition
 from ..component_gate_function import bit_gate_function
 from ..control.component_bookkeeping import bookkeeping_scalar_control_adder
 from ..control.multi_control_component import merged_pauli_control_program
@@ -82,28 +83,71 @@ def _controlled_toffoli(
 def nested_controlled_xor_constant_program(
     dtype: RegisterType, pattern: int, *, control_count: int = 2
 ) -> ProgramRecord:
-    """Retain two or three distinct positive scalar controls on the source loader.
+    """Retain distinct positive scalar controls on the source XOR loader.
 
     Source nested Controlled retains the inner Split/XOR/Join calls and turns
     each loaded CNOT into an atomic Toffoli. This is distinct from a grouped
     predicate that first computes a shared conjunction into private work.
-    A third control uses Toffoli's exact merged-predicate callback per loaded bit.
+    Further controls retain the exact merged-predicate callback per loaded bit.
     """
-    if type(control_count) is not int or control_count not in (2, 3):
-        raise ValueError("Nested XOR loading supports two or three positive controls")
+    if type(control_count) is not int or control_count < 2:
+        raise ValueError("Nested XOR loading requires at least two positive controls")
     record = (
         controlled_bitwise_word_program(dtype, "xor_constant", pattern=pattern)
         if control_count == 2
-        else nested_controlled_xor_constant_program(dtype, pattern)
+        else nested_controlled_xor_constant_program(
+            dtype, pattern, control_count=control_count - 1
+        )
     )
     adders: dict[str, ControlAdder] = (
         {"bitwise_controlled_x": _controlled_cx}
         if control_count == 2
         else {"bitwise_toffoli": _controlled_toffoli}
     )
+    if control_count > 3:
+        previous = merged_pauli_control_program(
+            (1, 1), "x", scalar_controls=control_count - 3
+        )
+        merged = merged_pauli_control_program(
+            (1, 1), "x", scalar_controls=control_count - 2
+        )
+        previous_ports = previous.functions[0].registers
+        assert previous_ports is not None
+        previous_controls = tuple(r.name for r in previous_ports[:-1])
+
+        def add_merged(
+            builder: ComponentProgramBuilder,
+            control: BindingCollection,
+            values: dict[str, BindingCollection],
+        ) -> tuple[BindingCollection, tuple[BindingCollection, ...]]:
+            inputs = {"ctrl1": control, "q": values["q"]}
+            inputs.update(
+                {
+                    f"ctrl{i + 2}": values[name]
+                    for i, name in enumerate(previous_controls)
+                }
+            )
+            outputs = builder.call_program(merged, inputs)
+            return outputs["ctrl1"], (
+                *(outputs[f"ctrl{i + 2}"] for i in range(len(previous_controls))),
+                outputs["q"],
+            )
+
+        adders = {
+            function.name: add_merged
+            for function in record.functions
+            if matches_component_definition(record, function.name, previous)
+        }
+    callees = {
+        operation.callee for operation in record.functions[0].blocks[0].operations
+    }
     for function in record.functions:
-        if function.registers is not None and any(
-            register.side != RegisterSide.THRU for register in function.registers
+        if (
+            function.name in callees
+            and function.registers is not None
+            and any(
+                register.side != RegisterSide.THRU for register in function.registers
+            )
         ):
             adders[function.name] = bookkeeping_scalar_control_adder(function)
     return control_component_hierarchy(

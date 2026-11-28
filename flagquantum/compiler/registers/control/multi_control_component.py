@@ -34,13 +34,14 @@ def positive_controlled_multi_x_program(values: tuple[int, ...]) -> ProgramRecor
 
 
 def merged_pauli_control_program(
-    values: tuple[int, ...], axis: Literal["x", "z"]
+    values: tuple[int, ...], axis: Literal["x", "z"], *, scalar_controls: int = 1
 ) -> ProgramRecord:
-    """Preserve the source scalar-plus-array predicate, including Toffoli control.
+    """Preserve the source scalar-prefix/array predicate, including Toffoli control.
 
-    The first control is a positive scalar; the second retains the caller's
-    ordered activation array. The shared predicate owns measured clean work.
+    Positive scalar clauses precede the caller's ordered activation array. The shared predicate owns measured clean work.
     """
+    if type(scalar_controls) is not int or scalar_controls < 1:
+        raise ValueError("Merged Pauli controls require a positive scalar prefix")
     if not values or any(
         type(value) is not int or value not in (0, 1) for value in values
     ):
@@ -73,8 +74,14 @@ def merged_pauli_control_program(
     return control_component_via_predicate(
         body.finalize({"q": target}),
         {"main": add},
-        (Register("ctrl1", bit), Register("ctrl2", bit, (len(values),))),
-        (ControlRegister(1, (1,)), ControlRegister(1, values)),
+        (
+            *(Register(f"ctrl{i + 1}", bit) for i in range(scalar_controls)),
+            Register(f"ctrl{scalar_controls + 1}", bit, (len(values),)),
+        ),
+        (
+            *(ControlRegister(1, (1,)) for _ in range(scalar_controls)),
+            ControlRegister(1, values),
+        ),
     )
 
 
